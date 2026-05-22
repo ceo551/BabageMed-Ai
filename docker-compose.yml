@@ -1,0 +1,41 @@
+name: babagemed
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    image: babagemed/backend:latest
+    container_name: babagemed-backend
+    env_file: .env
+    environment:
+      PORT: "8080"
+      MCP_HOST_OVERRIDE: ""
+    ports:
+      - "8080:8080"
+    restart: unless-stopped
+    networks: [babagemed]
+    depends_on:
+      - mcp-pubmed
+      - mcp-clinicaltrials
+      - mcp-fda
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    image: babagemed/frontend:latest
+    container_name: babagemed-frontend
+    env_file: .env
+    environment:
+      BACKEND_URL: http://backend:8080
+      NEXT_PUBLIC_API: /api/backend
+    ports:
+      - "3000:3000"
+    restart: unless-stopped
+    networks: [babagemed]
+    depends_on: [backend]
+
+networks:
+  babagemed:
+    name: babagemed
+    driver: bridge

@@ -1,0 +1,157 @@
+# BabageMed AI
+
+Clinical assistant — Next.js dashboard + Go backend + 86 Dockerized TypeScript MCP servers covering medical APIs, registries, journals, guidelines, and productivity tools.
+
+## Architecture
+
+```
+┌──────────────────┐    ┌──────────────────┐    ┌───────────────────────────┐
+│  Next.js (3000)  │───▶│  Go backend      │───▶│  86 MCP servers           │
+│  /app dashboard  │    │  (8080) /api/*   │    │  HTTP :6101..:6186        │
+│  EN / AR, RTL    │    │  LLM router      │    │  + stdio MCP protocol     │
+└──────────────────┘    │  MCP orchestrator│    └───────────────────────────┘
+                        └──────────────────┘
+```
+
+- **Frontend** (`frontend/`) — Next.js 14 (App Router, TypeScript). Pixel-matched to the Claude Design handoff (`Dashboard.html`). Bilingual EN/AR with full RTL, dark/light/system themes, model picker, mode toggle.
+- **Backend** (`backend/`) — Go 1.22 + chi. Loads `scripts/mcps.manifest.json`, exposes `/api/mcp/*` to call any tool on any MCP, and `/api/chat` to orchestrate LLM calls (Anthropic / Google / OpenAI) with retrieval from selected MCPs.
+- **MCP servers** (`mcps/<id>/`) — 86 standalone Dockerized TypeScript services. Each exposes:
+  - **stdio** — standard MCP JSON-RPC protocol (so any MCP-capable client can connect directly).
+  - **HTTP** — `GET /health`, `GET /tools`, `POST /call/<toolName>`, `POST /rpc`. Used by the Go backend.
+- **Shared base** (`packages/mcp-base/`) — `ApiClient` (HTTP + retries + per-RPS throttle + TTL cache), `Scraper` (Playwright + cheerio + robots-respect + browser-fallback on 403/429/503), and `McpServer` (handles tool registration + both transports).
+
+## The 86 MCPs
+
+86 servers grouped by access strategy:
+
+| Strategy | Count | Examples |
+|---|---|---|
+| **API (free / public)** | 24 | pubmed, ncbi, icd10, clinicaltrials, fda (openFDA), dailymed, medlineplus, pubchem, chembl, who (GHO OData), cdc (Socrata), npi (NPPES), nci (EVS), cms (data.cms.gov), medrxiv, biorxiv, nhs, endotext (NCBI Bookshelf), wikem (MediaWiki), eyewiki (MediaWiki), ourworldindata |
+| **API (Crossref-backed for journals)** | 5 | nejm, bmj, cochrane, frontiers, rmopen |
+| **API (auth-required)** | 12 | notion, slack, kaggle, linkedin, gmail, gcalendar, gdrive, github, huggingface, ms365, hostinger, godaddy |
+| **Scrape (Playwright, robots-respecting)** | 45 | mayoclinic, clevelandclinic, rsna, radiopaedia, medscape, webmd, merckmanuals, drugscom, rxlist, healthline, cvphysiology, litfl, ninds, niddk, biocodex, nhlbi, kdigo, kidneyfoundation, renalfellow, healio, cancerorg, oncolink, rheumatology, arthritis, creakyjoints, lupus, spondylitis, derangedphys, thebottomline, nimh, rcpsych, psychiatrictimes, nami, rebelem, first10em, familydoctor, healthdata, pathologyoutlines, testingcom, dftb, coreem, iowaprotocols, fpnotebook, globalfamilydoctor, gamma |
+| **Scrape (browser-driven, low-rate)** | 2 | googlescholar, chrome (general Playwright browser tool) |
+
+Source of truth: `scripts/mcps.manifest.json`. Each row → one folder under `mcps/<id>/`.
+
+## Quick start
+
+```bash
+# 1. Configure
+cp .env.example .env
+# Fill in: NCBI_EMAIL, ANTHROPIC_API_KEY (or GOOGLE_API_KEY / OPENAI_API_KEY),
+# and any third-party tokens you want (NOTION_TOKEN, SLACK_BOT_TOKEN, …).
+
+# 2. Generate MCP scaffolds (already committed, re-run if you edit the manifest)
+node scripts/generate-mcps.mjs
+node scripts/write-real-tools.mjs
+
+# 3. Build mcp-base (frontend & backend Dockerfiles do this implicitly)
+cd packages/mcp-base && npm install && npx tsc -p tsconfig.json && cd ../..
+
+# 4. Bring everything up
+docker compose -f docker-compose.yml -f docker-compose.mcps.yml up -d --build
+
+# Dashboard:   http://localhost:3000
+# Backend API: http://localhost:8080
+# Each MCP:    http://localhost:6101 … :6186  (one port per server)
+```
+
+Want only a subset? `docker compose -f docker-compose.yml -f docker-compose.mcps.yml up -d mcp-pubmed mcp-fda backend frontend`.
+
+## Backend API
+
+```
+GET  /health                              → backend + per-MCP up/down
+GET  /api/mcp/servers                     → list all 86
+GET  /api/mcp/servers/{id}                → metadata for one
+GET  /api/mcp/servers/{id}/tools          → its tool schemas
+POST /api/mcp/call/{id}/{tool}            → invoke; body is the tool input
+POST /api/chat                            → orchestrated chat
+POST /api/chat/stream                     → SSE: status/citations/content/done
+```
+
+Example:
+
+```bash
+curl -s localhost:8080/api/mcp/call/pubmed/search -d '{"query":"CKD piperacillin","retmax":5}'
+curl -s localhost:8080/api/mcp/call/clinicaltrials/search -d '{"query":"sepsis","status":"RECRUITING"}'
+curl -s localhost:8080/api/chat -d '{
+  "model":"opus-4.7","mode":"cited","locale":"en",
+  "messages":[{"role":"user","content":"Pip-Tazo dose when eGFR 24?"}],
+  "useMcps":["pubmed","fda","dailymed"]
+}'
+```
+
+## MCP protocol — talking to a server directly
+
+Every MCP speaks the standard Model Context Protocol on stdin (with `STDIO_ONLY=1`) **and** an HTTP wrapper:
+
+```bash
+# Both work — use HTTP for the dashboard, stdio for an MCP client (Claude Desktop, etc.).
+curl localhost:6101/tools
+curl -X POST localhost:6101/call/search -d '{"query":"hypertension","retmax":3}'
+curl -X POST localhost:6101/rpc -d '{"jsonrpc":"2.0","id":1,"method":"tools/list"}'
+```
+
+Wire any MCP into Claude Desktop / a code-host's MCP config:
+
+```json
+{
+  "command": "docker",
+  "args": ["run","-i","--rm","-e","STDIO_ONLY=1","--env-file","./.env","babagemed/mcp-pubmed:latest"]
+}
+```
+
+## Scraping policy
+
+The shared `Scraper` (`packages/mcp-base/src/scraper.ts`):
+
+1. Tries an undici HEAD/GET first (fast, no browser).
+2. On HTTP 403 / 429 / 503 it automatically escalates to a real Chromium browser via Playwright with light fingerprint scrubbing (no `navigator.webdriver`, real UA, plausible plugins).
+3. Respects `robots.txt` by default — disable per-server with `respectRobots: false` only where you've confirmed it's appropriate (this is set for `chrome` and `googlescholar`).
+4. Throttles to 1 req/sec by default (`SCRAPER_RATE_RPS`).
+5. Caches HTML 24 h by default (`SCRAPER_CACHE_TTL_SEC`).
+6. Will route through `SCRAPER_PROXY_URL` if set (use only with sources you have authorization for).
+
+**This system does NOT include CAPTCHA solving, residential-proxy rotation, or active anti-bot evasion.** Those would expose a clinical product to legal risk and tend to break sources permanently. If a source's WAF blocks the browser path, the MCP returns a clear error rather than silently producing fake data.
+
+## Repository layout
+
+```
+.
+├── frontend/                  Next.js 14 dashboard (EN/AR, dark/light, RTL)
+├── backend/                   Go 1.22 + chi orchestrator
+│   ├── main.go
+│   └── internal/{api,llm,mcp}
+├── packages/
+│   └── mcp-base/              Shared TS runtime (ApiClient + Scraper + McpServer)
+├── mcps/                      86 server packages, each with src/ + Dockerfile
+│   ├── pubmed/                Real implementations for 73 of the 86
+│   ├── …
+│   └── _shared/               Shared helpers
+├── scripts/
+│   ├── mcps.manifest.json     Single source of truth for all 86 servers
+│   ├── generate-mcps.mjs      Materialise scaffolds from the manifest
+│   └── write-real-tools.mjs   Override fallbacks with hand-written implementations
+├── docker-compose.yml         Frontend + backend + shared network
+├── docker-compose.mcps.yml    All 86 MCP services (auto-generated)
+└── .env.example
+```
+
+## Adding a 87th MCP
+
+1. Add an entry to `scripts/mcps.manifest.json`.
+2. `node scripts/generate-mcps.mjs` — creates the directory.
+3. Edit `mcps/<id>/src/tools.ts` with real tools (or just leave the fallback).
+4. `docker compose -f docker-compose.yml -f docker-compose.mcps.yml up -d --build mcp-<id>`.
+
+## Notes on the design handoff
+
+The dashboard is a faithful port of `babagemed-ai/project/Dashboard.html` from your handoff bundle:
+
+- Identical token system (`tokens.css`): `--cyan`, `--purple`, `--yellow`, `--ink`, light/dark, grid backdrop, gradient ambient.
+- Identical sidebar (brand mark, customize / spaces / history rows, account popover with appearance + language sub-menus).
+- Identical greeting + composer (model picker pill, voice / mic buttons, add-connector popover).
+- Full RTL when locale = `ar`, including chevron mirroring.
+- Wired to `POST /api/backend/api/chat` (Cmd/Ctrl+Enter or the send button).

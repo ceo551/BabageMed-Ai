@@ -1,0 +1,59 @@
+:root,
+[data-theme="dark"] {
+  --bg: #0b0d10;
+  --bg-2: #07080b;
+  --page-bg: var(--bg);
+  --panel: rgba(255, 255, 255, 0.04);
+  --panel-solid: #14171c;
+  --border: rgba(255, 255, 255, 0.07);
+  --border-strong: rgba(255, 255, 255, 0.14);
+  --grid-line: rgba(255, 255, 255, 0.035);
+  --ink: #f3f5f8;
+  --ink-2: #c7cdd4;
+  --muted: #7c8694;
+  --muted-2: #5a626d;
+  --cyan: #5ad7f5;
+  --cyan-soft: rgba(90, 215, 245, 0.10);
+  --cyan-line: rgba(90, 215, 245, 0.32);
+  --purple: #b88dff;
+  --purple-soft: rgba(184, 141, 255, 0.10);
+  --purple-line: rgba(184, 141, 255, 0.32);
+  --yellow: #f6d36b;
+  --yellow-soft: rgba(246, 211, 107, 0.10);
+  --yellow-line: rgba(246, 211, 107, 0.32);
+  --orange: #f59e6e;
+  --green: #6fcf97;
+  --shadow: 0 18px 60px rgba(0, 0, 0, 0.5);
+  --sans: "Geist", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --serif: "Instrument Serif", ui-serif, Georgia, serif;
+  --mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  --ar-sans: "IBM Plex Sans Arabic", "Geist", system-ui, sans-serif;
+  --ar-serif: "Amiri", "Instrument Serif", ui-serif, Georgia, serif;
+}
+[data-theme="light"] {
+  --bg: #fafbfd;
+  --bg-2: #f1f3f7;
+  --page-bg: var(--bg);
+  --panel: rgba(0, 0, 0, 0.025);
+  --panel-solid: #ffffff;
+  --border: rgba(15, 18, 24, 0.08);
+  --border-strong: rgba(15, 18, 24, 0.18);
+  --grid-line: rgba(15, 18, 24, 0.04);
+  --ink: #0b0d10;
+  --ink-2: #2c333d;
+  --muted: #6b7480;
+  --muted-2: #95a0ad;
+  --cyan: #008ea8;
+  --cyan-soft: rgba(0, 142, 168, 0.08);
+  --cyan-line: rgba(0, 142, 168, 0.28);
+  --purple: #6f4eda;
+  --purple-soft: rgba(111, 78, 218, 0.08);
+  --purple-line: rgba(111, 78, 218, 0.28);
+  --yellow: #b8810c;
+  --yellow-soft: rgba(184, 129, 12, 0.08);
+  --yellow-line: rgba(184, 129, 12, 0.28);
+  --orange: #d77a3a;
+  --green: #2f9c5e;
+  --shadow: 0 12px 40px rgba(20, 30, 50, 0.10);
+}
+[dir="rtl"] body { font-family: var(--ar-sans); }

@@ -1,0 +1,183 @@
+package llm
+
+import (
+	"bytes"
+	"context"
+	"encoding/json"
+	"errors"
+	"fmt"
+	"io"
+	"net/http"
+	"strings"
+	"time"
+)
+
+type Config struct {
+	AnthropicKey string
+	GoogleKey    string
+	OpenAIKey    string
+}
+
+type Client struct {
+	cfg  Config
+	http *http.Client
+}
+
+func NewClient(cfg Config) *Client {
+	return &Client{cfg: cfg, http: &http.Client{Timeout: 120 * time.Second}}
+}
+
+type Message struct {
+	Role    string `json:"role"`
+	Content string `json:"content"`
+}
+
+type CompletionRequest struct {
+	Model    string    `json:"model"`
+	Messages []Message `json:"messages"`
+	Mode     string    `json:"mode"`
+	System   string    `json:"system,omitempty"`
+}
+
+type CompletionResponse struct {
+	Provider string `json:"provider"`
+	Model    string `json:"model"`
+	Content  string `json:"content"`
+}
+
+// Complete picks a provider by model id prefix.
+func (c *Client) Complete(ctx context.Context, req CompletionRequest) (*CompletionResponse, error) {
+	switch {
+	case strings.HasPrefix(req.Model, "opus") || strings.HasPrefix(req.Model, "claude") || strings.HasPrefix(req.Model, "sonnet") || strings.HasPrefix(req.Model, "haiku"):
+		return c.callAnthropic(ctx, req)
+	case strings.HasPrefix(req.Model, "gemini"):
+		return c.callGoogle(ctx, req)
+	case strings.HasPrefix(req.Model, "gpt"):
+		return c.callOpenAI(ctx, req)
+	default:
+		return c.callAnthropic(ctx, req)
+	}
+}
+
+func (c *Client) callAnthropic(ctx context.Context, req CompletionRequest) (*CompletionResponse, error) {
+	if c.cfg.AnthropicKey == "" {
+		return nil, errors.New("ANTHROPIC_API_KEY not configured")
+	}
+	modelMap := map[string]string{
+		"opus-4.7":  "claude-opus-4-7",
+		"opus-4.6":  "claude-opus-4-6",
+		"sonnet":    "claude-sonnet-4-6",
+		"haiku":     "claude-haiku-4-5",
+	}
+	m, ok := modelMap[req.Model]
+	if !ok {
+		m = "claude-opus-4-7"
+	}
+	body, _ := json.Marshal(map[string]any{
+		"model":      m,
+		"max_tokens": 4096,
+		"system":     req.System,
+		"messages":   req.Messages,
+	})
+	r, _ := http.NewRequestWithContext(ctx, "POST", "https://api.anthropic.com/v1/messages", bytes.NewReader(body))
+	r.Header.Set("x-api-key", c.cfg.AnthropicKey)
+	r.Header.Set("anthropic-version", "2023-06-01")
+	r.Header.Set("content-type", "application/json")
+	res, err := c.http.Do(r)
+	if err != nil {
+		return nil, err
+	}
+	defer res.Body.Close()
+	raw, _ := io.ReadAll(res.Body)
+	if res.StatusCode >= 400 {
+		return nil, fmt.Errorf("anthropic: %s: %s", res.Status, string(raw))
+	}
+	var out struct {
+		Content []struct{ Text string } `json:"content"`
+	}
+	if err := json.Unmarshal(raw, &out); err != nil {
+		return nil, err
+	}
+	text := ""
+	for _, c := range out.Content {
+		text += c.Text
+	}
+	return &CompletionResponse{Provider: "anthropic", Model: m, Content: text}, nil
+}
+
+func (c *Client) callGoogle(ctx context.Context, req CompletionRequest) (*CompletionResponse, error) {
+	if c.cfg.GoogleKey == "" {
+		return nil, errors.New("GOOGLE_API_KEY not configured")
+	}
+	parts := []map[string]any{}
+	for _, m := range req.Messages {
+		role := m.Role
+		if role == "assistant" {
+			role = "model"
+		}
+		parts = append(parts, map[string]any{"role": role, "parts": []map[string]string{{"text": m.Content}}})
+	}
+	body, _ := json.Marshal(map[string]any{"contents": parts, "systemInstruction": map[string]any{"parts": []map[string]string{{"text": req.System}}}})
+	url := "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent?key=" + c.cfg.GoogleKey
+	r, _ := http.NewRequestWithContext(ctx, "POST", url, bytes.NewReader(body))
+	r.Header.Set("content-type", "application/json")
+	res, err := c.http.Do(r)
+	if err != nil {
+		return nil, err
+	}
+	defer res.Body.Close()
+	raw, _ := io.ReadAll(res.Body)
+	if res.StatusCode >= 400 {
+		return nil, fmt.Errorf("google: %s: %s", res.Status, string(raw))
+	}
+	var out struct {
+		Candidates []struct {
+			Content struct {
+				Parts []struct{ Text string } `json:"parts"`
+			} `json:"content"`
+		} `json:"candidates"`
+	}
+	_ = json.Unmarshal(raw, &out)
+	text := ""
+	if len(out.Candidates) > 0 {
+		for _, p := range out.Candidates[0].Content.Parts {
+			text += p.Text
+		}
+	}
+	return &CompletionResponse{Provider: "google", Model: req.Model, Content: text}, nil
+}
+
+func (c *Client) callOpenAI(ctx context.Context, req CompletionRequest) (*CompletionResponse, error) {
+	if c.cfg.OpenAIKey == "" {
+		return nil, errors.New("OPENAI_API_KEY not configured")
+	}
+	msgs := make([]Message, 0, len(req.Messages)+1)
+	if req.System != "" {
+		msgs = append(msgs, Message{Role: "system", Content: req.System})
+	}
+	msgs = append(msgs, req.Messages...)
+	body, _ := json.Marshal(map[string]any{"model": req.Model, "messages": msgs})
+	r, _ := http.NewRequestWithContext(ctx, "POST", "https://api.openai.com/v1/chat/completions", bytes.NewReader(body))
+	r.Header.Set("Authorization", "Bearer "+c.cfg.OpenAIKey)
+	r.Header.Set("content-type", "application/json")
+	res, err := c.http.Do(r)
+	if err != nil {
+		return nil, err
+	}
+	defer res.Body.Close()
+	raw, _ := io.ReadAll(res.Body)
+	if res.StatusCode >= 400 {
+		return nil, fmt.Errorf("openai: %s: %s", res.Status, string(raw))
+	}
+	var out struct {
+		Choices []struct {
+			Message Message `json:"message"`
+		} `json:"choices"`
+	}
+	_ = json.Unmarshal(raw, &out)
+	text := ""
+	if len(out.Choices) > 0 {
+		text = out.Choices[0].Message.Content
+	}
+	return &CompletionResponse{Provider: "openai", Model: req.Model, Content: text}, nil
+}
