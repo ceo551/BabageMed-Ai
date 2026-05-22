@@ -3,7 +3,7 @@
 ## Requirements
 - **Docker Desktop** (with Compose v2 — already bundled). On Linux: `docker` ≥ 20.10 and `docker compose` plugin.
 - ~10 GB free disk for **minimal stack** (frontend + backend + 12 API MCPs).
-- ~80 GB free disk and ~8 GB RAM for **full stack** (all 86 MCPs, includes Playwright/Chromium images).
+- ~250 GB free disk and ~40 GB RAM for **full stack** (all 416 MCPs, including ~360 Playwright-backed scrape MCPs).
 - macOS / Linux / Windows-with-WSL2.
 
 ## TL;DR
@@ -54,15 +54,23 @@ What this brings up:
 
 Build takes ~3–5 min on a decent machine the first time, ~30 s after that.
 
-### Full stack — all 86 MCPs
+### Full stack — all 416 MCPs
 
 ```bash
 docker compose -f docker-compose.yml -f docker-compose.mcps.yml up -d --build
 ```
 
-What this adds: 45 Playwright/Chromium-backed scraping MCPs (mayoclinic, medscape, webmd, …), 24 auth-required MCPs (gmail, slack, notion, …), and 5 Crossref-backed journal MCPs.
+What this adds:
+- The original 86 (24 free APIs, 5 Crossref journal MCPs, 12 auth-required, 45 Playwright scrape).
+- **330 additional scrape MCPs** spanning 35 medical specialties: society websites (ACC, AHA, ESC, ASCO, ESMO, AAN, APA, AAP, AAOS, AAD, ACEP, AAFP, ACP…), OA journals (all PLOS, BMC, JMIR, MDPI, eLife, Cureus, F1000Research, BMJ Open, JAMA Network Open, ESMO Open…), national agencies (NICE, BNF, EMA, TGA, PMDA, ANVISA, UKHSA, ECDC, PAHO, RKI…), and educational refs (DermNet, Orthobullets, StatPearls, OpenAnesthesia, EMCrit, ALiEM, Geeky Medics, TeachMeAnatomy, OMIM, Orphanet…).
 
-First build is **slow** — most of the time is pulling `mcr.microsoft.com/playwright:v1.49.0-jammy` (~1.5 GB) and one `npm install` per MCP. The shared `mcp-base` layer is cached so subsequent builds are fast. Plan for 30–60 min on the first build.
+First build is **slow** — most of the time is pulling `mcr.microsoft.com/playwright:v1.49.0-jammy` (~1.5 GB, shared across ~375 scrape MCPs) and running `npm install` per MCP. With BuildKit cache mounts the npm-install layer reuses the shared cache. Plan for ~2-4 hours on the first build. The image layer cache makes subsequent builds fast — only changed sources rebuild.
+
+Resource ballpark for the full stack: ~250 GB disk (one image per MCP + shared layers), ~40 GB RAM at idle, ~80 GB RAM under load. If that's too much, use `make up-minimal` and start individual MCPs by name as you need them:
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.mcps.yml up -d --build mcp-plosone mcp-bmcmed mcp-dermnet mcp-nice
+```
 
 ## Step 3 — Verify
 

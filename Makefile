@@ -11,7 +11,7 @@ help:
 	@echo "  make generate       Regenerate all 86 MCP scaffolds from manifest"
 	@echo ""
 	@echo "  make up-minimal     Bring up frontend + backend + 12 API MCPs (recommended first run)"
-	@echo "  make up-full        Bring up all 86 MCPs (heavy — needs ~80 GB disk, ~8 GB RAM)"
+	@echo "  make up-full        Bring up all 416 MCPs (heavy — needs ~250 GB disk, ~40 GB RAM)"
 	@echo "  make down           Stop and remove containers"
 	@echo "  make logs           Tail logs (Ctrl-C to exit)"
 	@echo "  make ps             Show running containers"
@@ -23,6 +23,7 @@ env:
 	@if [ -f .env ]; then echo ".env already exists — leaving it alone."; else cp .env.example .env && echo "Created .env from .env.example. Edit it to add your keys."; fi
 
 generate:
+	node scripts/append-medical-mcps.mjs
 	node scripts/generate-mcps.mjs
 	node scripts/write-real-tools.mjs
 

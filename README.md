@@ -1,6 +1,6 @@
 # BabageMed AI
 
-Clinical assistant — Next.js dashboard + Go backend + 86 Dockerized TypeScript MCP servers covering medical APIs, registries, journals, guidelines, and productivity tools.
+Clinical assistant — Next.js dashboard + Go backend + **416 Dockerized TypeScript MCP servers** covering medical APIs, registries, journals, guidelines, society websites, FOAMed/educational refs, and productivity tools.
 
 ## Architecture
 
@@ -20,9 +20,11 @@ Clinical assistant — Next.js dashboard + Go backend + 86 Dockerized TypeScript
   - **HTTP** — `GET /health`, `GET /tools`, `POST /call/<toolName>`, `POST /rpc`. Used by the Go backend.
 - **Shared base** (`packages/mcp-base/`) — `ApiClient` (HTTP + retries + per-RPS throttle + TTL cache), `Scraper` (Playwright + cheerio + robots-respect + browser-fallback on 403/429/503), and `McpServer` (handles tool registration + both transports).
 
-## The 86 MCPs
+## The 416 MCPs
 
-86 servers grouped by access strategy:
+416 servers grouped by access strategy. The first 86 cover the original product surface (chat + productivity + core medical APIs); the additional 330 (ports 6201–6530) are scrape-driven access to society websites, OA journals, FOAMed blogs, national agencies, and international medical bodies — sourced from a curated list of ~316 verified medical/healthcare sites across ~35 specialties.
+
+### First 86 (ports 6101–6186)
 
 | Strategy | Count | Examples |
 |---|---|---|
@@ -32,7 +34,11 @@ Clinical assistant — Next.js dashboard + Go backend + 86 Dockerized TypeScript
 | **Scrape (Playwright, robots-respecting)** | 45 | mayoclinic, clevelandclinic, rsna, radiopaedia, medscape, webmd, merckmanuals, drugscom, rxlist, healthline, cvphysiology, litfl, ninds, niddk, biocodex, nhlbi, kdigo, kidneyfoundation, renalfellow, healio, cancerorg, oncolink, rheumatology, arthritis, creakyjoints, lupus, spondylitis, derangedphys, thebottomline, nimh, rcpsych, psychiatrictimes, nami, rebelem, first10em, familydoctor, healthdata, pathologyoutlines, testingcom, dftb, coreem, iowaprotocols, fpnotebook, globalfamilydoctor, gamma |
 | **Scrape (browser-driven, low-rate)** | 2 | googlescholar, chrome (general Playwright browser tool) |
 
-Source of truth: `scripts/mcps.manifest.json`. Each row → one folder under `mcps/<id>/`.
+### Additional 330 (ports 6201–6530, all scrape-driven)
+
+Defined in `scripts/medical-sites.json` and appended to the master manifest via `node scripts/append-medical-mcps.mjs`. Grouped by specialty: cardiology (15), oncology (14), neurology (9), psychiatry (6), pediatrics (8), radiology (8), pharmacology / drug regulation (16), surgery / plastic surgery (12), anesthesia / critical care (10), public health / epidemiology (19), endocrinology (8), gastroenterology / hepatology (10), pulmonology (7), dermatology (6), ENT (4), ophthalmology (7), OB-GYN (6), urology (4), orthopedics / sports medicine (15), hematology (5), infectious disease / HIV (5), allergy (5), pathology (6), genetics / rare disease (6), geriatrics (4), palliative care (5), dentistry (8), nutrition (5), PM&R (4), emergency medicine (12), primary care / family medicine / internal medicine (8), nephrology (4), rheumatology (3), veterinary (7), OA journals (44), med-ed / reference (10), and other (3).
+
+Source of truth: `scripts/mcps.manifest.json` (auto-merged from `scripts/medical-sites.json` for the medical scrape batch). Each row → one folder under `mcps/<id>/`.
 
 ## Quick start
 
@@ -43,6 +49,7 @@ cp .env.example .env
 # and any third-party tokens you want (NOTION_TOKEN, SLACK_BOT_TOKEN, …).
 
 # 2. Generate MCP scaffolds (already committed, re-run if you edit the manifest)
+node scripts/append-medical-mcps.mjs   # merge medical-sites.json into the master manifest (idempotent)
 node scripts/generate-mcps.mjs
 node scripts/write-real-tools.mjs
 
