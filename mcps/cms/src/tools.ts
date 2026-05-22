@@ -12,7 +12,7 @@ export function registerTools(server: McpServer) {
     description: "Search Medicare coverage policies (LCD/NCD) via CMS Coverage MCD JSON.",
     input: z.object({ query: z.string().min(1) }),
     handler: async ({ query }) => {
-      const r = await fetch(`https://www.cms.gov/medicare-coverage-database/api/search?keyword=${encodeURIComponent(query)}`).then(r => r.json()).catch(() => ({}));
+      const r: any = await fetch(`https://www.cms.gov/medicare-coverage-database/api/search?keyword=${encodeURIComponent(query)}`).then((r) => r.json()).catch(() => ({}));
       return r;
     },
   });
@@ -20,12 +20,12 @@ export function registerTools(server: McpServer) {
     name: "lcd",
     description: "Look up a Local Coverage Determination by id.",
     input: z.object({ lcdId: z.string() }),
-    handler: async ({ lcdId }) => fetch(`https://www.cms.gov/medicare-coverage-database/api/lcd/${encodeURIComponent(lcdId)}`).then(r => r.json()),
+    handler: async ({ lcdId }): Promise<any> => fetch(`https://www.cms.gov/medicare-coverage-database/api/lcd/${encodeURIComponent(lcdId)}`).then((r) => r.json()),
   });
   server.tool({
     name: "ncd",
     description: "Look up a National Coverage Determination by id.",
     input: z.object({ ncdId: z.string() }),
-    handler: async ({ ncdId }) => fetch(`https://www.cms.gov/medicare-coverage-database/api/ncd/${encodeURIComponent(ncdId)}`).then(r => r.json()),
+    handler: async ({ ncdId }): Promise<any> => fetch(`https://www.cms.gov/medicare-coverage-database/api/ncd/${encodeURIComponent(ncdId)}`).then((r) => r.json()),
   });
 }

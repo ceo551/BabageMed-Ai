@@ -1121,4 +1121,5 @@ services:
 
 networks:
   babagemed:
-    external: true
+    name: babagemed
+    driver: bridge

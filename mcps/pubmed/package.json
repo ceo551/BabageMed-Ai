@@ -11,10 +11,10 @@
   },
   "dependencies": {
     "@babagemed/mcp-base": "file:../../packages/mcp-base",
+    "zod": "^3.23.8",
     "cheerio": "^1.0.0",
-    "playwright": "^1.49.0",
     "undici": "^6.21.0",
-    "zod": "^3.25.76"
+    "playwright": "^1.49.0"
   },
   "devDependencies": {
     "@types/node": "^22.10.0",

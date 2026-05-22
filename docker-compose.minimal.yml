@@ -1,0 +1,118 @@
+name: babagemed
+# Minimal stack — frontend + backend + the 12 most-useful API-driven MCPs.
+# No Playwright images (saves ~70 GB), no auth-required servers (need keys).
+# Bring up with:
+#   docker compose -f docker-compose.yml -f docker-compose.minimal.yml up -d --build
+services:
+  mcp-pubmed:
+    build: { context: ., dockerfile: mcps/pubmed/Dockerfile }
+    image: babagemed/mcp-pubmed:latest
+    env_file: .env
+    environment: { HTTP_ONLY: "1" }
+    ports: ["6101:6101"]
+    restart: unless-stopped
+    networks: [babagemed]
+
+  mcp-icd10:
+    build: { context: ., dockerfile: mcps/icd10/Dockerfile }
+    image: babagemed/mcp-icd10:latest
+    env_file: .env
+    environment: { HTTP_ONLY: "1" }
+    ports: ["6102:6102"]
+    restart: unless-stopped
+    networks: [babagemed]
+
+  mcp-clinicaltrials:
+    build: { context: ., dockerfile: mcps/clinicaltrials/Dockerfile }
+    image: babagemed/mcp-clinicaltrials:latest
+    env_file: .env
+    environment: { HTTP_ONLY: "1" }
+    ports: ["6116:6116"]
+    restart: unless-stopped
+    networks: [babagemed]
+
+  mcp-fda:
+    build: { context: ., dockerfile: mcps/fda/Dockerfile }
+    image: babagemed/mcp-fda:latest
+    env_file: .env
+    environment: { HTTP_ONLY: "1" }
+    ports: ["6136:6136"]
+    restart: unless-stopped
+    networks: [babagemed]
+
+  mcp-dailymed:
+    build: { context: ., dockerfile: mcps/dailymed/Dockerfile }
+    image: babagemed/mcp-dailymed:latest
+    env_file: .env
+    environment: { HTTP_ONLY: "1" }
+    ports: ["6120:6120"]
+    restart: unless-stopped
+    networks: [babagemed]
+
+  mcp-medlineplus:
+    build: { context: ., dockerfile: mcps/medlineplus/Dockerfile }
+    image: babagemed/mcp-medlineplus:latest
+    env_file: .env
+    environment: { HTTP_ONLY: "1" }
+    ports: ["6121:6121"]
+    restart: unless-stopped
+    networks: [babagemed]
+
+  mcp-pubchem:
+    build: { context: ., dockerfile: mcps/pubchem/Dockerfile }
+    image: babagemed/mcp-pubchem:latest
+    env_file: .env
+    environment: { HTTP_ONLY: "1" }
+    ports: ["6128:6128"]
+    restart: unless-stopped
+    networks: [babagemed]
+
+  mcp-chembl:
+    build: { context: ., dockerfile: mcps/chembl/Dockerfile }
+    image: babagemed/mcp-chembl:latest
+    env_file: .env
+    environment: { HTTP_ONLY: "1" }
+    ports: ["6117:6117"]
+    restart: unless-stopped
+    networks: [babagemed]
+
+  mcp-who:
+    build: { context: ., dockerfile: mcps/who/Dockerfile }
+    image: babagemed/mcp-who:latest
+    env_file: .env
+    environment: { HTTP_ONLY: "1" }
+    ports: ["6105:6105"]
+    restart: unless-stopped
+    networks: [babagemed]
+
+  mcp-cdc:
+    build: { context: ., dockerfile: mcps/cdc/Dockerfile }
+    image: babagemed/mcp-cdc:latest
+    env_file: .env
+    environment: { HTTP_ONLY: "1" }
+    ports: ["6106:6106"]
+    restart: unless-stopped
+    networks: [babagemed]
+
+  mcp-npi:
+    build: { context: ., dockerfile: mcps/npi/Dockerfile }
+    image: babagemed/mcp-npi:latest
+    env_file: .env
+    environment: { HTTP_ONLY: "1" }
+    ports: ["6109:6109"]
+    restart: unless-stopped
+    networks: [babagemed]
+
+  mcp-nci:
+    build: { context: ., dockerfile: mcps/nci/Dockerfile }
+    image: babagemed/mcp-nci:latest
+    env_file: .env
+    environment: { HTTP_ONLY: "1" }
+    ports: ["6108:6108"]
+    restart: unless-stopped
+    networks: [babagemed]
+
+networks:
+  babagemed:
+    name: babagemed
+    driver: bridge
