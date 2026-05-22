@@ -1,0 +1,30 @@
+# Drop this file at /etc/caddy/Caddyfile on your VPS (or use it from the
+# infra/caddy/ folder via Docker).
+# Replace {$DOMAIN} with your actual hostname before deploying.
+
+{$DOMAIN} {
+    encode zstd gzip
+
+    # Public dashboard
+    handle_path /api/backend/* {
+        reverse_proxy backend:8080
+    }
+    handle {
+        reverse_proxy frontend:3000
+    }
+
+    log {
+        output stdout
+        format console
+    }
+}
+
+# Optional: expose individual MCP HTTP endpoints (locked down to your IP by default).
+# Uncomment and edit if you want to call MCPs directly from outside the VPS.
+# mcp.{$DOMAIN} {
+#     @allowed remote_ip 203.0.113.0/24
+#     reverse_proxy /pubmed/*         mcp-pubmed:6101
+#     reverse_proxy /clinicaltrials/* mcp-clinicaltrials:6116
+#     # …
+#     respond 403 { close }
+# }

@@ -1,0 +1,25 @@
+name: babagemed
+# TLS reverse-proxy add-on. Use alongside docker-compose.yml + your chosen MCP file:
+#   DOMAIN=app.babagemed.com docker compose \
+#     -f docker-compose.yml -f docker-compose.kvm2.yml -f docker-compose.caddy.yml up -d
+# Caddy auto-issues a Let's Encrypt cert for DOMAIN on first start.
+services:
+  caddy:
+    image: caddy:2-alpine
+    container_name: babagemed-caddy
+    environment:
+      DOMAIN: ${DOMAIN:-localhost}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./infra/caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    restart: unless-stopped
+    networks: [babagemed]
+    depends_on: [frontend, backend]
+
+volumes:
+  caddy_data:
+  caddy_config:
