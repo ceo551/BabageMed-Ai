@@ -298,10 +298,10 @@ function Sidebar({
             <span className="swatch">{I.gear}</span>
             <span className="col"><span className="ttl">{s.settings}</span><span className="desc">{s.settingsDesc}</span></span>
           </button>
-          <button className="tool-row" type="button">
+          <a className="tool-row" href="/billing">
             <span className="swatch y">{I.bolt}</span>
             <span className="col"><span className="ttl">{s.plans}</span><span className="desc">{s.plansDesc}</span></span>
-          </button>
+          </a>
           <div className="popover-sep" />
           <button className="tool-row logout" type="button">
             <span className="swatch p">{I.logout}</span>

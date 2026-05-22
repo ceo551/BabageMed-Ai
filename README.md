@@ -69,7 +69,27 @@ GET  /api/mcp/servers/{id}/tools          → its tool schemas
 POST /api/mcp/call/{id}/{tool}            → invoke; body is the tool input
 POST /api/chat                            → orchestrated chat
 POST /api/chat/stream                     → SSE: status/citations/content/done
+
+GET  /api/payments/plans                  → catalog with EGP + USD pricing
+GET  /api/payments/providers              → which providers are configured
+
+POST /api/payments/paymob/checkout        → returns hosted iframe URL
+POST /api/payments/paymob/webhook?hmac=…  → HMAC-SHA512-verified
+POST /api/payments/paypal/checkout        → returns approve URL
+POST /api/payments/paypal/capture         → capture after user approves
+POST /api/payments/paypal/webhook         → signature-verified via PayPal API
 ```
+
+## Payments
+
+Two providers wired up, no other dependencies:
+
+- **Paymob (Egypt)** — Accept iframe flow. Set `PAYMOB_API_KEY`, `PAYMOB_INTEGRATION_ID`, `PAYMOB_IFRAME_ID`, `PAYMOB_HMAC` in `.env`. Frontend calls `/api/payments/paymob/checkout`, gets a hosted iframe URL, redirects the user. Webhook callback to `/api/payments/paymob/webhook?hmac=…` is HMAC-SHA512-verified against Paymob's documented field order.
+- **PayPal (international)** — Orders v2 API. Set `PAYPAL_CLIENT_ID`, `PAYPAL_CLIENT_SECRET`, `PAYPAL_WEBHOOK_ID`, `PAYPAL_ENV` (`sandbox` | `live`). Frontend calls `/api/payments/paypal/checkout`, gets an approval URL, redirects. After approval PayPal sends the user to `/billing/return?token=ORDER_ID`, which the frontend captures via `/api/payments/paypal/capture`. Webhooks are signature-verified via PayPal's `verify-webhook-signature` endpoint.
+
+Plans live in `backend/internal/payments/plans.go` (Pro monthly · Max monthly · Max yearly, prices in both EGP piasters and USD cents). Visit `/billing` in the dashboard.
+
+> **TODO before launch:** persist transactions and flip user entitlement in the webhook handlers (currently they verify + acknowledge but don't update any user record — wire to your auth/DB).
 
 Example:
 

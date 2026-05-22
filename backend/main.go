@@ -12,6 +12,7 @@ import (
 	"github.com/babagemed/backend/internal/api"
 	"github.com/babagemed/backend/internal/llm"
 	"github.com/babagemed/backend/internal/mcp"
+	"github.com/babagemed/backend/internal/payments"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
@@ -68,6 +69,8 @@ func main() {
 
 	r.Post("/api/chat", h.Chat)
 	r.Post("/api/chat/stream", h.ChatStream)
+
+	payments.NewHandler().Register(r)
 
 	port := os.Getenv("PORT")
 	if port == "" {
