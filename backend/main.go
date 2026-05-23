@@ -9,6 +9,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/babagemed/backend/internal/admin"
 	"github.com/babagemed/backend/internal/api"
 	"github.com/babagemed/backend/internal/auth"
 	"github.com/babagemed/backend/internal/db"
@@ -55,6 +56,20 @@ func main() {
 		log.Printf("db connected, migrations up")
 		authSvc = auth.New(dbConn)
 		payStore = payments.NewStore(dbConn)
+		// Bootstrap: promote the configured email to admin on every startup.
+		// Safe & idempotent — only updates if the user already exists.
+		if email := os.Getenv("BOOTSTRAP_ADMIN_EMAIL"); email != "" {
+			ctx2, cancel2 := context.WithTimeout(context.Background(), 5*time.Second)
+			tag, err := dbConn.Pool.Exec(ctx2, `UPDATE users SET is_admin = TRUE WHERE lower(email) = lower($1)`, email)
+			cancel2()
+			if err != nil {
+				log.Printf("admin bootstrap: %v", err)
+			} else if tag.RowsAffected() > 0 {
+				log.Printf("admin bootstrap: promoted %s", email)
+			} else {
+				log.Printf("admin bootstrap: %s not signed up yet — will promote on next startup", email)
+			}
+		}
 	} else {
 		log.Printf("DATABASE_URL not set — auth + persistence disabled")
 	}
@@ -100,6 +115,7 @@ func main() {
 	// Auth + persistence (DB-backed)
 	if authSvc != nil {
 		auth.NewHandler(authSvc).Register(r)
+		admin.NewHandler(dbConn, authSvc).Register(r)
 	}
 
 	// Payments

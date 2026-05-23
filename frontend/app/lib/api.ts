@@ -70,3 +70,72 @@ export const mcps = {
   call:  (id: string, tool: string, args: unknown) =>
     api.post<{ ok: boolean; result: unknown }>(`/api/mcp/call/${encodeURIComponent(id)}/${encodeURIComponent(tool)}`, args),
 };
+
+// ── admin ──
+export type AdminStats = {
+  users: number;
+  admins: number;
+  activeSessions: number;
+  paymentsPaid: number;
+  paymentsPending: number;
+  paymentsFailed: number;
+};
+export type AdminUser = User;
+export type AdminPayment = {
+  id: string;
+  userId: string;
+  userEmail: string;
+  provider: string;
+  externalId: string;
+  planId: string;
+  amountMinor: number;
+  currency: string;
+  status: "pending" | "paid" | "failed" | "refunded";
+  createdAt: string;
+};
+export type AdminSession = {
+  id: string;
+  userId: string;
+  userEmail: string;
+  userAgent: string;
+  ip: string;
+  expiresAt: string;
+  createdAt: string;
+};
+
+export const admin = {
+  stats:         () => api.get<AdminStats>("/api/admin/stats"),
+  users:         (q = "", limit = 50, offset = 0) =>
+    api.get<{ users: AdminUser[]; limit: number; offset: number }>(
+      `/api/admin/users?q=${encodeURIComponent(q)}&limit=${limit}&offset=${offset}`
+    ),
+  updateUser:    (id: string, patch: Partial<{ plan: string; isAdmin: boolean; displayName: string }>) =>
+    fetch(`/api/backend/api/admin/users/${encodeURIComponent(id)}`, {
+      method: "PATCH",
+      credentials: "include",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(patch),
+    }).then((r) => r.json()),
+  deleteUser:    (id: string) =>
+    fetch(`/api/backend/api/admin/users/${encodeURIComponent(id)}`, {
+      method: "DELETE",
+      credentials: "include",
+    }).then((r) => r.json()),
+  payments:      (status = "", limit = 50, offset = 0) =>
+    api.get<{ payments: AdminPayment[]; limit: number; offset: number }>(
+      `/api/admin/payments?status=${encodeURIComponent(status)}&limit=${limit}&offset=${offset}`
+    ),
+  updatePayment: (id: string, status: AdminPayment["status"]) =>
+    fetch(`/api/backend/api/admin/payments/${encodeURIComponent(id)}`, {
+      method: "PATCH",
+      credentials: "include",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ status }),
+    }).then((r) => r.json()),
+  sessions:      () => api.get<{ sessions: AdminSession[] }>("/api/admin/sessions"),
+  revokeSession: (id: string) =>
+    fetch(`/api/backend/api/admin/sessions/${encodeURIComponent(id)}`, {
+      method: "DELETE",
+      credentials: "include",
+    }).then((r) => r.json()),
+};

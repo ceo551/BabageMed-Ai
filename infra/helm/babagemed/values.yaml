@@ -1,0 +1,167 @@
+# Default values for the BabageMed AI Helm chart.
+# Override with --values myvalues.yaml or --set key=value.
+#
+# Quick start (any of GKE / AKS / EKS):
+#   helm install babagemed ./infra/helm/babagemed \
+#     --namespace babagemed --create-namespace \
+#     --set image.registry=ghcr.io/your-org \
+#     --set ingress.host=app.yourdomain.com \
+#     --set secrets.anthropicApiKey=sk-ant-...
+
+# ─── Image registry ───────────────────────────────────────────────────────
+# All images live under <registry>/<repo>:<tag>. Push them before installing.
+# See infra/k8s/build-and-push.sh for a helper.
+image:
+  registry: ghcr.io/ceo551                        # change to your registry
+  pullPolicy: IfNotPresent
+  pullSecrets: []                                 # e.g. [ {name: regcred} ]
+  tag: latest
+
+# ─── Cloud target — picks sensible Ingress + StorageClass defaults ──────
+# Valid: "gke" | "aks" | "eks" | "generic"
+cloud: generic
+
+# ─── Frontend ─────────────────────────────────────────────────────────────
+frontend:
+  enabled: true
+  replicas: 2
+  resources:
+    requests: { cpu: 100m, memory: 256Mi }
+    limits:   { cpu: 1000m, memory: 768Mi }
+  service:
+    type: ClusterIP
+    port: 3000
+
+# ─── Backend ──────────────────────────────────────────────────────────────
+backend:
+  enabled: true
+  replicas: 2
+  resources:
+    requests: { cpu: 200m, memory: 256Mi }
+    limits:   { cpu: 2000m, memory: 1Gi }
+  service:
+    type: ClusterIP
+    port: 8080
+  # MCP_HOST_OVERRIDE empty → backend uses mcp-<id> DNS names, which are the
+  # k8s Service names this chart creates. Leave alone.
+  mcpHostOverride: ""
+
+# ─── Postgres ─────────────────────────────────────────────────────────────
+# Two modes:
+#   1) internal=true  — chart provisions a StatefulSet + PVC (fine for dev/test
+#                       and small prod). NOT recommended for serious prod —
+#                       use the cloud-managed one.
+#   2) internal=false — bring your own DSN via externalUrl. Recommended for
+#                       prod: Cloud SQL (GCP), Azure DB for PostgreSQL,
+#                       AWS RDS / Aurora.
+postgres:
+  internal: true
+  # When internal=true:
+  image: postgres:16-alpine
+  storage:
+    size: 20Gi
+    # storageClass: empty → cluster default (works on GKE/AKS/EKS).
+    # Override with: gp3 (EKS), standard-rwo (GKE), managed-premium (AKS), etc.
+    storageClass: ""
+  resources:
+    requests: { cpu: 200m, memory: 512Mi }
+    limits:   { cpu: 1000m, memory: 2Gi }
+  # When internal=false, set externalUrl to the full DSN.
+  externalUrl: ""   # e.g. postgres://user:pass@10.0.0.5:5432/babagemed?sslmode=require
+
+# ─── MCP servers ──────────────────────────────────────────────────────────
+# 416 MCPs would be too heavy for most clusters. Pick what you need.
+# The "default" preset is the same 47 the laptop/KVM2 stack runs.
+# Override to deploy more or fewer:
+#   --set 'mcps.enabled={pubmed,fda,clinicaltrials}'   # 3 only
+#   --set mcps.preset=all                              # all 416 (heavy)
+mcps:
+  preset: default
+  # When preset != "custom", `enabled` is overridden by the preset list below.
+  enabled: []
+  # Resource limits applied to every MCP unless overridden per-MCP.
+  resourcesApi:
+    requests: { cpu: 50m, memory: 128Mi }
+    limits:   { cpu: 500m, memory: 256Mi }
+  resourcesScrape:
+    requests: { cpu: 100m, memory: 256Mi }
+    limits:   { cpu: 1000m, memory: 512Mi }
+  # All MCPs read the shared .env via the same Secret as the backend.
+  envFromSecret: babagemed-env
+
+# ─── Ingress ──────────────────────────────────────────────────────────────
+# className guidance:
+#   gke      → "gce"              (Google Cloud Load Balancer)
+#   aks      → "nginx" or "azure-application-gateway"
+#   eks      → "alb" (AWS Load Balancer Controller) or "nginx"
+#   generic  → "nginx" (assumes ingress-nginx is installed)
+ingress:
+  enabled: true
+  host: app.babagemed.local
+  className: ""                # filled in from cloud target if empty
+  annotations: {}              # filled in from cloud target if empty
+  tls:
+    enabled: true
+    # Pick ONE strategy:
+    issuer: ""                 # cert-manager ClusterIssuer name (e.g. letsencrypt-prod)
+    existingSecret: ""         # pre-existing TLS secret (mutually exclusive with issuer)
+
+# ─── Secrets ──────────────────────────────────────────────────────────────
+# In production, manage these with sealed-secrets, External Secrets Operator,
+# GCP Secret Manager, AWS Secrets Manager, or Azure Key Vault — not values.yaml.
+# For dev/test, set them here and the chart will create a Secret.
+#
+# If existingSecret is non-empty, the chart will NOT create one, and will
+# assume that secret contains the same keys (see templates/secret.yaml).
+secrets:
+  existingSecret: ""
+  # Core
+  anthropicApiKey: ""
+  googleApiKey: ""
+  openaiApiKey: ""
+  # Postgres password (only used when postgres.internal=true)
+  postgresPassword: "change-me-in-prod"
+  postgresUser: "babagemed"
+  postgresDb: "babagemed"
+  # Optional MCP API keys
+  ncbiApiKey: ""
+  ncbiEmail: "ceo@babagemed.com"
+  openfdaApiKey: ""
+  socrataAppToken: ""
+  # Payments
+  paymobApiKey: ""
+  paymobIntegrationId: ""
+  paymobIframeId: ""
+  paymobHmac: ""
+  paypalEnv: "sandbox"
+  paypalClientId: ""
+  paypalClientSecret: ""
+  paypalWebhookId: ""
+  # Admin
+  bootstrapAdminEmail: ""
+  # Scraping
+  scraperUserAgent: "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36"
+  scraperRateRps: "1"
+  scraperProxyUrl: ""
+
+# ─── Service account ──────────────────────────────────────────────────────
+serviceAccount:
+  create: true
+  name: ""        # auto-generated from release name when empty
+  # On GKE/AKS/EKS, annotate with the workload-identity mapping if you use it.
+  annotations: {}
+
+# ─── Pod scheduling ───────────────────────────────────────────────────────
+nodeSelector: {}
+tolerations: []
+affinity: {}
+
+# ─── Misc ─────────────────────────────────────────────────────────────────
+podSecurityContext:
+  fsGroup: 65532
+securityContext:
+  runAsNonRoot: true
+  runAsUser: 65532
+  readOnlyRootFilesystem: false   # Playwright needs to write to /tmp
+  allowPrivilegeEscalation: false
+  capabilities: { drop: ["ALL"] }

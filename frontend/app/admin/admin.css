@@ -1,0 +1,150 @@
+.admin-shell {
+  min-height: 100vh;
+  padding: 32px 24px 80px;
+  max-width: 1280px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  color: var(--ink);
+}
+.admin-shell h1 {
+  font-family: var(--serif);
+  font-size: 44px;
+  margin: 0;
+}
+.admin-shell .lead { color: var(--muted); margin: 0; }
+.admin-tabs {
+  display: flex;
+  gap: 4px;
+  border-bottom: 1px solid var(--border);
+}
+.admin-tabs button {
+  background: transparent;
+  border: 0;
+  padding: 10px 16px;
+  color: var(--muted);
+  font: inherit;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+}
+.admin-tabs button[data-active="true"] {
+  color: var(--ink);
+  border-bottom-color: var(--cyan);
+}
+
+.admin-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+}
+.admin-stat {
+  background: var(--panel-solid);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 16px;
+}
+.admin-stat .label {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.admin-stat .val {
+  font-family: var(--serif);
+  font-size: 36px;
+  color: var(--ink);
+}
+
+.admin-table-wrap {
+  background: var(--panel-solid);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  overflow: auto;
+}
+.admin-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.admin-table th, .admin-table td {
+  text-align: start;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+.admin-table th {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+  background: var(--panel);
+  position: sticky;
+  top: 0;
+}
+.admin-table tr:hover { background: color-mix(in srgb, var(--ink) 4%, transparent); }
+.admin-table .mono { font-family: var(--mono); font-size: 11px; color: var(--muted-2); }
+.admin-table select, .admin-table input[type="text"] {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 4px 8px;
+  color: var(--ink);
+  font: inherit;
+  font-size: 12px;
+}
+.admin-table button {
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 4px 10px;
+  color: var(--ink-2);
+  font: inherit;
+  font-size: 11px;
+  cursor: pointer;
+}
+.admin-table button.danger { color: var(--purple); border-color: var(--purple-line); background: var(--purple-soft); }
+.admin-table button:hover { border-color: var(--border-strong); }
+.admin-pill {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.admin-pill.free    { background: var(--panel); color: var(--muted); border: 1px solid var(--border); }
+.admin-pill.pro     { background: var(--cyan-soft); color: var(--cyan); border: 1px solid var(--cyan-line); }
+.admin-pill.max     { background: var(--purple-soft); color: var(--purple); border: 1px solid var(--purple-line); }
+.admin-pill.paid    { background: var(--cyan-soft); color: var(--cyan); border: 1px solid var(--cyan-line); }
+.admin-pill.pending { background: var(--yellow-soft); color: var(--yellow); border: 1px solid var(--yellow-line); }
+.admin-pill.failed,
+.admin-pill.refunded{ background: var(--purple-soft); color: var(--purple); border: 1px solid var(--purple-line); }
+.admin-pill.admin   { background: var(--yellow-soft); color: var(--yellow); border: 1px solid var(--yellow-line); }
+
+.admin-toolbar {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+.admin-toolbar input, .admin-toolbar select {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 8px 12px;
+  color: var(--ink);
+  font: inherit;
+}
+.admin-toolbar input[type="search"] { min-width: 280px; flex: 1; }
+.admin-blocked {
+  background: var(--purple-soft);
+  border: 1px solid var(--purple-line);
+  color: var(--purple);
+  padding: 16px;
+  border-radius: 14px;
+}

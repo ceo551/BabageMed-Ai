@@ -1,0 +1,86 @@
+{{/*
+  Generates one Deployment + Service per enabled MCP. The list comes from
+  mcps.preset (default | all | custom) — see _helpers.tpl#babagemed.mcpList.
+  Ports & kinds are read from .Files.Get "mcps-index.json" which is the
+  canonical manifest snapshot shipped alongside the chart.
+*/}}
+{{- $idx := .Files.Get "mcps-index.json" | fromJson -}}
+{{- $list := include "babagemed.mcpList" . | trim | splitList " " -}}
+{{- $ns := .Release.Namespace -}}
+{{- range $id := $list -}}
+{{- $entry := index $idx.byId $id -}}
+{{- if $entry -}}
+{{- $kind := $entry.kind -}}
+{{- $port := int $entry.port -}}
+{{- $imgRegistry := $.Values.image.registry -}}
+{{- $resources := $.Values.mcps.resourcesApi -}}
+{{- if or (eq $kind "scrape") (eq $kind "hybrid") -}}{{- $resources = $.Values.mcps.resourcesScrape -}}{{- end }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mcp-{{ $id }}
+  labels:
+    app.kubernetes.io/name: babagemed
+    app.kubernetes.io/component: mcp
+    babagemed/mcp-id: {{ $id }}
+    babagemed/mcp-kind: {{ $kind }}
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: babagemed
+    app.kubernetes.io/component: mcp
+    babagemed/mcp-id: {{ $id }}
+  ports:
+    - name: http
+      port: {{ $port }}
+      targetPort: {{ $port }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mcp-{{ $id }}
+  labels:
+    app.kubernetes.io/name: babagemed
+    app.kubernetes.io/component: mcp
+    babagemed/mcp-id: {{ $id }}
+    babagemed/mcp-kind: {{ $kind }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: babagemed
+      app.kubernetes.io/component: mcp
+      babagemed/mcp-id: {{ $id }}
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: babagemed
+        app.kubernetes.io/component: mcp
+        babagemed/mcp-id: {{ $id }}
+        babagemed/mcp-kind: {{ $kind }}
+    spec:
+      serviceAccountName: {{ include "babagemed.serviceAccountName" $ }}
+      securityContext: {{- toYaml $.Values.podSecurityContext | nindent 8 }}
+      {{- with $.Values.image.pullSecrets }}
+      imagePullSecrets: {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: mcp
+          image: "{{ $imgRegistry }}/mcp-{{ $id }}:{{ $.Values.image.tag }}"
+          imagePullPolicy: {{ $.Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ $port }}
+          env:
+            - name: HTTP_ONLY
+              value: "1"
+          envFrom:
+            - secretRef: { name: {{ $.Values.mcps.envFromSecret }} }
+          readinessProbe:
+            httpGet: { path: /health, port: http }
+            initialDelaySeconds: 5
+            periodSeconds: 15
+          resources: {{- toYaml $resources | nindent 12 }}
+{{- end -}}
+{{- end -}}

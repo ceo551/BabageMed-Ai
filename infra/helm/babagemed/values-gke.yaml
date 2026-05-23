@@ -1,0 +1,23 @@
+# GKE-specific values overlay. Use with:
+#   helm install babagemed ./infra/helm/babagemed \
+#     -n babagemed --create-namespace \
+#     -f infra/helm/babagemed/values-gke.yaml \
+#     --set image.registry=gcr.io/your-project \
+#     --set ingress.host=app.yourdomain.com \
+#     --set ingress.tls.issuer=letsencrypt-prod \
+#     --set secrets.anthropicApiKey=sk-ant-…
+cloud: gke
+
+ingress:
+  className: "gce"
+  annotations:
+    kubernetes.io/ingress.class: "gce"
+    kubernetes.io/ingress.global-static-ip-name: ""    # set to a reserved IP for stable HTTPS LB
+    networking.gke.io/managed-certificates: ""         # alt to cert-manager: ManagedCertificate
+
+postgres:
+  internal: false
+  externalUrl: ""   # paste your Cloud SQL DSN here: postgres://USER:PASS@10.x.x.x:5432/babagemed?sslmode=disable
+
+# StorageClass defaults to standard-rwo on GKE — keep blank to use it.
+# Use premium-rwo for SSD.

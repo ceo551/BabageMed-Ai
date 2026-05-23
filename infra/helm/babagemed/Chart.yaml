@@ -1,0 +1,18 @@
+apiVersion: v2
+name: babagemed
+description: BabageMed AI — Next.js dashboard, Go backend, Postgres, and 416 Dockerized MCP servers.
+type: application
+version: 0.1.0
+appVersion: "0.1.0"
+icon: https://babagemed.com/icon.png
+sources:
+  - https://github.com/ceo551/babagemed-ai
+maintainers:
+  - name: BabageMed
+    email: ceo@babagemed.com
+keywords:
+  - medical
+  - ai
+  - mcp
+  - nextjs
+  - golang

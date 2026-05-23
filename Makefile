@@ -26,6 +26,7 @@ generate:
 	node scripts/append-medical-mcps.mjs
 	node scripts/generate-mcps.mjs
 	node scripts/write-real-tools.mjs
+	node scripts/generate-helm-index.mjs
 
 up: up-minimal
 

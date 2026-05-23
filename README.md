@@ -121,12 +121,97 @@ Payment webhooks are HMAC-/signature-verified, then persisted: `payments` rows a
 
 If `DATABASE_URL` is unset, the backend still runs — auth and persistence are simply disabled, and the existing public endpoints (MCP, chat, payment initiation) work without persisting transactions.
 
-## Frontend — MCP browser + tester
+## Frontend — MCP browser + tester + admin
 
 - `/mcps` — searchable, filter-by-kind, filter-by-category browse of all 416 MCP servers
 - `/mcps/<id>` — server detail + tool list, with a **dynamic tool tester** that builds a form from each tool's `inputSchema` (handles strings, numbers, booleans, enums, arrays, objects) and calls `POST /api/mcp/call/<id>/<tool>` live, rendering the JSON response inline
 - `/login` and `/signup` — auth pages wired to the cookie-based session
-- Dashboard sidebar now shows the authenticated user's name + plan from `/api/auth/me`, plus a "Sign in / Sign up" pair when anonymous; the existing "Log out" row calls `/api/auth/logout` and clears local state
+- `/admin` — admin-only. Four tabs:
+  - **Overview** — counts of users/admins/sessions/payments (paid/pending/failed)
+  - **Users** — search by email/name, change plan (free/pro/max), grant/revoke admin, delete users (except yourself)
+  - **Payments** — filter by status, change status manually (pending/paid/failed/refunded)
+  - **Sessions** — list active sessions with IP + user-agent, revoke individually
+- Dashboard sidebar shows the authenticated user, hides the Admin link unless `isAdmin` is true, and "Log out" actually clears the cookie + DB session
+
+### Bootstrap your first admin
+
+Set `BOOTSTRAP_ADMIN_EMAIL=you@yourdomain.com` in `.env`. On every backend startup, that email's existing user row is promoted to admin (idempotent — does nothing if the user hasn't signed up yet). Sign up at `/signup` with that email and restart the backend once.
+
+## Kubernetes deployment (GKE / AKS / EKS)
+
+A single cloud-agnostic Helm chart in `infra/helm/babagemed/`. Default install deploys frontend + backend + Postgres + 47 hand-picked MCPs. Override `mcps.preset=all` to deploy all 416 (you'll need a serious cluster).
+
+### One-time: build & push images to your registry
+
+```bash
+# GKE
+REGISTRY=gcr.io/your-project ./infra/k8s/build-and-push.sh
+
+# AKS
+REGISTRY=youracr.azurecr.io ./infra/k8s/build-and-push.sh
+
+# EKS
+REGISTRY=123456789.dkr.ecr.us-east-1.amazonaws.com ./infra/k8s/build-and-push.sh
+```
+
+Builds backend, frontend, and all listed MCP images with `docker buildx`, multi-platform by default (linux/amd64). Use `MCPS="pubmed fda clinicaltrials"` to limit which MCPs to build, `PARALLEL=8` to speed it up.
+
+### Install on GKE
+
+```bash
+helm install babagemed ./infra/helm/babagemed \
+  -n babagemed --create-namespace \
+  -f infra/helm/babagemed/values-gke.yaml \
+  --set image.registry=gcr.io/your-project \
+  --set ingress.host=app.yourdomain.com \
+  --set ingress.tls.issuer=letsencrypt-prod \
+  --set secrets.anthropicApiKey=sk-ant-... \
+  --set secrets.bootstrapAdminEmail=you@yourdomain.com
+```
+
+Point your DNS A record to the GCE LoadBalancer IP (`kubectl get ingress -n babagemed`). cert-manager + a `letsencrypt-prod` ClusterIssuer provisions the cert in ~30 s.
+
+### Install on AKS
+
+```bash
+helm install babagemed ./infra/helm/babagemed \
+  -n babagemed --create-namespace \
+  -f infra/helm/babagemed/values-aks.yaml \
+  --set image.registry=youracr.azurecr.io \
+  --set ingress.host=app.yourdomain.com \
+  --set secrets.anthropicApiKey=sk-ant-...
+```
+
+Requires `ingress-nginx` (or AGIC if you prefer the Azure Application Gateway).
+
+### Install on EKS
+
+```bash
+helm install babagemed ./infra/helm/babagemed \
+  -n babagemed --create-namespace \
+  -f infra/helm/babagemed/values-eks.yaml \
+  --set image.registry=123456789.dkr.ecr.us-east-1.amazonaws.com \
+  --set ingress.host=app.yourdomain.com \
+  --set secrets.anthropicApiKey=sk-ant-...
+```
+
+Requires the **AWS Load Balancer Controller** (for `alb` ingress) and the **EBS CSI driver** (for the `gp3` storage class).
+
+### Common knobs (any cloud)
+
+| Value | Default | Notes |
+|---|---|---|
+| `mcps.preset` | `default` | `default` (47 picks), `all` (416), or `custom` with `mcps.enabled=[...]` |
+| `mcps.enabled` | `[]` | When `preset=custom`, the exact list of MCP IDs to deploy |
+| `postgres.internal` | `true` | `false` → use `postgres.externalUrl` (recommended for prod — Cloud SQL / Azure DB / RDS) |
+| `frontend.replicas` / `backend.replicas` | `2` | Bump on busy clusters |
+| `ingress.host` | `app.babagemed.local` | Your FQDN |
+| `ingress.tls.issuer` | `""` | cert-manager ClusterIssuer name (`letsencrypt-prod`, etc.) |
+| `secrets.existingSecret` | `""` | Set to skip the chart-managed secret and bring your own (sealed-secrets / ESO / Vault) |
+| `image.registry` | `ghcr.io/ceo551` | **Must change** to your registry |
+| `image.pullSecrets` | `[]` | `[{name: regcred}]` for private registries |
+
+For day-to-day ops: `kubectl get pods -n babagemed -l app.kubernetes.io/name=babagemed`. The chart labels everything with `babagemed/mcp-id=<id>` and `babagemed/mcp-kind=<api|scrape|hybrid>` so you can target subsets quickly.
 
 ## Payments
 

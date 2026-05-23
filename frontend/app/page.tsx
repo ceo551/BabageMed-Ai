@@ -326,6 +326,12 @@ function Sidebar({
             <span className="swatch y">{I.bolt}</span>
             <span className="col"><span className="ttl">{s.plans}</span><span className="desc">{s.plansDesc}</span></span>
           </a>
+          {user?.isAdmin && (
+            <a className="tool-row" href="/admin">
+              <span className="swatch p">{I.skills}</span>
+              <span className="col"><span className="ttl">Admin</span><span className="desc">Users · payments · sessions</span></span>
+            </a>
+          )}
           <div className="popover-sep" />
           <button className="tool-row logout" type="button" onClick={async () => { await signOut(); setAccountOpen(false); }}>
             <span className="swatch p">{I.logout}</span>
