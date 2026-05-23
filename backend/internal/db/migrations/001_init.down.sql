@@ -1,0 +1,6 @@
+DROP TABLE IF EXISTS chat_messages;
+DROP TABLE IF EXISTS chats;
+DROP TABLE IF EXISTS payments;
+DROP TABLE IF EXISTS sessions;
+DROP TABLE IF EXISTS users;
+DROP FUNCTION IF EXISTS touch_updated_at();

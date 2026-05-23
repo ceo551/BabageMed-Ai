@@ -78,22 +78,55 @@ Want only a subset? `docker compose -f docker-compose.yml -f docker-compose.mcps
 
 ```
 GET  /health                              → backend + per-MCP up/down
-GET  /api/mcp/servers                     → list all 86
+GET  /api/mcp/servers                     → list all 416
 GET  /api/mcp/servers/{id}                → metadata for one
 GET  /api/mcp/servers/{id}/tools          → its tool schemas
 POST /api/mcp/call/{id}/{tool}            → invoke; body is the tool input
 POST /api/chat                            → orchestrated chat
 POST /api/chat/stream                     → SSE: status/citations/content/done
 
+POST /api/auth/signup                     → {email, password, displayName?} → user + cookie
+POST /api/auth/login                      → {email, password} → user + cookie
+POST /api/auth/logout                     → clears cookie + DB session
+GET  /api/auth/me                         → current user (401 if no session)
+
 GET  /api/payments/plans                  → catalog with EGP + USD pricing
 GET  /api/payments/providers              → which providers are configured
 
 POST /api/payments/paymob/checkout        → returns hosted iframe URL
-POST /api/payments/paymob/webhook?hmac=…  → HMAC-SHA512-verified
+POST /api/payments/paymob/webhook?hmac=…  → HMAC-SHA512-verified + persists transaction
 POST /api/payments/paypal/checkout        → returns approve URL
 POST /api/payments/paypal/capture         → capture after user approves
-POST /api/payments/paypal/webhook         → signature-verified via PayPal API
+POST /api/payments/paypal/webhook         → signature-verified + persists transaction
 ```
+
+## Auth & persistence (Postgres)
+
+The backend now requires Postgres for auth + persistence. `docker-compose.yml` ships a `postgres:16-alpine` service with health-check, named volume `postgres_data`, and an `babagemed`/`babagemed` default user/db.
+
+Migrations run automatically at backend startup from embedded SQL in `backend/internal/db/migrations/`. Currently:
+
+| Table | Purpose |
+|---|---|
+| `users`          | id, email (unique), bcrypt password_hash, display_name, plan (`free`/`pro`/`max`), is_admin, timestamps |
+| `sessions`       | id, user_id, token_hash (SHA-256 of opaque random token), user_agent, ip, expires_at |
+| `payments`       | id, user_id, provider (`paymob`/`paypal`), external_id, plan_id, amount_minor, currency, status (`pending`/`paid`/`failed`/`refunded`), raw JSONB, unique (provider, external_id) |
+| `chats`          | id, user_id, title, model, mode, timestamps |
+| `chat_messages`  | id, chat_id, role (`user`/`assistant`/`system`), content, citations JSONB, meta JSONB |
+| `schema_migrations` | tracks applied migration filenames |
+
+Sessions are opaque random tokens (32 random bytes → base64url), stored as SHA-256 hashes in the DB. They're sent as `HttpOnly` cookies (`babagemed_session`) with `Secure` enabled automatically behind a TLS reverse-proxy. TTL: 30 days.
+
+Payment webhooks are HMAC-/signature-verified, then persisted: `payments` rows are upserted by `(provider, external_id)` and marked `paid` when the provider confirms. When the original `/checkout` was made by an authenticated user, that user's plan auto-bumps to `pro` / `max` on confirmation.
+
+If `DATABASE_URL` is unset, the backend still runs — auth and persistence are simply disabled, and the existing public endpoints (MCP, chat, payment initiation) work without persisting transactions.
+
+## Frontend — MCP browser + tester
+
+- `/mcps` — searchable, filter-by-kind, filter-by-category browse of all 416 MCP servers
+- `/mcps/<id>` — server detail + tool list, with a **dynamic tool tester** that builds a form from each tool's `inputSchema` (handles strings, numbers, booleans, enums, arrays, objects) and calls `POST /api/mcp/call/<id>/<tool>` live, rendering the JSON response inline
+- `/login` and `/signup` — auth pages wired to the cookie-based session
+- Dashboard sidebar now shows the authenticated user's name + plan from `/api/auth/me`, plus a "Sign in / Sign up" pair when anonymous; the existing "Log out" row calls `/api/auth/logout` and clears local state
 
 ## Payments
 

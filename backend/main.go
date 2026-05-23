@@ -10,6 +10,8 @@ import (
 	"time"
 
 	"github.com/babagemed/backend/internal/api"
+	"github.com/babagemed/backend/internal/auth"
+	"github.com/babagemed/backend/internal/db"
 	"github.com/babagemed/backend/internal/llm"
 	"github.com/babagemed/backend/internal/mcp"
 	"github.com/babagemed/backend/internal/payments"
@@ -24,9 +26,7 @@ func main() {
 
 	registry, err := mcp.NewRegistry("scripts/mcps.manifest.json")
 	if err != nil {
-		// fall back to looking in /app or parent
-		alt := []string{"/app/mcps.manifest.json", "../scripts/mcps.manifest.json", "mcps.manifest.json"}
-		for _, p := range alt {
+		for _, p := range []string{"/app/mcps.manifest.json", "../scripts/mcps.manifest.json", "mcps.manifest.json"} {
 			registry, err = mcp.NewRegistry(p)
 			if err == nil {
 				break
@@ -38,13 +38,34 @@ func main() {
 	}
 	log.Printf("loaded %d MCP servers from manifest", len(registry.Servers()))
 
+	// Database — optional. Backend runs without it; auth + persistence are disabled.
+	var dbConn *db.DB
+	var authSvc *auth.Service
+	var payStore *payments.Store
+	if dsn := os.Getenv("DATABASE_URL"); dsn != "" {
+		ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+		defer cancel()
+		dbConn, err = db.Open(ctx, dsn)
+		if err != nil {
+			log.Fatalf("db open: %v", err)
+		}
+		if err := dbConn.Migrate(ctx); err != nil {
+			log.Fatalf("db migrate: %v", err)
+		}
+		log.Printf("db connected, migrations up")
+		authSvc = auth.New(dbConn)
+		payStore = payments.NewStore(dbConn)
+	} else {
+		log.Printf("DATABASE_URL not set — auth + persistence disabled")
+	}
+
 	llmClient := llm.NewClient(llm.Config{
 		AnthropicKey: os.Getenv("ANTHROPIC_API_KEY"),
 		GoogleKey:    os.Getenv("GOOGLE_API_KEY"),
 		OpenAIKey:    os.Getenv("OPENAI_API_KEY"),
 	})
 
-	h := api.NewHandler(registry, llmClient)
+	apiH := api.NewHandler(registry, llmClient)
 
 	r := chi.NewRouter()
 	r.Use(middleware.RequestID)
@@ -57,20 +78,36 @@ func main() {
 		AllowedMethods:   []string{"GET", "POST", "OPTIONS"},
 		AllowedHeaders:   []string{"*"},
 		ExposedHeaders:   []string{"Content-Type"},
-		AllowCredentials: false,
+		AllowCredentials: true,
 		MaxAge:           300,
 	}))
+	if authSvc != nil {
+		r.Use(authSvc.Optional)
+	}
 
-	r.Get("/health", h.Health)
-	r.Get("/api/mcp/servers", h.ListServers)
-	r.Get("/api/mcp/servers/{id}", h.GetServer)
-	r.Get("/api/mcp/servers/{id}/tools", h.ListTools)
-	r.Post("/api/mcp/call/{id}/{tool}", h.CallTool)
+	r.Get("/health", apiH.Health)
 
-	r.Post("/api/chat", h.Chat)
-	r.Post("/api/chat/stream", h.ChatStream)
+	// MCP browse + call — anonymous-readable
+	r.Get("/api/mcp/servers", apiH.ListServers)
+	r.Get("/api/mcp/servers/{id}", apiH.GetServer)
+	r.Get("/api/mcp/servers/{id}/tools", apiH.ListTools)
+	r.Post("/api/mcp/call/{id}/{tool}", apiH.CallTool)
 
-	payments.NewHandler().Register(r)
+	// Chat — usable anonymously, but if auth is on we'll persist messages.
+	r.Post("/api/chat", apiH.Chat)
+	r.Post("/api/chat/stream", apiH.ChatStream)
+
+	// Auth + persistence (DB-backed)
+	if authSvc != nil {
+		auth.NewHandler(authSvc).Register(r)
+	}
+
+	// Payments
+	payH := payments.NewHandler()
+	if payStore != nil {
+		payH.WithStore(payStore)
+	}
+	payH.Register(r)
 
 	port := os.Getenv("PORT")
 	if port == "" {
@@ -91,4 +128,7 @@ func main() {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	_ = srv.Shutdown(ctx)
+	if dbConn != nil {
+		dbConn.Close()
+	}
 }

@@ -1,5 +1,24 @@
 name: babagemed
 services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: babagemed-postgres
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-babagemed}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-babagemed}
+      POSTGRES_DB: ${POSTGRES_DB:-babagemed}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-babagemed}"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    networks: [babagemed]
+
   backend:
     build:
       context: .
@@ -10,14 +29,20 @@ services:
     environment:
       PORT: "8080"
       MCP_HOST_OVERRIDE: ""
+      DATABASE_URL: ${DATABASE_URL:-postgres://babagemed:babagemed@postgres:5432/babagemed?sslmode=disable}
     ports:
       - "8080:8080"
     restart: unless-stopped
     networks: [babagemed]
     depends_on:
-      - mcp-pubmed
-      - mcp-clinicaltrials
-      - mcp-fda
+      postgres:
+        condition: service_healthy
+      mcp-pubmed:
+        condition: service_started
+      mcp-clinicaltrials:
+        condition: service_started
+      mcp-fda:
+        condition: service_started
 
   frontend:
     build:
@@ -34,6 +59,9 @@ services:
     restart: unless-stopped
     networks: [babagemed]
     depends_on: [backend]
+
+volumes:
+  postgres_data:
 
 networks:
   babagemed:

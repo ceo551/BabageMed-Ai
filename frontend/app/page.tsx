@@ -1,8 +1,10 @@
 "use client";
 
+import Link from "next/link";
 import React, { useEffect, useRef, useState } from "react";
 import { STR, MODELS, type Locale, type LocaleStrings } from "./i18n";
 import { I } from "./icons";
+import { useAuth } from "./lib/auth-context";
 
 type Theme = "light" | "dark" | "system";
 
@@ -78,11 +80,21 @@ function Sidebar({
   setTheme: (t: Theme) => void;
   effectiveTheme: "light" | "dark";
 }) {
+  const { user, signOut } = useAuth();
   const [toolsOpen, setToolsOpen] = useState(false);
   const [recentsOpen, setRecentsOpen] = useState(false);
   const [spacesOpen, setSpacesOpen] = useState(false);
   const [accountOpen, setAccountOpen] = useState(false);
   const [subOpen, setSubOpen] = useState<null | "appearance" | "language">(null);
+
+  const displayName = user?.displayName || user?.email?.split("@")[0] || s.user;
+  const planLabel   = user ? `${user.plan} plan` : s.plan;
+  const initials    = (user?.displayName || user?.email || "AR")
+    .split(/\s+|@/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((w) => w[0]?.toUpperCase())
+    .join("") || "AR";
   const [popStyle, setPopStyle] = useState<React.CSSProperties>({});
   const [recentsPopStyle, setRecentsPopStyle] = useState<React.CSSProperties>({});
   const [spacesPopStyle, setSpacesPopStyle] = useState<React.CSSProperties>({});
@@ -205,17 +217,29 @@ function Sidebar({
           <span className="lbl">{s.recent}</span>
           <span className="trail-chev">{I.chevR}</span>
         </button>
+        <Link href="/mcps" className="sb-row" style={{ textDecoration: "none" }}>
+          {I.connectors}
+          <span className="lbl">MCPs</span>
+          <span className="trail-chev">{I.chevR}</span>
+        </Link>
       </div>
 
       <div className="sb-foot">
-        <button ref={accountBtn} className="sb-account" type="button" data-active={accountOpen} onClick={toggleAccount} aria-expanded={accountOpen}>
-          <span className="av">AR</span>
-          <span className="who">
-            <span className="nm">{s.user}</span>
-            <span className="pl">{s.plan}</span>
-          </span>
-          <span className="chev">{I.chevR}</span>
-        </button>
+        {user ? (
+          <button ref={accountBtn} className="sb-account" type="button" data-active={accountOpen} onClick={toggleAccount} aria-expanded={accountOpen}>
+            <span className="av">{initials}</span>
+            <span className="who">
+              <span className="nm">{displayName}</span>
+              <span className="pl">{planLabel}</span>
+            </span>
+            <span className="chev">{I.chevR}</span>
+          </button>
+        ) : (
+          <div style={{ display: "flex", gap: 6 }}>
+            <Link href="/login"  className="sb-row" style={{ flex: 1, justifyContent: "center", textDecoration: "none", borderColor: "var(--border)", border: "1px solid var(--border)" }}>Sign in</Link>
+            <Link href="/signup" className="sb-row" style={{ flex: 1, justifyContent: "center", textDecoration: "none", background: "var(--cyan-soft)", color: "var(--cyan)", border: "1px solid var(--cyan-line)" }}>Sign up</Link>
+          </div>
+        )}
       </div>
 
       {toolsOpen && (
@@ -273,8 +297,8 @@ function Sidebar({
       {accountOpen && (
         <div ref={accountPop} className="tools-pop account-pop" style={accountPopStyle} role="menu">
           <div className="tool-row" style={{ pointerEvents: "none" }}>
-            <span className="av" style={{ width: 32, height: 32, borderRadius: "50%", background: "linear-gradient(135deg,var(--cyan),var(--purple))", display: "inline-flex", alignItems: "center", justifyContent: "center", color: "white", fontWeight: 700, fontSize: 13 }}>AR</span>
-            <span className="col"><span className="ttl">{s.user}</span><span className="desc">{s.plan}</span></span>
+            <span className="av" style={{ width: 32, height: 32, borderRadius: "50%", background: "linear-gradient(135deg,var(--cyan),var(--purple))", display: "inline-flex", alignItems: "center", justifyContent: "center", color: "white", fontWeight: 700, fontSize: 13 }}>{initials}</span>
+            <span className="col"><span className="ttl">{displayName}</span><span className="desc">{user?.email || planLabel}</span></span>
           </div>
           <div className="popover-sep" />
           <button className="tool-row" type="button" data-active={subOpen === "appearance"} onClick={(e) => openSub(subOpen === "appearance" ? null : "appearance", e)}>
@@ -303,7 +327,7 @@ function Sidebar({
             <span className="col"><span className="ttl">{s.plans}</span><span className="desc">{s.plansDesc}</span></span>
           </a>
           <div className="popover-sep" />
-          <button className="tool-row logout" type="button">
+          <button className="tool-row logout" type="button" onClick={async () => { await signOut(); setAccountOpen(false); }}>
             <span className="swatch p">{I.logout}</span>
             <span className="col"><span className="ttl">{s.logout}</span><span className="desc">{s.logoutDesc}</span></span>
           </button>

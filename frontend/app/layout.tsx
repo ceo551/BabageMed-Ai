@@ -1,9 +1,10 @@
 import "./tokens.css";
 import "./dashboard.css";
+import { AuthProvider } from "./lib/auth-context";
 
 export const metadata = {
   title: "BabageMed AI · Dashboard",
-  description: "BabageMed AI — medical reasoning with 86 connected MCP servers.",
+  description: "BabageMed AI — medical reasoning with 416 connected MCP servers.",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -17,7 +18,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&family=Amiri:ital@0;1&display=swap"
         />
       </head>
-      <body>{children}</body>
+      <body>
+        <AuthProvider>{children}</AuthProvider>
+      </body>
     </html>
   );
 }
