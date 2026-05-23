@@ -303,6 +303,59 @@ Three GitHub Actions workflows live in `.github/workflows/`:
 
 See `.github/README.md` for the full breakdown and the env vars / secrets each workflow expects (`REGISTRY`, `GITOPS_TOKEN`, `ARGOCD_WEBHOOK_URL`, …).
 
+## Distributed tracing & logs (OpenTelemetry + Loki + Tempo)
+
+Every Go and Node service is OTel-aware. When `OTEL_EXPORTER_OTLP_ENDPOINT` is set (or `OTEL_TRACING_ENABLED=true`), traces flow to your collector / Tempo automatically.
+
+- **Backend** (`backend/internal/tracing`) — OTLP exporter (gRPC by default, HTTP via `OTEL_EXPORTER_OTLP_PROTOCOL=http/protobuf`). `otelchi` instruments every chi route; `otelhttp.Transport` wraps the MCP-proxy client and the LLM client so trace context propagates to downstream services. A small `PgxQueryTracer` wraps every `pgx` query in a span tagged with `db.statement`.
+- **MCPs** (`packages/mcp-base/src/tracing.ts`) — dynamic import of `@opentelemetry/sdk-node` + `auto-instrumentations-node`. Every tool handler runs inside a span (`mcp.tool.<name>`) with attributes `mcp.id`, `mcp.kind`, `mcp.tool`. HTTP server + outgoing fetch + undici are auto-instrumented, so a single chat request shows up as one trace: backend → mcp-pubmed → eutils.ncbi.nlm.nih.gov.
+- **Logs** — both the Go log formatter and the mcp-base structured logger now include `trace_id` and `span_id` whenever a span is active. Logs are JSON-formatted on stderr.
+- **Sampling** — defaults to 100%. Set `tracing.samplingRate` in Helm (or `OTEL_TRACES_SAMPLER_ARG`) to e.g. `0.1` for prod.
+
+### Helm switches
+
+```bash
+helm upgrade babagemed ./infra/helm/babagemed --reuse-values \
+  --set tracing.enabled=true \
+  --set tracing.endpoint=opentelemetry-collector.observability:4317 \
+  --set tracing.protocol=grpc \
+  --set tracing.samplingRate=0.1 \
+  --set logging.promtailSnippet.enabled=true
+```
+
+The `tracing` block populates `OTEL_*` env vars in the shared Secret, so backend and every MCP get them via `envFrom`. Each Deployment additionally sets `OTEL_SERVICE_NAME` (`babagemed-backend` / `babagemed-mcp-<id>`) and `K8S_POD_NAME` from the downward API.
+
+### Loki + log-to-trace correlation
+
+This chart doesn't ship Loki — point your existing Promtail / Grafana Alloy DaemonSet at the cluster. When `logging.promtailSnippet.enabled=true` the chart creates a ConfigMap with two ready-to-use snippets:
+
+- `babagemed-scrape.yaml` — kubernetes_sd scrape config that selects babagemed pods, parses JSON logs, and promotes `trace_id`, `span_id`, `lvl`, `svc`, `mcp_id`, `mcp_kind`, `component` to Loki labels.
+- `grafana-loki-derived-fields.yaml` — `derivedFields` block to paste into your Loki datasource so `trace_id` in any log line becomes a clickable link to the matching trace in Tempo.
+
+The Grafana dashboard now has a Logs panel + `$DS_LOKI` and `$DS_TEMPO` template variables — pick your datasources from the dropdowns once and the per-MCP drilldown lights up with both timeseries and the last 100 log lines.
+
+### Quick local test (without K8s)
+
+```bash
+# 1. Spin up a Jaeger all-in-one (UI on :16686, OTLP on :4317)
+docker run -d --rm --name jaeger -p 16686:16686 -p 4317:4317 \
+  jaegertracing/all-in-one:latest
+
+# 2. Backend
+OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4317 \
+OTEL_EXPORTER_OTLP_PROTOCOL=grpc \
+OTEL_TRACING_ENABLED=true \
+  ./backend/bin/backend
+
+# 3. An MCP
+cd mcps/pubmed && OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4317 \
+  HTTP_ONLY=1 node dist/index.js
+
+# 4. Hit the backend → see the trace in http://localhost:16686
+curl -s -X POST http://localhost:8080/api/mcp/call/pubmed/search \
+  -d '{"query":"hypertension"}'
+```
+
 ## Payments
 
 Two providers wired up, no other dependencies:

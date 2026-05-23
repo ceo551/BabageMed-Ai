@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/babagemed/backend/internal/metrics"
+	"github.com/babagemed/backend/internal/tracing"
 )
 
 type Config struct {
@@ -26,7 +27,7 @@ type Client struct {
 }
 
 func NewClient(cfg Config) *Client {
-	return &Client{cfg: cfg, http: &http.Client{Timeout: 120 * time.Second}}
+	return &Client{cfg: cfg, http: tracing.HTTPClient(&http.Client{Timeout: 120 * time.Second})}
 }
 
 type Message struct {

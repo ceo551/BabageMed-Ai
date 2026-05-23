@@ -17,14 +17,22 @@ import (
 	"github.com/babagemed/backend/internal/mcp"
 	"github.com/babagemed/backend/internal/metrics"
 	"github.com/babagemed/backend/internal/payments"
+	"github.com/babagemed/backend/internal/tracing"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
 	"github.com/joho/godotenv"
+	"github.com/riandyrn/otelchi"
 )
 
 func main() {
 	_ = godotenv.Load()
+
+	// Tracing — picks up OTEL_EXPORTER_OTLP_ENDPOINT etc. or stays a no-op.
+	shutdownTracing, err := tracing.Init(context.Background(), "babagemed-backend", "0.1.0")
+	if err != nil {
+		log.Printf("tracing init: %v", err)
+	}
 
 	registry, err := mcp.NewRegistry("scripts/mcps.manifest.json")
 	if err != nil {
@@ -86,6 +94,10 @@ func main() {
 	r := chi.NewRouter()
 	r.Use(middleware.RequestID)
 	r.Use(middleware.RealIP)
+	if tracing.Enabled() {
+		r.Use(otelchi.Middleware("babagemed-backend", otelchi.WithChiRoutes(r)))
+	}
+	r.Use(tracing.TraceIDHeader)
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
 	r.Use(middleware.Timeout(60 * time.Second))
@@ -149,5 +161,8 @@ func main() {
 	_ = srv.Shutdown(ctx)
 	if dbConn != nil {
 		dbConn.Close()
+	}
+	if shutdownTracing != nil {
+		_ = shutdownTracing(ctx)
 	}
 }

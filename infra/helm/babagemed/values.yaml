@@ -112,6 +112,39 @@ mcps:
       maxReplicas: 3
       targetCPUUtilizationPercentage: 80
 
+# ─── Tracing (OpenTelemetry) ──────────────────────────────────────────────
+# When enabled, every backend + MCP container gets OTEL_* env vars pointing
+# at the collector endpoint. The SDK is dormant unless these are present,
+# so off-by-default keeps cold-start fast.
+#
+# Typical setup: install the OpenTelemetry Collector (or Grafana Alloy /
+# Tempo Distributor) in the same cluster and point endpoint at its OTLP
+# service. Examples:
+#   GKE   → opentelemetry-collector.observability.svc.cluster.local:4317
+#   AKS   → otel-collector.monitoring.svc.cluster.local:4317
+#   EKS   → otel-collector.adot.svc.cluster.local:4317
+#   Grafana Tempo (distributor):
+#         tempo-distributor.monitoring.svc.cluster.local:4317
+tracing:
+  enabled: false
+  protocol: grpc          # "grpc" → :4317, "http/protobuf" → :4318
+  endpoint: ""            # e.g. otel-collector.observability.svc.cluster.local:4317
+  insecure: true          # in-cluster traffic; flip for cross-cluster TLS
+  samplingRate: "1.0"     # 0.0..1.0; 0.1 = 10% sampled
+
+# ─── Logs (Loki via Promtail / Grafana Alloy) ─────────────────────────────
+# This chart doesn't install Loki — point your Promtail/Alloy at the same
+# cluster. The values below produce a ConfigMap with a ready-to-use
+# scrape-config snippet that parses the JSON logs the backend and MCPs
+# emit and extracts trace_id / span_id / mcp_id as Loki labels so logs
+# can be linked to traces in Grafana.
+logging:
+  promtailSnippet:
+    enabled: false
+    # ConfigMap name + key the snippet lands in. Mount it into your
+    # Promtail/Alloy deployment as needed.
+    configMap: babagemed-promtail-snippet
+
 # ─── Monitoring (Prometheus + Grafana) ────────────────────────────────────
 # Requires the prometheus-operator (kube-prometheus-stack) CRDs to be
 # installed for ServiceMonitor + PrometheusRule. The Grafana dashboard is

@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/babagemed/backend/internal/metrics"
+	"github.com/babagemed/backend/internal/tracing"
 )
 
 type Server struct {
@@ -48,7 +49,8 @@ func NewRegistry(path string) (*Registry, error) {
 	r := &Registry{
 		byID:   map[string]Server{},
 		all:    m.Servers,
-		client: &http.Client{Timeout: 60 * time.Second},
+		// otelhttp wraps the transport so the trace context propagates to MCPs.
+		client: tracing.HTTPClient(&http.Client{Timeout: 60 * time.Second}),
 		hostFor: func(s Server) string {
 			h := os.Getenv("MCP_HOST_OVERRIDE")
 			if h != "" {

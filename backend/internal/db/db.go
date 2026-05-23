@@ -9,6 +9,7 @@ import (
 	"sort"
 	"time"
 
+	"github.com/babagemed/backend/internal/tracing"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -31,6 +32,9 @@ func Open(ctx context.Context, dsn string) (*DB, error) {
 	cfg.MaxConnIdleTime = 5 * time.Minute
 	cfg.HealthCheckPeriod = 30 * time.Second
 	cfg.ConnConfig.ConnectTimeout = 10 * time.Second
+	if tracing.Enabled() {
+		cfg.ConnConfig.Tracer = tracing.PgxQueryTracer{}
+	}
 
 	pool, err := pgxpool.NewWithConfig(ctx, cfg)
 	if err != nil {

@@ -75,6 +75,10 @@ spec:
           env:
             - name: HTTP_ONLY
               value: "1"
+            - name: OTEL_SERVICE_NAME
+              value: "babagemed-mcp-{{ $id }}"
+            - name: K8S_POD_NAME
+              valueFrom: { fieldRef: { fieldPath: metadata.name } }
           envFrom:
             - secretRef: { name: {{ $.Values.mcps.envFromSecret }} }
           readinessProbe:

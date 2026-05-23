@@ -127,6 +127,19 @@
       "targets": [
         { "expr": "sum by (mcp_id, tool, outcome) (rate(mcp_tool_calls_total{mcp_id=~\"$mcp\"}[$__rate_interval]))", "format": "table", "instant": true }
       ]
+    },
+    {
+      "title": "Logs — last 100 lines for $mcp (Loki)",
+      "type": "logs",
+      "gridPos": { "x": 0, "y": 52, "w": 24, "h": 12 },
+      "datasource": { "type": "loki", "uid": "${DS_LOKI}" },
+      "targets": [
+        {
+          "expr": "{namespace=~\".*babagemed.*\", mcp_id=~\"$mcp\"} | json | line_format \"{{.lvl}} {{.msg}} (trace_id={{.trace_id}})\"",
+          "refId": "A"
+        }
+      ],
+      "options": { "showTime": true, "wrapLogMessage": true, "dedupStrategy": "none" }
     }
   ],
   "schemaVersion": 39,
@@ -138,6 +151,18 @@
         "type": "datasource",
         "query": "prometheus",
         "current": { "selected": false, "text": "Prometheus", "value": "Prometheus" }
+      },
+      {
+        "name": "DS_LOKI",
+        "type": "datasource",
+        "query": "loki",
+        "current": { "selected": false, "text": "Loki", "value": "Loki" }
+      },
+      {
+        "name": "DS_TEMPO",
+        "type": "datasource",
+        "query": "tempo",
+        "current": { "selected": false, "text": "Tempo", "value": "Tempo" }
       },
       {
         "name": "mcp",

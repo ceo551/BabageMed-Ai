@@ -3,6 +3,7 @@ import { createServer, IncomingMessage, ServerResponse } from "node:http";
 import { McpServerInfo, McpToolDef, JsonRpcRequest, JsonRpcResponse, ToolContext } from "./types.js";
 import { createLogger } from "./logger.js";
 import { McpMetrics } from "./metrics.js";
+import { withSpan } from "./tracing.js";
 
 function zodToJsonSchema(schema: ZodTypeAny): unknown {
   // Minimal Zod -> JSON Schema; we use Zod's `.describe` and shapes for primitive cases.
@@ -71,16 +72,22 @@ export class McpServer {
       log: (lvl, msg, meta) => (this.log as any)[lvl](msg, meta),
     };
     const stop = this.metrics.toolDuration.startTimer({ tool: name });
-    try {
-      const out = await t.handler(parsed.data as any, ctx);
-      this.metrics.toolCalls.inc({ tool: name, outcome: "ok" });
-      stop({ outcome: "ok" });
-      return out;
-    } catch (e) {
-      this.metrics.toolCalls.inc({ tool: name, outcome: "error" });
-      stop({ outcome: "error" });
-      throw e;
-    }
+    return withSpan(
+      `mcp.tool.${name}`,
+      { "mcp.id": this.info.id, "mcp.name": this.info.name, "mcp.tool": name, "mcp.kind": this.info.kind },
+      async () => {
+        try {
+          const out = await t.handler(parsed.data as any, ctx);
+          this.metrics.toolCalls.inc({ tool: name, outcome: "ok" });
+          stop({ outcome: "ok" });
+          return out;
+        } catch (e) {
+          this.metrics.toolCalls.inc({ tool: name, outcome: "error" });
+          stop({ outcome: "error" });
+          throw e;
+        }
+      },
+    );
   }
 
   private listToolsForRpc() {
@@ -224,6 +231,8 @@ export class McpServer {
 
   /** Run both transports unless STDIO_ONLY=1 or HTTP_ONLY=1 is set. */
   run() {
+    // Lazy import so tracing doesn't load unless enabled.
+    import("./tracing.js").then(({ startTracing }) => startTracing(`babagemed-mcp-${this.info.id}`, this.info.version)).catch(() => {});
     const stdio = process.env.HTTP_ONLY !== "1";
     const http = process.env.STDIO_ONLY !== "1";
     if (stdio) this.startStdio();

@@ -1,3 +1,5 @@
+import { currentSpanIds } from "./tracing.js";
+
 type Level = "debug" | "info" | "warn" | "error";
 
 const LEVEL_RANK: Record<Level, number> = { debug: 10, info: 20, warn: 30, error: 40 };
@@ -12,6 +14,9 @@ export function createLogger(name: string) {
       lvl: level,
       svc: name,
       msg,
+      // Promtail/Alloy json pipeline_stages extracts these; Grafana
+      // derivedFields then linkifies trace_id → Tempo.
+      ...currentSpanIds(),
       ...(meta ? { meta } : {}),
     };
     // stdout reserved for MCP stdio protocol; logs go to stderr
