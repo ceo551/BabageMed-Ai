@@ -1,11 +1,10 @@
-# syntax=docker/dockerfile:1.6
 # Build stage — context is repo root
 FROM node:20-bookworm-slim AS build
 WORKDIR /build
 # Shared base — gets its own layer so it caches across all 86 MCPs
 COPY packages/mcp-base/package.json packages/mcp-base/tsconfig.json /build/packages/mcp-base/
 COPY packages/mcp-base/src /build/packages/mcp-base/src
-RUN --mount=type=cache,target=/root/.npm \
+RUN \
     cd /build/packages/mcp-base && npm install --no-audit --no-fund && npx tsc -p tsconfig.json
 # This MCP — placed at /build/mcps/epa-psych/ so file:../../packages/mcp-base resolves
 WORKDIR /build/mcps/epa-psych
@@ -13,7 +12,7 @@ COPY mcps/epa-psych/package.json mcps/epa-psych/tsconfig.json ./
 COPY mcps/epa-psych/src ./src
 # Shared helpers (e.g. Google OAuth) — pulled in by gmail/gcal/gdrive
 COPY mcps/_shared /build/mcps/_shared
-RUN --mount=type=cache,target=/root/.npm \
+RUN \
     npm install --no-audit --no-fund && npx tsc -p tsconfig.json
 
 FROM mcr.microsoft.com/playwright:v1.49.0-jammy

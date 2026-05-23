@@ -96,14 +96,16 @@ function dockerfile(s) {
   // Build context = repo root (see docker-compose.mcps.yml). The MCP source is
   // placed at /build/mcps/<id>/ so its package.json "file:../../packages/mcp-base"
   // path resolves to /build/packages/mcp-base/ at install time.
-  const common = `# syntax=docker/dockerfile:1.6
-# Build stage — context is repo root
+  const common = `# Build stage — context is repo root
+# NOTE: kept BuildKit-free (no \`# syntax=\` directive, no \`--mount=type=cache\`)
+# so this Dockerfile builds on classic Docker engines too — e.g. ACR Tasks
+# without explicit BuildKit opt-in.
 FROM node:20-bookworm-slim AS build
 WORKDIR /build
 # Shared base — gets its own layer so it caches across all 86 MCPs
 COPY packages/mcp-base/package.json packages/mcp-base/tsconfig.json /build/packages/mcp-base/
 COPY packages/mcp-base/src /build/packages/mcp-base/src
-RUN --mount=type=cache,target=/root/.npm \\
+RUN \\
     cd /build/packages/mcp-base && npm install --no-audit --no-fund && npx tsc -p tsconfig.json
 # This MCP — placed at /build/mcps/${s.id}/ so file:../../packages/mcp-base resolves
 WORKDIR /build/mcps/${s.id}
@@ -111,7 +113,7 @@ COPY mcps/${s.id}/package.json mcps/${s.id}/tsconfig.json ./
 COPY mcps/${s.id}/src ./src
 # Shared helpers (e.g. Google OAuth) — pulled in by gmail/gcal/gdrive
 COPY mcps/_shared /build/mcps/_shared
-RUN --mount=type=cache,target=/root/.npm \\
+RUN \\
     npm install --no-audit --no-fund && npx tsc -p tsconfig.json
 `;
   return needsBrowser
