@@ -1,0 +1,53 @@
+# ApplicationSet — fans out one Application per (cluster, environment) pair.
+# Useful if you run staging + prod, or one cluster per cloud (GKE + AKS + EKS).
+# Apply once: `kubectl apply -f infra/gitops/argocd/applicationset.yaml -n argocd`
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: babagemed
+  namespace: argocd
+spec:
+  generators:
+    - list:
+        elements:
+          - env: staging
+            cluster: https://kubernetes.default.svc
+            namespace: babagemed-staging
+            valueFile: values.yaml
+            host: app.staging.babagemed.example
+            issuer: letsencrypt-staging
+            registry: ghcr.io/ceo551
+          - env: prod-gke
+            cluster: https://kubernetes.default.svc
+            namespace: babagemed
+            valueFile: values-gke.yaml
+            host: app.babagemed.example
+            issuer: letsencrypt-prod
+            registry: gcr.io/your-project
+          # Add prod-aks, prod-eks similarly.
+  template:
+    metadata:
+      name: 'babagemed-{{env}}'
+      finalizers: [resources-finalizer.argocd.argoproj.io]
+    spec:
+      project: babagemed
+      source:
+        repoURL: https://github.com/ceo551/babagemed-ai
+        targetRevision: main
+        path: infra/helm/babagemed
+        helm:
+          valueFiles:
+            - '{{valueFile}}'
+          parameters:
+            - { name: image.registry,         value: '{{registry}}' }
+            - { name: ingress.host,           value: '{{host}}' }
+            - { name: ingress.tls.issuer,     value: '{{issuer}}' }
+            - { name: networkPolicy.enabled,  value: "true" }
+            - { name: backend.autoscaling.enabled,  value: "true" }
+            - { name: frontend.autoscaling.enabled, value: "true" }
+      destination:
+        server: '{{cluster}}'
+        namespace: '{{namespace}}'
+      syncPolicy:
+        automated: { prune: true, selfHeal: true }
+        syncOptions: [ CreateNamespace=true, ServerSideApply=true ]

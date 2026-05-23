@@ -31,6 +31,11 @@ frontend:
   service:
     type: ClusterIP
     port: 3000
+  autoscaling:
+    enabled: false
+    minReplicas: 2
+    maxReplicas: 10
+    targetCPUUtilizationPercentage: 70
 
 # ─── Backend ──────────────────────────────────────────────────────────────
 backend:
@@ -45,6 +50,12 @@ backend:
   # MCP_HOST_OVERRIDE empty → backend uses mcp-<id> DNS names, which are the
   # k8s Service names this chart creates. Leave alone.
   mcpHostOverride: ""
+  autoscaling:
+    enabled: false
+    minReplicas: 2
+    maxReplicas: 20
+    targetCPUUtilizationPercentage: 70
+    targetMemoryUtilizationPercentage: 80
 
 # ─── Postgres ─────────────────────────────────────────────────────────────
 # Two modes:
@@ -88,6 +99,33 @@ mcps:
     limits:   { cpu: 1000m, memory: 512Mi }
   # All MCPs read the shared .env via the same Secret as the backend.
   envFromSecret: babagemed-env
+  # Per-MCP autoscaling. Off by default — most clusters won't have metrics
+  # for each of 416 deployments. Turn on selectively.
+  autoscaling:
+    enabled: false
+    api:
+      minReplicas: 1
+      maxReplicas: 5
+      targetCPUUtilizationPercentage: 75
+    scrape:
+      minReplicas: 1
+      maxReplicas: 3
+      targetCPUUtilizationPercentage: 80
+
+# ─── NetworkPolicy ────────────────────────────────────────────────────────
+# Zero-trust namespace: default-deny + per-component allow rules.
+# Frontend ← ingress controller only; Backend ← frontend + ingress;
+# Postgres ← backend only; MCPs ← backend only (no MCP↔MCP traffic).
+# Requires a CNI that enforces NetworkPolicy (Calico, Cilium,
+# GKE Dataplane V2, Azure CNI Overlay+Calico, AWS VPC CNI with
+# enforcement enabled).
+networkPolicy:
+  enabled: false
+  # Namespaces hosting the ingress controller (ingress-nginx, gce, alb…).
+  # The frontend and backend pods accept ingress from pods in these namespaces.
+  ingressFromNamespaces:
+    - ingress-nginx
+    - kube-system
 
 # ─── Ingress ──────────────────────────────────────────────────────────────
 # className guidance:

@@ -1,0 +1,67 @@
+# ArgoCD Application — deploys the chart from this repo.
+# Apply once: `kubectl apply -f infra/gitops/argocd/application.yaml -n argocd`
+# ArgoCD then watches the path/revision and syncs on every git push.
+#
+# Edit before applying:
+#   - spec.source.repoURL           → your fork or private mirror
+#   - spec.source.targetRevision    → main, a tag, or a commit SHA
+#   - spec.source.helm.values       → cloud overlay + your secrets/host
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: babagemed
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+  labels:
+    app.kubernetes.io/name: babagemed
+spec:
+  project: babagemed
+  source:
+    repoURL: https://github.com/ceo551/babagemed-ai
+    targetRevision: main
+    path: infra/helm/babagemed
+    helm:
+      # Pick the cloud overlay that matches your cluster, then layer
+      # release-specific overrides in `parameters` or `valuesObject`.
+      valueFiles:
+        - values.yaml
+        # - values-gke.yaml
+        # - values-aks.yaml
+        # - values-eks.yaml
+      parameters:
+        - name: image.registry
+          value: ghcr.io/ceo551
+        - name: ingress.host
+          value: app.babagemed.example
+        - name: ingress.tls.issuer
+          value: letsencrypt-prod
+        # Sensitive values: prefer `valuesFrom` with a Kubernetes Secret
+        # or `--set-file` from an out-of-band file. NEVER commit secrets here.
+        # - name: secrets.anthropicApiKey
+        #   value: sk-ant-…   # ← do not do this in git
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: babagemed
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+      allowEmpty: false
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
+      - ApplyOutOfSyncOnly=true
+      # Don't fight cert-manager rewriting Ingress annotations.
+      - RespectIgnoreDifferences=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m
+  ignoreDifferences:
+    - group: ""
+      kind: Secret
+      jsonPointers:
+        - /data

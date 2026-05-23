@@ -1,0 +1,7 @@
+# Flux Kustomization — bundles the GitRepository + HelmRelease so a single
+# `flux create source git … && kubectl apply -f infra/gitops/flux/` is enough.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - gitrepository.yaml
+  - helmrelease.yaml

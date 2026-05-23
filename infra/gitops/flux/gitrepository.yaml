@@ -1,0 +1,20 @@
+# Flux GitRepository — Flux watches this repo and re-renders the chart on
+# every commit. Apply once: `kubectl apply -f infra/gitops/flux/gitrepository.yaml -n flux-system`
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: GitRepository
+metadata:
+  name: babagemed
+  namespace: flux-system
+spec:
+  interval: 1m
+  url: https://github.com/ceo551/babagemed-ai
+  ref:
+    branch: main
+  # For private repos:
+  # secretRef:
+  #   name: babagemed-git-creds   # kubernetes.io/basic-auth or SSH key Secret
+  ignore: |
+    # Don't pull these into the working copy Flux clones.
+    /node_modules
+    /frontend/.next
+    /backend/bin

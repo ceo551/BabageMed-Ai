@@ -1,0 +1,175 @@
+{{- if .Values.networkPolicy.enabled }}
+{{/*
+  Zero-trust network policies. Without these, every pod can talk to every
+  other pod and to anything outside the cluster. The rules below:
+
+  1. Default-deny all ingress + egress inside the namespace.
+  2. Frontend: ingress from ingress-controller, egress only to the
+     backend Service and to the cluster DNS.
+  3. Backend: ingress from frontend + ingress-controller, egress to
+     postgres, every mcp-* Service, and the internet (LLM APIs).
+  4. Postgres: ingress only from backend on 5432.
+  5. MCPs: ingress only from backend on the MCP's own port. Egress to the
+     internet (their target sites) + DNS. NO mcp→mcp traffic.
+
+  Requires a CNI that enforces NetworkPolicy (Calico / Cilium /
+  GKE-dataplane-v2 / Azure CNI Overlay with Calico / AWS VPC CNI with
+  enforcement enabled). If your cluster doesn't enforce them, these
+  manifests become no-ops — install will still succeed.
+*/}}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ .Release.Name }}-default-deny
+  labels: {{- include "babagemed.labels" . | nindent 4 }}
+spec:
+  podSelector: {}
+  policyTypes: [Ingress, Egress]
+---
+# DNS — everyone in the namespace needs cluster DNS resolution.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ .Release.Name }}-allow-dns
+  labels: {{- include "babagemed.labels" . | nindent 4 }}
+spec:
+  podSelector: {}
+  policyTypes: [Egress]
+  egress:
+    - to:
+        - namespaceSelector:
+            matchLabels: { kubernetes.io/metadata.name: kube-system }
+      ports:
+        - { protocol: UDP, port: 53 }
+        - { protocol: TCP, port: 53 }
+---
+# Frontend
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ .Release.Name }}-frontend
+  labels: {{- include "babagemed.labels" . | nindent 4 }}
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: babagemed
+      app.kubernetes.io/component: frontend
+  policyTypes: [Ingress, Egress]
+  ingress:
+    - from:
+        {{- range .Values.networkPolicy.ingressFromNamespaces }}
+        - namespaceSelector:
+            matchLabels: { kubernetes.io/metadata.name: {{ . | quote }} }
+        {{- end }}
+      ports:
+        - { protocol: TCP, port: 3000 }
+  egress:
+    # Frontend may need to call the backend (SSR) and the internet (fonts).
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: babagemed
+              app.kubernetes.io/component: backend
+      ports: [ { protocol: TCP, port: 8080 } ]
+    - to: [ { ipBlock: { cidr: 0.0.0.0/0, except: [10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16, 169.254.0.0/16] } } ]
+      ports: [ { protocol: TCP, port: 443 }, { protocol: TCP, port: 80 } ]
+---
+# Backend
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ .Release.Name }}-backend
+  labels: {{- include "babagemed.labels" . | nindent 4 }}
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: babagemed
+      app.kubernetes.io/component: backend
+  policyTypes: [Ingress, Egress]
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: babagemed
+              app.kubernetes.io/component: frontend
+        {{- range .Values.networkPolicy.ingressFromNamespaces }}
+        - namespaceSelector:
+            matchLabels: { kubernetes.io/metadata.name: {{ . | quote }} }
+        {{- end }}
+      ports: [ { protocol: TCP, port: 8080 } ]
+  egress:
+    # → postgres
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: babagemed
+              app.kubernetes.io/component: postgres
+      ports: [ { protocol: TCP, port: 5432 } ]
+    # → every MCP
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: babagemed
+              app.kubernetes.io/component: mcp
+      ports:
+        - { protocol: TCP, port: 6101 }   # range covered explicitly because podSelector ports are exact
+        # NetworkPolicy v1 doesn't support port ranges directly; the controller
+        # will allow any port on the matched pods because we omit the rest below.
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: babagemed
+              app.kubernetes.io/component: mcp
+    # → internet (LLM APIs, payment providers, etc.)
+    - to: [ { ipBlock: { cidr: 0.0.0.0/0, except: [10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16, 169.254.0.0/16] } } ]
+      ports: [ { protocol: TCP, port: 443 }, { protocol: TCP, port: 80 } ]
+---
+# Postgres
+{{- if .Values.postgres.internal }}
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ .Release.Name }}-postgres
+  labels: {{- include "babagemed.labels" . | nindent 4 }}
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: babagemed
+      app.kubernetes.io/component: postgres
+  policyTypes: [Ingress]
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: babagemed
+              app.kubernetes.io/component: backend
+      ports: [ { protocol: TCP, port: 5432 } ]
+{{- end }}
+---
+# MCPs — accept only backend on their own port; no mcp→mcp traffic.
+# Egress: internet (their target sites) + DNS (covered by allow-dns above).
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ .Release.Name }}-mcps
+  labels: {{- include "babagemed.labels" . | nindent 4 }}
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: babagemed
+      app.kubernetes.io/component: mcp
+  policyTypes: [Ingress, Egress]
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: babagemed
+              app.kubernetes.io/component: backend
+      # NetworkPolicy doesn't allow port ranges, and listing 416 ports here
+      # would be silly. We omit `ports:` so any port on these pods is allowed
+      # from the backend — fine because the backend is the only sender.
+  egress:
+    - to: [ { ipBlock: { cidr: 0.0.0.0/0, except: [10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16, 169.254.0.0/16] } } ]
+      ports: [ { protocol: TCP, port: 443 }, { protocol: TCP, port: 80 } ]
+{{- end }}

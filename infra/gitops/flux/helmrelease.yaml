@@ -1,0 +1,61 @@
+# Flux HelmRelease — installs/upgrades the chart from the GitRepository above.
+# Apply once: `kubectl apply -f infra/gitops/flux/helmrelease.yaml -n babagemed`
+# Flux then drives `helm upgrade --install` on every change to chart sources
+# or to the values below.
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: babagemed
+  namespace: babagemed
+spec:
+  interval: 5m
+  releaseName: babagemed
+  targetNamespace: babagemed
+  chart:
+    spec:
+      chart: infra/helm/babagemed
+      sourceRef:
+        kind: GitRepository
+        name: babagemed
+        namespace: flux-system
+  install:
+    createNamespace: true
+    remediation:
+      retries: 3
+  upgrade:
+    remediation:
+      retries: 3
+      remediateLastFailure: true
+  # Pull non-secret values from a separate ConfigMap (which can itself be in
+  # git) and secret values from a Kubernetes Secret managed by sealed-secrets
+  # or external-secrets. Don't paste raw secrets into `values:` below.
+  valuesFrom:
+    - kind: ConfigMap
+      name: babagemed-values
+      optional: true
+    - kind: Secret
+      name: babagemed-helm-secrets
+      optional: true
+  values:
+    # Pick the cloud target; the secret/configmap above can override anything.
+    cloud: generic
+    image:
+      registry: ghcr.io/ceo551
+      tag: latest
+    ingress:
+      enabled: true
+      host: app.babagemed.example
+      tls:
+        enabled: true
+        issuer: letsencrypt-prod
+    backend:
+      autoscaling: { enabled: true }
+    frontend:
+      autoscaling: { enabled: true }
+    networkPolicy:
+      enabled: true
+    mcps:
+      preset: default
+    # Use an existing secret created out-of-band so values stay safe to commit.
+    secrets:
+      existingSecret: babagemed-env

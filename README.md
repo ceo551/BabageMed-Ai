@@ -213,6 +213,63 @@ Requires the **AWS Load Balancer Controller** (for `alb` ingress) and the **EBS 
 
 For day-to-day ops: `kubectl get pods -n babagemed -l app.kubernetes.io/name=babagemed`. The chart labels everything with `babagemed/mcp-id=<id>` and `babagemed/mcp-kind=<api|scrape|hybrid>` so you can target subsets quickly.
 
+### Autoscaling (HPA)
+
+Off by default — most clusters won't have metrics-server installed for every one of 416 deployments. Turn on per-component:
+
+```bash
+helm upgrade babagemed ./infra/helm/babagemed -n babagemed --reuse-values \
+  --set backend.autoscaling.enabled=true \
+  --set frontend.autoscaling.enabled=true \
+  --set mcps.autoscaling.enabled=true
+```
+
+Defaults: backend 2→20 (70% CPU / 80% mem), frontend 2→10 (70% CPU), each API MCP 1→5 (75% CPU), each scrape MCP 1→3 (80% CPU). Behavior section caps scale-down at 50% per minute and lets scale-up explode (max(100% per 30s, +4 pods per 30s)).
+
+### NetworkPolicy (zero-trust)
+
+Off by default. Turn on:
+
+```bash
+helm upgrade babagemed ./infra/helm/babagemed -n babagemed --reuse-values \
+  --set networkPolicy.enabled=true
+```
+
+Rules:
+- **Default-deny** all ingress + egress in the namespace.
+- **DNS** allowed for everyone (kube-system, port 53 UDP/TCP).
+- **Frontend** accepts from the ingress controller's namespace, egresses to backend + internet (fonts).
+- **Backend** accepts from frontend + ingress, egresses to postgres + every MCP pod + internet (LLM APIs).
+- **Postgres** accepts only from backend on 5432.
+- **MCPs** accept only from backend; egress to internet only (port 80/443) — **no MCP→MCP traffic**, no MCP→postgres, no MCP→cluster-internal anything else.
+
+Requires a CNI that enforces NetworkPolicy: Calico, Cilium, GKE Dataplane V2, Azure CNI Overlay+Calico, or AWS VPC CNI with policy enforcement enabled. On a CNI that doesn't enforce, these manifests are no-ops — they install cleanly but provide no security.
+
+## GitOps — ArgoCD or Flux
+
+Either runs the same Helm chart from this repo with continuous reconciliation on every push.
+
+### ArgoCD
+
+```bash
+kubectl create namespace argocd
+kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
+kubectl apply -f infra/gitops/argocd/project.yaml
+kubectl apply -f infra/gitops/argocd/application.yaml
+# multi-env? use the ApplicationSet instead:
+kubectl apply -f infra/gitops/argocd/applicationset.yaml
+```
+
+### Flux
+
+```bash
+flux install
+kubectl create namespace babagemed
+kubectl apply -k infra/gitops/flux/
+```
+
+See `infra/gitops/README.md` for secret-management notes (Sealed Secrets / External Secrets Operator / SOPS) and image-automation (ArgoCD Image Updater / Flux Image Automation).
+
 ## Payments
 
 Two providers wired up, no other dependencies:
