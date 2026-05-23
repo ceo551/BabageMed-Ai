@@ -59,14 +59,22 @@ spec:
           envFrom:
             - secretRef:
                 name: {{ .Values.mcps.envFromSecret }}
+          # /health pings every registered MCP — with 416 of them the response
+          # can take >1s during startup, which flaps the default probe timeouts.
+          # Give it generous timeouts so the backend doesn't restart-loop while
+          # the MCP fleet is still coming up.
           readinessProbe:
             httpGet: { path: /health, port: http }
             initialDelaySeconds: 5
-            periodSeconds: 10
+            periodSeconds: 15
+            timeoutSeconds: 15
+            failureThreshold: 3
           livenessProbe:
             httpGet: { path: /health, port: http }
             initialDelaySeconds: 30
-            periodSeconds: 30
+            periodSeconds: 60
+            timeoutSeconds: 30
+            failureThreshold: 3
           resources: {{- toYaml .Values.backend.resources | nindent 12 }}
           securityContext: {{- toYaml .Values.securityContext | nindent 12 }}
       {{- with .Values.nodeSelector }}
