@@ -8,6 +8,24 @@ import { fileURLToPath } from "node:url";
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(__dirname, "..");
 const MANIFEST = JSON.parse(readFileSync(join(__dirname, "mcps.manifest.json"), "utf8"));
+const PATTERNS = JSON.parse(readFileSync(join(__dirname, "site-search-patterns.json"), "utf8"));
+
+function resolvePattern(id, base) {
+  const def = PATTERNS.defaults || {};
+  let p = PATTERNS.patterns?.[id] || {};
+  // Chase $alias references (single level — patterns reference only the _* base presets).
+  if (p.$alias) p = { ...PATTERNS.patterns[p.$alias], ...p };
+  const merged = { ...def, ...p };
+  // Substitute {base} placeholder in the search URL.
+  if (merged.search) merged.search = merged.search.replace("{base}", base);
+  return {
+    search:  merged.search  || (base + "/?s={q}"),
+    result:  merged.result  || def.result,
+    title:   merged.title   || def.title,
+    link:    merged.link    || def.link,
+    snippet: merged.snippet || def.snippet,
+  };
+}
 
 function w(p, body) {
   mkdirSync(dirname(p), { recursive: true });
@@ -165,7 +183,9 @@ export function registerTools(server: McpServer) {
 }
 `;
   }
-  // scrape default
+  // scrape default — uses per-site search URL + result selectors when available
+  const pat = resolvePattern(s.id, s.base);
+  const origin = new URL(s.base).origin;
   return `import { z, McpServer, Scraper, cheerioLoad } from "@babagemed/mcp-base";
 
 const scraper = new Scraper({
@@ -179,29 +199,55 @@ const scraper = new Scraper({
   blockMedia: true,
 });
 
+// Source-specific search URL + result-row selectors (from scripts/site-search-patterns.json)
+const SEARCH_URL  = ${JSON.stringify(pat.search)};
+const SEL_RESULT  = ${JSON.stringify(pat.result)};
+const SEL_TITLE   = ${JSON.stringify(pat.title)};
+const SEL_LINK    = ${JSON.stringify(pat.link)};
+const SEL_SNIPPET = ${JSON.stringify(pat.snippet)};
+const ORIGIN      = ${JSON.stringify(origin)};
+
 export function registerTools(server: McpServer) {
   server.tool({
     name: "search",
-    description: ${JSON.stringify(`Search ${s.name} for a query and return links + snippets.`)},
+    description: ${JSON.stringify(`Search ${s.name} for a query and return structured results.`)},
     input: z.object({ query: z.string().min(1), limit: z.number().int().min(1).max(50).optional() }),
     handler: async ({ query, limit = 10 }) => {
-      const url = ${JSON.stringify(s.base)} + "/?s=" + encodeURIComponent(query);
+      const url = SEARCH_URL.replace("{q}", encodeURIComponent(query));
       const r = await scraper.fetchHtml(url, { browser: false });
       const $ = r.$;
       const results: { title: string; url: string; snippet: string }[] = [];
-      $("a").each((_, a) => {
-        const href = $(a).attr("href") || "";
-        const text = $(a).text().trim();
-        if (!href || !text || text.length < 8) return;
-        if (results.length >= limit) return;
-        try {
-          const abs = new URL(href, ${JSON.stringify(s.base)}).toString();
-          if (!abs.startsWith(${JSON.stringify(new URL(s.base).origin)})) return;
-          if (results.some(x => x.url === abs)) return;
-          results.push({ title: text.slice(0, 200), url: abs, snippet: "" });
-        } catch {}
+      // Try the source-specific result selector first.
+      $(SEL_RESULT).each((_, el) => {
+        if (results.length >= limit) return false;
+        const $row = $(el);
+        const $link = $row.find(SEL_LINK).first();
+        const href = $link.attr("href");
+        if (!href) return;
+        let abs: string;
+        try { abs = new URL(href, ${JSON.stringify(s.base)}).toString(); } catch { return; }
+        if (!abs.startsWith(ORIGIN)) return;
+        if (results.some((x) => x.url === abs)) return;
+        const title = ($row.find(SEL_TITLE).first().text() || $link.text() || "").trim();
+        const snippet = $row.find(SEL_SNIPPET).first().text().trim().slice(0, 400);
+        if (!title) return;
+        results.push({ title: title.slice(0, 240), url: abs, snippet });
       });
-      return { source: ${JSON.stringify(s.id)}, query, count: results.length, results };
+      // Fallback: if the structured pass found nothing, harvest same-origin links.
+      if (results.length === 0) {
+        $("a").each((_, a) => {
+          if (results.length >= limit) return false;
+          const href = $(a).attr("href") || "";
+          const text = $(a).text().trim();
+          if (!href || text.length < 8) return;
+          let abs: string;
+          try { abs = new URL(href, ${JSON.stringify(s.base)}).toString(); } catch { return; }
+          if (!abs.startsWith(ORIGIN)) return;
+          if (results.some((x) => x.url === abs)) return;
+          results.push({ title: text.slice(0, 240), url: abs, snippet: "" });
+        });
+      }
+      return { source: ${JSON.stringify(s.id)}, query, searchUrl: url, count: results.length, results };
     },
   });
 
@@ -212,9 +258,9 @@ export function registerTools(server: McpServer) {
     handler: async ({ url }) => {
       const r = await scraper.fetchHtml(url, { browser: false });
       const $ = r.$;
-      $("script,style,nav,footer,header,form,iframe,aside").remove();
+      $("script,style,nav,footer,header,form,iframe,aside,.ad,.advert,.related").remove();
       const title = $("h1").first().text().trim() || $("title").text().trim();
-      const text = $("main, article, .content, #content, body").first().text().replace(/\\s+/g, " ").trim().slice(0, 12000);
+      const text  = $("main, article, .content, #content, .article, body").first().text().replace(/\\s+/g, " ").trim().slice(0, 20000);
       return { url: r.url, status: r.status, title, text };
     },
   });
@@ -234,7 +280,9 @@ for (const s of MANIFEST.servers) {
   w(join(dir, "tsconfig.json"), tsConfig());
   w(join(dir, "Dockerfile"), dockerfile(s));
   w(join(dir, "src", "index.ts"), indexTs(s));
-  wIfMissing(join(dir, "src", "tools.ts"), fallbackTools(s));
+  // Always rewrite the fallback tools.ts; write-real-tools.mjs runs after and
+  // overwrites the ones with hand-written implementations, so this is safe.
+  w(join(dir, "src", "tools.ts"), fallbackTools(s));
   written++;
 }
 

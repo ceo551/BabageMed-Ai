@@ -29,12 +29,7 @@ export function registerTools(server: McpServer) {
     }),
     handler: async ({ query, retmax = 20, sort, mindate, maxdate }) => {
       const search = await api.get<any>("esearch.fcgi", {
-        ...baseQuery(),
-        term: query,
-        retmax,
-        sort,
-        mindate,
-        maxdate,
+        ...baseQuery(), term: query, retmax, sort, mindate, maxdate,
         datetype: mindate || maxdate ? "pdat" : undefined,
       });
       const ids: string[] = search?.esearchresult?.idlist || [];

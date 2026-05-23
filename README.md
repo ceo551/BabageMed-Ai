@@ -40,6 +40,14 @@ Defined in `scripts/medical-sites.json` and appended to the master manifest via 
 
 Source of truth: `scripts/mcps.manifest.json` (auto-merged from `scripts/medical-sites.json` for the medical scrape batch). Each row → one folder under `mcps/<id>/`.
 
+### Per-site search URL templates
+
+`scripts/site-search-patterns.json` maps each scrape MCP id to a real search-URL template (with `{q}` placeholder) and result-row CSS selectors — so `mcp-plosone search` actually hits PLOS's `/search?q=…` endpoint and pulls out `.search-result` rows, instead of guessing with the generic WordPress `/?s=…` fallback.
+
+Shared platform presets (`_oup`, `_bmj`, `_bmc`, `_plos`, `_jmir`, `_mdpi`, `_jama`, `_lancet`, `_wiley`, `_nature`, `_aha`, `_silverchair`, `_springer`, `_socrata`, `_drupal`, `_wordpress`, `_mediawiki`) keep the file compact — most journals reference a preset via `$alias`. Per-id overrides take precedence.
+
+Add a new site or refine an existing template: edit `scripts/site-search-patterns.json`, then `node scripts/generate-mcps.mjs && node scripts/write-real-tools.mjs` rewrites every scrape MCP that uses the fallback template. Hand-written MCPs (PubMed, FDA, ClinicalTrials, etc.) are unaffected — they have richer per-source logic in `scripts/write-real-tools.mjs`.
+
 ## Quick start
 
 ```bash

@@ -11,29 +11,55 @@ const scraper = new Scraper({
   blockMedia: true,
 });
 
+// Source-specific search URL + result-row selectors (from scripts/site-search-patterns.json)
+const SEARCH_URL  = "https://www.publichealthontario.ca/en/searchresults?k={q}";
+const SEL_RESULT  = "article, .post, .search-result, li";
+const SEL_TITLE   = "h1, h2, h3, .title, a";
+const SEL_LINK    = "a";
+const SEL_SNIPPET = "p, .excerpt, .summary";
+const ORIGIN      = "https://www.publichealthontario.ca";
+
 export function registerTools(server: McpServer) {
   server.tool({
     name: "search",
-    description: "Search Public Health Ontario for a query and return links + snippets.",
+    description: "Search Public Health Ontario for a query and return structured results.",
     input: z.object({ query: z.string().min(1), limit: z.number().int().min(1).max(50).optional() }),
     handler: async ({ query, limit = 10 }) => {
-      const url = "https://www.publichealthontario.ca" + "/?s=" + encodeURIComponent(query);
+      const url = SEARCH_URL.replace("{q}", encodeURIComponent(query));
       const r = await scraper.fetchHtml(url, { browser: false });
       const $ = r.$;
       const results: { title: string; url: string; snippet: string }[] = [];
-      $("a").each((_, a) => {
-        const href = $(a).attr("href") || "";
-        const text = $(a).text().trim();
-        if (!href || !text || text.length < 8) return;
-        if (results.length >= limit) return;
-        try {
-          const abs = new URL(href, "https://www.publichealthontario.ca").toString();
-          if (!abs.startsWith("https://www.publichealthontario.ca")) return;
-          if (results.some(x => x.url === abs)) return;
-          results.push({ title: text.slice(0, 200), url: abs, snippet: "" });
-        } catch {}
+      // Try the source-specific result selector first.
+      $(SEL_RESULT).each((_, el) => {
+        if (results.length >= limit) return false;
+        const $row = $(el);
+        const $link = $row.find(SEL_LINK).first();
+        const href = $link.attr("href");
+        if (!href) return;
+        let abs: string;
+        try { abs = new URL(href, "https://www.publichealthontario.ca").toString(); } catch { return; }
+        if (!abs.startsWith(ORIGIN)) return;
+        if (results.some((x) => x.url === abs)) return;
+        const title = ($row.find(SEL_TITLE).first().text() || $link.text() || "").trim();
+        const snippet = $row.find(SEL_SNIPPET).first().text().trim().slice(0, 400);
+        if (!title) return;
+        results.push({ title: title.slice(0, 240), url: abs, snippet });
       });
-      return { source: "publichealthontario", query, count: results.length, results };
+      // Fallback: if the structured pass found nothing, harvest same-origin links.
+      if (results.length === 0) {
+        $("a").each((_, a) => {
+          if (results.length >= limit) return false;
+          const href = $(a).attr("href") || "";
+          const text = $(a).text().trim();
+          if (!href || text.length < 8) return;
+          let abs: string;
+          try { abs = new URL(href, "https://www.publichealthontario.ca").toString(); } catch { return; }
+          if (!abs.startsWith(ORIGIN)) return;
+          if (results.some((x) => x.url === abs)) return;
+          results.push({ title: text.slice(0, 240), url: abs, snippet: "" });
+        });
+      }
+      return { source: "publichealthontario", query, searchUrl: url, count: results.length, results };
     },
   });
 
@@ -44,9 +70,9 @@ export function registerTools(server: McpServer) {
     handler: async ({ url }) => {
       const r = await scraper.fetchHtml(url, { browser: false });
       const $ = r.$;
-      $("script,style,nav,footer,header,form,iframe,aside").remove();
+      $("script,style,nav,footer,header,form,iframe,aside,.ad,.advert,.related").remove();
       const title = $("h1").first().text().trim() || $("title").text().trim();
-      const text = $("main, article, .content, #content, body").first().text().replace(/\s+/g, " ").trim().slice(0, 12000);
+      const text  = $("main, article, .content, #content, .article, body").first().text().replace(/\s+/g, " ").trim().slice(0, 20000);
       return { url: r.url, status: r.status, title, text };
     },
   });
