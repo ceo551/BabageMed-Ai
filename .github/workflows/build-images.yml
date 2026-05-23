@@ -1,0 +1,171 @@
+name: Build & push images
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      mcps:
+        description: "Space-separated MCP ids to build (empty = all)"
+        required: false
+        default: ""
+
+permissions:
+  contents: write           # for the GitOps tag-bump commit
+  packages: write           # for ghcr.io
+
+env:
+  REGISTRY: ${{ vars.REGISTRY || format('ghcr.io/{0}', github.repository_owner) }}
+
+jobs:
+  # ─── 1. compute tag + sharded MCP matrix ──────────────────────────────
+  meta:
+    name: Compute build matrix
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.tag.outputs.tag }}
+      sha:  ${{ steps.tag.outputs.sha }}
+      mcps_matrix: ${{ steps.matrix.outputs.json }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: tag
+        run: |
+          short=$(git rev-parse --short HEAD)
+          if [[ "$GITHUB_REF_TYPE" == "tag" ]]; then
+            tag="${GITHUB_REF_NAME}"
+          else
+            tag="sha-$short"
+          fi
+          echo "tag=$tag"  >> "$GITHUB_OUTPUT"
+          echo "sha=$short" >> "$GITHUB_OUTPUT"
+      - id: matrix
+        # Splits the 416 MCP ids into 16 shards. Each shard builds ~26 images
+        # in parallel; xargs inside the job parallelises across cores.
+        run: |
+          set -e
+          IDS_INPUT='${{ github.event.inputs.mcps }}'
+          if [ -n "$IDS_INPUT" ]; then
+            ids="$IDS_INPUT"
+          else
+            ids=$(cat infra/helm/babagemed/mcps-all.txt)
+          fi
+          json=$(node -e "
+            const all = process.argv[1].trim().split(/\s+/).filter(Boolean);
+            const shards = 16;
+            const buckets = Array.from({length: shards}, () => []);
+            all.forEach((id, i) => buckets[i % shards].push(id));
+            console.log(JSON.stringify(buckets.map((b, i) => ({ shard: i + 1, ids: b.join(' ') }))));
+          " "$ids")
+          echo "json=$json" >> "$GITHUB_OUTPUT"
+
+  # ─── 2. backend + frontend (always built together) ────────────────────
+  build-core:
+    name: ${{ matrix.target }}
+    runs-on: ubuntu-latest
+    needs: meta
+    strategy:
+      fail-fast: false
+      matrix:
+        target: [backend, frontend]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - name: Log in to registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build & push
+        uses: docker/build-push-action@v6
+        with:
+          context: ${{ matrix.target == 'frontend' && './frontend' || '.' }}
+          file: ${{ matrix.target == 'frontend' && './frontend/Dockerfile' || './backend/Dockerfile' }}
+          push: true
+          platforms: linux/amd64
+          tags: |
+            ${{ env.REGISTRY }}/${{ matrix.target }}:${{ needs.meta.outputs.tag }}
+            ${{ env.REGISTRY }}/${{ matrix.target }}:latest
+          cache-from: type=gha,scope=${{ matrix.target }}
+          cache-to:   type=gha,scope=${{ matrix.target }},mode=max
+
+  # ─── 3. MCPs — sharded matrix builds in parallel ──────────────────────
+  build-mcps:
+    name: MCPs shard ${{ matrix.shard }}/16
+    runs-on: ubuntu-latest
+    needs: meta
+    strategy:
+      fail-fast: false
+      max-parallel: 4
+      matrix:
+        include: ${{ fromJson(needs.meta.outputs.mcps_matrix) }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - name: Log in to registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build & push every MCP in this shard
+        env:
+          REGISTRY: ${{ env.REGISTRY }}
+          TAG: ${{ needs.meta.outputs.tag }}
+        run: |
+          set -euo pipefail
+          ids="${{ matrix.ids }}"
+          echo "shard ${{ matrix.shard }}: $(echo $ids | wc -w) MCP(s)"
+          for id in $ids; do
+            echo "::group::mcp-$id"
+            docker buildx build \
+              --platform linux/amd64 --push \
+              -f "mcps/$id/Dockerfile" \
+              -t "$REGISTRY/mcp-$id:$TAG" \
+              -t "$REGISTRY/mcp-$id:latest" \
+              --cache-from "type=gha,scope=mcp-$id" \
+              --cache-to   "type=gha,scope=mcp-$id,mode=max" \
+              .
+            echo "::endgroup::"
+          done
+
+  # ─── 4. Bump the image tag in the GitOps values file and commit back ──
+  # ArgoCD/Flux see the change on the next sync and roll out the new tag.
+  gitops-bump:
+    name: GitOps tag bump → ArgoCD/Flux trigger
+    runs-on: ubuntu-latest
+    needs: [meta, build-core, build-mcps]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITOPS_TOKEN || secrets.GITHUB_TOKEN }}
+      - name: Update infra/helm/babagemed/values-images.yaml
+        run: |
+          mkdir -p infra/helm/babagemed
+          cat > infra/helm/babagemed/values-images.yaml <<EOF
+          # Auto-generated by .github/workflows/build-images.yml on every push to main.
+          # Both ArgoCD and Flux include this overlay so they roll out the new tag
+          # without further human intervention.
+          image:
+            registry: ${{ env.REGISTRY }}
+            tag: ${{ needs.meta.outputs.tag }}
+          EOF
+      - name: Commit + push
+        run: |
+          git config user.name  "babagemed-ci"
+          git config user.email "ci@babagemed.com"
+          if git diff --quiet; then
+            echo "no change"; exit 0
+          fi
+          git add infra/helm/babagemed/values-images.yaml
+          git commit -m "ci: bump image tag to ${{ needs.meta.outputs.tag }} [skip ci]"
+          git push
+      - name: ArgoCD webhook (optional)
+        if: vars.ARGOCD_WEBHOOK_URL != ''
+        run: |
+          curl -sS -X POST "${{ vars.ARGOCD_WEBHOOK_URL }}" \
+            -H "Authorization: Bearer ${{ secrets.ARGOCD_WEBHOOK_TOKEN }}" \
+            -H "content-type: application/json" \
+            -d '{"ref":"main"}' || true

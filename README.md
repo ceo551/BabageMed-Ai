@@ -270,6 +270,39 @@ kubectl apply -k infra/gitops/flux/
 
 See `infra/gitops/README.md` for secret-management notes (Sealed Secrets / External Secrets Operator / SOPS) and image-automation (ArgoCD Image Updater / Flux Image Automation).
 
+## Observability — Prometheus + Grafana
+
+Every MCP and the backend expose Prometheus metrics on `/metrics`. The mcp-base runtime ships counters/histograms out of the box (`mcp_tool_calls_total`, `mcp_tool_duration_seconds`, `mcp_http_request*`); the backend adds `backend_http_request*`, `backend_mcp_proxy_*`, `backend_llm_*`, `backend_auth_*`, and `backend_payments_total`.
+
+The Helm chart includes:
+
+- **ServiceMonitor** (requires kube-prometheus-stack CRDs) — one for the backend, one fanning out across every MCP Service via label selector
+- **PrometheusRule** — alerts for `McpDown`, `McpHighErrorRate`, `McpSlowP95`, `BackendDown`, `BackendHigh5xx`, `LLMHighErrorRate`
+- **Grafana dashboard** as a `ConfigMap` labelled for the standard sidecar (auto-imports on most Grafana setups)
+
+Enable any combination:
+
+```bash
+helm upgrade babagemed ./infra/helm/babagemed --reuse-values \
+  --set monitoring.serviceMonitor.enabled=true \
+  --set monitoring.prometheusRule.enabled=true \
+  --set monitoring.grafanaDashboard.enabled=true
+```
+
+The dashboard at `infra/helm/babagemed/dashboards/babagemed-overview.json` has top-N panels for tool call rate, error rate, and p95 latency by MCP; backend route latency; LLM provider/model panels; payment + auth panels; and a per-MCP drill-down table driven by a `$mcp` template variable.
+
+## Continuous integration
+
+Three GitHub Actions workflows live in `.github/workflows/`:
+
+| Workflow | Triggers | Does |
+|---|---|---|
+| `ci.yml`           | every PR + push | backend `go build`+`go vet`+`go test`; frontend + mcp-base typecheck; **sharded typecheck of all 416 MCPs**; `helm lint` + `helm template` smoke render; idempotent-generator check |
+| `build-images.yml` | push to `main`, `v*` tags, manual | builds backend + frontend + all MCP images with BuildKit gha cache, pushes to `$REGISTRY`, then **commits the new tag to `values-images.yaml`** so ArgoCD/Flux roll forward automatically |
+| `e2e-mcps.yml`     | MCP-layer PRs, manual, nightly cron | for each MCP: `docker run` → `/health` → `/tools` → `/metrics` → `POST /call/search`. Credential-gated and outbound-blocked MCPs report as `SKIP`, not `FAIL`. Summary posted to the Actions run |
+
+See `.github/README.md` for the full breakdown and the env vars / secrets each workflow expects (`REGISTRY`, `GITOPS_TOKEN`, `ARGOCD_WEBHOOK_URL`, …).
+
 ## Payments
 
 Two providers wired up, no other dependencies:

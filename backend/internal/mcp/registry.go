@@ -11,6 +11,8 @@ import (
 	"os"
 	"sync"
 	"time"
+
+	"github.com/babagemed/backend/internal/metrics"
 )
 
 type Server struct {
@@ -101,26 +103,43 @@ func (r *Registry) ListTools(ctx context.Context, id string) (any, error) {
 func (r *Registry) Call(ctx context.Context, id, tool string, args any) (any, error) {
 	s, ok := r.Get(id)
 	if !ok {
+		metrics.MCPProxyCalls.WithLabelValues(id, tool, "unknown").Inc()
 		return nil, errors.New("unknown server")
 	}
+	timer := prometheusTimer(id, tool)
 	body, _ := json.Marshal(args)
 	url := fmt.Sprintf("%s/call/%s", r.hostFor(s), tool)
 	req, _ := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(body))
 	req.Header.Set("content-type", "application/json")
 	res, err := r.client.Do(req)
 	if err != nil {
+		timer()
+		metrics.MCPProxyCalls.WithLabelValues(id, tool, "transport_error").Inc()
 		return nil, err
 	}
 	defer res.Body.Close()
 	if res.StatusCode >= 400 {
 		b, _ := io.ReadAll(res.Body)
+		timer()
+		metrics.MCPProxyCalls.WithLabelValues(id, tool, fmt.Sprintf("http_%d", res.StatusCode)).Inc()
 		return nil, fmt.Errorf("call %s/%s failed: %s: %s", id, tool, res.Status, string(b))
 	}
 	var out any
 	if err := json.NewDecoder(res.Body).Decode(&out); err != nil {
+		timer()
+		metrics.MCPProxyCalls.WithLabelValues(id, tool, "decode_error").Inc()
 		return nil, err
 	}
+	timer()
+	metrics.MCPProxyCalls.WithLabelValues(id, tool, "ok").Inc()
 	return out, nil
+}
+
+func prometheusTimer(id, tool string) func() {
+	start := time.Now()
+	return func() {
+		metrics.MCPProxyDuration.WithLabelValues(id, tool).Observe(time.Since(start).Seconds())
+	}
 }
 
 // Health pings the /health endpoint of every MCP and reports status.

@@ -10,6 +10,8 @@ import (
 	"net/http"
 	"strings"
 	"time"
+
+	"github.com/babagemed/backend/internal/metrics"
 )
 
 type Config struct {
@@ -47,16 +49,35 @@ type CompletionResponse struct {
 
 // Complete picks a provider by model id prefix.
 func (c *Client) Complete(ctx context.Context, req CompletionRequest) (*CompletionResponse, error) {
+	start := time.Now()
+	provider := "anthropic"
+	var out *CompletionResponse
+	var err error
 	switch {
 	case strings.HasPrefix(req.Model, "opus") || strings.HasPrefix(req.Model, "claude") || strings.HasPrefix(req.Model, "sonnet") || strings.HasPrefix(req.Model, "haiku"):
-		return c.callAnthropic(ctx, req)
+		provider = "anthropic"
+		out, err = c.callAnthropic(ctx, req)
 	case strings.HasPrefix(req.Model, "gemini"):
-		return c.callGoogle(ctx, req)
+		provider = "google"
+		out, err = c.callGoogle(ctx, req)
 	case strings.HasPrefix(req.Model, "gpt"):
-		return c.callOpenAI(ctx, req)
+		provider = "openai"
+		out, err = c.callOpenAI(ctx, req)
 	default:
-		return c.callAnthropic(ctx, req)
+		provider = "anthropic"
+		out, err = c.callAnthropic(ctx, req)
 	}
+	model := req.Model
+	if out != nil && out.Model != "" {
+		model = out.Model
+	}
+	metrics.LLMDuration.WithLabelValues(provider, model).Observe(time.Since(start).Seconds())
+	if err != nil {
+		metrics.LLMCalls.WithLabelValues(provider, model, "error").Inc()
+	} else {
+		metrics.LLMCalls.WithLabelValues(provider, model, "ok").Inc()
+	}
+	return out, err
 }
 
 func (c *Client) callAnthropic(ctx context.Context, req CompletionRequest) (*CompletionResponse, error) {

@@ -2,6 +2,7 @@ import { z, ZodTypeAny } from "zod";
 import { createServer, IncomingMessage, ServerResponse } from "node:http";
 import { McpServerInfo, McpToolDef, JsonRpcRequest, JsonRpcResponse, ToolContext } from "./types.js";
 import { createLogger } from "./logger.js";
+import { McpMetrics } from "./metrics.js";
 
 function zodToJsonSchema(schema: ZodTypeAny): unknown {
   // Minimal Zod -> JSON Schema; we use Zod's `.describe` and shapes for primitive cases.
@@ -47,9 +48,11 @@ function zodToJsonSchema(schema: ZodTypeAny): unknown {
 export class McpServer {
   private tools = new Map<string, McpToolDef<any, any>>();
   private log: ReturnType<typeof createLogger>;
+  readonly metrics: McpMetrics;
 
   constructor(public info: McpServerInfo) {
     this.log = createLogger(info.id);
+    this.metrics = new McpMetrics(info.id, info.name);
   }
 
   tool<TInput, TOutput>(def: McpToolDef<TInput, TOutput>): this {
@@ -67,7 +70,17 @@ export class McpServer {
     const ctx: ToolContext = {
       log: (lvl, msg, meta) => (this.log as any)[lvl](msg, meta),
     };
-    return await t.handler(parsed.data as any, ctx);
+    const stop = this.metrics.toolDuration.startTimer({ tool: name });
+    try {
+      const out = await t.handler(parsed.data as any, ctx);
+      this.metrics.toolCalls.inc({ tool: name, outcome: "ok" });
+      stop({ outcome: "ok" });
+      return out;
+    } catch (e) {
+      this.metrics.toolCalls.inc({ tool: name, outcome: "error" });
+      stop({ outcome: "error" });
+      throw e;
+    }
   }
 
   private listToolsForRpc() {
@@ -117,20 +130,42 @@ export class McpServer {
   startHttp(port: number) {
     const srv = createServer(async (req: IncomingMessage, res: ServerResponse) => {
       const url = new URL(req.url || "/", `http://${req.headers.host || "localhost"}`);
+      const method = req.method || "GET";
+      // Bucket the path so /call/<tool> doesn't explode the label cardinality.
+      const labelPath =
+        url.pathname.startsWith("/call/") ? "/call/:tool" :
+        url.pathname === "/metrics" || url.pathname === "/health" || url.pathname === "/info" ||
+        url.pathname === "/tools" || url.pathname === "/rpc" ? url.pathname : "other";
+      const stopHttp = this.metrics.httpDuration.startTimer({ path: labelPath, method });
       try {
         if (req.method === "GET" && url.pathname === "/health") {
+          stopHttp({ status: "200" });
+          this.metrics.httpRequests.inc({ path: labelPath, method, status: "200" });
           return json(res, 200, { ok: true, id: this.info.id, name: this.info.name, kind: this.info.kind });
         }
+        if (req.method === "GET" && url.pathname === "/metrics") {
+          const body = await this.metrics.render();
+          stopHttp({ status: "200" });
+          this.metrics.httpRequests.inc({ path: labelPath, method, status: "200" });
+          res.writeHead(200, { "content-type": "text/plain; version=0.0.4" });
+          return res.end(body);
+        }
         if (req.method === "GET" && url.pathname === "/info") {
+          stopHttp({ status: "200" });
+          this.metrics.httpRequests.inc({ path: labelPath, method, status: "200" });
           return json(res, 200, { ...this.info, tools: this.listToolsForRpc() });
         }
         if (req.method === "GET" && url.pathname === "/tools") {
+          stopHttp({ status: "200" });
+          this.metrics.httpRequests.inc({ path: labelPath, method, status: "200" });
           return json(res, 200, { tools: this.listToolsForRpc() });
         }
         if (req.method === "POST" && url.pathname === "/rpc") {
           const body = await readBody(req);
           const rpcReq: JsonRpcRequest = JSON.parse(body || "{}");
           const out = await this.handleJsonRpc(rpcReq);
+          stopHttp({ status: "200" });
+          this.metrics.httpRequests.inc({ path: labelPath, method, status: "200" });
           return json(res, 200, out);
         }
         // Friendly: POST /call/<toolName> with JSON body = arguments
@@ -139,12 +174,19 @@ export class McpServer {
           const body = await readBody(req);
           const args = body ? JSON.parse(body) : {};
           const out = await this.callTool(name, args);
+          stopHttp({ status: "200" });
+          this.metrics.httpRequests.inc({ path: labelPath, method, status: "200" });
           return json(res, 200, { ok: true, result: out });
         }
+        stopHttp({ status: "404" });
+        this.metrics.httpRequests.inc({ path: labelPath, method, status: "404" });
         return json(res, 404, { error: "not found" });
       } catch (e: any) {
         this.log.error("http error", { msg: e.message, path: url.pathname });
-        return json(res, e.code === -32602 ? 400 : 500, { error: e.message || String(e) });
+        const status = e.code === -32602 ? 400 : 500;
+        stopHttp({ status: String(status) });
+        this.metrics.httpRequests.inc({ path: labelPath, method, status: String(status) });
+        return json(res, status, { error: e.message || String(e) });
       }
     });
     srv.listen(port, () => this.log.info(`HTTP listening on :${port}`));

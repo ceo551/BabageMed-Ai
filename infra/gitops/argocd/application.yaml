@@ -26,6 +26,7 @@ spec:
       # release-specific overrides in `parameters` or `valuesObject`.
       valueFiles:
         - values.yaml
+        - values-images.yaml   # auto-bumped by .github/workflows/build-images.yml
         # - values-gke.yaml
         # - values-aks.yaml
         # - values-eks.yaml

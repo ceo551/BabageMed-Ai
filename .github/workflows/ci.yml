@@ -1,0 +1,166 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main, develop, "claude/**"]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ─── Lint + typecheck ─────────────────────────────────────────────────
+  backend:
+    name: Backend (Go)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.22"
+          cache-dependency-path: backend/go.sum
+      - name: go build
+        working-directory: backend
+        run: go build ./...
+      - name: go vet
+        working-directory: backend
+        run: go vet ./...
+      - name: gofmt
+        working-directory: backend
+        run: |
+          unformatted=$(gofmt -l .)
+          if [ -n "$unformatted" ]; then
+            echo "::error::These files aren't gofmt'd:"
+            echo "$unformatted"
+            exit 1
+          fi
+      - name: go test
+        working-directory: backend
+        env:
+          DATABASE_URL: ""   # internal/db gracefully skips when empty
+        run: go test ./... -short -count=1
+
+  frontend:
+    name: Frontend (Next.js)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: package-lock.json
+      - run: npm install --no-audit --no-fund
+      - name: build mcp-base
+        run: |
+          cd packages/mcp-base
+          npx tsc -p tsconfig.json
+      - name: type-check
+        run: |
+          cd frontend
+          npx tsc --noEmit
+
+  mcp-base:
+    name: mcp-base
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: package-lock.json
+      - run: npm install --no-audit --no-fund
+      - name: type-check
+        run: |
+          cd packages/mcp-base
+          npx tsc -p tsconfig.json --noEmit
+
+  # ─── Sweep type-check across all 416 MCPs (sharded for parallelism) ───
+  mcps-typecheck:
+    name: MCP typecheck (shard ${{ matrix.shard }}/8)
+    runs-on: ubuntu-latest
+    needs: [mcp-base]
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4, 5, 6, 7, 8]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: package-lock.json
+      - run: npm install --no-audit --no-fund
+      - name: build mcp-base
+        run: |
+          cd packages/mcp-base
+          npx tsc -p tsconfig.json
+      - name: shard typecheck
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/sweep
+          # Round-robin shard across the MCP id list so each shard touches a
+          # mix of small/heavy packages instead of contiguous slices.
+          ids=$(ls -d mcps/*/ | xargs -n1 basename | grep -v '^_shared$' | awk -v s="${{ matrix.shard }}" 'NR % 8 + 1 == s')
+          echo "shard ${{ matrix.shard }} → $(echo "$ids" | wc -w) packages"
+          fail=0
+          for id in $ids; do
+            out=$(cd "mcps/$id" && npx tsc -p tsconfig.json --noEmit 2>&1) || true
+            if [ -n "$out" ]; then
+              fail=$((fail+1))
+              echo "::error file=mcps/$id::typecheck failed"
+              echo "$out" | head -10
+            fi
+          done
+          if [ "$fail" -gt 0 ]; then
+            echo "::error::$fail MCP(s) failed typecheck"
+            exit 1
+          fi
+
+  # ─── Helm chart lint ──────────────────────────────────────────────────
+  helm:
+    name: Helm chart lint + template
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: azure/setup-helm@v4
+        with:
+          version: v3.16.3
+      - name: helm lint
+        run: helm lint infra/helm/babagemed
+      - name: helm template (smoke render)
+        run: |
+          helm template babagemed infra/helm/babagemed \
+            --set image.registry=ghcr.io/ci \
+            --set ingress.host=ci.example \
+            --set monitoring.serviceMonitor.enabled=true \
+            --set networkPolicy.enabled=true \
+            --set backend.autoscaling.enabled=true > /tmp/rendered.yaml
+          echo "rendered $(wc -l < /tmp/rendered.yaml) lines"
+          # Catch the most common YAML breakage early.
+          python3 -c "import yaml,sys; [yaml.safe_load(d) for d in yaml.safe_load_all(open('/tmp/rendered.yaml'))]"
+
+  # ─── Generated artefacts are up to date with the manifest ─────────────
+  generators:
+    name: Generators idempotent?
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: "20" }
+      - name: re-run generators
+        run: |
+          node scripts/append-medical-mcps.mjs
+          node scripts/generate-mcps.mjs
+          node scripts/write-real-tools.mjs
+          node scripts/generate-helm-index.mjs
+      - name: working tree must be clean
+        run: |
+          if ! git diff --quiet; then
+            echo "::error::Generated artefacts are out of date. Run `make generate` and commit."
+            git --no-pager diff --stat
+            exit 1
+          fi

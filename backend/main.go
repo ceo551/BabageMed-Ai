@@ -15,6 +15,7 @@ import (
 	"github.com/babagemed/backend/internal/db"
 	"github.com/babagemed/backend/internal/llm"
 	"github.com/babagemed/backend/internal/mcp"
+	"github.com/babagemed/backend/internal/metrics"
 	"github.com/babagemed/backend/internal/payments"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
@@ -88,6 +89,7 @@ func main() {
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
 	r.Use(middleware.Timeout(60 * time.Second))
+	r.Use(metrics.Middleware())
 	r.Use(cors.Handler(cors.Options{
 		AllowedOrigins:   []string{"*"},
 		AllowedMethods:   []string{"GET", "POST", "OPTIONS"},
@@ -101,6 +103,7 @@ func main() {
 	}
 
 	r.Get("/health", apiH.Health)
+	r.Method("GET", "/metrics", metrics.Handler())
 
 	// MCP browse + call — anonymous-readable
 	r.Get("/api/mcp/servers", apiH.ListServers)

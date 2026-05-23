@@ -112,6 +112,30 @@ mcps:
       maxReplicas: 3
       targetCPUUtilizationPercentage: 80
 
+# ─── Monitoring (Prometheus + Grafana) ────────────────────────────────────
+# Requires the prometheus-operator (kube-prometheus-stack) CRDs to be
+# installed for ServiceMonitor + PrometheusRule. The Grafana dashboard is
+# picked up by Grafana's sidecar via a configurable label.
+monitoring:
+  serviceMonitor:
+    enabled: false
+    interval: 30s
+    scrapeTimeout: 10s
+    # Extra labels Prometheus selects on (kube-prometheus-stack uses
+    # `release: kube-prometheus-stack` by default).
+    labels:
+      release: kube-prometheus-stack
+  prometheusRule:
+    enabled: false
+    labels:
+      release: kube-prometheus-stack
+  grafanaDashboard:
+    enabled: false
+    # kube-prometheus-stack expects { grafana_dashboard: "1" }; bitnami expects
+    # { grafana_dashboard: babagemed-overview }. Defaults to the former.
+    label: grafana_dashboard
+    labelValue: "1"
+
 # ─── NetworkPolicy ────────────────────────────────────────────────────────
 # Zero-trust namespace: default-deny + per-component allow rules.
 # Frontend ← ingress controller only; Backend ← frontend + ingress;
