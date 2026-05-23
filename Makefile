@@ -1,20 +1,16 @@
-.PHONY: help env generate up up-minimal up-kvm2 up-kvm2-tls up-full down logs ps health rebuild clean
+.PHONY: help env generate up up-minimal up-full down logs ps health rebuild clean
 
 SHELL := /bin/bash
 COMPOSE_FULL    := docker compose -f docker-compose.yml -f docker-compose.mcps.yml
 COMPOSE_MINIMAL := docker compose -f docker-compose.yml -f docker-compose.minimal.yml
-COMPOSE_KVM2    := docker compose -f docker-compose.yml -f docker-compose.kvm2.yml
-COMPOSE_KVM2_TLS:= docker compose -f docker-compose.yml -f docker-compose.kvm2.yml -f docker-compose.caddy.yml
 
 help:
 	@echo "BabageMed AI — common tasks"
 	@echo ""
 	@echo "  make env            Copy .env.example → .env (only if .env missing)"
-	@echo "  make generate       Regenerate all 86 MCP scaffolds from manifest"
+	@echo "  make generate       Regenerate all MCP scaffolds from manifest"
 	@echo ""
 	@echo "  make up-minimal     Bring up frontend + backend + 12 API MCPs (recommended first run)"
-	@echo "  make up-kvm2        Bring up curated 47-MCP stack for Hostinger KVM2 (2 vCPU / 8 GB / 100 GB)"
-	@echo "  make up-kvm2-tls    Same as up-kvm2 + Caddy reverse-proxy with auto-TLS (set DOMAIN=…)"
 	@echo "  make up-full        Bring up all 416 MCPs (heavy — needs ~250 GB disk, ~40 GB RAM)"
 	@echo "  make down           Stop and remove containers"
 	@echo "  make logs           Tail logs (Ctrl-C to exit)"
@@ -30,7 +26,6 @@ generate:
 	node scripts/append-medical-mcps.mjs
 	node scripts/generate-mcps.mjs
 	node scripts/write-real-tools.mjs
-	node scripts/generate-kvm2-compose.mjs
 
 up: up-minimal
 
@@ -39,19 +34,6 @@ up-minimal:
 	@echo ""
 	@echo "Dashboard:  http://localhost:3000"
 	@echo "Backend:    http://localhost:8080/health"
-
-up-kvm2:
-	$(COMPOSE_KVM2) up -d --build
-	@echo ""
-	@echo "Dashboard:  http://localhost:3000"
-	@echo "Backend:    http://localhost:8080/health"
-	@echo "47 MCPs running (mix of API + scrape)"
-
-up-kvm2-tls:
-	@test -n "$$DOMAIN" || (echo "DOMAIN env var required (e.g. DOMAIN=app.babagemed.com make up-kvm2-tls)" && exit 1)
-	$(COMPOSE_KVM2_TLS) up -d --build
-	@echo ""
-	@echo "Dashboard:  https://$$DOMAIN (cert issued in ~30 s on first start)"
 
 up-full:
 	$(COMPOSE_FULL) up -d --build
@@ -63,8 +45,6 @@ up-full:
 down:
 	-$(COMPOSE_FULL) down
 	-$(COMPOSE_MINIMAL) down
-	-$(COMPOSE_KVM2) down
-	-$(COMPOSE_KVM2_TLS) down
 
 logs:
 	$(COMPOSE_FULL) logs -f --tail=50

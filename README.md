@@ -40,11 +40,6 @@ Defined in `scripts/medical-sites.json` and appended to the master manifest via 
 
 Source of truth: `scripts/mcps.manifest.json` (auto-merged from `scripts/medical-sites.json` for the medical scrape batch). Each row → one folder under `mcps/<id>/`.
 
-## Deployment guides
-
-- **Local dev (Docker)** — see [RUN.md](RUN.md)
-- **Hostinger KVM2 / similar 2 vCPU · 8 GB VPS** — see [docs/DEPLOY-HOSTINGER-KVM2.md](docs/DEPLOY-HOSTINGER-KVM2.md). Curated 47-MCP stack with TLS in ~30 min.
-
 ## Quick start
 
 ```bash
