@@ -158,33 +158,61 @@ function AccountChip(props: {
   // Render-gate the portal until after first client mount.
   useEffect(() => { setMounted(true); }, []);
 
-  // Position the popover above the chip, anchored to the sidebar edge.
+  // Anchor the popover directly to the chip (not to the sidebar rect).
+  // The previous version measured the sidebar and added an offset; that broke
+  // when the sidebar's stacking context (backdrop-filter) confused getBCR
+  // and the popover landed on the wrong side of the screen entirely.
+  //
+  // Both LTR and RTL: popover sits ABOVE the chip, with its near edge
+  // (left in LTR, right in RTL) aligned to the chip's near edge.
   function position() {
     const el = chipRef.current;
     if (!el) return;
     const r = el.getBoundingClientRect();
-    const sb = document.querySelector(".sidebar")?.getBoundingClientRect();
-    const dir = document.documentElement.dir || "ltr";
+    const dir = document.documentElement.dir === "rtl" ? "rtl" : "ltr";
     const bottom = window.innerHeight - r.top + 8;
     const width = Math.max(r.width, 260);
     if (dir === "rtl") {
-      setPopStyle({ position: "fixed", bottom, right: window.innerWidth - r.right, width, zIndex: 50 });
+      setPopStyle({
+        position: "fixed",
+        bottom,
+        right: Math.max(8, window.innerWidth - r.right),
+        width,
+        zIndex: 50,
+      });
     } else {
-      const left = sb ? sb.left + 12 : r.left;
-      setPopStyle({ position: "fixed", bottom, left, width, zIndex: 50 });
+      setPopStyle({
+        position: "fixed",
+        bottom,
+        left: Math.max(8, r.left),
+        width,
+        zIndex: 50,
+      });
     }
   }
 
+  // Sub-popover spawns from a row inside the main popover. It floats to the
+  // side AWAY from the chip (so it doesn't overlap the menu the user just
+  // opened) — to the right in LTR, to the left in RTL.
   function openSub(name: "appearance" | "language" | null, e: React.MouseEvent<HTMLButtonElement>) {
     const row = e.currentTarget.getBoundingClientRect();
-    const sb = document.querySelector(".sidebar")?.getBoundingClientRect();
-    const dir = document.documentElement.dir || "ltr";
-    if (sb) {
+    const pop = popRef.current?.getBoundingClientRect();
+    const dir = document.documentElement.dir === "rtl" ? "rtl" : "ltr";
+    const top = row.top;
+    if (!pop) {
+      // Should never happen — popRef is set when the main popover is mounted.
+      // Fall through to using the row as the anchor.
       if (dir === "rtl") {
-        setSubStyle({ position: "fixed", top: row.top, right: window.innerWidth - sb.left + 8, zIndex: 51 });
+        setSubStyle({ position: "fixed", top, right: window.innerWidth - row.left + 8, zIndex: 51 });
       } else {
-        setSubStyle({ position: "fixed", top: row.top, left: sb.right + 8, zIndex: 51 });
+        setSubStyle({ position: "fixed", top, left: row.right + 8, zIndex: 51 });
       }
+    } else if (dir === "rtl") {
+      // Place sub-popover to the LEFT of the main popover.
+      setSubStyle({ position: "fixed", top, right: Math.max(8, window.innerWidth - pop.left + 8), zIndex: 51 });
+    } else {
+      // Place sub-popover to the RIGHT of the main popover.
+      setSubStyle({ position: "fixed", top, left: Math.min(window.innerWidth - 220, pop.right + 8), zIndex: 51 });
     }
     setSub(name);
   }
