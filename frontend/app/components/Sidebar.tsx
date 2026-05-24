@@ -1,21 +1,22 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import React from "react";
+import { useRouter, usePathname } from "next/navigation";
+import React, { useEffect, useRef, useState } from "react";
 import { I } from "../icons";
 import { useAuth } from "../lib/auth-context";
 import { useUI } from "../lib/ui-context";
 
-// Sidebar — extracted from the Dashboard page so it can live in the
-// app-wide AppShell and persist across navigations (Claude-style).
+// Sidebar — persistent across pages (mounted by AppShell).
 //
-// Local state (open popovers) stays per-instance, but the surrounding
-// theme/locale/collapsed state comes from the UIContext provider mounted
-// by AppShell — that's why a theme toggle on /mcps takes effect on
-// /spaces too without a remount.
+// Top section: brand + collapse toggle, New chat button, primary nav
+// (Spaces, History, Connectors).
+// Bottom: a single account chip. Clicking it opens a Claude-style popover
+// floating above with Appearance / Language / Settings / Plans / Logout
+// rows. Two nested sub-popovers (Appearance, Language) flyout to the side.
 export function Sidebar() {
   const router = useRouter();
+  const pathname = usePathname();
   const { user, signOut } = useAuth();
   const { locale, setLocale, theme, setTheme, effectiveTheme, toggleCollapsed, s } = useUI();
 
@@ -27,22 +28,17 @@ export function Sidebar() {
     .map((w) => w[0]?.toUpperCase())
     .join("") || "AR";
 
-  function cycleTheme() {
-    const next = theme === "dark" ? "light" : theme === "light" ? "system" : "dark";
-    setTheme(next);
-  }
-  function toggleLocale() { setLocale(locale === "en" ? "ar" : "en"); }
-
   function startNewChat() {
-    // Today "New" just navigates home with a hard refresh so all per-message
-    // composer state resets. When chat persistence lands this becomes
-    // /chat/new.
-    router.push("/");
-    if (typeof window !== "undefined") window.location.reload();
+    if (pathname !== "/") {
+      // Different page → push home; the dashboard mounts fresh so the composer
+      // is empty by default.
+      router.push("/");
+    } else {
+      // Already home → bump a refresh param so React remounts the page subtree
+      // and resets the composer without a hard browser reload.
+      router.replace(`/?n=${Date.now()}`);
+    }
   }
-
-  const themeIcon = effectiveTheme === "light" ? I.sun : I.moon;
-  const themeLabel = theme === "system" ? s.themeSystem : theme === "light" ? s.themeLight : s.themeDark;
 
   return (
     <aside className="sidebar" aria-label="Sidebar">
@@ -84,20 +80,22 @@ export function Sidebar() {
         </Link>
       </div>
 
-      <div className="sb-foot sb-foot-flat">
+      <div className="sb-foot">
         {user ? (
-          <Link
-            href="/billing"
-            className="sb-account"
-            title={`${displayName} · ${user.plan} plan`}
-            style={{ textDecoration: "none" }}
-          >
-            <span className="av">{initials}</span>
-            <span className="who">
-              <span className="nm">{displayName}</span>
-              <span className="pl">{user.plan} plan</span>
-            </span>
-          </Link>
+          <AccountChip
+            displayName={displayName}
+            initials={initials}
+            plan={user.plan}
+            email={user.email}
+            isAdmin={user.isAdmin}
+            locale={locale}
+            setLocale={setLocale}
+            theme={theme}
+            setTheme={setTheme}
+            effectiveTheme={effectiveTheme}
+            s={s}
+            onSignOut={async () => { await signOut(); router.push("/"); }}
+          />
         ) : (
           <div style={{ display: "flex", gap: 6 }}>
             <Link
@@ -119,35 +117,255 @@ export function Sidebar() {
             ><span className="lbl">Sign up</span></Link>
           </div>
         )}
-
-        <button className="sb-row" type="button" onClick={cycleTheme} title={`${s.appearance}: ${themeLabel}`}>
-          <span className="swatch-square">{themeIcon}</span>
-          <span className="lbl">{themeLabel}</span>
-        </button>
-        <button className="sb-row" type="button" onClick={toggleLocale} title={`${s.language}: ${locale === "en" ? s.langEN : s.langAR}`}>
-          <span className="swatch-square">{I.globe}</span>
-          <span className="lbl">{locale === "en" ? s.langEN : s.langAR}</span>
-        </button>
-        <Link href="/admin" className="sb-row" style={{ textDecoration: "none" }} title={s.settings}>
-          <span className="swatch-square">{I.gear}</span>
-          <span className="lbl">{s.settings}</span>
-        </Link>
-        <Link href="/billing" className="sb-row" style={{ textDecoration: "none" }} title={s.plans}>
-          <span className="swatch-square y">{I.bolt}</span>
-          <span className="lbl">{s.plans}</span>
-        </Link>
-        {user && (
-          <button
-            className="sb-row"
-            type="button"
-            onClick={async () => { await signOut(); router.push("/"); }}
-            title={s.logout}
-          >
-            <span className="swatch-square p">{I.logout}</span>
-            <span className="lbl">{s.logout}</span>
-          </button>
-        )}
       </div>
     </aside>
+  );
+}
+
+// ─── Account chip + popover ────────────────────────────────────────────────
+// Click the chip → big popover floats above. Two nested sub-popovers
+// (Appearance, Language) fly out to the side. Outside-click closes everything.
+function AccountChip(props: {
+  displayName: string;
+  initials: string;
+  plan: string;
+  email?: string;
+  isAdmin?: boolean;
+  locale: "en" | "ar";
+  setLocale: (l: "en" | "ar") => void;
+  theme: "light" | "dark" | "system";
+  setTheme: (t: "light" | "dark" | "system") => void;
+  effectiveTheme: "light" | "dark";
+  s: ReturnType<typeof useUI>["s"];
+  onSignOut: () => void;
+}) {
+  const {
+    displayName, initials, plan, email, isAdmin,
+    locale, setLocale, theme, setTheme, effectiveTheme,
+    s, onSignOut,
+  } = props;
+
+  const [open, setOpen] = useState(false);
+  const [sub, setSub] = useState<null | "appearance" | "language">(null);
+  const [popStyle, setPopStyle] = useState<React.CSSProperties>({});
+  const [subStyle, setSubStyle] = useState<React.CSSProperties>({});
+  const chipRef = useRef<HTMLButtonElement>(null);
+  const popRef = useRef<HTMLDivElement>(null);
+
+  // Position the popover above the chip, anchored to the sidebar edge.
+  function position() {
+    const el = chipRef.current;
+    if (!el) return;
+    const r = el.getBoundingClientRect();
+    const sb = document.querySelector(".sidebar")?.getBoundingClientRect();
+    const dir = document.documentElement.dir || "ltr";
+    const bottom = window.innerHeight - r.top + 8;
+    const width = Math.max(r.width, 260);
+    if (dir === "rtl") {
+      setPopStyle({ position: "fixed", bottom, right: window.innerWidth - r.right, width, zIndex: 50 });
+    } else {
+      const left = sb ? sb.left + 12 : r.left;
+      setPopStyle({ position: "fixed", bottom, left, width, zIndex: 50 });
+    }
+  }
+
+  function openSub(name: "appearance" | "language" | null, e: React.MouseEvent<HTMLButtonElement>) {
+    const row = e.currentTarget.getBoundingClientRect();
+    const sb = document.querySelector(".sidebar")?.getBoundingClientRect();
+    const dir = document.documentElement.dir || "ltr";
+    if (sb) {
+      if (dir === "rtl") {
+        setSubStyle({ position: "fixed", top: row.top, right: window.innerWidth - sb.left + 8, zIndex: 51 });
+      } else {
+        setSubStyle({ position: "fixed", top: row.top, left: sb.right + 8, zIndex: 51 });
+      }
+    }
+    setSub(name);
+  }
+
+  function toggle() {
+    if (!open) {
+      position();
+      setOpen(true);
+    } else {
+      setOpen(false);
+      setSub(null);
+    }
+  }
+
+  useEffect(() => {
+    if (!open) return;
+    function onDoc(e: MouseEvent) {
+      const target = e.target as Node;
+      if (
+        !popRef.current?.contains(target) &&
+        !chipRef.current?.contains(target) &&
+        !document.querySelector(".acct-sub-pop")?.contains(target)
+      ) {
+        setOpen(false);
+        setSub(null);
+      }
+    }
+    function onResize() { position(); }
+    document.addEventListener("mousedown", onDoc);
+    window.addEventListener("resize", onResize);
+    return () => {
+      document.removeEventListener("mousedown", onDoc);
+      window.removeEventListener("resize", onResize);
+    };
+  }, [open]);
+
+  const themeIcon = effectiveTheme === "light" ? I.sun : I.moon;
+  const themeDesc =
+    theme === "system" ? `${s.themeSystem} (${effectiveTheme === "light" ? s.themeLight : s.themeDark})`
+    : theme === "light" ? s.themeLight
+    : s.themeDark;
+
+  return (
+    <>
+      <button
+        ref={chipRef}
+        className="sb-account"
+        type="button"
+        data-active={open}
+        onClick={toggle}
+        aria-haspopup="menu"
+        aria-expanded={open}
+      >
+        <span className="av">{initials}</span>
+        <span className="who">
+          <span className="nm">{displayName}</span>
+          <span className="pl">{plan} plan</span>
+        </span>
+        <span className="chev">{I.chevR}</span>
+      </button>
+
+      {open && (
+        <div ref={popRef} className="tools-pop account-pop" style={popStyle} role="menu">
+          {/* Header row — non-interactive identity card. */}
+          <div className="tool-row" style={{ pointerEvents: "none" }}>
+            <span
+              className="av"
+              style={{
+                width: 36, height: 36, borderRadius: "50%",
+                background: "linear-gradient(135deg, var(--cyan), var(--purple))",
+                display: "inline-flex", alignItems: "center", justifyContent: "center",
+                color: "white", fontWeight: 700, fontSize: 13,
+              }}
+            >{initials}</span>
+            <span className="col">
+              <span className="ttl">{displayName}</span>
+              <span className="desc">{email || `${plan} plan`}</span>
+            </span>
+          </div>
+          <div className="popover-sep" />
+
+          <button
+            type="button"
+            className="tool-row"
+            data-active={sub === "appearance"}
+            onClick={(e) => openSub(sub === "appearance" ? null : "appearance", e)}
+          >
+            <span className="swatch">{themeIcon}</span>
+            <span className="col">
+              <span className="ttl">{s.appearance}</span>
+              <span className="desc">{themeDesc}</span>
+            </span>
+            <span className="trail-chev">{I.chevR}</span>
+          </button>
+
+          <button
+            type="button"
+            className="tool-row"
+            data-active={sub === "language"}
+            onClick={(e) => openSub(sub === "language" ? null : "language", e)}
+          >
+            <span className="swatch">{I.globe}</span>
+            <span className="col">
+              <span className="ttl">{s.language}</span>
+              <span className="desc">{locale === "en" ? s.langEN : s.langAR}</span>
+            </span>
+            <span className="trail-chev">{I.chevR}</span>
+          </button>
+
+          <div className="popover-sep" />
+
+          <Link href="/admin" className="tool-row" onClick={() => setOpen(false)}>
+            <span className="swatch">{I.gear}</span>
+            <span className="col">
+              <span className="ttl">{s.settings}</span>
+              <span className="desc">{s.settingsDesc}</span>
+            </span>
+          </Link>
+          <Link href="/billing" className="tool-row" onClick={() => setOpen(false)}>
+            <span className="swatch y">{I.bolt}</span>
+            <span className="col">
+              <span className="ttl">{s.plans}</span>
+              <span className="desc">{s.plansDesc}</span>
+            </span>
+          </Link>
+          {isAdmin && (
+            <Link href="/admin" className="tool-row" onClick={() => setOpen(false)}>
+              <span className="swatch p">{I.skills}</span>
+              <span className="col">
+                <span className="ttl">Admin</span>
+                <span className="desc">Users · payments · sessions</span>
+              </span>
+            </Link>
+          )}
+
+          <div className="popover-sep" />
+
+          <button
+            type="button"
+            className="tool-row logout"
+            onClick={async () => { setOpen(false); await onSignOut(); }}
+          >
+            <span className="swatch p">{I.logout}</span>
+            <span className="col">
+              <span className="ttl">{s.logout}</span>
+              <span className="desc">{s.logoutDesc}</span>
+            </span>
+          </button>
+        </div>
+      )}
+
+      {/* Appearance flyout */}
+      {open && sub === "appearance" && (
+        <div className="tools-pop acct-sub-pop" style={subStyle} role="menu">
+          <button type="button" className="tool-row" data-active={theme === "light"} onClick={() => setTheme("light")}>
+            <span className="swatch">{I.sun}</span>
+            <span className="ttl">{s.themeLight}</span>
+            {theme === "light" && <span className="check-end">{I.check}</span>}
+          </button>
+          <button type="button" className="tool-row" data-active={theme === "dark"} onClick={() => setTheme("dark")}>
+            <span className="swatch">{I.moon}</span>
+            <span className="ttl">{s.themeDark}</span>
+            {theme === "dark" && <span className="check-end">{I.check}</span>}
+          </button>
+          <button type="button" className="tool-row" data-active={theme === "system"} onClick={() => setTheme("system")}>
+            <span className="swatch">{I.monitor}</span>
+            <span className="ttl">{s.themeSystem}</span>
+            {theme === "system" && <span className="check-end">{I.check}</span>}
+          </button>
+        </div>
+      )}
+
+      {/* Language flyout */}
+      {open && sub === "language" && (
+        <div className="tools-pop acct-sub-pop" style={subStyle} role="menu">
+          <button type="button" className="tool-row" data-active={locale === "en"} onClick={() => setLocale("en")}>
+            <span className="swatch"><span className="mono-tag">EN</span></span>
+            <span className="ttl">{s.langEN}</span>
+            {locale === "en" && <span className="check-end">{I.check}</span>}
+          </button>
+          <button type="button" className="tool-row" data-active={locale === "ar"} onClick={() => setLocale("ar")}>
+            <span className="swatch"><span className="mono-tag">AR</span></span>
+            <span className="ttl">{s.langAR}</span>
+            {locale === "ar" && <span className="check-end">{I.check}</span>}
+          </button>
+        </div>
+      )}
+    </>
   );
 }
