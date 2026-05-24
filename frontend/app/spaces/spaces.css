@@ -213,25 +213,34 @@
 .modal-close:hover { color: var(--ink); border-color: var(--border-strong); }
 .modal-body { padding: 14px 22px 22px; }
 
-/* New Space form inside the modal. */
+/* Form primitives — unnested so they apply to every modal (new-space,
+ * instructions, future ones) without copy-pasting. The new-space-form class
+ * is only used for layout overrides (gap, icon picker) now. */
 .new-space-form { display: flex; flex-direction: column; gap: 12px; }
-.new-space-form .field-label {
+.field-label {
   font-size: 13px; font-weight: 500; color: var(--ink);
   display: flex; align-items: center; gap: 6px;
   margin-top: 6px;
 }
-.new-space-form .field-label .optional { color: var(--muted-2); font-weight: 400; font-size: 12px; }
-.new-space-form .field-input {
-  background: var(--panel);
+.field-label .optional { color: var(--muted-2); font-weight: 400; font-size: 12px; }
+.field-input {
+  background: var(--panel-solid, #1a1c22);
   color: var(--ink);
   border: 1px solid var(--border);
   border-radius: 10px;
   padding: 10px 12px;
   font: inherit;
   outline: none;
+  width: 100%;
+  box-sizing: border-box;
 }
-.new-space-form .field-input:focus { border-color: var(--cyan-line); background: color-mix(in srgb, var(--cyan) 4%, var(--panel)); }
-.new-space-form textarea.field-input { resize: vertical; min-height: 44px; }
+.field-input::placeholder { color: var(--muted-2); }
+.field-input:focus {
+  border-color: var(--cyan-line);
+  background: color-mix(in srgb, var(--cyan) 5%, var(--panel-solid, #1a1c22));
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--cyan) 12%, transparent);
+}
+textarea.field-input { resize: vertical; min-height: 44px; line-height: 1.55; }
 .new-space-form .icon-row {
   display: flex; gap: 12px; align-items: center; padding-top: 4px;
 }
@@ -269,7 +278,7 @@
   border-color: var(--cyan-line);
   background: var(--cyan-soft);
 }
-.new-space-form .new-space-error {
+.new-space-error {
   margin-top: 4px;
   padding: 10px 12px;
   border: 1px solid var(--purple-line);
@@ -278,31 +287,56 @@
   border-radius: 10px;
   font-size: 13px;
 }
-.new-space-form .new-space-actions {
+.new-space-actions {
   display: flex; justify-content: flex-end; gap: 10px;
   margin-top: 14px;
 }
-.new-space-form .new-space-actions .ghost-btn {
+
+/* Modal buttons — unnested so they style any modal's Cancel / Confirm row. */
+.ghost-btn {
   background: transparent;
-  color: var(--muted);
+  color: var(--ink-2);
   border: 1px solid var(--border);
-  padding: 9px 18px;
+  padding: 10px 20px;
   border-radius: 10px;
   cursor: pointer;
   font: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.2;
+  transition: background .12s, border-color .12s, color .12s;
 }
-.new-space-form .new-space-actions .ghost-btn:hover { color: var(--ink); }
-.new-space-form .new-space-actions .primary-btn {
-  background: var(--cyan-soft);
+.ghost-btn:hover {
+  color: var(--ink);
+  background: var(--panel);
+  border-color: var(--border-strong);
+}
+.ghost-btn[disabled] { opacity: .55; cursor: not-allowed; }
+
+.primary-btn {
+  background: linear-gradient(180deg,
+    color-mix(in srgb, var(--cyan) 32%, transparent),
+    color-mix(in srgb, var(--cyan) 18%, transparent));
   color: var(--cyan);
   border: 1px solid var(--cyan-line);
-  padding: 9px 18px;
+  padding: 10px 20px;
   border-radius: 10px;
   cursor: pointer;
   font-weight: 600;
   font: inherit;
+  font-size: 14px;
+  line-height: 1.2;
+  box-shadow: 0 1px 0 color-mix(in srgb, var(--cyan) 30%, transparent) inset;
+  transition: filter .12s, transform .04s;
 }
-.new-space-form .new-space-actions .primary-btn[disabled] { opacity: .55; cursor: not-allowed; }
+.primary-btn:hover { filter: brightness(1.15); }
+.primary-btn:active { transform: translateY(1px); }
+.primary-btn[disabled] {
+  opacity: .5;
+  cursor: not-allowed;
+  filter: grayscale(.3);
+  box-shadow: none;
+}
 
 /* ─── Space detail (Claude-style Project page) ──────────────────────────── */
 .space-detail-shell {
