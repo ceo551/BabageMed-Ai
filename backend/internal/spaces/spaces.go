@@ -33,12 +33,14 @@ const (
 )
 
 type Space struct {
-	ID          string    `json:"id"`
-	Name        string    `json:"name"`
-	Description string    `json:"description"`
-	CreatedAt   time.Time `json:"createdAt"`
-	UpdatedAt   time.Time `json:"updatedAt"`
-	FileCount   int       `json:"fileCount"`
+	ID           string    `json:"id"`
+	Name         string    `json:"name"`
+	Description  string    `json:"description"`
+	Icon         string    `json:"icon"`         // emoji glyph picked at create time
+	Instructions string    `json:"instructions"` // custom system prompt prefix
+	CreatedAt    time.Time `json:"createdAt"`
+	UpdatedAt    time.Time `json:"updatedAt"`
+	FileCount    int       `json:"fileCount"`
 }
 
 type File struct {
@@ -71,20 +73,41 @@ func New(d *db.DB, a *auth.Service) *Service { return &Service{db: d, auth: a} }
 
 // ─── Persistence ───────────────────────────────────────────────────────────
 
-func (s *Service) Create(ctx context.Context, userID, name, description string) (*Space, error) {
-	name = strings.TrimSpace(name)
+// CreateInput is what the HTTP handler decodes from the POST body. icon /
+// instructions are optional (empty string = "default").
+type CreateInput struct {
+	Name         string `json:"name"`
+	Description  string `json:"description"`
+	Icon         string `json:"icon"`
+	Instructions string `json:"instructions"`
+}
+
+func (s *Service) Create(ctx context.Context, userID string, in CreateInput) (*Space, error) {
+	name := strings.TrimSpace(in.Name)
 	if name == "" {
 		return nil, errors.New("name required")
 	}
 	if len(name) > 200 {
 		return nil, errors.New("name too long")
 	}
+	// Clamp instructions/icon defensively; the chat layer concatenates these
+	// into the system prompt, so we don't want a 1 MB blob sneaking in.
+	icon := strings.TrimSpace(in.Icon)
+	if len(icon) > 16 {
+		icon = icon[:16]
+	}
+	instr := strings.TrimSpace(in.Instructions)
+	if len(instr) > 8000 {
+		instr = instr[:8000]
+	}
 	var sp Space
 	err := s.db.Pool.QueryRow(ctx, `
-        INSERT INTO spaces (user_id, name, description)
-        VALUES ($1, $2, NULLIF($3, ''))
-        RETURNING id, name, COALESCE(description, ''), created_at, updated_at
-    `, userID, name, description).Scan(&sp.ID, &sp.Name, &sp.Description, &sp.CreatedAt, &sp.UpdatedAt)
+        INSERT INTO spaces (user_id, name, description, icon, instructions)
+        VALUES ($1, $2, NULLIF($3, ''), $4, $5)
+        RETURNING id, name, COALESCE(description, ''), icon, instructions, created_at, updated_at
+    `, userID, name, in.Description, icon, instr).Scan(
+		&sp.ID, &sp.Name, &sp.Description, &sp.Icon, &sp.Instructions, &sp.CreatedAt, &sp.UpdatedAt,
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -93,7 +116,8 @@ func (s *Service) Create(ctx context.Context, userID, name, description string) 
 
 func (s *Service) List(ctx context.Context, userID string) ([]Space, error) {
 	rows, err := s.db.Pool.Query(ctx, `
-        SELECT s.id, s.name, COALESCE(s.description, ''), s.created_at, s.updated_at,
+        SELECT s.id, s.name, COALESCE(s.description, ''), s.icon, s.instructions,
+               s.created_at, s.updated_at,
                (SELECT count(*) FROM space_files f WHERE f.space_id = s.id)
         FROM spaces s
         WHERE s.user_id = $1
@@ -106,7 +130,10 @@ func (s *Service) List(ctx context.Context, userID string) ([]Space, error) {
 	out := []Space{}
 	for rows.Next() {
 		var sp Space
-		if err := rows.Scan(&sp.ID, &sp.Name, &sp.Description, &sp.CreatedAt, &sp.UpdatedAt, &sp.FileCount); err != nil {
+		if err := rows.Scan(
+			&sp.ID, &sp.Name, &sp.Description, &sp.Icon, &sp.Instructions,
+			&sp.CreatedAt, &sp.UpdatedAt, &sp.FileCount,
+		); err != nil {
 			return nil, err
 		}
 		out = append(out, sp)
@@ -117,10 +144,14 @@ func (s *Service) List(ctx context.Context, userID string) ([]Space, error) {
 func (s *Service) Get(ctx context.Context, userID, spaceID string) (*Space, error) {
 	var sp Space
 	err := s.db.Pool.QueryRow(ctx, `
-        SELECT id, name, COALESCE(description, ''), created_at, updated_at,
+        SELECT id, name, COALESCE(description, ''), icon, instructions,
+               created_at, updated_at,
                (SELECT count(*) FROM space_files f WHERE f.space_id = $1)
         FROM spaces WHERE id = $1 AND user_id = $2
-    `, spaceID, userID).Scan(&sp.ID, &sp.Name, &sp.Description, &sp.CreatedAt, &sp.UpdatedAt, &sp.FileCount)
+    `, spaceID, userID).Scan(
+		&sp.ID, &sp.Name, &sp.Description, &sp.Icon, &sp.Instructions,
+		&sp.CreatedAt, &sp.UpdatedAt, &sp.FileCount,
+	)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, nil
 	}
@@ -309,12 +340,12 @@ func (s *Service) handleList(w http.ResponseWriter, r *http.Request) {
 
 func (s *Service) handleCreate(w http.ResponseWriter, r *http.Request) {
 	u := auth.FromContext(r.Context())
-	var body struct{ Name, Description string }
-	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+	var in CreateInput
+	if err := json.NewDecoder(r.Body).Decode(&in); err != nil {
 		http.Error(w, "bad json", http.StatusBadRequest)
 		return
 	}
-	sp, err := s.Create(r.Context(), u.ID, body.Name, body.Description)
+	sp, err := s.Create(r.Context(), u.ID, in)
 	writeJSON(w, sp, err)
 }
 

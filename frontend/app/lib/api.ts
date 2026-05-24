@@ -136,9 +136,17 @@ export type Space = {
   id: string;
   name: string;
   description: string;
+  icon: string;          // emoji glyph picked at create time, "" if unset
+  instructions: string;  // custom system-prompt prefix for the agent
   fileCount: number;
   createdAt: string;
   updatedAt: string;
+};
+export type CreateSpaceInput = {
+  name: string;
+  description?: string;
+  icon?: string;
+  instructions?: string;
 };
 export type SpaceFile = {
   id: string;
@@ -162,8 +170,13 @@ export type SpaceChunk = {
 
 export const spaces = {
   list:   () => api.get<Space[]>("/api/spaces"),
-  create: (name: string, description = "") =>
-    api.post<Space>("/api/spaces", { name, description }),
+  create: (input: CreateSpaceInput) =>
+    api.post<Space>("/api/spaces", {
+      name: input.name,
+      description: input.description || "",
+      icon: input.icon || "",
+      instructions: input.instructions || "",
+    }),
   get:    (id: string) => api.get<Space>(`/api/spaces/${encodeURIComponent(id)}`),
   remove: (id: string) =>
     fetch(`/api/backend/api/spaces/${encodeURIComponent(id)}`, { method: "DELETE", credentials: "include" }).then((r) => {

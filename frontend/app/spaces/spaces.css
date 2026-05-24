@@ -118,5 +118,188 @@
 
 .empty {
   border: 1px dashed var(--border); border-radius: 12px;
-  padding: 36px; text-align: center; color: var(--muted);
+  padding: 48px 24px; text-align: center; color: var(--muted);
+  display: flex; flex-direction: column; align-items: center; gap: 10px;
 }
+.empty-icon { font-size: 48px; line-height: 1; }
+.empty-title { color: var(--ink); font-weight: 600; font-size: 18px; }
+.empty-sub   { color: var(--muted); max-width: 42ch; }
+
+/* Page header — title block on the left, big "+ New space" button on the right. */
+.spaces-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+  flex-wrap: wrap;
+}
+.new-space-btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: var(--cyan-soft);
+  color: var(--cyan);
+  border: 1px solid var(--cyan-line);
+  border-radius: 999px;
+  padding: 9px 18px;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  font: inherit;
+}
+.new-space-btn:hover { filter: brightness(1.1); }
+.new-space-btn[disabled] { opacity: .5; cursor: not-allowed; }
+
+/* Rewritten card layout with emoji / letter chip on the left. */
+.space-card { position: relative; padding: 14px; }
+.space-card .card-body { color: inherit; text-decoration: none; display: flex; flex-direction: column; gap: 10px; }
+.space-card .card-row { display: flex; gap: 12px; align-items: flex-start; }
+.space-card .card-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1; }
+.space-card .space-emoji,
+.space-card .space-letter {
+  width: 44px; height: 44px;
+  border-radius: 12px;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: 24px;
+  flex-shrink: 0;
+}
+.space-card .space-emoji { background: color-mix(in srgb, var(--ink) 8%, transparent); }
+.space-card .space-letter { font-weight: 700; font-size: 20px; }
+.space-card .card-del {
+  position: absolute; top: 8px; inset-inline-end: 8px;
+  width: 26px; height: 26px;
+  background: transparent; color: var(--muted-2);
+  border: 1px solid var(--border); border-radius: 8px;
+  display: inline-flex; align-items: center; justify-content: center;
+  cursor: pointer; font-size: 18px;
+}
+.space-card .card-del:hover { color: var(--purple); border-color: var(--purple-line); }
+
+/* ─── Modal ─────────────────────────────────────────────────────────────── */
+.modal-backdrop {
+  position: fixed; inset: 0; z-index: 100;
+  background: color-mix(in srgb, black 60%, transparent);
+  display: flex; align-items: center; justify-content: center;
+  padding: 24px;
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  animation: modal-fade .12s ease-out;
+}
+@keyframes modal-fade { from { opacity: 0 } to { opacity: 1 } }
+.modal-card {
+  max-width: 100%;
+  max-height: calc(100vh - 48px);
+  overflow-y: auto;
+  background: var(--panel-solid, #16181d);
+  color: var(--ink);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  box-shadow: 0 24px 60px -10px rgba(0, 0, 0, 0.55);
+  display: flex; flex-direction: column;
+}
+.modal-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 18px 22px 6px;
+}
+.modal-title { font-weight: 600; font-size: 18px; }
+.modal-close {
+  width: 28px; height: 28px;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 18px;
+  line-height: 1;
+}
+.modal-close:hover { color: var(--ink); border-color: var(--border-strong); }
+.modal-body { padding: 14px 22px 22px; }
+
+/* New Space form inside the modal. */
+.new-space-form { display: flex; flex-direction: column; gap: 12px; }
+.new-space-form .field-label {
+  font-size: 13px; font-weight: 500; color: var(--ink);
+  display: flex; align-items: center; gap: 6px;
+  margin-top: 6px;
+}
+.new-space-form .field-label .optional { color: var(--muted-2); font-weight: 400; font-size: 12px; }
+.new-space-form .field-input {
+  background: var(--panel);
+  color: var(--ink);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 12px;
+  font: inherit;
+  outline: none;
+}
+.new-space-form .field-input:focus { border-color: var(--cyan-line); background: color-mix(in srgb, var(--cyan) 4%, var(--panel)); }
+.new-space-form textarea.field-input { resize: vertical; min-height: 44px; }
+.new-space-form .icon-row {
+  display: flex; gap: 12px; align-items: center; padding-top: 4px;
+}
+.new-space-form .icon-preview {
+  width: 64px; height: 64px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--ink) 10%, transparent);
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: 34px;
+  flex-shrink: 0;
+}
+.new-space-form .icon-palette {
+  flex: 1;
+  display: grid;
+  grid-template-columns: repeat(10, 1fr);
+  gap: 4px;
+}
+@media (max-width: 540px) {
+  .new-space-form .icon-palette { grid-template-columns: repeat(8, 1fr); }
+}
+.new-space-form .icon-chip {
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  padding: 4px 0;
+  font-size: 22px;
+  cursor: pointer;
+  line-height: 1;
+  display: inline-flex; align-items: center; justify-content: center;
+  height: 36px;
+  transition: background .12s, border-color .12s;
+}
+.new-space-form .icon-chip:hover { background: color-mix(in srgb, var(--ink) 8%, transparent); }
+.new-space-form .icon-chip[data-active="true"] {
+  border-color: var(--cyan-line);
+  background: var(--cyan-soft);
+}
+.new-space-form .new-space-error {
+  margin-top: 4px;
+  padding: 10px 12px;
+  border: 1px solid var(--purple-line);
+  background: var(--purple-soft);
+  color: var(--purple);
+  border-radius: 10px;
+  font-size: 13px;
+}
+.new-space-form .new-space-actions {
+  display: flex; justify-content: flex-end; gap: 10px;
+  margin-top: 14px;
+}
+.new-space-form .new-space-actions .ghost-btn {
+  background: transparent;
+  color: var(--muted);
+  border: 1px solid var(--border);
+  padding: 9px 18px;
+  border-radius: 10px;
+  cursor: pointer;
+  font: inherit;
+}
+.new-space-form .new-space-actions .ghost-btn:hover { color: var(--ink); }
+.new-space-form .new-space-actions .primary-btn {
+  background: var(--cyan-soft);
+  color: var(--cyan);
+  border: 1px solid var(--cyan-line);
+  padding: 9px 18px;
+  border-radius: 10px;
+  cursor: pointer;
+  font-weight: 600;
+  font: inherit;
+}
+.new-space-form .new-space-actions .primary-btn[disabled] { opacity: .55; cursor: not-allowed; }

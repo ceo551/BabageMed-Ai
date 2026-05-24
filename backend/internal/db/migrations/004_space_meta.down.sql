@@ -1,0 +1,3 @@
+ALTER TABLE spaces
+    DROP COLUMN IF EXISTS instructions,
+    DROP COLUMN IF EXISTS icon;
