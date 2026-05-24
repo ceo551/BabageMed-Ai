@@ -82,7 +82,6 @@ export default function Dashboard() {
               activeConnectorIds={activeConnectorIds}
               setActiveConnectorIds={setActiveConnectorIds}
             />
-            <p style={{ textAlign: "center", color: "var(--muted)", fontSize: 12, margin: 0 }}>{s.disclaim}</p>
           </div>
         </section>
       </main>
