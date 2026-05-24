@@ -12,6 +12,7 @@ import {
 } from "../../lib/api";
 import { useAuth } from "../../lib/auth-context";
 import { ConnectorIcon } from "../../components/ConnectorIcon";
+import { Modal } from "../../components/Modal";
 import "../mcps.css";
 
 // Connector detail page — Claude-style one-click connect.
@@ -30,6 +31,8 @@ export default function McpDetailPage() {
   const [connector, setConnector] = useState<Connector | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [keyModalOpen, setKeyModalOpen] = useState(false);
+  const [apiKeyDraft, setApiKeyDraft] = useState("");
 
   useEffect(() => {
     if (!id) return;
@@ -44,18 +47,40 @@ export default function McpDetailPage() {
       .catch(() => setConnector(null));
   }, [loading, user, id]);
 
-  async function connect() {
+  // Plain connect — used for scrape-kind connectors that need no credential.
+  async function connect(config?: Record<string, unknown>) {
     if (!id || !user) return;
     setBusy(true);
     setErr(null);
     try {
-      const c = await connectorsApi.connect(id);
+      const c = await connectorsApi.connect(id, config);
       setConnector(c);
     } catch (e: any) {
       setErr(e?.error || String(e));
     } finally {
       setBusy(false);
     }
+  }
+
+  // api-kind connectors: bounce the user to the provider site (new tab) to
+  // pick up an API key, then ask them to paste it back. The key is stored
+  // in user_connectors.config so future chat requests can attach it.
+  function beginApiConnect() {
+    if (server?.siteUrl) {
+      window.open(server.siteUrl, "_blank", "noopener,noreferrer");
+    }
+    setApiKeyDraft("");
+    setKeyModalOpen(true);
+  }
+  async function submitApiKey(skip: boolean) {
+    setKeyModalOpen(false);
+    const trimmed = apiKeyDraft.trim();
+    if (skip || !trimmed) {
+      // User chose to connect without a key — still useful for read-only
+      // public APIs (PubMed, openFDA, etc) that work unauthenticated.
+      return connect();
+    }
+    return connect({ apiKey: trimmed });
   }
 
   async function disconnect() {
@@ -136,12 +161,18 @@ export default function McpDetailPage() {
                 {busy ? "Removing…" : "Disconnect"}
               </button>
             </>
+          ) : isApi ? (
+            // api-kind: route through the OAuth-ish key dialog so we can
+            // store credentials, not just toggle the row on.
+            <button className="primary-btn" onClick={beginApiConnect} disabled={busy}>
+              {busy ? "Connecting…" : `Sign in with ${server.siteUrl ? new URL(server.siteUrl).hostname : "provider"}`}
+            </button>
           ) : (
-            <button className="primary-btn" onClick={connect} disabled={busy}>
+            <button className="primary-btn" onClick={() => connect()} disabled={busy}>
               {busy ? "Connecting…" : "+ Add connector"}
             </button>
           )}
-          {isApi && server.siteUrl && (
+          {isApi && server.siteUrl && !connected && (
             <a className="ghost-btn" href={server.siteUrl} target="_blank" rel="noopener noreferrer">
               Open provider site ↗
             </a>
@@ -162,6 +193,42 @@ export default function McpDetailPage() {
           {err}
         </div>
       )}
+
+      {/* API-key dialog for api-kind connectors. */}
+      <Modal
+        open={keyModalOpen}
+        onClose={() => setKeyModalOpen(false)}
+        title={`Connect ${server.name}`}
+        width={520}
+      >
+        <p style={{ color: "var(--muted)", fontSize: 13, lineHeight: 1.6, marginTop: 0 }}>
+          We just opened {server.siteUrl ? <a href={server.siteUrl} target="_blank" rel="noopener noreferrer" style={{ color: "var(--cyan)" }}>{new URL(server.siteUrl).hostname}</a> : "the provider site"} in a new tab.
+          Sign in there and copy your API key / personal access token, then paste it below — we'll attach it to chat requests routed through this connector.
+        </p>
+        <label className="field-label" htmlFor="ak">API key / token <span className="optional">(optional)</span></label>
+        <input
+          id="ak"
+          type="password"
+          className="field-input"
+          placeholder="paste here"
+          value={apiKeyDraft}
+          onChange={(e) => setApiKeyDraft(e.target.value)}
+          autoFocus
+          autoComplete="off"
+          spellCheck={false}
+        />
+        <p style={{ color: "var(--muted-2)", fontSize: 12, marginTop: 8 }}>
+          Stored encrypted-at-rest in your user_connectors row; never logged. You can clear it any time by disconnecting + reconnecting.
+        </p>
+        <div className="new-space-actions" style={{ marginTop: 14 }}>
+          <button type="button" className="ghost-btn" onClick={() => submitApiKey(true)} disabled={busy}>
+            Connect without key
+          </button>
+          <button type="button" className="primary-btn" onClick={() => submitApiKey(false)} disabled={busy}>
+            {busy ? "Connecting…" : apiKeyDraft.trim() ? "Save & connect" : "Connect"}
+          </button>
+        </div>
+      </Modal>
     </div>
   );
 }
