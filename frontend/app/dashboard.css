@@ -27,20 +27,9 @@ a { color: inherit; text-decoration: none; }
 /* Persistent main column: per-page shells (.spaces-shell, .mcps-shell, etc.)
  * render inside this column, so we need a vertical scroll here — the outer
  * .shell stays viewport-locked. */
-.app-main {
-  overflow-y: auto;
-  overflow-x: hidden;
-  /* min-* = 0 are required so the grid track stops being implicit-auto
-   * (which would let the child grow past 100vh and silently kill the
-   * intended overflow:auto on this column). height: 100% binds the column
-   * to the .shell's 100vh so the scrollbar engages on long pages like
-   * /mcps and /spaces. */
-  min-width: 0;
-  min-height: 0;
-  height: 100%;
-}
-.app-main::-webkit-scrollbar { width: 8px; }
-.app-main::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 99px; }
+/* .app-main is kept as a hook (still applied by AppShell) but the actual
+ * scroll rules live on .main below — single source of truth, avoids a
+ * cascade fight where the later .main rule was winning the overflow battle. */
 /* Auth wrapper: minimal centring chrome for login/signup (no sidebar). */
 .auth-wrapper { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 24px; }
 
@@ -114,7 +103,19 @@ a { color: inherit; text-decoration: none; }
 .mono-tag { font-family: var(--mono); font-size: 10px; font-weight: 700; letter-spacing: .12em; }
 
 /* MAIN */
-.main { display: flex; flex-direction: column; min-width: 0; height: 100vh; overflow: hidden; }
+/* Single rule for the main column of the persistent shell. Now scrolls
+ * vertically (was overflow: hidden, which killed scroll on /mcps and
+ * /spaces because those pages render shells taller than the viewport).
+ * min-height: 0 stops the grid track's default auto min-size from letting
+ * tall children push the column past 100vh. */
+.main {
+  display: flex; flex-direction: column;
+  min-width: 0; min-height: 0;
+  height: 100vh;
+  overflow-y: auto; overflow-x: hidden;
+}
+.main::-webkit-scrollbar { width: 8px; }
+.main::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 99px; }
 .stage { flex: 1; display: flex; align-items: center; justify-content: center; padding: 24px; overflow: auto; }
 .stage-inner { width: 100%; max-width: 760px; display: flex; flex-direction: column; gap: 28px; }
 .greet { display: flex; align-items: center; gap: 16px; justify-content: center; font-family: var(--serif); font-weight: 400; font-size: 56px; line-height: 1.05; letter-spacing: -.01em; color: var(--ink); margin: 0; }
