@@ -12,7 +12,12 @@ RUN npm run build
 
 FROM node:20-bookworm-slim AS run
 WORKDIR /app
-ENV NODE_ENV=production NEXT_TELEMETRY_DISABLED=1 PORT=3000
+# HOSTNAME=0.0.0.0 because Next.js standalone server.js honors the HOSTNAME
+# env var, and Kubernetes sets HOSTNAME to the pod name — which DNS-resolves
+# to the pod IP. Without this override Next.js binds only to that pod IP, so
+# `kubectl port-forward` fails (kubelet talks to the container's localhost,
+# not the pod IP) and standard service-IP routing also breaks.
+ENV NODE_ENV=production NEXT_TELEMETRY_DISABLED=1 PORT=3000 HOSTNAME=0.0.0.0
 COPY --from=build /app/.next/standalone ./
 COPY --from=build /app/.next/static ./.next/static
 COPY --from=build /app/public ./public
