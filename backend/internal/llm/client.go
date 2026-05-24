@@ -49,9 +49,20 @@ func NewClient(cfg Config) *Client {
 // vertexTokenSource lazily resolves Application Default Credentials and
 // caches the resulting TokenSource. The returned source auto-refreshes
 // expired tokens — we just call .Token() per request.
-func (c *Client) vertexTokenSource(ctx context.Context) (oauth2.TokenSource, error) {
+//
+// IMPORTANT: we pass context.Background() to FindDefaultCredentials, NOT
+// the per-request ctx. The TokenSource that comes back holds a long-lived
+// HTTP client whose context is reused for every STS exchange + IAM
+// impersonation call. If we seed it with a request context, the moment
+// that request ends (or the user navigates away) all future token fetches
+// blow up with "context canceled" — which is exactly the bug observed:
+//   vertex token: oauth2/google: unable to generate access token: ...
+//   :generateAccessToken: context canceled
+// External-account credentials in particular need a stable context because
+// every Token() call triggers fresh STS + impersonation HTTPs.
+func (c *Client) vertexTokenSource() (oauth2.TokenSource, error) {
 	c.gcpTSOnce.Do(func() {
-		creds, err := google.FindDefaultCredentials(ctx, "https://www.googleapis.com/auth/cloud-platform")
+		creds, err := google.FindDefaultCredentials(context.Background(), "https://www.googleapis.com/auth/cloud-platform")
 		if err != nil {
 			c.gcpTSErr = fmt.Errorf("ADC: %w", err)
 			return
@@ -194,7 +205,7 @@ func (c *Client) callGoogle(ctx context.Context, req CompletionRequest) (*Comple
 			"https://%s-aiplatform.googleapis.com/v1/projects/%s/locations/%s/publishers/google/models/gemini-2.5-pro:generateContent",
 			location, c.cfg.VertexProject, location,
 		)
-		ts, err := c.vertexTokenSource(ctx)
+		ts, err := c.vertexTokenSource()
 		if err != nil {
 			return nil, err
 		}
