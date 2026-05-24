@@ -120,7 +120,11 @@ a { color: inherit; text-decoration: none; }
 .stage-inner { width: 100%; max-width: 760px; display: flex; flex-direction: column; gap: 28px; }
 .greet { display: flex; align-items: center; gap: 16px; justify-content: center; font-family: var(--serif); font-weight: 400; font-size: 56px; line-height: 1.05; letter-spacing: -.01em; color: var(--ink); margin: 0; }
 .greet .star { width: 56px; height: 56px; flex-shrink: 0; }
-.brand-greet { display: inline-flex; align-items: baseline; }
+/* direction: ltr + isolation pin the brand spans to their left-to-right
+ * order regardless of the page's dir attribute. Without these the spans
+ * (Babage / Med / Ai) flip in RTL and render as "Ai MedBabage".
+ * Mirrors the existing [dir=rtl] .sb-brand .wm rule on the sidebar logo. */
+.brand-greet { display: inline-flex; align-items: baseline; direction: ltr; unicode-bidi: isolate; }
 .brand-greet .b1 { color: var(--ink); font-family: var(--sans); font-weight: 700; font-size: 44px; }
 .brand-greet .b2 { color: var(--cyan); font-family: var(--sans); font-weight: 700; font-size: 44px; }
 .brand-greet .b3 { color: var(--yellow); font-family: var(--serif); font-style: italic; font-size: 50px; margin-inline-start: .15em; }
