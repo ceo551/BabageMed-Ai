@@ -227,6 +227,22 @@ function AccountChip(props: {
     }
   }
 
+  // Locale picker: close the popover and force a full page reload so every
+  // rendered piece of UI (composer placeholders, sidebar labels on other
+  // pages, RTL/LTR-conditioned layouts, etc.) gets re-rendered against the
+  // chosen language without lingering on the old strings.
+  function pickLocale(l: "en" | "ar") {
+    setLocale(l);
+    setOpen(false);
+    setSub(null);
+    if (typeof window !== "undefined") {
+      // Defer until after React commits the setLocale state (which writes
+      // dir/lang to <html> via UIProvider's effect), so the post-reload
+      // render starts from the right attributes.
+      setTimeout(() => window.location.reload(), 0);
+    }
+  }
+
   useEffect(() => {
     if (!open) return;
     function onDoc(e: MouseEvent) {
@@ -364,20 +380,22 @@ function AccountChip(props: {
           </button>
         </div>
 
-        {/* Appearance flyout */}
+        {/* Appearance flyout — closes the whole account menu after a pick
+            so the user doesn't have to click outside. Theme change is live
+            via data-theme on <html>, no reload needed. */}
         {sub === "appearance" && (
           <div className="tools-pop acct-sub-pop" style={subStyle} role="menu">
-            <button type="button" className="tool-row" data-active={theme === "light"} onClick={() => setTheme("light")}>
+            <button type="button" className="tool-row" data-active={theme === "light"} onClick={() => { setTheme("light"); setOpen(false); setSub(null); }}>
               <span className="swatch">{I.sun}</span>
               <span className="ttl">{s.themeLight}</span>
               {theme === "light" && <span className="check-end">{I.check}</span>}
             </button>
-            <button type="button" className="tool-row" data-active={theme === "dark"} onClick={() => setTheme("dark")}>
+            <button type="button" className="tool-row" data-active={theme === "dark"} onClick={() => { setTheme("dark"); setOpen(false); setSub(null); }}>
               <span className="swatch">{I.moon}</span>
               <span className="ttl">{s.themeDark}</span>
               {theme === "dark" && <span className="check-end">{I.check}</span>}
             </button>
-            <button type="button" className="tool-row" data-active={theme === "system"} onClick={() => setTheme("system")}>
+            <button type="button" className="tool-row" data-active={theme === "system"} onClick={() => { setTheme("system"); setOpen(false); setSub(null); }}>
               <span className="swatch">{I.monitor}</span>
               <span className="ttl">{s.themeSystem}</span>
               {theme === "system" && <span className="check-end">{I.check}</span>}
@@ -385,15 +403,19 @@ function AccountChip(props: {
           </div>
         )}
 
-        {/* Language flyout */}
+        {/* Language flyout — closes the menu AND hard-reloads so every
+            already-rendered piece of UI (server components, cached strings,
+            RTL/LTR-conditioned layouts) picks up the new locale from the
+            same first render. setLocale runs first so the next page load
+            already starts in the new language. */}
         {sub === "language" && (
           <div className="tools-pop acct-sub-pop" style={subStyle} role="menu">
-            <button type="button" className="tool-row" data-active={locale === "en"} onClick={() => setLocale("en")}>
+            <button type="button" className="tool-row" data-active={locale === "en"} onClick={() => pickLocale("en")}>
               <span className="swatch"><span className="mono-tag">EN</span></span>
               <span className="ttl">{s.langEN}</span>
               {locale === "en" && <span className="check-end">{I.check}</span>}
             </button>
-            <button type="button" className="tool-row" data-active={locale === "ar"} onClick={() => setLocale("ar")}>
+            <button type="button" className="tool-row" data-active={locale === "ar"} onClick={() => pickLocale("ar")}>
               <span className="swatch"><span className="mono-tag">AR</span></span>
               <span className="ttl">{s.langAR}</span>
               {locale === "ar" && <span className="check-end">{I.check}</span>}
