@@ -5,7 +5,11 @@ cloud: aks
 
 image:
   registry: acrbabagemedtest5583.azurecr.io
-  pullPolicy: IfNotPresent
+  # Always re-pull on pod start. We push to :latest from every az acr build,
+  # so IfNotPresent leaves nodes stuck on whatever digest they first cached
+  # (= the wall of "my new changes never deployed" bugs earlier in this
+  # session). Always is the right policy for a mutable tag like :latest.
+  pullPolicy: Always
   tag: latest
 
 frontend:
