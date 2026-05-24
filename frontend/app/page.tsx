@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useSearchParams } from "next/navigation";
+import React, { Suspense, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { MODELS, type Locale, type LocaleStrings } from "./i18n";
 import { I } from "./icons";
 import { useUI } from "./lib/ui-context";
@@ -10,6 +11,7 @@ import { AssistantMessage, type Citation } from "./components/AssistantMessage";
 import {
   spaces as spacesApi,
   connectors as connectorsApi,
+  chats as chatsApi,
   type Space,
   type Connector,
 } from "./lib/api";
@@ -25,13 +27,66 @@ type ChatMessage =
   | { id: string; role: "assistant"; content: string; citations?: Citation[] }
   | { id: string; role: "loading" };
 
+// Next.js 14's App Router requires components that call useSearchParams() to
+// either live inside a <Suspense> boundary OR have the route opted out of
+// prerendering. We use Suspense here so we keep client-side navigation fast
+// (no full server roundtrip on every URL update) while satisfying the
+// static-export check.
 export default function Dashboard() {
+  return (
+    <Suspense fallback={<div className="stage" />}>
+      <DashboardInner />
+    </Suspense>
+  );
+}
+
+function DashboardInner() {
   const { locale, s } = useUI();
+  const params = useSearchParams();
+  const chatIdParam = params?.get("c") || "";
+  // 'n' is the cache-buster the sidebar's New button puts on the URL to
+  // force a fresh chat even when we're already on /. Reading it here just
+  // means the effect re-runs and clears state — value itself is ignored.
+  const nonceParam = params?.get("n") || "";
+
   const [model, setModel] = useState<string>("opus-4.7");
   const [mode, setMode] = useState<string>("bedside");
   const [activeSpaceId, setActiveSpaceId] = useState<string>("");
   const [activeConnectorIds, setActiveConnectorIds] = useState<string[]>([]);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
+  // Currently active persisted chat. Null when we haven't created one yet
+  // (fresh session) — first send() will POST /api/chats and set it.
+  const [chatId, setChatId] = useState<string>("");
+
+  // Sync chat state with the URL: ?c=<id> loads that chat, no ?c means
+  // brand-new chat. The nonce param also forces a reset when clicking
+  // "New" while already on /.
+  useEffect(() => {
+    if (chatIdParam) {
+      // Load existing chat. Skip if it's already the active one.
+      if (chatIdParam === chatId) return;
+      setChatId(chatIdParam);
+      chatsApi.messages(chatIdParam)
+        .then((rows) => {
+          setMessages(rows.map((r) => {
+            if (r.role === "user") {
+              return { id: r.id, role: "user", content: r.content } as ChatMessage;
+            }
+            // citations on the row are arbitrary JSON; cast to Citation[] when shaped.
+            const cs = Array.isArray(r.citations) ? (r.citations as Citation[]) : undefined;
+            return { id: r.id, role: "assistant", content: r.content, citations: cs } as ChatMessage;
+          }));
+        })
+        .catch(() => { /* if it 404s / 401s, leave the transcript empty */ });
+    } else {
+      // No chatId in URL → fresh chat. Reset everything.
+      setChatId("");
+      setMessages([]);
+      setActiveSpaceId("");
+      setActiveConnectorIds([]);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [chatIdParam, nonceParam]);
 
   const isChatting = messages.length > 0;
 
@@ -63,6 +118,8 @@ export default function Dashboard() {
           setActiveConnectorIds={setActiveConnectorIds}
           messages={messages}
           setMessages={setMessages}
+          chatId={chatId}
+          setChatId={setChatId}
         />
       </div>
     </section>
@@ -124,6 +181,7 @@ function Composer({
   activeSpaceId, setActiveSpaceId,
   activeConnectorIds, setActiveConnectorIds,
   messages, setMessages,
+  chatId, setChatId,
 }: {
   s: LocaleStrings;
   locale: Locale;
@@ -137,6 +195,8 @@ function Composer({
   setActiveConnectorIds: React.Dispatch<React.SetStateAction<string[]>>;
   messages: ChatMessage[];
   setMessages: React.Dispatch<React.SetStateAction<ChatMessage[]>>;
+  chatId: string;
+  setChatId: (id: string) => void;
 }) {
   const [addOpen, setAddOpen] = useState(false);
   const [modelOpen, setModelOpen] = useState(false);
@@ -192,30 +252,6 @@ function Composer({
     );
   }
 
-  // Animate `full` into the assistant message identified by `id`, in
-  // ~24-char chunks every frame, ~3ms/char total. Returns once the whole
-  // string has been pushed in. Cheap synthetic streaming until the backend
-  // proxies provider-native deltas (next iteration).
-  async function typewriterInto(
-    id: string,
-    full: string,
-    citations: Citation[] | undefined,
-    setMsgs: React.Dispatch<React.SetStateAction<ChatMessage[]>>,
-  ) {
-    const step = 24;
-    for (let i = 0; i < full.length; i += step) {
-      const slice = full.slice(0, Math.min(full.length, i + step));
-      setMsgs((cur) =>
-        cur.map((m) =>
-          m.id === id && m.role === "assistant"
-            ? { ...m, content: slice, citations }
-            : m,
-        ),
-      );
-      // Yield so the browser can paint. requestAnimationFrame-ish delay.
-      await new Promise((res) => setTimeout(res, 16));
-    }
-  }
 
   async function send() {
     const text = value.trim();
@@ -243,6 +279,32 @@ function Composer({
         }
       }
       const useMcps = activeConnectorIds.length > 0 ? activeConnectorIds : ["pubmed"];
+
+      // Lazily create the persisted chat row on the first turn (so we don't
+      // pollute history with empty drafts). Title = first 80 chars of the
+      // user's first message. Best-effort — if it fails (401, etc.) we
+      // still let the chat happen, just unpersisted.
+      let activeChatId = chatId;
+      if (!activeChatId) {
+        try {
+          const created = await chatsApi.create(text, model, "bedside");
+          activeChatId = created.id;
+          setChatId(created.id);
+          // Stamp the URL so a reload restores this conversation. Push to
+          // history with replaceState so the back button doesn't ping-pong.
+          if (typeof window !== "undefined") {
+            const url = new URL(window.location.href);
+            url.searchParams.set("c", created.id);
+            url.searchParams.delete("n");
+            window.history.replaceState({}, "", url.toString());
+          }
+        } catch { /* persistence is best-effort */ }
+      }
+      // Persist the user turn (also best-effort).
+      if (activeChatId) {
+        chatsApi.append(activeChatId, { role: "user", content: text }).catch(() => {});
+      }
+
       const body = JSON.stringify({
         model, mode: "bedside", locale,
         messages: [
@@ -284,6 +346,7 @@ function Composer({
       const decoder = new TextDecoder();
       let buffer = "";
       let citationsForTurn: Citation[] | undefined;
+      let finalContent = ""; // accumulated text — used to persist + as a sanity copy
 
       while (true) {
         const { done, value } = await reader.read();
@@ -316,10 +379,32 @@ function Composer({
                   : m,
               ),
             );
+          } else if (event === "delta" && typeof parsed?.text === "string") {
+            // Real provider-side streaming: each delta is a token (or small
+            // chunk). Append to the in-flight assistant message immediately.
+            finalContent += parsed.text;
+            const next = finalContent;
+            setMessages((cur) =>
+              cur.map((m) =>
+                m.id === assistantId && m.role === "assistant"
+                  ? { ...m, content: next, citations: citationsForTurn }
+                  : m,
+              ),
+            );
           } else if (event === "content" && parsed?.content) {
-            // Typewriter into the assistant message (~3ms per char, capped
-            // batch size so a 5k-token answer doesn't take forever).
-            await typewriterInto(assistantId, parsed.content, citationsForTurn, setMessages);
+            // Final 'content' carries the canonical full text. If we received
+            // deltas we already have it; otherwise this is the only place we
+            // ever set the body (legacy non-streaming providers).
+            if (finalContent === "") {
+              finalContent = parsed.content;
+              setMessages((cur) =>
+                cur.map((m) =>
+                  m.id === assistantId && m.role === "assistant"
+                    ? { ...m, content: parsed.content, citations: citationsForTurn }
+                    : m,
+                ),
+              );
+            }
           } else if (event === "error" && parsed?.error) {
             setMessages((cur) =>
               cur.map((m) =>
@@ -328,9 +413,19 @@ function Composer({
                   : m,
               ),
             );
+            finalContent = ""; // don't persist a broken turn
           }
           // 'status' + 'done' are advisory only.
         }
+      }
+
+      // Persist the assistant turn (best-effort, fire and forget).
+      if (activeChatId && finalContent !== "") {
+        chatsApi.append(activeChatId, {
+          role: "assistant",
+          content: finalContent,
+          citations: citationsForTurn ?? [],
+        }).catch(() => {});
       }
     } catch (e: any) {
       setMessages((cur) =>

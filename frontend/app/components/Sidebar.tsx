@@ -7,6 +7,7 @@ import { createPortal } from "react-dom";
 import { I } from "../icons";
 import { useAuth } from "../lib/auth-context";
 import { useUI } from "../lib/ui-context";
+import { chats as chatsApi, type Chat } from "../lib/api";
 
 // Sidebar — persistent across pages (mounted by AppShell).
 //
@@ -30,15 +31,11 @@ export function Sidebar() {
     .join("") || "AR";
 
   function startNewChat() {
-    if (pathname !== "/") {
-      // Different page → push home; the dashboard mounts fresh so the composer
-      // is empty by default.
-      router.push("/");
-    } else {
-      // Already home → bump a refresh param so React remounts the page subtree
-      // and resets the composer without a hard browser reload.
-      router.replace(`/?n=${Date.now()}`);
-    }
+    // Always navigate to / with a nonce param so the Dashboard effect
+    // re-fires and clears chatId + messages, whether we were on /,
+    // /?c=<id>, or another route. The nonce also prevents Next.js from
+    // skipping the route change when we're already on /.
+    router.push(`/?n=${Date.now()}`);
   }
 
   return (
@@ -69,11 +66,7 @@ export function Sidebar() {
           <span className="lbl">{s.spaces}</span>
           <span className="trail-chev">{I.chevR}</span>
         </Link>
-        <button className="sb-row" type="button" disabled title={s.recent} style={{ opacity: 0.6, cursor: "not-allowed" }}>
-          {I.history}
-          <span className="lbl">{s.recent}</span>
-          <span className="trail-chev">{I.chevR}</span>
-        </button>
+        <HistoryRow label={s.recent} />
         <Link href="/mcps" className="sb-row" style={{ textDecoration: "none" }}>
           {I.connectors}
           <span className="lbl">{s.connectors}</span>
@@ -120,6 +113,142 @@ export function Sidebar() {
         )}
       </div>
     </aside>
+  );
+}
+
+// ─── History row + popover ────────────────────────────────────────────────
+// Sidebar entry that, when clicked, pops out a panel listing the user's
+// most-recent persisted chats. Click an item → /?c=<id> loads that
+// transcript in the dashboard. Delete (×) removes the chat row from the
+// list optimistically and fires DELETE in the background.
+function HistoryRow({ label }: { label: string }) {
+  const router = useRouter();
+  const { user } = useAuth();
+  const [open, setOpen] = useState(false);
+  const [items, setItems] = useState<Chat[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [popStyle, setPopStyle] = useState<React.CSSProperties>({});
+  const [mounted, setMounted] = useState(false);
+  const rowRef = useRef<HTMLButtonElement>(null);
+  const popRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => { setMounted(true); }, []);
+
+  // Refresh the list every time the popover opens — the user might have
+  // started a new chat since they last looked, and a stale cache would hide
+  // it.
+  function loadList() {
+    setLoading(true);
+    chatsApi.list()
+      .then(setItems)
+      .catch(() => setItems([]))
+      .finally(() => setLoading(false));
+  }
+
+  function position() {
+    const el = rowRef.current;
+    if (!el) return;
+    const r = el.getBoundingClientRect();
+    const dir = document.documentElement.dir === "rtl" ? "rtl" : "ltr";
+    if (dir === "rtl") {
+      setPopStyle({ position: "fixed", top: r.top, right: window.innerWidth - r.left + 8, width: 320, zIndex: 50 });
+    } else {
+      setPopStyle({ position: "fixed", top: r.top, left: r.right + 8, width: 320, zIndex: 50 });
+    }
+  }
+
+  function toggle() {
+    if (!open) {
+      position();
+      loadList();
+      setOpen(true);
+    } else {
+      setOpen(false);
+    }
+  }
+
+  useEffect(() => {
+    if (!open) return;
+    function onDoc(e: MouseEvent) {
+      const target = e.target as Node;
+      if (!popRef.current?.contains(target) && !rowRef.current?.contains(target)) {
+        setOpen(false);
+      }
+    }
+    function onResize() { position(); }
+    document.addEventListener("mousedown", onDoc);
+    window.addEventListener("resize", onResize);
+    return () => {
+      document.removeEventListener("mousedown", onDoc);
+      window.removeEventListener("resize", onResize);
+    };
+  }, [open]);
+
+  async function removeChat(id: string, e: React.MouseEvent) {
+    e.stopPropagation(); e.preventDefault();
+    setItems((cur) => cur.filter((c) => c.id !== id));
+    try { await chatsApi.remove(id); } catch { /* refetch on next open will resync */ }
+  }
+
+  return (
+    <>
+      <button
+        ref={rowRef}
+        type="button"
+        className="sb-row"
+        onClick={toggle}
+        data-active={open}
+        aria-expanded={open}
+        aria-haspopup="menu"
+        disabled={!user}
+        style={!user ? { opacity: 0.6, cursor: "not-allowed" } : undefined}
+        title={user ? label : `${label} (sign in to see your past chats)`}
+      >
+        {I.history}
+        <span className="lbl">{label}</span>
+        <span className="trail-chev">{I.chevR}</span>
+      </button>
+
+      {open && mounted && createPortal(
+        <div ref={popRef} className="tools-pop history-pop" style={popStyle} role="menu">
+          <div className="pop-header">{label}</div>
+          {loading ? (
+            <div className="tool-row" style={{ color: "var(--muted)", justifyContent: "center" }}>
+              Loading…
+            </div>
+          ) : items.length === 0 ? (
+            <div className="tool-row" style={{ color: "var(--muted)", justifyContent: "center" }}>
+              No chats yet
+            </div>
+          ) : (
+            items.slice(0, 40).map((c) => (
+              <button
+                key={c.id}
+                type="button"
+                className="tool-row history-item"
+                onClick={() => {
+                  setOpen(false);
+                  router.push(`/?c=${encodeURIComponent(c.id)}`);
+                }}
+              >
+                <span className="col">
+                  <span className="ttl">{c.title || "Untitled chat"}</span>
+                  <span className="desc">{new Date(c.updatedAt).toLocaleString()}</span>
+                </span>
+                <span
+                  className="history-del"
+                  role="button"
+                  aria-label="Delete chat"
+                  onClick={(e) => removeChat(c.id, e)}
+                  title="Delete chat"
+                >×</span>
+              </button>
+            ))
+          )}
+        </div>,
+        document.body
+      )}
+    </>
   );
 }
 

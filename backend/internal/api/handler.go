@@ -128,11 +128,33 @@ func (h *Handler) ChatStream(w http.ResponseWriter, r *http.Request) {
 	citations, _ := h.gather(r.Context(), req)
 	send("citations", citations)
 	send("status", map[string]string{"phase": "reasoning"})
-	res, err := h.complete(r.Context(), req, citations)
+
+	// Real provider streaming: forward each text delta as a 'delta' SSE event
+	// so the frontend types in tokens as they arrive instead of waiting on a
+	// single 'content' chunk at the end.
+	system := buildSystem(req.Mode, req.Locale, citations, req.SpaceContext, req.SpaceName)
+	if req.Model == "" {
+		req.Model = "opus-4.7"
+	}
+	if len(req.Messages) == 0 {
+		send("error", map[string]string{"error": "messages required"})
+		return
+	}
+	res, err := h.llm.CompleteStream(r.Context(), llm.CompletionRequest{
+		Model:    req.Model,
+		Mode:     req.Mode,
+		Messages: req.Messages,
+		System:   system,
+	}, func(delta string) {
+		send("delta", map[string]string{"text": delta})
+	})
 	if err != nil {
 		send("error", map[string]string{"error": err.Error()})
 		return
 	}
+	// Final 'content' carries the full text + provider/model metadata so the
+	// frontend can persist the canonical version (the per-token deltas may
+	// have arrived split across paragraph boundaries etc.).
 	send("content", res)
 	send("done", map[string]bool{"done": true})
 }

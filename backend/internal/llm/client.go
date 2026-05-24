@@ -1,6 +1,7 @@
 package llm
 
 import (
+	"bufio"
 	"bytes"
 	"context"
 	"encoding/json"
@@ -88,6 +89,48 @@ type CompletionResponse struct {
 	Provider string `json:"provider"`
 	Model    string `json:"model"`
 	Content  string `json:"content"`
+}
+
+// CompleteStream calls the right provider with native streaming on and
+// forwards each text delta through onDelta. Returns the final aggregated
+// response (provider/model/full text) so the caller can persist it.
+//
+// Each provider speaks a different on-wire stream format — Anthropic + OpenAI
+// emit SSE with text deltas in `content_block_delta` / `choices[].delta`;
+// Vertex AI streamGenerateContent returns a JSON array streamed chunk by
+// chunk where each element is a generateContent-shaped object. We normalise
+// all three down to "got more text" callbacks.
+func (c *Client) CompleteStream(ctx context.Context, req CompletionRequest, onDelta func(string)) (*CompletionResponse, error) {
+	start := time.Now()
+	provider := "anthropic"
+	var out *CompletionResponse
+	var err error
+	switch {
+	case strings.HasPrefix(req.Model, "opus"), strings.HasPrefix(req.Model, "claude"),
+		strings.HasPrefix(req.Model, "sonnet"), strings.HasPrefix(req.Model, "haiku"):
+		provider = "anthropic"
+		out, err = c.streamAnthropic(ctx, req, onDelta)
+	case strings.HasPrefix(req.Model, "gemini"):
+		provider = "google"
+		out, err = c.streamGoogle(ctx, req, onDelta)
+	case strings.HasPrefix(req.Model, "gpt"):
+		provider = "openai"
+		out, err = c.streamOpenAI(ctx, req, onDelta)
+	default:
+		provider = "anthropic"
+		out, err = c.streamAnthropic(ctx, req, onDelta)
+	}
+	model := req.Model
+	if out != nil && out.Model != "" {
+		model = out.Model
+	}
+	metrics.LLMDuration.WithLabelValues(provider, model).Observe(time.Since(start).Seconds())
+	if err != nil {
+		metrics.LLMCalls.WithLabelValues(provider, model, "stream_error").Inc()
+	} else {
+		metrics.LLMCalls.WithLabelValues(provider, model, "stream_ok").Inc()
+	}
+	return out, err
 }
 
 // Complete picks a provider by model id prefix.
@@ -245,6 +288,238 @@ func (c *Client) callGoogle(ctx context.Context, req CompletionRequest) (*Comple
 		}
 	}
 	return &CompletionResponse{Provider: "google", Model: req.Model, Content: text}, nil
+}
+
+// ─── Streaming implementations ─────────────────────────────────────────────
+// anthropicModelMap reused by both Complete and CompleteStream.
+var anthropicModelMap = map[string]string{
+	"opus-4.7": "claude-opus-4-7",
+	"opus-4.6": "claude-opus-4-6",
+	"sonnet":   "claude-sonnet-4-6",
+	"haiku":    "claude-haiku-4-5",
+}
+
+func anthropicModel(id string) string {
+	if m, ok := anthropicModelMap[id]; ok {
+		return m
+	}
+	return "claude-opus-4-7"
+}
+
+// streamAnthropic POSTs with stream:true and parses the SSE response. The
+// only events we care about are content_block_delta with type==text_delta.
+func (c *Client) streamAnthropic(ctx context.Context, req CompletionRequest, onDelta func(string)) (*CompletionResponse, error) {
+	if c.cfg.AnthropicKey == "" {
+		return nil, errors.New("ANTHROPIC_API_KEY not configured")
+	}
+	model := anthropicModel(req.Model)
+	body, _ := json.Marshal(map[string]any{
+		"model":      model,
+		"max_tokens": 4096,
+		"system":     req.System,
+		"messages":   req.Messages,
+		"stream":     true,
+	})
+	r, _ := http.NewRequestWithContext(ctx, "POST", "https://api.anthropic.com/v1/messages", bytes.NewReader(body))
+	r.Header.Set("x-api-key", c.cfg.AnthropicKey)
+	r.Header.Set("anthropic-version", "2023-06-01")
+	r.Header.Set("content-type", "application/json")
+	res, err := c.http.Do(r)
+	if err != nil {
+		return nil, err
+	}
+	defer res.Body.Close()
+	if res.StatusCode >= 400 {
+		raw, _ := io.ReadAll(res.Body)
+		return nil, fmt.Errorf("anthropic stream: %s: %s", res.Status, string(raw))
+	}
+
+	var full strings.Builder
+	sc := bufio.NewScanner(res.Body)
+	sc.Buffer(make([]byte, 0, 64*1024), 1024*1024)
+	for sc.Scan() {
+		line := sc.Text()
+		if !strings.HasPrefix(line, "data: ") {
+			continue
+		}
+		data := strings.TrimPrefix(line, "data: ")
+		var evt struct {
+			Type  string `json:"type"`
+			Delta struct {
+				Type string `json:"type"`
+				Text string `json:"text"`
+			} `json:"delta"`
+		}
+		if err := json.Unmarshal([]byte(data), &evt); err != nil {
+			continue
+		}
+		if evt.Type == "content_block_delta" && evt.Delta.Type == "text_delta" && evt.Delta.Text != "" {
+			full.WriteString(evt.Delta.Text)
+			onDelta(evt.Delta.Text)
+		}
+	}
+	if err := sc.Err(); err != nil {
+		return nil, fmt.Errorf("anthropic stream read: %w", err)
+	}
+	return &CompletionResponse{Provider: "anthropic", Model: model, Content: full.String()}, nil
+}
+
+// streamGoogle calls either Vertex AI streamGenerateContent (when
+// VertexProject is set) or AI Studio streamGenerateContent (with API key).
+// Vertex returns a streaming JSON array — each chunk decoded as one
+// generateContent response. AI Studio's same endpoint returns the same shape.
+func (c *Client) streamGoogle(ctx context.Context, req CompletionRequest, onDelta func(string)) (*CompletionResponse, error) {
+	if c.cfg.VertexProject == "" && c.cfg.GoogleKey == "" {
+		return nil, errors.New("neither GOOGLE_CLOUD_PROJECT (Vertex) nor GOOGLE_API_KEY (AI Studio) configured")
+	}
+
+	// Body shape: same as non-streaming.
+	parts := []map[string]any{}
+	for _, m := range req.Messages {
+		role := m.Role
+		if role == "assistant" {
+			role = "model"
+		}
+		parts = append(parts, map[string]any{"role": role, "parts": []map[string]string{{"text": m.Content}}})
+	}
+	body, _ := json.Marshal(map[string]any{
+		"contents":          parts,
+		"systemInstruction": map[string]any{"parts": []map[string]string{{"text": req.System}}},
+	})
+
+	var r *http.Request
+	model := "gemini-2.5-pro"
+	if c.cfg.VertexProject != "" {
+		location := c.cfg.VertexLocation
+		if location == "" {
+			location = "us-central1"
+		}
+		// alt=sse asks Vertex to return SSE-framed JSON deltas rather than a
+		// streamed JSON array — easier to parse and matches the AI Studio
+		// streaming response shape.
+		url := fmt.Sprintf(
+			"https://%s-aiplatform.googleapis.com/v1/projects/%s/locations/%s/publishers/google/models/%s:streamGenerateContent?alt=sse",
+			location, c.cfg.VertexProject, location, model,
+		)
+		ts, err := c.vertexTokenSource()
+		if err != nil {
+			return nil, err
+		}
+		tok, err := ts.Token()
+		if err != nil {
+			return nil, fmt.Errorf("vertex token: %w", err)
+		}
+		r, _ = http.NewRequestWithContext(ctx, "POST", url, bytes.NewReader(body))
+		r.Header.Set("Authorization", "Bearer "+tok.AccessToken)
+	} else {
+		url := fmt.Sprintf(
+			"https://generativelanguage.googleapis.com/v1beta/models/%s:streamGenerateContent?alt=sse&key=%s",
+			model, c.cfg.GoogleKey,
+		)
+		r, _ = http.NewRequestWithContext(ctx, "POST", url, bytes.NewReader(body))
+	}
+	r.Header.Set("content-type", "application/json")
+
+	res, err := c.http.Do(r)
+	if err != nil {
+		return nil, err
+	}
+	defer res.Body.Close()
+	if res.StatusCode >= 400 {
+		raw, _ := io.ReadAll(res.Body)
+		return nil, fmt.Errorf("google stream: %s: %s", res.Status, string(raw))
+	}
+
+	var full strings.Builder
+	sc := bufio.NewScanner(res.Body)
+	sc.Buffer(make([]byte, 0, 64*1024), 4*1024*1024)
+	for sc.Scan() {
+		line := sc.Text()
+		if !strings.HasPrefix(line, "data: ") {
+			continue
+		}
+		data := strings.TrimPrefix(line, "data: ")
+		var chunk struct {
+			Candidates []struct {
+				Content struct {
+					Parts []struct{ Text string } `json:"parts"`
+				} `json:"content"`
+			} `json:"candidates"`
+		}
+		if err := json.Unmarshal([]byte(data), &chunk); err != nil {
+			continue
+		}
+		if len(chunk.Candidates) > 0 {
+			for _, p := range chunk.Candidates[0].Content.Parts {
+				if p.Text != "" {
+					full.WriteString(p.Text)
+					onDelta(p.Text)
+				}
+			}
+		}
+	}
+	if err := sc.Err(); err != nil {
+		return nil, fmt.Errorf("google stream read: %w", err)
+	}
+	return &CompletionResponse{Provider: "google", Model: req.Model, Content: full.String()}, nil
+}
+
+// streamOpenAI: vanilla SSE with choices[0].delta.content, terminated by
+// "data: [DONE]".
+func (c *Client) streamOpenAI(ctx context.Context, req CompletionRequest, onDelta func(string)) (*CompletionResponse, error) {
+	if c.cfg.OpenAIKey == "" {
+		return nil, errors.New("OPENAI_API_KEY not configured")
+	}
+	msgs := make([]Message, 0, len(req.Messages)+1)
+	if req.System != "" {
+		msgs = append(msgs, Message{Role: "system", Content: req.System})
+	}
+	msgs = append(msgs, req.Messages...)
+	body, _ := json.Marshal(map[string]any{"model": req.Model, "messages": msgs, "stream": true})
+	r, _ := http.NewRequestWithContext(ctx, "POST", "https://api.openai.com/v1/chat/completions", bytes.NewReader(body))
+	r.Header.Set("Authorization", "Bearer "+c.cfg.OpenAIKey)
+	r.Header.Set("content-type", "application/json")
+	res, err := c.http.Do(r)
+	if err != nil {
+		return nil, err
+	}
+	defer res.Body.Close()
+	if res.StatusCode >= 400 {
+		raw, _ := io.ReadAll(res.Body)
+		return nil, fmt.Errorf("openai stream: %s: %s", res.Status, string(raw))
+	}
+
+	var full strings.Builder
+	sc := bufio.NewScanner(res.Body)
+	sc.Buffer(make([]byte, 0, 64*1024), 1024*1024)
+	for sc.Scan() {
+		line := sc.Text()
+		if !strings.HasPrefix(line, "data: ") {
+			continue
+		}
+		data := strings.TrimPrefix(line, "data: ")
+		if data == "[DONE]" {
+			break
+		}
+		var chunk struct {
+			Choices []struct {
+				Delta struct {
+					Content string `json:"content"`
+				} `json:"delta"`
+			} `json:"choices"`
+		}
+		if err := json.Unmarshal([]byte(data), &chunk); err != nil {
+			continue
+		}
+		if len(chunk.Choices) > 0 && chunk.Choices[0].Delta.Content != "" {
+			full.WriteString(chunk.Choices[0].Delta.Content)
+			onDelta(chunk.Choices[0].Delta.Content)
+		}
+	}
+	if err := sc.Err(); err != nil {
+		return nil, fmt.Errorf("openai stream read: %w", err)
+	}
+	return &CompletionResponse{Provider: "openai", Model: req.Model, Content: full.String()}, nil
 }
 
 func (c *Client) callOpenAI(ctx context.Context, req CompletionRequest) (*CompletionResponse, error) {

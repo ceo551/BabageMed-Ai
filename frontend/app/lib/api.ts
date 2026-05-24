@@ -131,6 +131,53 @@ export type AdminSession = {
   createdAt: string;
 };
 
+// ── Chats (persisted conversations) ──
+export type Chat = {
+  id: string;
+  title: string;
+  model: string;
+  mode: string;
+  createdAt: string;
+  updatedAt: string;
+};
+export type ChatMessageRow = {
+  id: string;
+  chatId: string;
+  role: "user" | "assistant" | "system";
+  content: string;
+  citations?: unknown;
+  meta?: unknown;
+  createdAt: string;
+};
+export const chats = {
+  list:        () => api.get<Chat[]>("/api/chats"),
+  create:      (title: string, model: string, mode: string) =>
+    api.post<Chat>("/api/chats", { title, model, mode }),
+  get:         (id: string) => api.get<Chat>(`/api/chats/${encodeURIComponent(id)}`),
+  messages:    (id: string) => api.get<ChatMessageRow[]>(`/api/chats/${encodeURIComponent(id)}/messages`),
+  append:      (id: string, body: { role: string; content: string; citations?: unknown; meta?: unknown }) =>
+    api.post<ChatMessageRow>(`/api/chats/${encodeURIComponent(id)}/messages`, body),
+  rename:      async (id: string, title: string): Promise<Chat> => {
+    const r = await fetch(`/api/backend/api/chats/${encodeURIComponent(id)}`, {
+      method: "PATCH",
+      credentials: "include",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ title }),
+    });
+    const text = await r.text();
+    let body: any = null;
+    try { body = text ? JSON.parse(text) : null; } catch { body = text; }
+    if (!r.ok) throw { error: (body && body.error) || text || r.statusText, status: r.status } as ApiError;
+    return body;
+  },
+  remove:      (id: string) =>
+    fetch(`/api/backend/api/chats/${encodeURIComponent(id)}`, {
+      method: "DELETE", credentials: "include",
+    }).then((r) => {
+      if (!r.ok) throw { error: r.statusText, status: r.status } as ApiError;
+    }),
+};
+
 // ── Spaces ──
 export type Space = {
   id: string;

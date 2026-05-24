@@ -335,6 +335,31 @@ a { color: inherit; text-decoration: none; }
   margin: 16px 0;
 }
 
+/* History popover — chats list with delete affordance per row. */
+.history-pop {
+  max-height: min(540px, 70vh);
+  overflow-y: auto;
+}
+.history-item { position: relative; padding-inline-end: 32px; }
+.history-item .ttl { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.history-item .desc { font-size: 10.5px; }
+.history-del {
+  position: absolute;
+  inset-inline-end: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 22px; height: 22px;
+  display: inline-flex; align-items: center; justify-content: center;
+  border-radius: 6px;
+  color: var(--muted-2);
+  font-size: 14px;
+  opacity: 0;
+  transition: opacity .12s, color .12s, background .12s;
+  cursor: pointer;
+}
+.history-item:hover .history-del { opacity: 1; }
+.history-del:hover { color: var(--purple); background: var(--purple-soft); }
+
 /* Citation footer — small pills below the assistant body listing which
  * connectors fed the answer. */
 .msg-citations { margin-top: 14px; display: flex; flex-direction: column; gap: 6px; }
