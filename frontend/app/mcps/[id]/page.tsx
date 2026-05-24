@@ -31,6 +31,11 @@ export default function McpDetailPage() {
   const [connector, setConnector] = useState<Connector | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  // OAuth-handoff dialog state — only relevant for api-kind connectors,
+  // where the install flow opens the provider's site in a new tab so the
+  // user can sign in / authorize.
+  const [authOpen, setAuthOpen] = useState(false);
+  const [authWindow, setAuthWindow] = useState<Window | null>(null);
   const [keyModalOpen, setKeyModalOpen] = useState(false);
   const [apiKeyDraft, setApiKeyDraft] = useState("");
 

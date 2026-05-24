@@ -27,7 +27,10 @@ export function AssistantMessage({
 }) {
   return (
     <div className="msg msg-assistant">
-      <div className="md-body">
+      {/* dir="auto" lets the browser pick per-paragraph direction from the
+        * first strong character — Arabic answers render RTL, English LTR,
+        * mixed paragraphs flip individually. */}
+      <div className="md-body" dir="auto">
         <ReactMarkdown
           remarkPlugins={[remarkGfm]}
           components={{

@@ -158,7 +158,9 @@ function Transcript({ messages }: { messages: ChatMessage[] }) {
         if (m.role === "user") {
           return (
             <div key={m.id} className="msg-row msg-row-user">
-              <div className="msg msg-user">{m.content}</div>
+              {/* dir="auto" so an Arabic chip flows RTL even on an
+                * English page, and vice versa. */}
+              <div className="msg msg-user" dir="auto">{m.content}</div>
             </div>
           );
         }
@@ -278,7 +280,10 @@ function Composer({
           // Non-fatal: chat still proceeds without space grounding.
         }
       }
-      const useMcps = activeConnectorIds.length > 0 ? activeConnectorIds : ["pubmed"];
+      // Only ever search the connectors the user explicitly picked. Earlier
+      // versions defaulted to ["pubmed"] which made PubMed show up as a
+      // source on every conversation even when the user never added it.
+      const useMcps = activeConnectorIds;
 
       // Lazily create the persisted chat row on the first turn (so we don't
       // pollute history with empty drafts). Title = first 80 chars of the

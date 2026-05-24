@@ -216,30 +216,34 @@ a { color: inherit; text-decoration: none; }
   padding-block: 0;
 }
 .stage-inner[data-chat="true"] {
-  height: 100%;
   display: flex;
   flex-direction: column;
   gap: 0;
   max-width: 760px;
   width: 100%;
   margin-inline: auto; /* the actual horizontal centring */
+  /* No fixed height: the page scrolls inside .main (which has overflow-y),
+   * and the composer is sticky-pinned to the bottom of the viewport. */
 }
 .stage-inner[data-chat="true"] .composer {
   flex: 0 0 auto;
-  margin-block-end: 24px; /* float a bit off the bottom for breathing room */
+  position: sticky;
+  bottom: 24px;
+  /* Lift it above the transcript backdrop so streaming text doesn't peek
+   * through the composer's translucent border. */
+  z-index: 2;
+  background-color: var(--bg, #0a0c12);
 }
 
+/* Transcript scroll moved to the outer .main column so the scrollbar
+ * lives at the far end of the viewport (where the user expects it),
+ * not in the middle of the page hugging the 760px-wide column. The
+ * transcript itself just lays out the rows. */
 .transcript {
-  flex: 1 1 auto;
-  min-height: 0;
-  overflow-y: auto;
   display: flex; flex-direction: column;
   gap: 18px;
   padding: 32px 0 24px;
-  scroll-behavior: smooth;
 }
-.transcript::-webkit-scrollbar { width: 6px; }
-.transcript::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 99px; }
 
 .msg-row { display: flex; }
 .msg-row-user { justify-content: flex-end; }
@@ -253,7 +257,17 @@ a { color: inherit; text-decoration: none; }
   font-size: 14.5px;
   line-height: 1.55;
   max-width: 75%;
+  /* unicode-bidi: plaintext makes the chip flow as if it were its own
+   * isolated paragraph, picking direction from the first strong char.
+   * That's what makes an Arabic user message render RTL even when the
+   * page is in English (and vice-versa). */
+  unicode-bidi: plaintext;
 }
+/* Same logic for the assistant prose: dir=auto on the .md-body lets each
+ * paragraph pick its own direction from its first strong character —
+ * Arabic output flows RTL, English LTR, mixed paragraphs decide each on
+ * their own. The component sets dir="auto" too; this is the CSS half. */
+.md-body { unicode-bidi: plaintext; }
 .msg-assistant {
   color: var(--ink);
   font-size: 15.5px;
