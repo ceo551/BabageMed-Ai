@@ -7,7 +7,16 @@
   flex-direction: column;
   gap: 24px;
   color: var(--ink);
+  /* Lock the Connectors directory to LTR regardless of the user's locale.
+   * Every value on this page (mcp ids, English provider names, domain
+   * URLs, "api/scrape/hybrid" kind labels, category slugs) is Latin-script,
+   * so flipping to RTL when the app locale is Arabic was breaking the
+   * card layout - badge / name / URL ended up on the wrong sides and the
+   * mixed English/Arabic bidi made the search input look reversed. */
+  direction: ltr;
+  text-align: start;
 }
+.mcps-shell, .mcps-shell * { unicode-bidi: isolate; }
 .mcps-shell h1 {
   margin: 0;
   font-family: var(--serif);
