@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
 import React, { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { I } from "../icons";
 import { useAuth } from "../lib/auth-context";
 import { useUI } from "../lib/ui-context";
@@ -149,8 +150,13 @@ function AccountChip(props: {
   const [sub, setSub] = useState<null | "appearance" | "language">(null);
   const [popStyle, setPopStyle] = useState<React.CSSProperties>({});
   const [subStyle, setSubStyle] = useState<React.CSSProperties>({});
+  const [mounted, setMounted] = useState(false);
   const chipRef = useRef<HTMLButtonElement>(null);
   const popRef = useRef<HTMLDivElement>(null);
+
+  // createPortal needs document.body, which isn't available during SSR.
+  // Render-gate the portal until after first client mount.
+  useEffect(() => { setMounted(true); }, []);
 
   // Position the popover above the chip, anchored to the sidebar edge.
   function position() {
@@ -240,7 +246,8 @@ function AccountChip(props: {
         <span className="chev">{I.chevR}</span>
       </button>
 
-      {open && (
+      {open && mounted && createPortal(
+        <>
         <div ref={popRef} className="tools-pop account-pop" style={popStyle} role="menu">
           {/* Header row — non-interactive identity card. */}
           <div className="tool-row" style={{ pointerEvents: "none" }}>
@@ -328,43 +335,45 @@ function AccountChip(props: {
             </span>
           </button>
         </div>
-      )}
 
-      {/* Appearance flyout */}
-      {open && sub === "appearance" && (
-        <div className="tools-pop acct-sub-pop" style={subStyle} role="menu">
-          <button type="button" className="tool-row" data-active={theme === "light"} onClick={() => setTheme("light")}>
-            <span className="swatch">{I.sun}</span>
-            <span className="ttl">{s.themeLight}</span>
-            {theme === "light" && <span className="check-end">{I.check}</span>}
-          </button>
-          <button type="button" className="tool-row" data-active={theme === "dark"} onClick={() => setTheme("dark")}>
-            <span className="swatch">{I.moon}</span>
-            <span className="ttl">{s.themeDark}</span>
-            {theme === "dark" && <span className="check-end">{I.check}</span>}
-          </button>
-          <button type="button" className="tool-row" data-active={theme === "system"} onClick={() => setTheme("system")}>
-            <span className="swatch">{I.monitor}</span>
-            <span className="ttl">{s.themeSystem}</span>
-            {theme === "system" && <span className="check-end">{I.check}</span>}
-          </button>
-        </div>
-      )}
+        {/* Appearance flyout */}
+        {sub === "appearance" && (
+          <div className="tools-pop acct-sub-pop" style={subStyle} role="menu">
+            <button type="button" className="tool-row" data-active={theme === "light"} onClick={() => setTheme("light")}>
+              <span className="swatch">{I.sun}</span>
+              <span className="ttl">{s.themeLight}</span>
+              {theme === "light" && <span className="check-end">{I.check}</span>}
+            </button>
+            <button type="button" className="tool-row" data-active={theme === "dark"} onClick={() => setTheme("dark")}>
+              <span className="swatch">{I.moon}</span>
+              <span className="ttl">{s.themeDark}</span>
+              {theme === "dark" && <span className="check-end">{I.check}</span>}
+            </button>
+            <button type="button" className="tool-row" data-active={theme === "system"} onClick={() => setTheme("system")}>
+              <span className="swatch">{I.monitor}</span>
+              <span className="ttl">{s.themeSystem}</span>
+              {theme === "system" && <span className="check-end">{I.check}</span>}
+            </button>
+          </div>
+        )}
 
-      {/* Language flyout */}
-      {open && sub === "language" && (
-        <div className="tools-pop acct-sub-pop" style={subStyle} role="menu">
-          <button type="button" className="tool-row" data-active={locale === "en"} onClick={() => setLocale("en")}>
-            <span className="swatch"><span className="mono-tag">EN</span></span>
-            <span className="ttl">{s.langEN}</span>
-            {locale === "en" && <span className="check-end">{I.check}</span>}
-          </button>
-          <button type="button" className="tool-row" data-active={locale === "ar"} onClick={() => setLocale("ar")}>
-            <span className="swatch"><span className="mono-tag">AR</span></span>
-            <span className="ttl">{s.langAR}</span>
-            {locale === "ar" && <span className="check-end">{I.check}</span>}
-          </button>
-        </div>
+        {/* Language flyout */}
+        {sub === "language" && (
+          <div className="tools-pop acct-sub-pop" style={subStyle} role="menu">
+            <button type="button" className="tool-row" data-active={locale === "en"} onClick={() => setLocale("en")}>
+              <span className="swatch"><span className="mono-tag">EN</span></span>
+              <span className="ttl">{s.langEN}</span>
+              {locale === "en" && <span className="check-end">{I.check}</span>}
+            </button>
+            <button type="button" className="tool-row" data-active={locale === "ar"} onClick={() => setLocale("ar")}>
+              <span className="swatch"><span className="mono-tag">AR</span></span>
+              <span className="ttl">{s.langAR}</span>
+              {locale === "ar" && <span className="check-end">{I.check}</span>}
+            </button>
+          </div>
+        )}
+        </>,
+        document.body
       )}
     </>
   );
