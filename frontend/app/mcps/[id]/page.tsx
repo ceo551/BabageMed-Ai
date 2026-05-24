@@ -100,7 +100,7 @@ export default function McpDetailPage() {
       <div className="breadcrumb"><Link href="/mcps">Connectors</Link> / {server.id}</div>
 
       <div className="connector-header">
-        <ConnectorIcon name={server.name} iconUrl={server.iconUrl} size={56} className="connector-icon" />
+        <ConnectorIcon id={server.id} name={server.name} iconUrl={server.iconUrl} size={56} className="connector-icon" />
         <div className="connector-meta">
           <h1>{server.name}</h1>
           <div className="row">

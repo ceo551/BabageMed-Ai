@@ -143,7 +143,7 @@ export default function ConnectorsBrowsePage() {
             <div key={s.id} className="mcp-card" data-connected={isMine}>
               <Link href={`/mcps/${encodeURIComponent(s.id)}`} className="card-body">
                 <div className="row">
-                  <ConnectorIcon name={s.name} iconUrl={s.iconUrl} size={36} className="card-icon" />
+                  <ConnectorIcon id={s.id} name={s.name} iconUrl={s.iconUrl} size={36} className="card-icon" />
                   <span className="name">{s.name}</span>
                   <span className={`kind ${s.kind}`}>{s.kind}</span>
                 </div>

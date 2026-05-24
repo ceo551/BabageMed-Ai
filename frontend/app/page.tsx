@@ -422,7 +422,7 @@ function Composer({
                 title="Remove from this chat"
                 style={{ background: "var(--cyan-soft)", color: "var(--cyan)", borderColor: "var(--cyan-line)", display: "inline-flex", alignItems: "center", gap: 6 }}
               >
-                <ConnectorIcon name={c.name} iconUrl={c.iconUrl} size={16} />
+                <ConnectorIcon id={c.mcpId} name={c.name} iconUrl={c.iconUrl} size={16} />
                 {c.name} ×
               </button>
             );
@@ -493,7 +493,7 @@ function Composer({
                         data-active={on}
                         onClick={() => toggleConnector(c.mcpId)}
                       >
-                        <ConnectorIcon name={c.name} iconUrl={c.iconUrl} size={22} />
+                        <ConnectorIcon id={c.mcpId} name={c.name} iconUrl={c.iconUrl} size={22} />
                         <span className="col">
                           <span className="ttl">{c.name}</span>
                           <span className="desc">{c.category}</span>
