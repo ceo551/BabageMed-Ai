@@ -82,8 +82,11 @@ func NewRegistry(path string) (*Registry, error) {
 // siteAndIcon derives the official site URL and a favicon URL from an MCP's
 // `base` field. Returns ("", "") if base isn't a parseable absolute URL.
 //
-// We use Google's S2 favicon CDN — no extra service required, no network call
-// at this layer, and the browser caches results aggressively.
+// We prefer icon.horse over Google's S2 favicon endpoint: S2 always returns a
+// 16-32px favicon that gets upscaled to a blurry mess in our 28-48px slots,
+// whereas icon.horse scrapes the site for the highest-resolution logo it can
+// find (often a 128px+ apple-touch-icon or the full SVG mark). Browser cache
+// + CDN cache make the cost negligible.
 func siteAndIcon(base string) (string, string) {
 	if base == "" {
 		return "", ""
@@ -100,7 +103,10 @@ func siteAndIcon(base string) (string, string) {
 	site := fmt.Sprintf("%s://%s", scheme, host)
 	// Strip ports — favicon service wants bare domains.
 	host = strings.SplitN(host, ":", 2)[0]
-	icon := fmt.Sprintf("https://www.google.com/s2/favicons?domain=%s&sz=64", host)
+	// Drop a leading "www." for the favicon lookup: icon.horse tends to return
+	// the apex-domain logo whether or not the site itself redirects.
+	favHost := strings.TrimPrefix(host, "www.")
+	icon := fmt.Sprintf("https://icon.horse/icon/%s", favHost)
 	return site, icon
 }
 

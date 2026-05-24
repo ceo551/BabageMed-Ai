@@ -174,10 +174,15 @@ export const STR: Record<Locale, LocaleStrings> = {
   },
 };
 
+// `brand` drives which SVG mark the model picker renders next to each row —
+// Anthropic's coral asterisk for Claude, Google's gradient sparkle for
+// Gemini. (See I.anthropicMark / I.geminiMark in icons.tsx.) Adding a new
+// vendor here just means adding another brand + the matching icon.
 export const MODELS = [
   {
     id: "opus-4.7",
     name: "Claude Opus 4.7",
+    brand: "anthropic",
     swatch: "o",
     pills: { en: ["FRONTIER", "REASONING"], ar: ["متقدّم", "استدلال"] },
     short: "Opus 4.7",
@@ -185,6 +190,7 @@ export const MODELS = [
   {
     id: "opus-4.6",
     name: "Claude Opus 4.6",
+    brand: "anthropic",
     swatch: "o",
     pills: { en: ["BALANCED", "FAST"], ar: ["متوازن", "سريع"] },
     short: "Opus 4.6",
@@ -192,6 +198,7 @@ export const MODELS = [
   {
     id: "gemini-3.1",
     name: "Gemini 3.1 Pro",
+    brand: "google",
     swatch: "g",
     pills: { en: ["LONG CTX", "IMAGING"], ar: ["سياق طويل", "تصوير"] },
     short: "Gemini 3.1 Pro",

@@ -167,4 +167,33 @@ export const I = {
       style={{ display: "block", borderRadius: 8 }}
     />
   ),
+  // Anthropic mark — orange asterisk/burst. Used as the model-picker swatch
+  // for any Claude family model so users see a brand cue instead of an
+  // anonymous coloured dot.
+  anthropicMark: (
+    <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+      <path
+        d="M12 2.4c.36 2.96 1.32 5.36 2.88 7.2 1.56 1.84 3.6 3.04 6.12 3.6-2.52.56-4.56 1.76-6.12 3.6-1.56 1.84-2.52 4.24-2.88 7.2-.36-2.96-1.32-5.36-2.88-7.2-1.56-1.84-3.6-3.04-6.12-3.6 2.52-.56 4.56-1.76 6.12-3.6 1.56-1.84 2.52-4.24 2.88-7.2z"
+        fill="#D97757"
+      />
+    </svg>
+  ),
+  // Gemini mark — Google's 4-pointed sparkle in their signature gradient.
+  // Stylised approximation; renders crisp at any size since it's a single
+  // path filled by a linearGradient.
+  geminiMark: (
+    <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+      <defs>
+        <linearGradient id="gemGrad" x1="0" y1="0" x2="24" y2="24">
+          <stop offset="0%"   stopColor="#4796E3" />
+          <stop offset="50%"  stopColor="#9168C0" />
+          <stop offset="100%" stopColor="#E64A3F" />
+        </linearGradient>
+      </defs>
+      <path
+        d="M12 1.5c.5 4.7 1.8 7.7 4.1 9.4 2.3 1.7 5 2.4 8.4 2.6-3.4.2-6.1.9-8.4 2.6-2.3 1.7-3.6 4.7-4.1 9.4-.5-4.7-1.8-7.7-4.1-9.4-2.3-1.7-5-2.4-8.4-2.6 3.4-.2 6.1-.9 8.4-2.6 2.3-1.7 3.6-4.7 4.1-9.4z"
+        fill="url(#gemGrad)"
+      />
+    </svg>
+  ),
 };

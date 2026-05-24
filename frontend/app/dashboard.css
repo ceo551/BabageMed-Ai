@@ -177,3 +177,39 @@ a { color: inherit; text-decoration: none; }
   color: var(--cyan);
 }
 .popover-row[data-active="true"] .desc { color: var(--cyan); opacity: .75; }
+
+/* The plus glyph inside the New button used to inherit no size constraint
+ * (its SVG has no explicit width/height), so it grew to fill its line-height
+ * box and the button rendered ~80px tall. Lock both icon and button to a
+ * normal row height matching the other sb-row items. */
+.sb-new { font-size: 13px; padding: 9px 12px; line-height: 1; }
+.sb-new .ico, .sb-new svg { width: 16px; height: 16px; flex-shrink: 0; }
+
+/* Brand marks in the model picker — replaces the old coloured dot. */
+.model-pill .brand-mark,
+.model-row  .brand-mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px; height: 18px;
+  flex-shrink: 0;
+}
+.model-pill .brand-mark svg,
+.model-row  .brand-mark svg { width: 16px; height: 16px; display: block; }
+.brand-fallback {
+  width: 10px; height: 10px;
+  border-radius: 50%;
+  background: var(--muted-2);
+}
+
+/* MCP / connector favicons render crisp at small sizes — most providers ship
+ * a tiny favicon that browsers blur up; -webkit-optimize-contrast plus
+ * pixelated fallback keeps edges sharp. The background gives dark-on-dark
+ * logos something to stand against. */
+.card-icon,
+.connector-icon,
+.popover-row img,
+.composer-bar img {
+  image-rendering: -webkit-optimize-contrast;
+  background: color-mix(in srgb, var(--ink) 6%, transparent);
+}

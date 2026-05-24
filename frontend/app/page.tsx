@@ -312,6 +312,17 @@ function Composer({
 
   const currentModel = MODELS.find((m) => m.id === model) || MODELS[0];
 
+  // Maps the MODELS entry's `brand` field to the matching SVG mark in
+  // icons.tsx. Returns a sensible placeholder so the picker still renders
+  // if a new vendor is added before its logo lands.
+  function brandMark(brand: string): React.ReactNode {
+    switch (brand) {
+      case "anthropic": return I.anthropicMark;
+      case "google":    return I.geminiMark;
+      default:          return <span className="brand-fallback" />;
+    }
+  }
+
   function toggleConnector(id: string) {
     setActiveConnectorIds((cur) =>
       cur.includes(id) ? cur.filter((x) => x !== id) : [...cur, id]
@@ -506,7 +517,7 @@ function Composer({
           <span className="spacer" />
           <div style={{ position: "relative" }}>
             <button className="model-pill" type="button" data-open={modelOpen} onClick={() => { setModelOpen((v) => !v); setAddOpen(false); }}>
-              <span className={"swatch " + currentModel.swatch}></span>
+              <span className="brand-mark">{brandMark(currentModel.brand)}</span>
               <span>{currentModel.short}</span>
               {I.chev}
             </button>
@@ -515,7 +526,7 @@ function Composer({
                 <div className="pop-header">{s.modelHeader}</div>
                 {MODELS.map((m) => (
                   <button key={m.id} className="model-row" type="button" data-active={model === m.id} onClick={() => { setModel(m.id); setModelOpen(false); }}>
-                    <span className={"swatch " + m.swatch}></span>
+                    <span className="brand-mark">{brandMark(m.brand)}</span>
                     <span className="col">
                       <span className="nm">{m.name}</span>
                       <span className="meta-row">
