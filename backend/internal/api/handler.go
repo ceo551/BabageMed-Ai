@@ -83,6 +83,13 @@ type chatRequest struct {
 	Locale   string        `json:"locale"`
 	Messages []llm.Message `json:"messages"`
 	UseMcps  []string      `json:"useMcps"`
+	// Optional pre-fetched chunks from a Space — frontend hits
+	// /api/spaces/:id/context?q=… and passes the rows verbatim. Each item is
+	// typically {fileName, idx, content, score}.
+	SpaceContext []map[string]any `json:"spaceContext,omitempty"`
+	// Optional name of the space the chunks come from — purely for the
+	// system-prompt header so the model knows what corpus it's reading.
+	SpaceName string `json:"spaceName,omitempty"`
 }
 
 func (h *Handler) Chat(w http.ResponseWriter, r *http.Request) {
@@ -136,7 +143,11 @@ func (h *Handler) run(ctx context.Context, req chatRequest) (map[string]any, err
 	if err != nil {
 		return nil, err
 	}
-	return map[string]any{"completion": res, "citations": citations}, nil
+	out := map[string]any{"completion": res, "citations": citations}
+	if len(req.SpaceContext) > 0 {
+		out["spaceContext"] = req.SpaceContext
+	}
+	return out, nil
 }
 
 func (h *Handler) gather(ctx context.Context, req chatRequest) ([]map[string]any, error) {
@@ -158,7 +169,7 @@ func (h *Handler) gather(ctx context.Context, req chatRequest) ([]map[string]any
 }
 
 func (h *Handler) complete(ctx context.Context, req chatRequest, citations []map[string]any) (*llm.CompletionResponse, error) {
-	system := buildSystem(req.Mode, req.Locale, citations)
+	system := buildSystem(req.Mode, req.Locale, citations, req.SpaceContext, req.SpaceName)
 	if req.Model == "" {
 		req.Model = "opus-4.7"
 	}
@@ -173,7 +184,7 @@ func (h *Handler) complete(ctx context.Context, req chatRequest, citations []map
 	})
 }
 
-func buildSystem(mode, locale string, citations []map[string]any) string {
+func buildSystem(mode, locale string, citations []map[string]any, spaceCtx []map[string]any, spaceName string) string {
 	var b strings.Builder
 	b.WriteString("You are BabageMed AI — a HIPAA-aware clinician-in-the-loop assistant. Always cite primary sources, surface uncertainty, and never give a binding diagnosis.\n")
 	if locale == "ar" {
@@ -194,6 +205,19 @@ func buildSystem(mode, locale string, citations []map[string]any) string {
 			b.Write(j)
 			b.WriteByte('\n')
 		}
+	}
+	if len(spaceCtx) > 0 {
+		if spaceName != "" {
+			fmt.Fprintf(&b, "\nUser's space \"%s\" — relevant excerpts from uploaded files:\n", spaceName)
+		} else {
+			b.WriteString("\nUser's space — relevant excerpts from uploaded files:\n")
+		}
+		for _, c := range spaceCtx {
+			j, _ := json.Marshal(c)
+			b.Write(j)
+			b.WriteByte('\n')
+		}
+		b.WriteString("Prefer these user-provided excerpts when they overlap with general knowledge; the user has uploaded them for a reason.\n")
 	}
 	return b.String()
 }

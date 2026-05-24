@@ -19,3 +19,11 @@ __pycache__/
 .idea/
 .vscode/
 *.tsbuildinfo
+# Transient artefacts from the AKS test deploy session
+.acr-build*.json
+.acr-build*.log
+.backend-probe-patch.yaml
+.build-all*.ps1
+.build-worker.ps1
+.frontend-fail.log
+*-build*.log

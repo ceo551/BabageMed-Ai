@@ -5,6 +5,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { STR, MODELS, type Locale, type LocaleStrings } from "./i18n";
 import { I } from "./icons";
 import { useAuth } from "./lib/auth-context";
+import { spaces as spacesApi, type Space } from "./lib/api";
 
 type Theme = "light" | "dark" | "system";
 
@@ -81,9 +82,7 @@ function Sidebar({
   effectiveTheme: "light" | "dark";
 }) {
   const { user, signOut } = useAuth();
-  const [toolsOpen, setToolsOpen] = useState(false);
   const [recentsOpen, setRecentsOpen] = useState(false);
-  const [spacesOpen, setSpacesOpen] = useState(false);
   const [accountOpen, setAccountOpen] = useState(false);
   const [subOpen, setSubOpen] = useState<null | "appearance" | "language">(null);
 
@@ -95,19 +94,13 @@ function Sidebar({
     .slice(0, 2)
     .map((w) => w[0]?.toUpperCase())
     .join("") || "AR";
-  const [popStyle, setPopStyle] = useState<React.CSSProperties>({});
   const [recentsPopStyle, setRecentsPopStyle] = useState<React.CSSProperties>({});
-  const [spacesPopStyle, setSpacesPopStyle] = useState<React.CSSProperties>({});
   const [accountPopStyle, setAccountPopStyle] = useState<React.CSSProperties>({});
   const [subStyle, setSubStyle] = useState<React.CSSProperties>({});
 
-  const toolsBtn = useRef<HTMLButtonElement>(null);
   const recentsBtn = useRef<HTMLButtonElement>(null);
-  const spacesBtn = useRef<HTMLButtonElement>(null);
   const accountBtn = useRef<HTMLButtonElement>(null);
-  const toolsPop = useRef<HTMLDivElement>(null);
   const recentsPop = useRef<HTMLDivElement>(null);
-  const spacesPop = useRef<HTMLDivElement>(null);
   const accountPop = useRef<HTMLDivElement>(null);
 
   function posPop(btn: React.RefObject<HTMLButtonElement>, setter: (s: React.CSSProperties) => void, above?: boolean) {
@@ -126,20 +119,12 @@ function Sidebar({
     else setter({ position: "fixed", top: r.top, left: (sb?.right || r.right) + 8, zIndex: 40 });
   }
 
-  const toggleTools = () => {
-    if (!toolsOpen) { posPop(toolsBtn, setPopStyle); setAccountOpen(false); setRecentsOpen(false); setSpacesOpen(false); }
-    setToolsOpen(v => !v);
-  };
   const toggleRecents = () => {
-    if (!recentsOpen) { posPop(recentsBtn, setRecentsPopStyle); setToolsOpen(false); setAccountOpen(false); setSpacesOpen(false); }
+    if (!recentsOpen) { posPop(recentsBtn, setRecentsPopStyle); setAccountOpen(false); }
     setRecentsOpen(v => !v);
   };
-  const toggleSpaces = () => {
-    if (!spacesOpen) { posPop(spacesBtn, setSpacesPopStyle); setToolsOpen(false); setRecentsOpen(false); setAccountOpen(false); }
-    setSpacesOpen(v => !v);
-  };
   const toggleAccount = () => {
-    if (!accountOpen) { posPop(accountBtn, setAccountPopStyle, true); setToolsOpen(false); setRecentsOpen(false); setSpacesOpen(false); }
+    if (!accountOpen) { posPop(accountBtn, setAccountPopStyle, true); setRecentsOpen(false); }
     else setSubOpen(null);
     setAccountOpen(v => !v);
   };
@@ -156,34 +141,23 @@ function Sidebar({
   }
 
   useEffect(() => {
-    if (!toolsOpen && !accountOpen && !recentsOpen && !spacesOpen) return;
+    if (!accountOpen && !recentsOpen) return;
     function onDoc(e: MouseEvent) {
       const target = e.target as Node;
-      if (toolsOpen && !toolsPop.current?.contains(target) && !toolsBtn.current?.contains(target)) setToolsOpen(false);
       if (recentsOpen && !recentsPop.current?.contains(target) && !recentsBtn.current?.contains(target)) setRecentsOpen(false);
-      if (spacesOpen && !spacesPop.current?.contains(target) && !spacesBtn.current?.contains(target)) setSpacesOpen(false);
       if (accountOpen && !accountPop.current?.contains(target) && !accountBtn.current?.contains(target) && !document.querySelector(".sub-pop")?.contains(target)) {
         setAccountOpen(false); setSubOpen(null);
       }
     }
     document.addEventListener("mousedown", onDoc);
     return () => document.removeEventListener("mousedown", onDoc);
-  }, [toolsOpen, recentsOpen, spacesOpen, accountOpen]);
+  }, [recentsOpen, accountOpen]);
 
   return (
     <aside className="sidebar" aria-label="Sidebar">
       <div className="sb-head">
-        <a className="sb-brand" href="#">
-          <svg width="36" height="36" viewBox="0 0 48 48" fill="none">
-            <defs>
-              <linearGradient id="brand" x1="0" y1="0" x2="48" y2="48">
-                <stop offset="0%" stopColor="var(--cyan)" />
-                <stop offset="100%" stopColor="var(--purple)" />
-              </linearGradient>
-            </defs>
-            <circle cx="24" cy="24" r="20" fill="url(#brand)" opacity={0.18} />
-            <path d="M24 8c1.4 6.4 5.2 10.2 11.6 11.6-6.4 1.4-10.2 5.2-11.6 11.6-1.4-6.4-5.2-10.2-11.6-11.6C18.8 18.2 22.6 14.4 24 8Z" fill="url(#brand)" />
-          </svg>
+        <a className="sb-brand" href="/">
+          {I.discLogo}
           <span className="wm">
             <span className="b1">Babage</span>
             <span className="b2">Med</span>
@@ -202,16 +176,11 @@ function Sidebar({
           <span className="kbd">⌘ K</span>
         </button>
 
-        <button ref={toolsBtn} className="sb-row" type="button" data-active={toolsOpen} onClick={toggleTools} aria-expanded={toolsOpen}>
-          {I.briefcase}
-          <span className="lbl">{s.customize}</span>
-          <span className="trail-chev">{I.chevR}</span>
-        </button>
-        <button ref={spacesBtn} className="sb-row" type="button" data-active={spacesOpen} onClick={toggleSpaces} aria-expanded={spacesOpen}>
+        <Link href="/spaces" className="sb-row" style={{ textDecoration: "none" }}>
           {I.spaces}
           <span className="lbl">{s.spaces}</span>
           <span className="trail-chev">{I.chevR}</span>
-        </button>
+        </Link>
         <button ref={recentsBtn} className="sb-row" type="button" data-active={recentsOpen} onClick={toggleRecents} aria-expanded={recentsOpen}>
           {I.history}
           <span className="lbl">{s.recent}</span>
@@ -242,27 +211,6 @@ function Sidebar({
         )}
       </div>
 
-      {toolsOpen && (
-        <div ref={toolsPop} className="tools-pop" style={popStyle} role="menu">
-          <div className="pop-header">{s.customize}</div>
-          <button className="tool-row" type="button">
-            <span className="swatch">{I.connectors}</span>
-            <span className="col">
-              <span className="ttl">{s.connectors}</span>
-              <span className="desc">{s.connectorsDesc}</span>
-            </span>
-            <span className="status">{s.toolList.length}</span>
-          </button>
-          <button className="tool-row" type="button">
-            <span className="swatch y">{I.skills}</span>
-            <span className="col">
-              <span className="ttl">{s.skills}</span>
-              <span className="desc">{s.skillsDesc}</span>
-            </span>
-          </button>
-        </div>
-      )}
-
       {recentsOpen && (
         <div ref={recentsPop} className="tools-pop recents-pop" style={recentsPopStyle} role="menu">
           <div className="pop-header">{s.recent}</div>
@@ -273,24 +221,6 @@ function Sidebar({
               <span className="status when">{r.w}</span>
             </button>
           ))}
-        </div>
-      )}
-
-      {spacesOpen && (
-        <div ref={spacesPop} className="tools-pop spaces-pop" style={spacesPopStyle} role="menu">
-          <div className="pop-header">{s.spacesHeader}</div>
-          {s.spaceList.map((sp) => (
-            <button key={sp.id} className="tool-row space-row" type="button" title={sp.t}>
-              <span className={"swatch dot-only " + sp.c}><span className="d"></span></span>
-              <span className="col"><span className="ttl">{sp.t}</span></span>
-              <span className="status when">{sp.meta}</span>
-            </button>
-          ))}
-          <div className="popover-sep" />
-          <button className="tool-row add" type="button">
-            <span className="swatch">{I.plus}</span>
-            <span className="col"><span className="ttl">{s.addSpace}</span><span className="desc">{s.addSpaceDesc}</span></span>
-          </button>
         </div>
       )}
 
@@ -389,8 +319,18 @@ function Composer({
   const [voiceOn, setVoiceOn] = useState(false);
   const [sending, setSending] = useState(false);
   const [reply, setReply] = useState<string>("");
+  const [userSpaces, setUserSpaces] = useState<Space[]>([]);
+  const [activeSpaceId, setActiveSpaceId] = useState<string>("");
   const taRef = useRef<HTMLTextAreaElement>(null);
   const composerRef = useRef<HTMLDivElement>(null);
+
+  // Pull the user's spaces once. Endpoint requires auth; if it 401s we just
+  // hide the picker.
+  useEffect(() => {
+    spacesApi.list().then(setUserSpaces).catch(() => setUserSpaces([]));
+  }, []);
+
+  const activeSpace = userSpaces.find((sp) => sp.id === activeSpaceId);
 
   useEffect(() => {
     function onDoc(e: MouseEvent) {
@@ -417,15 +357,28 @@ function Composer({
     setSending(true);
     setReply("");
     try {
+      // If a space is selected, pull the most relevant chunks first so we can
+      // include them in the chat payload as `spaceContext`.
+      let spaceContext: unknown[] = [];
+      if (activeSpaceId) {
+        try {
+          spaceContext = await spacesApi.context(activeSpaceId, value);
+        } catch {
+          // Non-fatal: chat still proceeds without space grounding.
+        }
+      }
       const r = await fetch("/api/backend/api/chat", {
         method: "POST",
         headers: { "content-type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({
           model,
           mode: "bedside",
           locale,
           messages: [{ role: "user", content: value }],
           useMcps: ["pubmed"],
+          spaceContext,
+          spaceName: activeSpace?.name || "",
         }),
       });
       const j = await r.json();
@@ -457,6 +410,26 @@ function Composer({
           <button className="add-btn" type="button" data-open={addOpen} onClick={() => { setAddOpen((v) => !v); setModelOpen(false); }} aria-label="Add">
             {I.plus}
           </button>
+          {userSpaces.length > 0 && (
+            <select
+              value={activeSpaceId}
+              onChange={(e) => setActiveSpaceId(e.target.value)}
+              aria-label="Use space for context"
+              style={{
+                background: activeSpaceId ? "var(--cyan-soft)" : "var(--panel)",
+                color: activeSpaceId ? "var(--cyan)" : "var(--ink)",
+                border: `1px solid ${activeSpaceId ? "var(--cyan-line)" : "var(--border)"}`,
+                borderRadius: 999,
+                padding: "6px 10px",
+                fontSize: 12,
+              }}
+            >
+              <option value="">No space</option>
+              {userSpaces.map((sp) => (
+                <option key={sp.id} value={sp.id}>📁 {sp.name}</option>
+              ))}
+            </select>
+          )}
           {addOpen && (
             <div className="popover" role="menu">
               <div className="pop-header">{s.addConnector}</div>

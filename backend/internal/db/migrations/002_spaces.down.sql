@@ -1,0 +1,3 @@
+DROP TABLE IF EXISTS space_chunks;
+DROP TABLE IF EXISTS space_files;
+DROP TABLE IF EXISTS spaces;

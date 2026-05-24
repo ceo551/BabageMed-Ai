@@ -103,6 +103,70 @@ export type AdminSession = {
   createdAt: string;
 };
 
+// ── Spaces ──
+export type Space = {
+  id: string;
+  name: string;
+  description: string;
+  fileCount: number;
+  createdAt: string;
+  updatedAt: string;
+};
+export type SpaceFile = {
+  id: string;
+  spaceId: string;
+  name: string;
+  mime: string;
+  sizeBytes: number;
+  md5: string;
+  hasText: boolean;
+  chunkCount: number;
+  createdAt: string;
+};
+export type SpaceChunk = {
+  id: string;
+  fileId: string;
+  fileName: string;
+  idx: number;
+  content: string;
+  score: number;
+};
+
+export const spaces = {
+  list:   () => api.get<Space[]>("/api/spaces"),
+  create: (name: string, description = "") =>
+    api.post<Space>("/api/spaces", { name, description }),
+  get:    (id: string) => api.get<Space>(`/api/spaces/${encodeURIComponent(id)}`),
+  remove: (id: string) =>
+    fetch(`/api/backend/api/spaces/${encodeURIComponent(id)}`, { method: "DELETE", credentials: "include" }).then((r) => {
+      if (!r.ok) throw { error: r.statusText, status: r.status } as ApiError;
+    }),
+  files:  (id: string) => api.get<SpaceFile[]>(`/api/spaces/${encodeURIComponent(id)}/files`),
+  upload: async (id: string, file: File): Promise<SpaceFile> => {
+    const fd = new FormData();
+    fd.append("file", file);
+    const r = await fetch(`/api/backend/api/spaces/${encodeURIComponent(id)}/files`, {
+      method: "POST",
+      credentials: "include",
+      body: fd,
+    });
+    const text = await r.text();
+    let body: any = null;
+    try { body = text ? JSON.parse(text) : null; } catch { body = text; }
+    if (!r.ok) throw { error: (body && body.error) || text || r.statusText, status: r.status } as ApiError;
+    return body;
+  },
+  removeFile: (spaceId: string, fileId: string) =>
+    fetch(`/api/backend/api/spaces/${encodeURIComponent(spaceId)}/files/${encodeURIComponent(fileId)}`, {
+      method: "DELETE",
+      credentials: "include",
+    }).then((r) => {
+      if (!r.ok) throw { error: r.statusText, status: r.status } as ApiError;
+    }),
+  context: (id: string, q: string) =>
+    api.get<SpaceChunk[]>(`/api/spaces/${encodeURIComponent(id)}/context?q=${encodeURIComponent(q)}`),
+};
+
 export const admin = {
   stats:         () => api.get<AdminStats>("/api/admin/stats"),
   users:         (q = "", limit = 50, offset = 0) =>

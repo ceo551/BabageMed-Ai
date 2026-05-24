@@ -1,0 +1,65 @@
+# Throw-away values used by the AKS test deploy on rg-babagemed-test.
+# Sized for 1 system pod + 4 user pods (D8s_v3 / E8as_v4 / D8as_v4 / F8as_v6 / E8s_v3)
+# = 40 vCPU, ~208 GB total. Hosts the full 416-MCP preset.
+cloud: aks
+
+image:
+  registry: acrbabagemedtest5583.azurecr.io
+  pullPolicy: IfNotPresent
+  tag: latest
+
+frontend:
+  enabled: true
+  replicas: 1
+  resources:
+    requests: { cpu: 100m, memory: 256Mi }
+    limits:   { cpu: 1000m, memory: 768Mi }
+
+backend:
+  enabled: true
+  replicas: 1
+  resources:
+    requests: { cpu: 200m, memory: 256Mi }
+    limits:   { cpu: 1500m, memory: 1Gi }
+
+postgres:
+  internal: true
+  storage:
+    size: 10Gi
+    storageClass: managed-csi
+  resources:
+    requests: { cpu: 200m, memory: 384Mi }
+    limits:   { cpu: 1000m, memory: 1Gi }
+
+# All 416 MCPs. Trim resources hard so they fit on 5 nodes.
+mcps:
+  preset: all
+  resourcesApi:
+    requests: { cpu: 15m, memory: 80Mi }
+    limits:   { cpu: 250m, memory: 192Mi }
+  resourcesScrape:
+    requests: { cpu: 30m, memory: 160Mi }
+    limits:   { cpu: 500m, memory: 384Mi }
+
+ingress:
+  enabled: true
+  className: nginx
+  # nip.io magic DNS — resolves babagemed.<ip>.nip.io to the IP
+  # The ingress LB public IP is 74.162.202.246 → host below
+  host: babagemed.74-162-202-246.nip.io
+  tls:
+    enabled: false
+
+secrets:
+  # No real API keys — chat will 401 but everything else (auth, MCP browser, tester) works
+  anthropicApiKey: ""
+  googleApiKey: ""
+  openaiApiKey: ""
+  postgresPassword: "babagemed-test-only-not-prod"
+  postgresUser: babagemed
+  postgresDb: babagemed
+  bootstrapAdminEmail: "ceo@babagemed.com"
+
+serviceAccount:
+  create: true
+  name: ""

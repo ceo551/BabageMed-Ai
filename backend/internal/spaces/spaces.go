@@ -1,0 +1,486 @@
+// Package spaces — user-scoped collections of uploaded files (Claude Projects /
+// Perplexity Spaces analogue). Each space contains files; text-bearing files
+// are chunked at upload time and indexed via PostgreSQL full-text search.
+//
+// The /api/spaces/:id/context endpoint takes a free-text query and returns the
+// most relevant chunks; the chat layer concatenates those into the prompt so
+// model output stays grounded in the user's uploads.
+package spaces
+
+import (
+	"context"
+	"crypto/md5"
+	"encoding/hex"
+	"encoding/json"
+	"errors"
+	"fmt"
+	"io"
+	"net/http"
+	"strings"
+	"time"
+
+	"github.com/babagemed/backend/internal/auth"
+	"github.com/babagemed/backend/internal/db"
+	"github.com/go-chi/chi/v5"
+	"github.com/jackc/pgx/v5"
+)
+
+const (
+	maxUploadBytes = 10 * 1024 * 1024 // 10 MB per file
+	chunkChars     = 500              // soft chunk size
+	chunkOverlap   = 60               // characters of overlap between adjacent chunks
+	maxContextHits = 8                // chunks returned per /context call
+)
+
+type Space struct {
+	ID          string    `json:"id"`
+	Name        string    `json:"name"`
+	Description string    `json:"description"`
+	CreatedAt   time.Time `json:"createdAt"`
+	UpdatedAt   time.Time `json:"updatedAt"`
+	FileCount   int       `json:"fileCount"`
+}
+
+type File struct {
+	ID         string    `json:"id"`
+	SpaceID    string    `json:"spaceId"`
+	Name       string    `json:"name"`
+	Mime       string    `json:"mime"`
+	SizeBytes  int64     `json:"sizeBytes"`
+	MD5        string    `json:"md5"`
+	HasText    bool      `json:"hasText"`
+	ChunkCount int       `json:"chunkCount"`
+	CreatedAt  time.Time `json:"createdAt"`
+}
+
+type Chunk struct {
+	ID       string  `json:"id"`
+	FileID   string  `json:"fileId"`
+	FileName string  `json:"fileName"`
+	Idx      int     `json:"idx"`
+	Content  string  `json:"content"`
+	Score    float64 `json:"score"`
+}
+
+type Service struct {
+	db   *db.DB
+	auth *auth.Service
+}
+
+func New(d *db.DB, a *auth.Service) *Service { return &Service{db: d, auth: a} }
+
+// ─── Persistence ───────────────────────────────────────────────────────────
+
+func (s *Service) Create(ctx context.Context, userID, name, description string) (*Space, error) {
+	name = strings.TrimSpace(name)
+	if name == "" {
+		return nil, errors.New("name required")
+	}
+	if len(name) > 200 {
+		return nil, errors.New("name too long")
+	}
+	var sp Space
+	err := s.db.Pool.QueryRow(ctx, `
+        INSERT INTO spaces (user_id, name, description)
+        VALUES ($1, $2, NULLIF($3, ''))
+        RETURNING id, name, COALESCE(description, ''), created_at, updated_at
+    `, userID, name, description).Scan(&sp.ID, &sp.Name, &sp.Description, &sp.CreatedAt, &sp.UpdatedAt)
+	if err != nil {
+		return nil, err
+	}
+	return &sp, nil
+}
+
+func (s *Service) List(ctx context.Context, userID string) ([]Space, error) {
+	rows, err := s.db.Pool.Query(ctx, `
+        SELECT s.id, s.name, COALESCE(s.description, ''), s.created_at, s.updated_at,
+               (SELECT count(*) FROM space_files f WHERE f.space_id = s.id)
+        FROM spaces s
+        WHERE s.user_id = $1
+        ORDER BY s.updated_at DESC
+    `, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := []Space{}
+	for rows.Next() {
+		var sp Space
+		if err := rows.Scan(&sp.ID, &sp.Name, &sp.Description, &sp.CreatedAt, &sp.UpdatedAt, &sp.FileCount); err != nil {
+			return nil, err
+		}
+		out = append(out, sp)
+	}
+	return out, rows.Err()
+}
+
+func (s *Service) Get(ctx context.Context, userID, spaceID string) (*Space, error) {
+	var sp Space
+	err := s.db.Pool.QueryRow(ctx, `
+        SELECT id, name, COALESCE(description, ''), created_at, updated_at,
+               (SELECT count(*) FROM space_files f WHERE f.space_id = $1)
+        FROM spaces WHERE id = $1 AND user_id = $2
+    `, spaceID, userID).Scan(&sp.ID, &sp.Name, &sp.Description, &sp.CreatedAt, &sp.UpdatedAt, &sp.FileCount)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil, nil
+	}
+	return &sp, err
+}
+
+func (s *Service) Delete(ctx context.Context, userID, spaceID string) error {
+	tag, err := s.db.Pool.Exec(ctx, `DELETE FROM spaces WHERE id = $1 AND user_id = $2`, spaceID, userID)
+	if err != nil {
+		return err
+	}
+	if tag.RowsAffected() == 0 {
+		return errors.New("not found")
+	}
+	return nil
+}
+
+func (s *Service) ListFiles(ctx context.Context, userID, spaceID string) ([]File, error) {
+	rows, err := s.db.Pool.Query(ctx, `
+        SELECT f.id, f.space_id, f.name, f.mime, f.size_bytes, COALESCE(f.md5, ''),
+               (f.raw_text IS NOT NULL) AS has_text,
+               (SELECT count(*) FROM space_chunks c WHERE c.file_id = f.id),
+               f.created_at
+        FROM space_files f
+        JOIN spaces s ON s.id = f.space_id
+        WHERE f.space_id = $1 AND s.user_id = $2
+        ORDER BY f.created_at DESC
+    `, spaceID, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := []File{}
+	for rows.Next() {
+		var f File
+		if err := rows.Scan(&f.ID, &f.SpaceID, &f.Name, &f.Mime, &f.SizeBytes, &f.MD5, &f.HasText, &f.ChunkCount, &f.CreatedAt); err != nil {
+			return nil, err
+		}
+		out = append(out, f)
+	}
+	return out, rows.Err()
+}
+
+func (s *Service) UploadFile(ctx context.Context, userID, spaceID, name, mime string, body []byte) (*File, error) {
+	// Confirm the space belongs to this user before storing anything.
+	sp, err := s.Get(ctx, userID, spaceID)
+	if err != nil {
+		return nil, err
+	}
+	if sp == nil {
+		return nil, errors.New("space not found")
+	}
+	if len(body) == 0 {
+		return nil, errors.New("empty file")
+	}
+	if len(body) > maxUploadBytes {
+		return nil, fmt.Errorf("file too large (max %d bytes)", maxUploadBytes)
+	}
+
+	sum := md5.Sum(body)
+	digest := hex.EncodeToString(sum[:])
+
+	rawText := extractText(mime, name, body)
+
+	tx, err := s.db.Pool.Begin(ctx)
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback(ctx) //nolint:errcheck
+
+	var f File
+	err = tx.QueryRow(ctx, `
+        INSERT INTO space_files (space_id, name, mime, size_bytes, md5, raw, raw_text)
+        VALUES ($1, $2, $3, $4, $5, $6, NULLIF($7, ''))
+        RETURNING id, space_id, name, mime, size_bytes, md5, created_at
+    `, spaceID, name, mime, int64(len(body)), digest, body, rawText).Scan(
+		&f.ID, &f.SpaceID, &f.Name, &f.Mime, &f.SizeBytes, &f.MD5, &f.CreatedAt,
+	)
+	if err != nil {
+		return nil, err
+	}
+	f.HasText = rawText != ""
+
+	if rawText != "" {
+		chunks := chunk(rawText)
+		f.ChunkCount = len(chunks)
+		for i, c := range chunks {
+			_, err := tx.Exec(ctx, `
+                INSERT INTO space_chunks (file_id, space_id, idx, content)
+                VALUES ($1, $2, $3, $4)
+            `, f.ID, spaceID, i, c)
+			if err != nil {
+				return nil, err
+			}
+		}
+	}
+
+	// Bump the space's updated_at so it sorts to the top of the list.
+	if _, err := tx.Exec(ctx, `UPDATE spaces SET updated_at = now() WHERE id = $1`, spaceID); err != nil {
+		return nil, err
+	}
+
+	if err := tx.Commit(ctx); err != nil {
+		return nil, err
+	}
+	return &f, nil
+}
+
+func (s *Service) DeleteFile(ctx context.Context, userID, spaceID, fileID string) error {
+	tag, err := s.db.Pool.Exec(ctx, `
+        DELETE FROM space_files f
+        USING spaces s
+        WHERE f.id = $1 AND f.space_id = $2 AND f.space_id = s.id AND s.user_id = $3
+    `, fileID, spaceID, userID)
+	if err != nil {
+		return err
+	}
+	if tag.RowsAffected() == 0 {
+		return errors.New("not found")
+	}
+	return nil
+}
+
+// Context returns up to maxContextHits chunks from the space that best match q.
+// Uses Postgres FTS ranking. If the space has no indexable text, returns empty.
+func (s *Service) Context(ctx context.Context, userID, spaceID, q string) ([]Chunk, error) {
+	q = strings.TrimSpace(q)
+	if q == "" {
+		return nil, nil
+	}
+	// Ownership gate.
+	sp, err := s.Get(ctx, userID, spaceID)
+	if err != nil {
+		return nil, err
+	}
+	if sp == nil {
+		return nil, errors.New("space not found")
+	}
+	// plainto_tsquery is tolerant of free-form input (no need to escape).
+	rows, err := s.db.Pool.Query(ctx, `
+        SELECT c.id, c.file_id, f.name, c.idx, c.content,
+               ts_rank(c.tsv, plainto_tsquery('simple', $2)) AS score
+        FROM space_chunks c
+        JOIN space_files f ON f.id = c.file_id
+        WHERE c.space_id = $1
+          AND c.tsv @@ plainto_tsquery('simple', $2)
+        ORDER BY score DESC
+        LIMIT $3
+    `, spaceID, q, maxContextHits)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := []Chunk{}
+	for rows.Next() {
+		var c Chunk
+		if err := rows.Scan(&c.ID, &c.FileID, &c.FileName, &c.Idx, &c.Content, &c.Score); err != nil {
+			return nil, err
+		}
+		out = append(out, c)
+	}
+	return out, rows.Err()
+}
+
+// ─── HTTP layer ────────────────────────────────────────────────────────────
+
+func (s *Service) Register(r chi.Router) {
+	r.Route("/api/spaces", func(r chi.Router) {
+		r.Use(s.auth.Required)
+		r.Get("/", s.handleList)
+		r.Post("/", s.handleCreate)
+		r.Get("/{id}", s.handleGet)
+		r.Delete("/{id}", s.handleDelete)
+		r.Get("/{id}/files", s.handleListFiles)
+		r.Post("/{id}/files", s.handleUpload)
+		r.Delete("/{id}/files/{fileID}", s.handleDeleteFile)
+		r.Get("/{id}/context", s.handleContext)
+	})
+}
+
+func (s *Service) handleList(w http.ResponseWriter, r *http.Request) {
+	u := auth.FromContext(r.Context())
+	out, err := s.List(r.Context(), u.ID)
+	writeJSON(w, out, err)
+}
+
+func (s *Service) handleCreate(w http.ResponseWriter, r *http.Request) {
+	u := auth.FromContext(r.Context())
+	var body struct{ Name, Description string }
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		http.Error(w, "bad json", http.StatusBadRequest)
+		return
+	}
+	sp, err := s.Create(r.Context(), u.ID, body.Name, body.Description)
+	writeJSON(w, sp, err)
+}
+
+func (s *Service) handleGet(w http.ResponseWriter, r *http.Request) {
+	u := auth.FromContext(r.Context())
+	sp, err := s.Get(r.Context(), u.ID, chi.URLParam(r, "id"))
+	if err == nil && sp == nil {
+		http.Error(w, "not found", http.StatusNotFound)
+		return
+	}
+	writeJSON(w, sp, err)
+}
+
+func (s *Service) handleDelete(w http.ResponseWriter, r *http.Request) {
+	u := auth.FromContext(r.Context())
+	if err := s.Delete(r.Context(), u.ID, chi.URLParam(r, "id")); err != nil {
+		http.Error(w, err.Error(), http.StatusNotFound)
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
+}
+
+func (s *Service) handleListFiles(w http.ResponseWriter, r *http.Request) {
+	u := auth.FromContext(r.Context())
+	out, err := s.ListFiles(r.Context(), u.ID, chi.URLParam(r, "id"))
+	writeJSON(w, out, err)
+}
+
+func (s *Service) handleUpload(w http.ResponseWriter, r *http.Request) {
+	u := auth.FromContext(r.Context())
+	spaceID := chi.URLParam(r, "id")
+	if err := r.ParseMultipartForm(maxUploadBytes + 1<<20); err != nil {
+		http.Error(w, "bad form: "+err.Error(), http.StatusBadRequest)
+		return
+	}
+	fh, hdr, err := r.FormFile("file")
+	if err != nil {
+		http.Error(w, "file field missing", http.StatusBadRequest)
+		return
+	}
+	defer fh.Close()
+	body, err := io.ReadAll(io.LimitReader(fh, maxUploadBytes+1))
+	if err != nil {
+		http.Error(w, "read: "+err.Error(), http.StatusBadRequest)
+		return
+	}
+	mime := hdr.Header.Get("Content-Type")
+	if mime == "" {
+		mime = "application/octet-stream"
+	}
+	out, err := s.UploadFile(r.Context(), u.ID, spaceID, hdr.Filename, mime, body)
+	writeJSON(w, out, err)
+}
+
+func (s *Service) handleDeleteFile(w http.ResponseWriter, r *http.Request) {
+	u := auth.FromContext(r.Context())
+	if err := s.DeleteFile(r.Context(), u.ID, chi.URLParam(r, "id"), chi.URLParam(r, "fileID")); err != nil {
+		http.Error(w, err.Error(), http.StatusNotFound)
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
+}
+
+func (s *Service) handleContext(w http.ResponseWriter, r *http.Request) {
+	u := auth.FromContext(r.Context())
+	out, err := s.Context(r.Context(), u.ID, chi.URLParam(r, "id"), r.URL.Query().Get("q"))
+	writeJSON(w, out, err)
+}
+
+func writeJSON(w http.ResponseWriter, v any, err error) {
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	_ = json.NewEncoder(w).Encode(v)
+}
+
+// ─── Text utilities ────────────────────────────────────────────────────────
+
+// extractText returns plain text from `body` for supported MIMEs, or "" if the
+// content isn't safely decodable as text. PDFs/Office docs need a dedicated
+// parser (out of scope for this iteration) — they stay searchable by filename
+// only.
+func extractText(mime, name string, body []byte) string {
+	mime = strings.ToLower(mime)
+	switch {
+	case strings.HasPrefix(mime, "text/"),
+		mime == "application/json",
+		mime == "application/xml",
+		mime == "application/csv",
+		mime == "application/yaml" || mime == "application/x-yaml":
+		// fall through
+	default:
+		// Fallback: sniff the bytes — if they're mostly printable ASCII/UTF-8
+		// without NULs, treat as text. This catches .md, .log, .ini etc. that
+		// browsers report as octet-stream.
+		if !looksLikeText(body) {
+			return ""
+		}
+	}
+	// Trim to a sane upper bound so a 10 MB log doesn't explode the chunk count.
+	const maxTextChars = 1_000_000
+	s := string(body)
+	if len(s) > maxTextChars {
+		s = s[:maxTextChars]
+	}
+	return s
+}
+
+func looksLikeText(b []byte) bool {
+	if len(b) == 0 {
+		return false
+	}
+	probe := b
+	if len(probe) > 2048 {
+		probe = probe[:2048]
+	}
+	nonPrintable := 0
+	for _, c := range probe {
+		if c == 0 {
+			return false
+		}
+		if c < 0x09 || (c > 0x0d && c < 0x20) {
+			nonPrintable++
+		}
+	}
+	return nonPrintable*100/len(probe) < 5
+}
+
+// chunk splits text into overlapping ~chunkChars windows broken on paragraph or
+// sentence boundaries when possible. Returns at least one chunk for non-empty
+// input.
+func chunk(text string) []string {
+	text = strings.TrimSpace(text)
+	if text == "" {
+		return nil
+	}
+	if len(text) <= chunkChars {
+		return []string{text}
+	}
+	var out []string
+	pos := 0
+	for pos < len(text) {
+		end := pos + chunkChars
+		if end >= len(text) {
+			out = append(out, strings.TrimSpace(text[pos:]))
+			break
+		}
+		// Prefer paragraph break inside last 100 chars, then sentence break.
+		window := text[pos:end]
+		split := strings.LastIndex(window, "\n\n")
+		if split < chunkChars-200 {
+			s := strings.LastIndexAny(window, ".!?\n")
+			if s > chunkChars/2 {
+				split = s + 1
+			}
+		}
+		if split < chunkChars/2 {
+			split = chunkChars
+		}
+		out = append(out, strings.TrimSpace(text[pos:pos+split]))
+		pos += split - chunkOverlap
+		if pos < 0 {
+			pos = 0
+		}
+	}
+	return out
+}

@@ -1,0 +1,57 @@
+# Same as values-aks-test.yaml but with MCPs disabled — used for an initial
+# helm install to validate the base stack (postgres + backend + frontend +
+# ingress) while the 416 MCP images are still building. Once builds are done,
+# upgrade with values-aks-test.yaml.
+cloud: aks
+
+image:
+  registry: acrbabagemedtest5583.azurecr.io
+  pullPolicy: IfNotPresent
+  tag: latest
+
+frontend:
+  enabled: true
+  replicas: 1
+  resources:
+    requests: { cpu: 100m, memory: 256Mi }
+    limits:   { cpu: 1000m, memory: 768Mi }
+
+backend:
+  enabled: true
+  replicas: 1
+  resources:
+    requests: { cpu: 200m, memory: 256Mi }
+    limits:   { cpu: 1500m, memory: 1Gi }
+
+postgres:
+  internal: true
+  storage:
+    size: 10Gi
+    storageClass: managed-csi
+  resources:
+    requests: { cpu: 200m, memory: 384Mi }
+    limits:   { cpu: 1000m, memory: 1Gi }
+
+mcps:
+  preset: custom
+  enabled: []   # zero MCPs for this initial install
+
+ingress:
+  enabled: true
+  className: nginx
+  host: babagemed.74-162-202-246.nip.io
+  tls:
+    enabled: false
+
+secrets:
+  anthropicApiKey: ""
+  googleApiKey: ""
+  openaiApiKey: ""
+  postgresPassword: "babagemed-test-only-not-prod"
+  postgresUser: babagemed
+  postgresDb: babagemed
+  bootstrapAdminEmail: "ceo@babagemed.com"
+
+serviceAccount:
+  create: true
+  name: ""

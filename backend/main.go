@@ -17,6 +17,7 @@ import (
 	"github.com/babagemed/backend/internal/mcp"
 	"github.com/babagemed/backend/internal/metrics"
 	"github.com/babagemed/backend/internal/payments"
+	"github.com/babagemed/backend/internal/spaces"
 	"github.com/babagemed/backend/internal/tracing"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
@@ -131,6 +132,7 @@ func main() {
 	if authSvc != nil {
 		auth.NewHandler(authSvc).Register(r)
 		admin.NewHandler(dbConn, authSvc).Register(r)
+		spaces.New(dbConn, authSvc).Register(r)
 	}
 
 	// Payments
