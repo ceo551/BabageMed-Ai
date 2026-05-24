@@ -303,3 +303,205 @@
   font: inherit;
 }
 .new-space-form .new-space-actions .primary-btn[disabled] { opacity: .55; cursor: not-allowed; }
+
+/* ─── Space detail (Claude-style Project page) ──────────────────────────── */
+.space-detail-shell {
+  max-width: 1280px;
+  margin: 24px auto 80px;
+  padding: 0 24px;
+  display: flex; flex-direction: column;
+  gap: 18px;
+  color: var(--ink);
+}
+.sd-topbar { font-size: 13px; }
+.sd-back {
+  color: var(--muted);
+  text-decoration: none;
+  display: inline-flex; align-items: center; gap: 4px;
+}
+.sd-back:hover { color: var(--ink); }
+.sd-header {
+  display: flex; align-items: center; gap: 16px;
+  padding-bottom: 4px;
+}
+.sd-icon {
+  width: 56px; height: 56px;
+  border-radius: 16px;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: 28px;
+  background: color-mix(in srgb, var(--ink) 8%, transparent);
+  flex-shrink: 0;
+}
+.sd-icon-letter { font-weight: 700; font-size: 24px; }
+.sd-title-block { flex: 1; min-width: 0; }
+.sd-title { font-size: 18px; font-weight: 600; line-height: 1.2; }
+.sd-desc  { font-size: 13px; color: var(--muted); margin-top: 4px; }
+.sd-header-actions { display: inline-flex; align-items: center; gap: 8px; }
+.sd-icon-btn {
+  width: 32px; height: 32px;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  color: var(--muted);
+  display: inline-flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  font-size: 18px;
+}
+.sd-icon-btn:hover { color: var(--ink); background: var(--panel); border-color: var(--border); }
+.sd-share-btn {
+  background: transparent;
+  color: var(--ink);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 7px 14px;
+  font-weight: 500;
+  cursor: pointer;
+  font: inherit;
+}
+.sd-share-btn:hover { border-color: var(--border-strong); background: var(--panel); }
+.sd-error {
+  border: 1px solid var(--purple-line);
+  background: var(--purple-soft);
+  color: var(--purple);
+  padding: 10px 12px;
+  border-radius: 10px;
+}
+
+.sd-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 360px;
+  gap: 18px;
+  align-items: start;
+}
+@media (max-width: 960px) {
+  .sd-grid { grid-template-columns: 1fr; }
+}
+
+.sd-main { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.sd-side { display: flex; flex-direction: column; gap: 12px; }
+
+/* Composer reuses .composer + .composer-bar from dashboard.css; just tweak
+ * surface so it sits on the space page nicely. */
+.sd-composer { background: var(--panel) !important; border-radius: 18px !important; }
+.sd-chat-hint {
+  text-align: center;
+  color: var(--muted);
+  font-size: 13px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 18px;
+  background: color-mix(in srgb, var(--panel) 60%, transparent);
+}
+.sd-reply {
+  background: var(--panel-solid);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 16px;
+  color: var(--ink);
+  white-space: pre-wrap;
+  line-height: 1.6;
+  font-size: 14px;
+}
+
+/* Right-rail card primitive */
+.sd-card {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 16px;
+  display: flex; flex-direction: column; gap: 10px;
+}
+.sd-card-head { display: flex; align-items: center; justify-content: space-between; }
+.sd-card-title { font-weight: 600; font-size: 15px; }
+.sd-card-action {
+  width: 28px; height: 28px;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  color: var(--muted);
+  font-size: 18px;
+  cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: center;
+}
+.sd-card-action:hover { color: var(--ink); background: var(--panel-solid); border-color: var(--border); }
+.sd-card-empty { color: var(--muted-2); font-size: 13px; }
+.sd-instructions-text {
+  color: var(--ink-2);
+  font-size: 13px;
+  line-height: 1.55;
+  white-space: pre-wrap;
+}
+.sd-edit-block .field-input {
+  background: var(--panel-solid);
+  color: var(--ink);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 12px;
+  font: inherit;
+  width: 100%;
+  resize: vertical;
+}
+.sd-edit-block .field-input:focus { outline: none; border-color: var(--cyan-line); }
+
+/* Files panel — dropzone empty state */
+.sd-dropzone {
+  border: 1px dashed var(--border);
+  border-radius: 12px;
+  padding: 28px 16px;
+  display: flex; flex-direction: column; align-items: center; gap: 10px;
+  cursor: pointer;
+  background: var(--panel-solid);
+  transition: border-color .12s, background .12s;
+  text-align: center;
+}
+.sd-dropzone:hover,
+.sd-dropzone[data-drag="true"] {
+  border-color: var(--cyan-line);
+  background: color-mix(in srgb, var(--cyan) 6%, var(--panel-solid));
+}
+.sd-dropzone-icon { font-size: 28px; letter-spacing: -6px; opacity: .8; }
+.sd-dropzone-text { color: var(--muted); font-size: 12px; max-width: 32ch; }
+
+.sd-files { display: flex; flex-direction: column; gap: 6px; }
+.sd-file-row {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: 8px;
+  align-items: center;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--panel-solid);
+  font-size: 12px;
+}
+.sd-file-name {
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  font-weight: 500; color: var(--ink);
+}
+.sd-file-badge {
+  font-size: 10px; padding: 2px 8px; border-radius: 999px;
+  background: var(--cyan-soft); color: var(--cyan); border: 1px solid var(--cyan-line);
+}
+.sd-file-badge.warn { background: var(--purple-soft); color: var(--purple); border-color: var(--purple-line); }
+.sd-file-del {
+  width: 22px; height: 22px;
+  background: transparent; color: var(--muted-2);
+  border: 1px solid var(--border); border-radius: 6px;
+  display: inline-flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 1;
+}
+.sd-file-del:hover { color: var(--purple); border-color: var(--purple-line); }
+.sd-files-add-more {
+  background: transparent;
+  color: var(--cyan);
+  border: 1px dashed var(--cyan-line);
+  border-radius: 10px;
+  padding: 8px 10px;
+  cursor: pointer;
+  font-size: 12px;
+  font: inherit;
+  margin-top: 4px;
+}
+.sd-files-add-more:hover { background: var(--cyan-soft); }

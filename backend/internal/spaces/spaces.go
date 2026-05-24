@@ -158,6 +158,69 @@ func (s *Service) Get(ctx context.Context, userID, spaceID string) (*Space, erro
 	return &sp, err
 }
 
+// UpdateInput is the PATCH body — every field optional so callers send only
+// what changed. Empty (zero-length) strings are stored as such; pass nil to
+// leave a column untouched.
+type UpdateInput struct {
+	Name         *string `json:"name,omitempty"`
+	Description  *string `json:"description,omitempty"`
+	Icon         *string `json:"icon,omitempty"`
+	Instructions *string `json:"instructions,omitempty"`
+}
+
+func (s *Service) Update(ctx context.Context, userID, spaceID string, in UpdateInput) (*Space, error) {
+	// COALESCE pattern: $N is nil => keep current value; non-nil => overwrite.
+	// Apply defensive length clamps (same as Create) so a misbehaving client
+	// can't blow up the system prompt.
+	if in.Name != nil {
+		n := strings.TrimSpace(*in.Name)
+		if n == "" {
+			return nil, errors.New("name cannot be empty")
+		}
+		if len(n) > 200 {
+			n = n[:200]
+		}
+		in.Name = &n
+	}
+	if in.Icon != nil {
+		v := strings.TrimSpace(*in.Icon)
+		if len(v) > 16 {
+			v = v[:16]
+		}
+		in.Icon = &v
+	}
+	if in.Instructions != nil {
+		v := strings.TrimSpace(*in.Instructions)
+		if len(v) > 8000 {
+			v = v[:8000]
+		}
+		in.Instructions = &v
+	}
+
+	var sp Space
+	err := s.db.Pool.QueryRow(ctx, `
+        UPDATE spaces
+        SET name         = COALESCE($3, name),
+            description  = COALESCE($4, description),
+            icon         = COALESCE($5, icon),
+            instructions = COALESCE($6, instructions),
+            updated_at   = now()
+        WHERE id = $1 AND user_id = $2
+        RETURNING id, name, COALESCE(description, ''), icon, instructions, created_at, updated_at,
+                  (SELECT count(*) FROM space_files f WHERE f.space_id = id)
+    `, spaceID, userID, in.Name, in.Description, in.Icon, in.Instructions).Scan(
+		&sp.ID, &sp.Name, &sp.Description, &sp.Icon, &sp.Instructions,
+		&sp.CreatedAt, &sp.UpdatedAt, &sp.FileCount,
+	)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil, errors.New("not found")
+	}
+	if err != nil {
+		return nil, err
+	}
+	return &sp, nil
+}
+
 func (s *Service) Delete(ctx context.Context, userID, spaceID string) error {
 	tag, err := s.db.Pool.Exec(ctx, `DELETE FROM spaces WHERE id = $1 AND user_id = $2`, spaceID, userID)
 	if err != nil {
@@ -324,6 +387,7 @@ func (s *Service) Register(r chi.Router) {
 		r.Get("/", s.handleList)
 		r.Post("/", s.handleCreate)
 		r.Get("/{id}", s.handleGet)
+		r.Patch("/{id}", s.handleUpdate)
 		r.Delete("/{id}", s.handleDelete)
 		r.Get("/{id}/files", s.handleListFiles)
 		r.Post("/{id}/files", s.handleUpload)
@@ -356,6 +420,17 @@ func (s *Service) handleGet(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "not found", http.StatusNotFound)
 		return
 	}
+	writeJSON(w, sp, err)
+}
+
+func (s *Service) handleUpdate(w http.ResponseWriter, r *http.Request) {
+	u := auth.FromContext(r.Context())
+	var in UpdateInput
+	if err := json.NewDecoder(r.Body).Decode(&in); err != nil {
+		http.Error(w, "bad json", http.StatusBadRequest)
+		return
+	}
+	sp, err := s.Update(r.Context(), u.ID, chi.URLParam(r, "id"), in)
 	writeJSON(w, sp, err)
 }
 

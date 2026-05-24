@@ -178,6 +178,19 @@ export const spaces = {
       instructions: input.instructions || "",
     }),
   get:    (id: string) => api.get<Space>(`/api/spaces/${encodeURIComponent(id)}`),
+  update: async (id: string, patch: Partial<Pick<Space, "name"|"description"|"icon"|"instructions">>): Promise<Space> => {
+    const r = await fetch(`/api/backend/api/spaces/${encodeURIComponent(id)}`, {
+      method: "PATCH",
+      credentials: "include",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(patch),
+    });
+    const text = await r.text();
+    let body: any = null;
+    try { body = text ? JSON.parse(text) : null; } catch { body = text; }
+    if (!r.ok) throw { error: (body && body.error) || text || r.statusText, status: r.status } as ApiError;
+    return body;
+  },
   remove: (id: string) =>
     fetch(`/api/backend/api/spaces/${encodeURIComponent(id)}`, { method: "DELETE", credentials: "include" }).then((r) => {
       if (!r.ok) throw { error: r.statusText, status: r.status } as ApiError;
