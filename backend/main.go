@@ -88,6 +88,11 @@ func main() {
 	llmClient := llm.NewClient(llm.Config{
 		AnthropicKey: os.Getenv("ANTHROPIC_API_KEY"),
 		GoogleKey:    os.Getenv("GOOGLE_API_KEY"),
+		// Vertex AI takes precedence over AI Studio when GOOGLE_CLOUD_PROJECT
+		// is set. GOOGLE_APPLICATION_CREDENTIALS (mounted external-account
+		// JSON pointing at the projected WIF token) drives ADC.
+		VertexProject:  os.Getenv("GOOGLE_CLOUD_PROJECT"),
+		VertexLocation: os.Getenv("GOOGLE_CLOUD_LOCATION"),
 		OpenAIKey:    os.Getenv("OPENAI_API_KEY"),
 	})
 

@@ -201,6 +201,32 @@ ingress:
     issuer: ""                 # cert-manager ClusterIssuer name (e.g. letsencrypt-prod)
     existingSecret: ""         # pre-existing TLS secret (mutually exclusive with issuer)
 
+# ─── GCP / Vertex AI (Workload Identity Federation) ──────────────────────
+# Opt-in. When enabled, the backend pod is bound to babagemed-backend-sa,
+# mounts an OIDC-signed projected token, and exchanges it for an impersonated
+# bearer on vertexServiceAccount — no static SA JSON key in the cluster.
+# See infra/helm/babagemed/templates/gcp-wif.yaml for the external_account
+# config that the Go google.FindDefaultCredentials picks up.
+#
+# Set up on GCP side (one-time):
+#   1. gcloud iam workload-identity-pools create <wifPool> --location=global
+#   2. gcloud iam workload-identity-pools providers create-oidc <wifProvider>
+#      --workload-identity-pool=<wifPool>
+#      --issuer-uri=<AKS oidc issuer>
+#      --attribute-mapping="google.subject=assertion.sub,..."
+#      --attribute-condition="namespace == 'babagemed' && sa == 'babagemed-backend-sa'"
+#   3. gcloud iam service-accounts add-iam-policy-binding <vertexServiceAccount>
+#      --role=roles/iam.workloadIdentityUser
+#      --member="principal://iam.googleapis.com/projects/<num>/locations/global/workloadIdentityPools/<wifPool>/subject/system:serviceaccount:babagemed:babagemed-backend-sa"
+gcp:
+  enabled: false
+  project: ""
+  projectNumber: ""
+  location: "us-central1"
+  wifPool: "aks-pool"
+  wifProvider: "aks-provider"
+  vertexServiceAccount: ""
+
 # ─── Secrets ──────────────────────────────────────────────────────────────
 # In production, manage these with sealed-secrets, External Secrets Operator,
 # GCP Secret Manager, AWS Secrets Manager, or Azure Key Vault — not values.yaml.

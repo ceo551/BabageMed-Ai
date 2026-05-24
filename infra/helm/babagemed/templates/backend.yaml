@@ -35,10 +35,35 @@ spec:
         app.kubernetes.io/name: babagemed
         app.kubernetes.io/component: backend
     spec:
-      serviceAccountName: {{ include "babagemed.serviceAccountName" . }}
+      # When gcp.enabled, the pod runs as babagemed-backend-sa so the WIF
+      # provider's attribute-condition matches (namespace=babagemed,
+      # sa=babagemed-backend-sa) and the projected token can be exchanged for
+      # an impersonated bearer on the Vertex SA.
+      serviceAccountName: {{ if .Values.gcp.enabled }}babagemed-backend-sa{{ else }}{{ include "babagemed.serviceAccountName" . }}{{ end }}
       securityContext: {{- toYaml .Values.podSecurityContext | nindent 8 }}
       {{- with .Values.image.pullSecrets }}
       imagePullSecrets: {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- if .Values.gcp.enabled }}
+      volumes:
+        # Projected k8s SA token, signed by the AKS OIDC issuer, scoped to
+        # the WIF provider's audience. Rotates automatically every <1h.
+        - name: gcp-token
+          projected:
+            sources:
+              - serviceAccountToken:
+                  path: gcp-token
+                  audience: "//iam.googleapis.com/projects/{{ .Values.gcp.projectNumber }}/locations/global/workloadIdentityPools/{{ .Values.gcp.wifPool }}/providers/{{ .Values.gcp.wifProvider }}"
+                  expirationSeconds: 3600
+        # external-account.json — see templates/gcp-wif.yaml. Tells the
+        # Google ADC library how to exchange the projected token for a
+        # bearer that impersonates the Vertex SA.
+        - name: gcp-wif-config
+          configMap:
+            name: babagemed-gcp-wif
+            items:
+              - key: external-account.json
+                path: external-account.json
       {{- end }}
       containers:
         - name: backend
@@ -47,6 +72,15 @@ spec:
           ports:
             - name: http
               containerPort: 8080
+          {{- if .Values.gcp.enabled }}
+          volumeMounts:
+            - name: gcp-token
+              mountPath: /var/run/secrets/tokens
+              readOnly: true
+            - name: gcp-wif-config
+              mountPath: /var/secrets/google
+              readOnly: true
+          {{- end }}
           env:
             - name: PORT
               value: "8080"
@@ -56,6 +90,14 @@ spec:
               value: "babagemed-backend"
             - name: K8S_POD_NAME
               valueFrom: { fieldRef: { fieldPath: metadata.name } }
+            {{- if .Values.gcp.enabled }}
+            - name: GOOGLE_APPLICATION_CREDENTIALS
+              value: /var/secrets/google/external-account.json
+            - name: GOOGLE_CLOUD_PROJECT
+              value: {{ .Values.gcp.project | quote }}
+            - name: GOOGLE_CLOUD_LOCATION
+              value: {{ .Values.gcp.location | quote }}
+            {{- end }}
           envFrom:
             - secretRef:
                 name: {{ .Values.mcps.envFromSecret }}

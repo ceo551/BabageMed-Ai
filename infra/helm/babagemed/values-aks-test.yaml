@@ -63,3 +63,17 @@ secrets:
 serviceAccount:
   create: true
   name: ""
+
+# GCP / Vertex AI via Workload Identity Federation. When enabled, the backend
+# pod runs as babagemed-backend-sa, picks up a projected OIDC token from AKS,
+# exchanges it via STS for an impersonated bearer on vertexServiceAccount,
+# and routes Gemini calls to {location}-aiplatform.googleapis.com instead of
+# the AI Studio key endpoint. Disable to fall back to GOOGLE_API_KEY.
+gcp:
+  enabled: true
+  project: "starlit-braid-497012-q5"
+  projectNumber: "36958314605"
+  location: "us-central1"
+  wifPool: "aks-pool"
+  wifProvider: "aks-provider"
+  vertexServiceAccount: "babagemed-vertex@starlit-braid-497012-q5.iam.gserviceaccount.com"

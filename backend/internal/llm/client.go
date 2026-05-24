@@ -9,25 +9,56 @@ import (
 	"io"
 	"net/http"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/babagemed/backend/internal/metrics"
 	"github.com/babagemed/backend/internal/tracing"
+	"golang.org/x/oauth2"
+	"golang.org/x/oauth2/google"
 )
 
 type Config struct {
 	AnthropicKey string
-	GoogleKey    string
-	OpenAIKey    string
+	// GoogleKey is the AI Studio API key (legacy / free-tier path).
+	GoogleKey string
+	// VertexProject / VertexLocation switch the Google branch to Vertex AI.
+	// When VertexProject is set, callGoogle uses an OAuth bearer derived from
+	// Application Default Credentials (Workload Identity Federation in-pod)
+	// and ignores GoogleKey.
+	VertexProject  string
+	VertexLocation string
+	OpenAIKey      string
 }
 
 type Client struct {
 	cfg  Config
 	http *http.Client
+	// Vertex AI access tokens are valid for ~1h; cache + refresh through the
+	// google.FindDefaultCredentials TokenSource (which itself handles the
+	// federated-token → impersonation dance).
+	gcpTSOnce sync.Once
+	gcpTS     oauth2.TokenSource
+	gcpTSErr  error
 }
 
 func NewClient(cfg Config) *Client {
 	return &Client{cfg: cfg, http: tracing.HTTPClient(&http.Client{Timeout: 120 * time.Second})}
+}
+
+// vertexTokenSource lazily resolves Application Default Credentials and
+// caches the resulting TokenSource. The returned source auto-refreshes
+// expired tokens — we just call .Token() per request.
+func (c *Client) vertexTokenSource(ctx context.Context) (oauth2.TokenSource, error) {
+	c.gcpTSOnce.Do(func() {
+		creds, err := google.FindDefaultCredentials(ctx, "https://www.googleapis.com/auth/cloud-platform")
+		if err != nil {
+			c.gcpTSErr = fmt.Errorf("ADC: %w", err)
+			return
+		}
+		c.gcpTS = creds.TokenSource
+	})
+	return c.gcpTS, c.gcpTSErr
 }
 
 type Message struct {
@@ -127,10 +158,17 @@ func (c *Client) callAnthropic(ctx context.Context, req CompletionRequest) (*Com
 	return &CompletionResponse{Provider: "anthropic", Model: m, Content: text}, nil
 }
 
+// callGoogle dispatches Gemini calls to either Vertex AI (when
+// VertexProject is set; uses OAuth bearer from ADC / Workload Identity
+// Federation) or the AI Studio generativelanguage endpoint with an API
+// key. The wire-level request body shape is identical between the two —
+// only the URL + auth header differ.
 func (c *Client) callGoogle(ctx context.Context, req CompletionRequest) (*CompletionResponse, error) {
-	if c.cfg.GoogleKey == "" {
-		return nil, errors.New("GOOGLE_API_KEY not configured")
+	if c.cfg.VertexProject == "" && c.cfg.GoogleKey == "" {
+		return nil, errors.New("neither GOOGLE_CLOUD_PROJECT (Vertex) nor GOOGLE_API_KEY (AI Studio) configured")
 	}
+
+	// Body is the same for both endpoints.
 	parts := []map[string]any{}
 	for _, m := range req.Messages {
 		role := m.Role
@@ -139,10 +177,39 @@ func (c *Client) callGoogle(ctx context.Context, req CompletionRequest) (*Comple
 		}
 		parts = append(parts, map[string]any{"role": role, "parts": []map[string]string{{"text": m.Content}}})
 	}
-	body, _ := json.Marshal(map[string]any{"contents": parts, "systemInstruction": map[string]any{"parts": []map[string]string{{"text": req.System}}}})
-	url := "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent?key=" + c.cfg.GoogleKey
-	r, _ := http.NewRequestWithContext(ctx, "POST", url, bytes.NewReader(body))
+	body, _ := json.Marshal(map[string]any{
+		"contents":          parts,
+		"systemInstruction": map[string]any{"parts": []map[string]string{{"text": req.System}}},
+	})
+
+	// Build the request — URL + auth differ per path.
+	var r *http.Request
+	if c.cfg.VertexProject != "" {
+		location := c.cfg.VertexLocation
+		if location == "" {
+			location = "us-central1"
+		}
+		// publisher endpoint, gemini-2.5-pro mirrors what was used on AI Studio.
+		url := fmt.Sprintf(
+			"https://%s-aiplatform.googleapis.com/v1/projects/%s/locations/%s/publishers/google/models/gemini-2.5-pro:generateContent",
+			location, c.cfg.VertexProject, location,
+		)
+		ts, err := c.vertexTokenSource(ctx)
+		if err != nil {
+			return nil, err
+		}
+		tok, err := ts.Token()
+		if err != nil {
+			return nil, fmt.Errorf("vertex token: %w", err)
+		}
+		r, _ = http.NewRequestWithContext(ctx, "POST", url, bytes.NewReader(body))
+		r.Header.Set("Authorization", "Bearer "+tok.AccessToken)
+	} else {
+		url := "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent?key=" + c.cfg.GoogleKey
+		r, _ = http.NewRequestWithContext(ctx, "POST", url, bytes.NewReader(body))
+	}
 	r.Header.Set("content-type", "application/json")
+
 	res, err := c.http.Do(r)
 	if err != nil {
 		return nil, err
