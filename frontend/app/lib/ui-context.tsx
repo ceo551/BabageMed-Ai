@@ -1,7 +1,24 @@
 "use client";
 
-import React, { createContext, useContext, useEffect, useState } from "react";
+import React, { createContext, useContext, useEffect, useRef, useState } from "react";
 import { STR, type Locale, type LocaleStrings } from "../i18n";
+
+// Persisted in localStorage so a reload keeps the user's pick. Without this
+// setLocale("ar") would update state, then window.location.reload() would
+// drop the state and useState would re-init back to the "en" default.
+const LS_LOCALE = "babagemed:locale";
+const LS_THEME  = "babagemed:theme";
+
+function readLocale(): Locale {
+  if (typeof window === "undefined") return "en";
+  const v = window.localStorage.getItem(LS_LOCALE);
+  return v === "ar" || v === "en" ? v : "en";
+}
+function readTheme(): "light" | "dark" | "system" {
+  if (typeof window === "undefined") return "system";
+  const v = window.localStorage.getItem(LS_THEME);
+  return v === "light" || v === "dark" || v === "system" ? v : "system";
+}
 
 // UIContext — global UX state that needs to survive page navigation: chosen
 // locale, theme preference, sidebar collapse. Mounted by AppShell (root
@@ -43,13 +60,37 @@ export function useUI(): UIContextValue {
 }
 
 export function UIProvider({ children }: { children: React.ReactNode }) {
-  const [locale, setLocale] = useState<Locale>("en");
-  const [theme, setTheme] = useState<Theme>("system");
+  // SSR can't read localStorage, so we render with the defaults and rehydrate
+  // on the client immediately after mount. The first paint may flash "en/dark"
+  // for a frame; for a hard fix we'd inject a tiny inline script in <head>.
+  const [locale, setLocaleState] = useState<Locale>("en");
+  const [theme, setThemeState] = useState<Theme>("system");
   const [systemTheme, setSystemTheme] = useState<"light" | "dark">("dark");
   const [collapsed, setCollapsed] = useState(false);
+  const hydrated = useRef(false);
 
   const effectiveTheme = theme === "system" ? systemTheme : theme;
   const s = STR[locale];
+
+  // One-shot rehydration from localStorage on mount.
+  useEffect(() => {
+    const stored = readLocale();
+    if (stored !== locale) setLocaleState(stored);
+    const t = readTheme();
+    if (t !== theme) setThemeState(t);
+    hydrated.current = true;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Setters that ALSO persist to localStorage so the pick survives a reload.
+  function setLocale(l: Locale) {
+    setLocaleState(l);
+    if (typeof window !== "undefined") window.localStorage.setItem(LS_LOCALE, l);
+  }
+  function setTheme(t: Theme) {
+    setThemeState(t);
+    if (typeof window !== "undefined") window.localStorage.setItem(LS_THEME, t);
+  }
 
   // Track the OS-level colour-scheme preference so "system" is meaningful.
   useEffect(() => {
