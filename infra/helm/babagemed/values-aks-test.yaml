@@ -48,11 +48,16 @@ mcps:
 ingress:
   enabled: true
   className: nginx
-  # nip.io magic DNS — resolves babagemed.<ip>.nip.io to the IP
-  # The ingress LB public IP is 74.162.202.246 → host below
-  host: babagemed.74-162-202-246.nip.io
+  # Production hostname — A record points at the AKS ingress LB IP
+  # (74.162.202.246). Created on Hostinger via the babagemed.com zone.
+  host: ai.babagemed.com
   tls:
-    enabled: false
+    enabled: true
+    # cert-manager ClusterIssuer (see infra/helm/babagemed/letsencrypt-clusterissuer.yaml).
+    # On Helm install the chart annotates the Ingress so cert-manager picks
+    # it up, runs the HTTP-01 challenge through ingress-nginx, and provisions
+    # a real Let's Encrypt cert in ~30-90s. Renews automatically every 60 days.
+    issuer: letsencrypt-prod
 
 secrets:
   # No real API keys — chat will 401 but everything else (auth, MCP browser, tester) works
