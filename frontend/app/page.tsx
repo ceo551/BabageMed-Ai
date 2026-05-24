@@ -6,6 +6,7 @@ import { MODELS, type Locale, type LocaleStrings } from "./i18n";
 import { I } from "./icons";
 import { useUI } from "./lib/ui-context";
 import { ConnectorIcon } from "./components/ConnectorIcon";
+import { AssistantMessage, type Citation } from "./components/AssistantMessage";
 import {
   spaces as spacesApi,
   connectors as connectorsApi,
@@ -21,7 +22,7 @@ import {
 // (refresh = new chat); persistence is a follow-up when chats table ships.
 type ChatMessage =
   | { id: string; role: "user"; content: string }
-  | { id: string; role: "assistant"; content: string }
+  | { id: string; role: "assistant"; content: string; citations?: Citation[] }
   | { id: string; role: "loading" };
 
 export default function Dashboard() {
@@ -105,9 +106,11 @@ function Transcript({ messages }: { messages: ChatMessage[] }) {
           );
         }
         return (
-          <div key={m.id} className="msg msg-assistant">
-            {m.content}
-          </div>
+          <AssistantMessage
+            key={m.id}
+            content={m.content}
+            citations={m.citations}
+          />
         );
       })}
       <div ref={endRef} aria-hidden="true" />
@@ -189,6 +192,31 @@ function Composer({
     );
   }
 
+  // Animate `full` into the assistant message identified by `id`, in
+  // ~24-char chunks every frame, ~3ms/char total. Returns once the whole
+  // string has been pushed in. Cheap synthetic streaming until the backend
+  // proxies provider-native deltas (next iteration).
+  async function typewriterInto(
+    id: string,
+    full: string,
+    citations: Citation[] | undefined,
+    setMsgs: React.Dispatch<React.SetStateAction<ChatMessage[]>>,
+  ) {
+    const step = 24;
+    for (let i = 0; i < full.length; i += step) {
+      const slice = full.slice(0, Math.min(full.length, i + step));
+      setMsgs((cur) =>
+        cur.map((m) =>
+          m.id === id && m.role === "assistant"
+            ? { ...m, content: slice, citations }
+            : m,
+        ),
+      );
+      // Yield so the browser can paint. requestAnimationFrame-ish delay.
+      await new Promise((res) => setTimeout(res, 16));
+    }
+  }
+
   async function send() {
     const text = value.trim();
     if (!text || sending) return;
@@ -215,35 +243,95 @@ function Composer({
         }
       }
       const useMcps = activeConnectorIds.length > 0 ? activeConnectorIds : ["pubmed"];
-      const r = await fetch("/api/backend/api/chat", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({
-          model,
-          mode: "bedside",
-          locale,
-          // Send the full transcript so the model has context, not just the
-          // latest turn. Skip the loading placeholder we just appended.
-          messages: [
-            ...messages.filter((m) => m.role === "user" || m.role === "assistant").map((m) => ({
-              role: m.role,
-              content: "content" in m ? m.content : "",
-            })),
-            { role: "user", content: text },
-          ],
-          useMcps,
-          spaceContext,
-          spaceName: activeSpace?.name || "",
-        }),
+      const body = JSON.stringify({
+        model, mode: "bedside", locale,
+        messages: [
+          ...messages.filter((m) => m.role === "user" || m.role === "assistant").map((m) => ({
+            role: m.role,
+            content: "content" in m ? m.content : "",
+          })),
+          { role: "user", content: text },
+        ],
+        useMcps, spaceContext,
+        spaceName: activeSpace?.name || "",
       });
-      const j = await r.json();
-      const replyText = j?.completion?.content || j?.error || "(no response)";
+
+      // Stream via /api/chat/stream — server emits SSE events
+      // (status / citations / content / error / done). The content event
+      // currently carries the full completion in one shot (the backend
+      // doesn't proxy provider-side streaming yet), so we typewriter-animate
+      // it on the client to give the Claude/Gemini "watch it write" feel.
+      const r = await fetch("/api/backend/api/chat/stream", {
+        method: "POST",
+        headers: { "content-type": "application/json", "accept": "text/event-stream" },
+        credentials: "include",
+        body,
+      });
+      if (!r.ok || !r.body) {
+        throw new Error(`HTTP ${r.status}`);
+      }
+
+      const assistantId = `a-${Date.now()}`;
+      // Swap the loading row for a real assistant row (empty content; we'll
+      // append chunks into it as they arrive).
       setMessages((cur) =>
         cur
           .filter((m) => m.id !== loadingId)
-          .concat({ id: `a-${Date.now()}`, role: "assistant", content: replyText })
+          .concat({ id: assistantId, role: "assistant", content: "" })
       );
+
+      const reader = r.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
+      let citationsForTurn: Citation[] | undefined;
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+
+        // Parse SSE frames separated by blank lines.
+        let idx: number;
+        while ((idx = buffer.indexOf("\n\n")) !== -1) {
+          const frame = buffer.slice(0, idx);
+          buffer = buffer.slice(idx + 2);
+
+          let event = "message";
+          let data = "";
+          for (const line of frame.split("\n")) {
+            if (line.startsWith("event: ")) event = line.slice(7).trim();
+            else if (line.startsWith("data: ")) data += line.slice(6);
+          }
+          if (!data) continue;
+
+          let parsed: any = null;
+          try { parsed = JSON.parse(data); } catch { /* ignore non-JSON */ }
+
+          if (event === "citations" && Array.isArray(parsed)) {
+            citationsForTurn = parsed as Citation[];
+            setMessages((cur) =>
+              cur.map((m) =>
+                m.id === assistantId && m.role === "assistant"
+                  ? { ...m, citations: citationsForTurn }
+                  : m,
+              ),
+            );
+          } else if (event === "content" && parsed?.content) {
+            // Typewriter into the assistant message (~3ms per char, capped
+            // batch size so a 5k-token answer doesn't take forever).
+            await typewriterInto(assistantId, parsed.content, citationsForTurn, setMessages);
+          } else if (event === "error" && parsed?.error) {
+            setMessages((cur) =>
+              cur.map((m) =>
+                m.id === assistantId && m.role === "assistant"
+                  ? { ...m, content: "Error: " + parsed.error }
+                  : m,
+              ),
+            );
+          }
+          // 'status' + 'done' are advisory only.
+        }
+      }
     } catch (e: any) {
       setMessages((cur) =>
         cur

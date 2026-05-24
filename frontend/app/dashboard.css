@@ -264,6 +264,99 @@ a { color: inherit; text-decoration: none; }
  * as bare text today so this just shapes the white-space) */
 .msg-assistant + .msg-assistant { margin-top: -6px; }
 
+/* Markdown body inside assistant turns. Tightened margins so multi-paragraph
+ * answers don't waste vertical real estate. */
+.md-body { font-size: 15.5px; line-height: 1.7; color: var(--ink); }
+.md-body > *:first-child { margin-top: 0; }
+.md-body > *:last-child { margin-bottom: 0; }
+.md-body p { margin: 0 0 12px; }
+.md-body h1, .md-body h2, .md-body h3, .md-body h4 {
+  margin: 18px 0 8px; line-height: 1.3; font-weight: 600;
+}
+.md-body h1 { font-size: 22px; }
+.md-body h2 { font-size: 19px; }
+.md-body h3 { font-size: 16.5px; }
+.md-body ul, .md-body ol { margin: 0 0 12px; padding-inline-start: 24px; }
+.md-body li { margin: 2px 0; }
+.md-body li > p { margin: 0; }
+.md-body strong { color: var(--ink); font-weight: 600; }
+.md-body em { color: var(--ink-2); }
+.md-body code {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 1px 6px;
+  font-family: var(--mono);
+  font-size: 13px;
+}
+.md-body pre {
+  background: var(--panel-solid);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px 14px;
+  overflow-x: auto;
+  margin: 8px 0 14px;
+}
+.md-body pre code {
+  background: transparent;
+  border: 0;
+  padding: 0;
+  font-size: 12.5px;
+  color: var(--ink);
+}
+.md-body a {
+  color: var(--cyan);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  text-decoration-color: var(--cyan-line);
+}
+.md-body a:hover { text-decoration-color: var(--cyan); }
+.md-body blockquote {
+  border-inline-start: 3px solid var(--cyan-line);
+  margin: 8px 0 12px;
+  padding: 2px 14px;
+  color: var(--ink-2);
+}
+.md-body table {
+  border-collapse: collapse;
+  margin: 8px 0 14px;
+  width: 100%;
+  font-size: 14px;
+}
+.md-body th, .md-body td {
+  border: 1px solid var(--border);
+  padding: 6px 10px;
+  text-align: start;
+}
+.md-body th { background: var(--panel); font-weight: 600; }
+.md-body hr {
+  border: 0;
+  border-top: 1px solid var(--border);
+  margin: 16px 0;
+}
+
+/* Citation footer — small pills below the assistant body listing which
+ * connectors fed the answer. */
+.msg-citations { margin-top: 14px; display: flex; flex-direction: column; gap: 6px; }
+.msg-citations-label {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--muted-2);
+}
+.msg-citations-list { display: flex; flex-wrap: wrap; gap: 6px; }
+.msg-citation {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 3px 10px;
+  font-size: 11.5px;
+  color: var(--ink-2);
+}
+.msg-citation:hover { border-color: var(--cyan-line); color: var(--cyan); }
+
 /* Loading placeholder — pulses the brand mark while the model thinks. */
 .msg-loading {
   display: inline-flex; align-items: center;
