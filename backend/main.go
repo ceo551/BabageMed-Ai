@@ -12,6 +12,7 @@ import (
 	"github.com/babagemed/backend/internal/admin"
 	"github.com/babagemed/backend/internal/api"
 	"github.com/babagemed/backend/internal/auth"
+	"github.com/babagemed/backend/internal/cache"
 	"github.com/babagemed/backend/internal/chats"
 	"github.com/babagemed/backend/internal/connectors"
 	"github.com/babagemed/backend/internal/db"
@@ -97,7 +98,11 @@ func main() {
 		OpenAIKey:    os.Getenv("OPENAI_API_KEY"),
 	})
 
-	apiH := api.NewHandler(registry, llmClient)
+	// Redis cache wrapper — gathers MCP search results so identical queries
+	// inside a 5-min window skip the upstream call. Returns a no-op cache
+	// when REDIS_URL is unset, so this is safe to construct unconditionally.
+	cacheClient := cache.New()
+	apiH := api.NewHandler(registry, llmClient, cacheClient)
 
 	r := chi.NewRouter()
 	r.Use(middleware.RequestID)

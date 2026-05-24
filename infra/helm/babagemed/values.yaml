@@ -201,6 +201,14 @@ ingress:
     issuer: ""                 # cert-manager ClusterIssuer name (e.g. letsencrypt-prod)
     existingSecret: ""         # pre-existing TLS secret (mutually exclusive with issuer)
 
+# ─── Redis (MCP-search cache) ────────────────────────────────────────────
+# Tiny in-cluster Redis used to memoise MCP search results for ~5 minutes
+# (set in the backend cache wrapper). Opt-in: when disabled, the backend's
+# cache layer no-ops and every gather() hits upstream.
+redis:
+  enabled: false
+  maxmemory: "128mb"
+
 # ─── GCP / Vertex AI (Workload Identity Federation) ──────────────────────
 # Opt-in. When enabled, the backend pod is bound to babagemed-backend-sa,
 # mounts an OIDC-signed projected token, and exchanges it for an impersonated

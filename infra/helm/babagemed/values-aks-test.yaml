@@ -73,6 +73,10 @@ serviceAccount:
 # exchanges it via STS for an impersonated bearer on vertexServiceAccount,
 # and routes Gemini calls to {location}-aiplatform.googleapis.com instead of
 # the AI Studio key endpoint. Disable to fall back to GOOGLE_API_KEY.
+redis:
+  enabled: true
+  maxmemory: "128mb"
+
 gcp:
   enabled: true
   project: "starlit-braid-497012-q5"

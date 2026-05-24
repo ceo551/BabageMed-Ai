@@ -1,0 +1,72 @@
+{{- if .Values.redis.enabled -}}
+# Minimal in-cluster Redis. No persistence (cache is regenerable), no auth
+# (NetworkPolicy + ClusterIP keep it private). Good enough for the 5-minute
+# MCP-search TTL we use it for. Swap for Azure Cache for Redis or
+# bitnami/redis chart when this stops being enough.
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Release.Name }}-redis
+  labels:
+    {{- include "babagemed.labels" . | nindent 4 }}
+    app.kubernetes.io/component: redis
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: babagemed
+    app.kubernetes.io/component: redis
+  ports:
+    - name: redis
+      port: 6379
+      targetPort: 6379
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-redis
+  labels:
+    {{- include "babagemed.labels" . | nindent 4 }}
+    app.kubernetes.io/component: redis
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: babagemed
+      app.kubernetes.io/component: redis
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: babagemed
+        app.kubernetes.io/component: redis
+    spec:
+      containers:
+        - name: redis
+          image: redis:7-alpine
+          args:
+            - "--maxmemory"
+            - "{{ .Values.redis.maxmemory | default "128mb" }}"
+            - "--maxmemory-policy"
+            - "allkeys-lru"
+            - "--save"
+            - ""              # disable RDB snapshots
+            - "--appendonly"
+            - "no"            # disable AOF (we don't need durability)
+          ports:
+            - name: redis
+              containerPort: 6379
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 200m
+              memory: 192Mi
+          readinessProbe:
+            tcpSocket: { port: redis }
+            initialDelaySeconds: 2
+            periodSeconds: 5
+          livenessProbe:
+            tcpSocket: { port: redis }
+            initialDelaySeconds: 10
+            periodSeconds: 20
+{{- end -}}

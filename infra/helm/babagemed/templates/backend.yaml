@@ -98,6 +98,12 @@ spec:
             - name: GOOGLE_CLOUD_LOCATION
               value: {{ .Values.gcp.location | quote }}
             {{- end }}
+            {{- if .Values.redis.enabled }}
+            # In-cluster Redis (see templates/redis.yaml). The backend's
+            # cache package no-ops when this is unset.
+            - name: REDIS_URL
+              value: "redis://{{ .Release.Name }}-redis:6379/0"
+            {{- end }}
           envFrom:
             - secretRef:
                 name: {{ .Values.mcps.envFromSecret }}

@@ -20,6 +20,7 @@ require (
 	go.opentelemetry.io/otel/trace v1.33.0
 	golang.org/x/crypto v0.32.0
 	golang.org/x/oauth2 v0.27.0
+	github.com/redis/go-redis/v9 v9.7.0
 )
 
 require (

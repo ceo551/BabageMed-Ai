@@ -10,18 +10,20 @@ import (
 	"strings"
 	"time"
 
+	"github.com/babagemed/backend/internal/cache"
 	"github.com/babagemed/backend/internal/llm"
 	"github.com/babagemed/backend/internal/mcp"
 	"github.com/go-chi/chi/v5"
 )
 
 type Handler struct {
-	reg *mcp.Registry
-	llm *llm.Client
+	reg   *mcp.Registry
+	llm   *llm.Client
+	cache *cache.Cache
 }
 
-func NewHandler(reg *mcp.Registry, l *llm.Client) *Handler {
-	return &Handler{reg: reg, llm: l}
+func NewHandler(reg *mcp.Registry, l *llm.Client, c *cache.Cache) *Handler {
+	return &Handler{reg: reg, llm: l, cache: c}
 }
 
 func (h *Handler) Health(w http.ResponseWriter, r *http.Request) {
@@ -179,11 +181,23 @@ func (h *Handler) gather(ctx context.Context, req chatRequest) ([]map[string]any
 	last := req.Messages[len(req.Messages)-1].Content
 	out := []map[string]any{}
 	for _, id := range req.UseMcps {
+		// 5-minute cache on (mcpId, query) — same question routed to the
+		// same MCP within the window returns the cached result without
+		// hitting the upstream. No-op when REDIS_URL is unset.
+		cacheKey := "mcp:search:" + id + ":" + last
+		var cached any
+		if h.cache != nil && h.cache.GetJSON(ctx, cacheKey, &cached) {
+			out = append(out, map[string]any{"source": id, "result": cached})
+			continue
+		}
 		ctxT, cancel := context.WithTimeout(ctx, 25*time.Second)
 		res, err := h.reg.Call(ctxT, id, "search", map[string]string{"query": last})
 		cancel()
 		if err != nil {
 			continue
+		}
+		if h.cache != nil {
+			h.cache.SetJSON(ctx, cacheKey, res, 5*time.Minute)
 		}
 		out = append(out, map[string]any{"source": id, "result": res})
 	}
