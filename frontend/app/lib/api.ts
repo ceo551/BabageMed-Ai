@@ -51,6 +51,34 @@ export type McpServer = {
   category: string;
   port: number;
   base: string;
+  iconUrl?: string;
+  siteUrl?: string;
+};
+
+// ── Connectors (user's installed MCPs) ──
+export type Connector = {
+  mcpId: string;
+  name: string;
+  kind: "api" | "scrape" | "hybrid";
+  category: string;
+  base: string;
+  iconUrl?: string;
+  siteUrl?: string;
+  config: Record<string, unknown>;
+  connectedAt: string;
+};
+
+export const connectors = {
+  list:       () => api.get<Connector[]>("/api/connectors"),
+  connect:    (mcpId: string, config?: Record<string, unknown>) =>
+    api.post<Connector>(`/api/connectors/${encodeURIComponent(mcpId)}`, { config: config || {} }),
+  disconnect: (mcpId: string) =>
+    fetch(`/api/backend/api/connectors/${encodeURIComponent(mcpId)}`, {
+      method: "DELETE",
+      credentials: "include",
+    }).then((r) => {
+      if (!r.ok) throw { error: r.statusText, status: r.status } as ApiError;
+    }),
 };
 
 export type McpToolSchema = {

@@ -153,37 +153,18 @@ export const I = {
       <path d="M36 28c.9 4 3.3 6.4 7.3 7.3-4 .9-6.4 3.3-7.3 7.3-.9-4-3.3-6.4-7.3-7.3 4-.9 6.4-3.3 7.3-7.3Z" fill="var(--yellow)" opacity="0.85" />
     </svg>
   ),
-  // Three-segment puzzle disc with central hub — primary brand mark.
-  // Inspired by the BabageMed reference asset: white / amber / cyan segments,
-  // dark backdrop, golden vinyl hub.
+  // Primary brand mark — uses the rasterized asset shipped at
+  // /public/babagemed-icon.png so the logo is pixel-identical to the brief.
+  // (An earlier SVG approximation lived here but always read as "close, not
+  // matching" — the PNG is the canonical version.)
   discLogo: (
-    <svg className="disc-logo" viewBox="0 0 48 48" fill="none" aria-hidden="true">
-      <circle cx="24" cy="24" r="22" fill="#0a1024" />
-      {/* White (top-left) */}
-      <path
-        d="M24 24 L24 4
-           A20 20 0 0 0 6.5 33.5
-           A4 4 0 0 1 11 31
-           A4 4 0 0 1 13.5 36
-           A20 20 0 0 0 24 44
-           L24 24 Z"
-        fill="#f3f3ee"
-        opacity="0"
-      />
-      {/* White slice (upper-left) */}
-      <path d="M24 4 A20 20 0 0 0 4.6 28.8 L24 24 Z" fill="#f3f3ee" />
-      {/* Amber slice (right) */}
-      <path d="M24 4 A20 20 0 0 1 41 36.5 L24 24 Z" fill="#f1b945" />
-      {/* Cyan slice (bottom) */}
-      <path d="M4.6 28.8 A20 20 0 0 0 41 36.5 L24 24 Z" fill="#3ecfd6" />
-      {/* Puzzle notches between slices */}
-      <circle cx="29.5" cy="13" r="2.4" fill="#0a1024" />
-      <circle cx="36" cy="32.6" r="2.4" fill="#0a1024" />
-      <circle cx="13.5" cy="30.5" r="2.4" fill="#0a1024" />
-      {/* Vinyl hub */}
-      <circle cx="24" cy="24" r="7" fill="#0a1024" />
-      <circle cx="24" cy="24" r="6.2" fill="none" stroke="#f3f3ee" strokeWidth="0.4" opacity="0.4" />
-      <circle cx="24" cy="24" r="1.4" fill="#f1b945" />
-    </svg>
+    <img
+      className="disc-logo"
+      src="/babagemed-icon.png"
+      alt="BabageMed"
+      width={36}
+      height={36}
+      style={{ display: "block", borderRadius: 8 }}
+    />
   ),
 };

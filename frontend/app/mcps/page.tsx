@@ -2,19 +2,46 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { mcps, type McpServer } from "../lib/api";
+import {
+  mcps,
+  connectors as connectorsApi,
+  type McpServer,
+  type Connector,
+} from "../lib/api";
+import { useAuth } from "../lib/auth-context";
 import "./mcps.css";
 
-export default function McpsBrowsePage() {
+// "Connectors" directory (mounted at /mcps for backwards-compatible URLs).
+// Each card shows the provider's favicon, kind, and a "+" button to install
+// in one click. If already connected, the button flips to "✓".
+//
+// The previous tester-style page (search-by-id grid that linked to per-tool
+// forms) was replaced with this Claude-style directory.
+export default function ConnectorsBrowsePage() {
+  const { user } = useAuth();
   const [all, setAll] = useState<McpServer[]>([]);
+  const [mine, setMine] = useState<Record<string, Connector>>({});
   const [error, setError] = useState<string | null>(null);
   const [q, setQ] = useState("");
   const [kind, setKind] = useState<"all" | "api" | "scrape" | "hybrid">("all");
   const [category, setCategory] = useState<string>("all");
+  const [busy, setBusy] = useState<string | null>(null);
 
   useEffect(() => {
-    mcps.list().then((r) => setAll(r.servers)).catch((e) => setError(e.error || String(e)));
+    mcps.list()
+      .then((r) => setAll(r.servers))
+      .catch((e) => setError(e.error || String(e)));
   }, []);
+
+  useEffect(() => {
+    if (!user) {
+      setMine({});
+      return;
+    }
+    connectorsApi.list()
+      .then((cs) => setMine(Object.fromEntries(cs.map((c) => [c.mcpId, c]))))
+      .catch(() => setMine({}));
+  }, [user]);
 
   const categories = useMemo(() => {
     const set = new Set(all.map((s) => s.category));
@@ -27,15 +54,49 @@ export default function McpsBrowsePage() {
       if (kind !== "all" && s.kind !== kind) return false;
       if (category !== "all" && s.category !== category) return false;
       if (!needle) return true;
-      return s.id.toLowerCase().includes(needle) || s.name.toLowerCase().includes(needle) || s.base.toLowerCase().includes(needle);
+      return (
+        s.id.toLowerCase().includes(needle) ||
+        s.name.toLowerCase().includes(needle) ||
+        s.base.toLowerCase().includes(needle)
+      );
     });
   }, [all, q, kind, category]);
+
+  async function toggle(s: McpServer) {
+    if (!user) {
+      // Anonymous click — bounce to login.
+      window.location.href = "/login";
+      return;
+    }
+    setBusy(s.id);
+    try {
+      if (mine[s.id]) {
+        await connectorsApi.disconnect(s.id);
+        setMine((m) => {
+          const next = { ...m };
+          delete next[s.id];
+          return next;
+        });
+      } else {
+        const c = await connectorsApi.connect(s.id);
+        setMine((m) => ({ ...m, [s.id]: c }));
+      }
+    } catch (e: any) {
+      setError(e?.error || String(e));
+    } finally {
+      setBusy(null);
+    }
+  }
 
   return (
     <div className="mcps-shell">
       <Link href="/" style={{ color: "var(--cyan)", fontSize: 13 }}>← Dashboard</Link>
-      <h1>MCP Servers</h1>
-      <p className="lead">Browse all {all.length || "…"} connected MCP servers. Click a card to inspect its tools and run them live.</p>
+      <h1>Connectors</h1>
+      <p className="lead">
+        Browse all {all.length || "…"} integrations and add any with one click.
+        Connected ones surface in the chat composer "+" menu and the assistant can
+        retrieve from them when relevant.
+      </p>
 
       <div className="mcps-toolbar">
         <input
@@ -51,28 +112,61 @@ export default function McpsBrowsePage() {
           <option value="hybrid">Hybrid</option>
         </select>
         <select value={category} onChange={(e) => setCategory(e.target.value)}>
-          {categories.map((c) => <option key={c} value={c}>{c === "all" ? "All categories" : c}</option>)}
+          {categories.map((c) => (
+            <option key={c} value={c}>{c === "all" ? "All categories" : c}</option>
+          ))}
         </select>
         <span className="mcps-counts">{filtered.length} / {all.length}</span>
       </div>
 
-      {error && <div className="auth-err" style={{ borderRadius: 10, padding: 10, border: "1px solid var(--purple-line)", background: "var(--purple-soft)", color: "var(--purple)" }}>{error}</div>}
+      {error && (
+        <div
+          className="auth-err"
+          style={{
+            borderRadius: 10,
+            padding: 10,
+            border: "1px solid var(--purple-line)",
+            background: "var(--purple-soft)",
+            color: "var(--purple)",
+          }}
+        >
+          {error}
+        </div>
+      )}
 
       <div className="mcps-grid">
-        {filtered.map((s) => (
-          <Link key={s.id} href={`/mcps/${encodeURIComponent(s.id)}`} className="mcp-card">
-            <div className="row">
-              <span className="name">{s.name}</span>
-              <span className={`kind ${s.kind}`}>{s.kind}</span>
+        {filtered.map((s) => {
+          const isMine = !!mine[s.id];
+          const isBusy = busy === s.id;
+          return (
+            <div key={s.id} className="mcp-card" data-connected={isMine}>
+              <Link href={`/mcps/${encodeURIComponent(s.id)}`} className="card-body">
+                <div className="row">
+                  {s.iconUrl ? (
+                    <img src={s.iconUrl} alt="" className="card-icon" width={28} height={28} />
+                  ) : (
+                    <div className="card-icon placeholder" />
+                  )}
+                  <span className="name">{s.name}</span>
+                  <span className={`kind ${s.kind}`}>{s.kind}</span>
+                </div>
+                <div className="meta">{s.base}</div>
+                <div className="meta" style={{ color: "var(--muted-2)" }}>{s.category}</div>
+              </Link>
+              <button
+                type="button"
+                className="connect-btn"
+                data-connected={isMine}
+                onClick={(e) => { e.preventDefault(); toggle(s); }}
+                disabled={isBusy}
+                aria-label={isMine ? "Disconnect" : "Add connector"}
+                title={isMine ? "Disconnect" : "Add connector"}
+              >
+                {isBusy ? "…" : isMine ? "✓" : "+"}
+              </button>
             </div>
-            <div className="meta">{s.base}</div>
-            <div className="row" style={{ justifyContent: "space-between" }}>
-              <span className="id">{s.id}</span>
-              <span className="id">:{s.port}</span>
-            </div>
-            <div className="meta" style={{ color: "var(--muted-2)" }}>{s.category}</div>
-          </Link>
-        ))}
+          );
+        })}
       </div>
     </div>
   );

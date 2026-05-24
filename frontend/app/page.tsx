@@ -1,11 +1,17 @@
 "use client";
 
 import Link from "next/link";
-import React, { useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { STR, MODELS, type Locale, type LocaleStrings } from "./i18n";
 import { I } from "./icons";
 import { useAuth } from "./lib/auth-context";
-import { spaces as spacesApi, type Space } from "./lib/api";
+import {
+  spaces as spacesApi,
+  connectors as connectorsApi,
+  type Space,
+  type Connector,
+} from "./lib/api";
 
 type Theme = "light" | "dark" | "system";
 
@@ -16,6 +22,10 @@ export default function Dashboard() {
   const [collapsed, setCollapsed] = useState(false);
   const [model, setModel] = useState<string>("opus-4.7");
   const [mode, setMode] = useState<string>("bedside");
+  // Per-message overrides chosen from the composer "+" popover. Both reset on
+  // every new chat (which today just clears the input + reply).
+  const [activeSpaceId, setActiveSpaceId] = useState<string>("");
+  const [activeConnectorIds, setActiveConnectorIds] = useState<string[]>([]);
 
   const s = STR[locale];
   const effectiveTheme = theme === "system" ? systemTheme : theme;
@@ -59,7 +69,18 @@ export default function Dashboard() {
                 <em className="b3"> Ai</em>
               </span>
             </h1>
-            <Composer s={s} locale={locale} model={model} setModel={setModel} mode={mode} setMode={setMode} />
+            <Composer
+              s={s}
+              locale={locale}
+              model={model}
+              setModel={setModel}
+              mode={mode}
+              setMode={setMode}
+              activeSpaceId={activeSpaceId}
+              setActiveSpaceId={setActiveSpaceId}
+              activeConnectorIds={activeConnectorIds}
+              setActiveConnectorIds={setActiveConnectorIds}
+            />
             <p style={{ textAlign: "center", color: "var(--muted)", fontSize: 12, margin: 0 }}>{s.disclaim}</p>
           </div>
         </section>
@@ -69,6 +90,10 @@ export default function Dashboard() {
 }
 
 // ─── Sidebar ─────────────────────────────────────────────────────────────────
+// Flat layout (no nested account menu): the existing top section keeps its
+// labels in the expanded view, while every bottom row collapses to a single
+// icon button when the sidebar is narrow — matching the reference mock the
+// user supplied.
 function Sidebar({
   s, collapsed, onCollapse, locale, setLocale, theme, setTheme, effectiveTheme,
 }: {
@@ -81,77 +106,34 @@ function Sidebar({
   setTheme: (t: Theme) => void;
   effectiveTheme: "light" | "dark";
 }) {
+  const router = useRouter();
   const { user, signOut } = useAuth();
-  const [recentsOpen, setRecentsOpen] = useState(false);
-  const [accountOpen, setAccountOpen] = useState(false);
-  const [subOpen, setSubOpen] = useState<null | "appearance" | "language">(null);
 
   const displayName = user?.displayName || user?.email?.split("@")[0] || s.user;
-  const planLabel   = user ? `${user.plan} plan` : s.plan;
-  const initials    = (user?.displayName || user?.email || "AR")
+  const initials = (user?.displayName || user?.email || "AR")
     .split(/\s+|@/)
     .filter(Boolean)
     .slice(0, 2)
     .map((w) => w[0]?.toUpperCase())
     .join("") || "AR";
-  const [recentsPopStyle, setRecentsPopStyle] = useState<React.CSSProperties>({});
-  const [accountPopStyle, setAccountPopStyle] = useState<React.CSSProperties>({});
-  const [subStyle, setSubStyle] = useState<React.CSSProperties>({});
 
-  const recentsBtn = useRef<HTMLButtonElement>(null);
-  const accountBtn = useRef<HTMLButtonElement>(null);
-  const recentsPop = useRef<HTMLDivElement>(null);
-  const accountPop = useRef<HTMLDivElement>(null);
-
-  function posPop(btn: React.RefObject<HTMLButtonElement>, setter: (s: React.CSSProperties) => void, above?: boolean) {
-    const el = btn.current;
-    if (!el) return;
-    const r = el.getBoundingClientRect();
-    const sb = document.querySelector(".sidebar")?.getBoundingClientRect();
-    const dir = document.documentElement.dir || "ltr";
-    if (above) {
-      const bottom = window.innerHeight - r.top + 8;
-      if (dir === "rtl") setter({ position: "fixed", bottom, right: window.innerWidth - r.right, width: r.width, zIndex: 40 });
-      else setter({ position: "fixed", bottom, left: r.left, width: r.width, zIndex: 40 });
-      return;
-    }
-    if (dir === "rtl") setter({ position: "fixed", top: r.top, right: window.innerWidth - (sb?.left || r.left) + 8, zIndex: 40 });
-    else setter({ position: "fixed", top: r.top, left: (sb?.right || r.right) + 8, zIndex: 40 });
+  function cycleTheme() {
+    const next: Theme = theme === "dark" ? "light" : theme === "light" ? "system" : "dark";
+    setTheme(next);
+  }
+  function toggleLocale() {
+    setLocale(locale === "en" ? "ar" : "en");
+  }
+  function startNewChat() {
+    // Today "New" just navigates home with a hard refresh so all per-message
+    // composer state resets. When chat persistence lands this becomes
+    // /chat/new.
+    router.push("/");
+    if (typeof window !== "undefined") window.location.reload();
   }
 
-  const toggleRecents = () => {
-    if (!recentsOpen) { posPop(recentsBtn, setRecentsPopStyle); setAccountOpen(false); }
-    setRecentsOpen(v => !v);
-  };
-  const toggleAccount = () => {
-    if (!accountOpen) { posPop(accountBtn, setAccountPopStyle, true); setRecentsOpen(false); }
-    else setSubOpen(null);
-    setAccountOpen(v => !v);
-  };
-
-  function openSub(name: "appearance" | "language" | null, e: React.MouseEvent<HTMLButtonElement>) {
-    const row = e.currentTarget.getBoundingClientRect();
-    const sb = document.querySelector(".sidebar")?.getBoundingClientRect();
-    const dir = document.documentElement.dir || "ltr";
-    if (sb) {
-      if (dir === "rtl") setSubStyle({ position: "fixed", top: row.top, right: window.innerWidth - sb.left + 8, zIndex: 41 });
-      else setSubStyle({ position: "fixed", top: row.top, left: sb.right + 8, zIndex: 41 });
-    }
-    setSubOpen(name);
-  }
-
-  useEffect(() => {
-    if (!accountOpen && !recentsOpen) return;
-    function onDoc(e: MouseEvent) {
-      const target = e.target as Node;
-      if (recentsOpen && !recentsPop.current?.contains(target) && !recentsBtn.current?.contains(target)) setRecentsOpen(false);
-      if (accountOpen && !accountPop.current?.contains(target) && !accountBtn.current?.contains(target) && !document.querySelector(".sub-pop")?.contains(target)) {
-        setAccountOpen(false); setSubOpen(null);
-      }
-    }
-    document.addEventListener("mousedown", onDoc);
-    return () => document.removeEventListener("mousedown", onDoc);
-  }, [recentsOpen, accountOpen]);
+  const themeIcon = effectiveTheme === "light" ? I.sun : I.moon;
+  const themeLabel = theme === "system" ? `${s.themeSystem}` : theme === "light" ? s.themeLight : s.themeDark;
 
   return (
     <aside className="sidebar" aria-label="Sidebar">
@@ -170,7 +152,7 @@ function Sidebar({
       </div>
 
       <div className="sb-body">
-        <button className="sb-new" type="button" title={s.new}>
+        <button className="sb-new" type="button" title={s.new} onClick={startNewChat}>
           {I.plus}
           <span className="lbl">{s.new}</span>
           <span className="kbd">⌘ K</span>
@@ -181,123 +163,91 @@ function Sidebar({
           <span className="lbl">{s.spaces}</span>
           <span className="trail-chev">{I.chevR}</span>
         </Link>
-        <button ref={recentsBtn} className="sb-row" type="button" data-active={recentsOpen} onClick={toggleRecents} aria-expanded={recentsOpen}>
+        <button className="sb-row" type="button" disabled title={s.recent} style={{ opacity: 0.6, cursor: "not-allowed" }}>
           {I.history}
           <span className="lbl">{s.recent}</span>
           <span className="trail-chev">{I.chevR}</span>
         </button>
         <Link href="/mcps" className="sb-row" style={{ textDecoration: "none" }}>
           {I.connectors}
-          <span className="lbl">MCPs</span>
+          <span className="lbl">{s.connectors}</span>
           <span className="trail-chev">{I.chevR}</span>
         </Link>
       </div>
 
-      <div className="sb-foot">
+      <div className="sb-foot sb-foot-flat">
         {user ? (
-          <button ref={accountBtn} className="sb-account" type="button" data-active={accountOpen} onClick={toggleAccount} aria-expanded={accountOpen}>
+          <Link
+            href="/billing"
+            className="sb-account"
+            title={`${displayName} · ${user.plan} plan`}
+            style={{ textDecoration: "none" }}
+          >
             <span className="av">{initials}</span>
             <span className="who">
               <span className="nm">{displayName}</span>
-              <span className="pl">{planLabel}</span>
+              <span className="pl">{user.plan} plan</span>
             </span>
-            <span className="chev">{I.chevR}</span>
-          </button>
+          </Link>
         ) : (
           <div style={{ display: "flex", gap: 6 }}>
-            <Link href="/login"  className="sb-row" style={{ flex: 1, justifyContent: "center", textDecoration: "none", borderColor: "var(--border)", border: "1px solid var(--border)" }}>Sign in</Link>
-            <Link href="/signup" className="sb-row" style={{ flex: 1, justifyContent: "center", textDecoration: "none", background: "var(--cyan-soft)", color: "var(--cyan)", border: "1px solid var(--cyan-line)" }}>Sign up</Link>
+            <Link
+              href="/login"
+              className="sb-row"
+              style={{
+                flex: 1,
+                justifyContent: "center",
+                textDecoration: "none",
+                border: "1px solid var(--border)",
+              }}
+            >
+              <span className="lbl">Sign in</span>
+            </Link>
+            <Link
+              href="/signup"
+              className="sb-row"
+              style={{
+                flex: 1,
+                justifyContent: "center",
+                textDecoration: "none",
+                background: "var(--cyan-soft)",
+                color: "var(--cyan)",
+                border: "1px solid var(--cyan-line)",
+              }}
+            >
+              <span className="lbl">Sign up</span>
+            </Link>
           </div>
         )}
+
+        <button className="sb-row" type="button" onClick={cycleTheme} title={`${s.appearance}: ${themeLabel}`}>
+          <span className="swatch-square">{themeIcon}</span>
+          <span className="lbl">{themeLabel}</span>
+        </button>
+        <button className="sb-row" type="button" onClick={toggleLocale} title={`${s.language}: ${locale === "en" ? s.langEN : s.langAR}`}>
+          <span className="swatch-square">{I.globe}</span>
+          <span className="lbl">{locale === "en" ? s.langEN : s.langAR}</span>
+        </button>
+        <Link href="/admin" className="sb-row" style={{ textDecoration: "none" }} title={s.settings}>
+          <span className="swatch-square">{I.gear}</span>
+          <span className="lbl">{s.settings}</span>
+        </Link>
+        <Link href="/billing" className="sb-row" style={{ textDecoration: "none" }} title={s.plans}>
+          <span className="swatch-square y">{I.bolt}</span>
+          <span className="lbl">{s.plans}</span>
+        </Link>
+        {user && (
+          <button
+            className="sb-row"
+            type="button"
+            onClick={async () => { await signOut(); router.push("/"); }}
+            title={s.logout}
+          >
+            <span className="swatch-square p">{I.logout}</span>
+            <span className="lbl">{s.logout}</span>
+          </button>
+        )}
       </div>
-
-      {recentsOpen && (
-        <div ref={recentsPop} className="tools-pop recents-pop" style={recentsPopStyle} role="menu">
-          <div className="pop-header">{s.recent}</div>
-          {s.recents.map((r) => (
-            <button key={r.id} className="tool-row recent-row" type="button" title={r.t}>
-              <span className={"swatch dot-only " + r.c}><span className="d"></span></span>
-              <span className="col"><span className="ttl">{r.t}</span></span>
-              <span className="status when">{r.w}</span>
-            </button>
-          ))}
-        </div>
-      )}
-
-      {accountOpen && (
-        <div ref={accountPop} className="tools-pop account-pop" style={accountPopStyle} role="menu">
-          <div className="tool-row" style={{ pointerEvents: "none" }}>
-            <span className="av" style={{ width: 32, height: 32, borderRadius: "50%", background: "linear-gradient(135deg,var(--cyan),var(--purple))", display: "inline-flex", alignItems: "center", justifyContent: "center", color: "white", fontWeight: 700, fontSize: 13 }}>{initials}</span>
-            <span className="col"><span className="ttl">{displayName}</span><span className="desc">{user?.email || planLabel}</span></span>
-          </div>
-          <div className="popover-sep" />
-          <button className="tool-row" type="button" data-active={subOpen === "appearance"} onClick={(e) => openSub(subOpen === "appearance" ? null : "appearance", e)}>
-            <span className="swatch">{effectiveTheme === "light" ? I.sun : I.moon}</span>
-            <span className="col">
-              <span className="ttl">{s.appearance}</span>
-              <span className="desc">{theme === "system" ? `${s.themeSystem} (${effectiveTheme === "light" ? s.themeLight : s.themeDark})` : theme === "light" ? s.themeLight : s.themeDark}</span>
-            </span>
-            <span className="trail-chev">{I.chevR}</span>
-          </button>
-          <button className="tool-row" type="button" data-active={subOpen === "language"} onClick={(e) => openSub(subOpen === "language" ? null : "language", e)}>
-            <span className="swatch">{I.globe}</span>
-            <span className="col">
-              <span className="ttl">{s.language}</span>
-              <span className="desc">{locale === "en" ? s.langEN : s.langAR}</span>
-            </span>
-            <span className="trail-chev">{I.chevR}</span>
-          </button>
-          <div className="popover-sep" />
-          <button className="tool-row" type="button">
-            <span className="swatch">{I.gear}</span>
-            <span className="col"><span className="ttl">{s.settings}</span><span className="desc">{s.settingsDesc}</span></span>
-          </button>
-          <a className="tool-row" href="/billing">
-            <span className="swatch y">{I.bolt}</span>
-            <span className="col"><span className="ttl">{s.plans}</span><span className="desc">{s.plansDesc}</span></span>
-          </a>
-          {user?.isAdmin && (
-            <a className="tool-row" href="/admin">
-              <span className="swatch p">{I.skills}</span>
-              <span className="col"><span className="ttl">Admin</span><span className="desc">Users · payments · sessions</span></span>
-            </a>
-          )}
-          <div className="popover-sep" />
-          <button className="tool-row logout" type="button" onClick={async () => { await signOut(); setAccountOpen(false); }}>
-            <span className="swatch p">{I.logout}</span>
-            <span className="col"><span className="ttl">{s.logout}</span><span className="desc">{s.logoutDesc}</span></span>
-          </button>
-        </div>
-      )}
-
-      {accountOpen && subOpen === "appearance" && (
-        <div className="tools-pop sub-pop" style={subStyle} role="menu">
-          <button className="tool-row" type="button" data-active={theme === "light"} onClick={() => setTheme("light")}>
-            <span className="swatch">{I.sun}</span><span className="ttl">{s.themeLight}</span>
-            {theme === "light" && <span className="check-end">{I.check}</span>}
-          </button>
-          <button className="tool-row" type="button" data-active={theme === "dark"} onClick={() => setTheme("dark")}>
-            <span className="swatch">{I.moon}</span><span className="ttl">{s.themeDark}</span>
-            {theme === "dark" && <span className="check-end">{I.check}</span>}
-          </button>
-          <button className="tool-row" type="button" data-active={theme === "system"} onClick={() => setTheme("system")}>
-            <span className="swatch">{I.monitor}</span><span className="ttl">{s.themeSystem}</span>
-            {theme === "system" && <span className="check-end">{I.check}</span>}
-          </button>
-        </div>
-      )}
-      {accountOpen && subOpen === "language" && (
-        <div className="tools-pop sub-pop" style={subStyle} role="menu">
-          <button className="tool-row" type="button" data-active={locale === "en"} onClick={() => setLocale("en")}>
-            <span className="swatch"><span className="mono-tag">EN</span></span><span className="ttl">{s.langEN}</span>
-            {locale === "en" && <span className="check-end">{I.check}</span>}
-          </button>
-          <button className="tool-row" type="button" data-active={locale === "ar"} onClick={() => setLocale("ar")}>
-            <span className="swatch"><span className="mono-tag">AR</span></span><span className="ttl">{s.langAR}</span>
-            {locale === "ar" && <span className="check-end">{I.check}</span>}
-          </button>
-        </div>
-      )}
     </aside>
   );
 }
@@ -305,6 +255,8 @@ function Sidebar({
 // ─── Composer ────────────────────────────────────────────────────────────────
 function Composer({
   s, locale, model, setModel,
+  activeSpaceId, setActiveSpaceId,
+  activeConnectorIds, setActiveConnectorIds,
 }: {
   s: LocaleStrings;
   locale: Locale;
@@ -312,6 +264,10 @@ function Composer({
   setModel: (m: string) => void;
   mode: string;
   setMode: (m: string) => void;
+  activeSpaceId: string;
+  setActiveSpaceId: (id: string) => void;
+  activeConnectorIds: string[];
+  setActiveConnectorIds: React.Dispatch<React.SetStateAction<string[]>>;
 }) {
   const [addOpen, setAddOpen] = useState(false);
   const [modelOpen, setModelOpen] = useState(false);
@@ -320,17 +276,21 @@ function Composer({
   const [sending, setSending] = useState(false);
   const [reply, setReply] = useState<string>("");
   const [userSpaces, setUserSpaces] = useState<Space[]>([]);
-  const [activeSpaceId, setActiveSpaceId] = useState<string>("");
+  const [userConnectors, setUserConnectors] = useState<Connector[]>([]);
   const taRef = useRef<HTMLTextAreaElement>(null);
   const composerRef = useRef<HTMLDivElement>(null);
 
-  // Pull the user's spaces once. Endpoint requires auth; if it 401s we just
-  // hide the picker.
+  // Pull the user's spaces + connectors once. Both endpoints require auth; if
+  // they 401 the popover just shows the empty-state CTA.
   useEffect(() => {
     spacesApi.list().then(setUserSpaces).catch(() => setUserSpaces([]));
+    connectorsApi.list().then(setUserConnectors).catch(() => setUserConnectors([]));
   }, []);
 
-  const activeSpace = userSpaces.find((sp) => sp.id === activeSpaceId);
+  const activeSpace = useMemo(
+    () => userSpaces.find((sp) => sp.id === activeSpaceId),
+    [userSpaces, activeSpaceId]
+  );
 
   useEffect(() => {
     function onDoc(e: MouseEvent) {
@@ -352,6 +312,12 @@ function Composer({
 
   const currentModel = MODELS.find((m) => m.id === model) || MODELS[0];
 
+  function toggleConnector(id: string) {
+    setActiveConnectorIds((cur) =>
+      cur.includes(id) ? cur.filter((x) => x !== id) : [...cur, id]
+    );
+  }
+
   async function send() {
     if (!value.trim() || sending) return;
     setSending(true);
@@ -367,6 +333,9 @@ function Composer({
           // Non-fatal: chat still proceeds without space grounding.
         }
       }
+      // useMcps comes from the user-picked connectors; if none, default to
+      // pubmed so the chat still gets at least one retrieval source.
+      const useMcps = activeConnectorIds.length > 0 ? activeConnectorIds : ["pubmed"];
       const r = await fetch("/api/backend/api/chat", {
         method: "POST",
         headers: { "content-type": "application/json" },
@@ -376,7 +345,7 @@ function Composer({
           mode: "bedside",
           locale,
           messages: [{ role: "user", content: value }],
-          useMcps: ["pubmed"],
+          useMcps,
           spaceContext,
           spaceName: activeSpace?.name || "",
         }),
@@ -407,48 +376,133 @@ function Composer({
           }}
         />
         <div className="composer-bar">
-          <button className="add-btn" type="button" data-open={addOpen} onClick={() => { setAddOpen((v) => !v); setModelOpen(false); }} aria-label="Add">
+          <button
+            className="add-btn"
+            type="button"
+            data-open={addOpen}
+            onClick={() => { setAddOpen((v) => !v); setModelOpen(false); }}
+            aria-label="Add"
+          >
             {I.plus}
           </button>
-          {userSpaces.length > 0 && (
-            <select
-              value={activeSpaceId}
-              onChange={(e) => setActiveSpaceId(e.target.value)}
-              aria-label="Use space for context"
-              style={{
-                background: activeSpaceId ? "var(--cyan-soft)" : "var(--panel)",
-                color: activeSpaceId ? "var(--cyan)" : "var(--ink)",
-                border: `1px solid ${activeSpaceId ? "var(--cyan-line)" : "var(--border)"}`,
-                borderRadius: 999,
-                padding: "6px 10px",
-                fontSize: 12,
-              }}
+
+          {/* In-bar pills for active selection — Claude-style chips. */}
+          {activeSpace && (
+            <button
+              type="button"
+              className="model-pill"
+              onClick={() => setActiveSpaceId("")}
+              title="Clear space"
+              style={{ background: "var(--cyan-soft)", color: "var(--cyan)", borderColor: "var(--cyan-line)" }}
             >
-              <option value="">No space</option>
-              {userSpaces.map((sp) => (
-                <option key={sp.id} value={sp.id}>📁 {sp.name}</option>
-              ))}
-            </select>
+              📁 {activeSpace.name} ×
+            </button>
           )}
+          {activeConnectorIds.slice(0, 3).map((id) => {
+            const c = userConnectors.find((x) => x.mcpId === id);
+            if (!c) return null;
+            return (
+              <button
+                key={id}
+                type="button"
+                className="model-pill"
+                onClick={() => toggleConnector(id)}
+                title="Remove from this chat"
+                style={{ background: "var(--cyan-soft)", color: "var(--cyan)", borderColor: "var(--cyan-line)" }}
+              >
+                {c.iconUrl && <img src={c.iconUrl} alt="" width={14} height={14} style={{ marginInlineEnd: 4, verticalAlign: "middle" }} />}
+                {c.name} ×
+              </button>
+            );
+          })}
+          {activeConnectorIds.length > 3 && (
+            <span className="model-pill" style={{ background: "var(--cyan-soft)", color: "var(--cyan)" }}>
+              +{activeConnectorIds.length - 3}
+            </span>
+          )}
+
           {addOpen && (
-            <div className="popover" role="menu">
+            <div className="popover" role="menu" style={{ maxHeight: 460, overflowY: "auto" }}>
               <div className="pop-header">{s.addConnector}</div>
-              <button className="popover-row" type="button">
-                {I.link}
-                <span className="col"><span className="ttl">{s.addConnector}</span><span className="desc">{s.addConnectorDesc}</span></span>
-                <span className="chev" style={{ opacity: 0.5 }}>{I.chevR}</span>
-              </button>
-              <button className="popover-row" type="button">
+
+              <Link href="/spaces" className="popover-row" style={{ textDecoration: "none" }}>
                 {I.folder}
-                <span className="col"><span className="ttl">{s.addFile}</span><span className="desc">{s.addFileDesc}</span></span>
-              </button>
+                <span className="col">
+                  <span className="ttl">{s.addFile}</span>
+                  <span className="desc">{s.addFileDesc}</span>
+                </span>
+              </Link>
+
+              {userSpaces.length > 0 && (
+                <>
+                  <div className="popover-sep" />
+                  <div className="pop-header">{s.spaces}</div>
+                  {userSpaces.map((sp) => (
+                    <button
+                      key={sp.id}
+                      type="button"
+                      className="popover-row"
+                      data-active={activeSpaceId === sp.id}
+                      onClick={() => {
+                        setActiveSpaceId(activeSpaceId === sp.id ? "" : sp.id);
+                        setAddOpen(false);
+                      }}
+                    >
+                      {I.spaces}
+                      <span className="col">
+                        <span className="ttl">{sp.name}</span>
+                        <span className="desc">{sp.fileCount} file{sp.fileCount === 1 ? "" : "s"}</span>
+                      </span>
+                      {activeSpaceId === sp.id && <span className="check" style={{ color: "var(--cyan)" }}>{I.check}</span>}
+                    </button>
+                  ))}
+                </>
+              )}
+
               <div className="popover-sep" />
-              <div className="pop-header">{s.fromTools}</div>
-              <button className="popover-row" type="button">{I.doc}<span className="col"><span className="ttl">{s.epic}</span></span></button>
-              <button className="popover-row" type="button">{I.doc}<span className="col"><span className="ttl">{s.pubmed}</span></span></button>
-              <button className="popover-row" type="button">{I.doc}<span className="col"><span className="ttl">{s.kdigo}</span></span></button>
+              <div className="pop-header">{s.connectors}</div>
+              {userConnectors.length === 0 ? (
+                <Link href="/mcps" className="popover-row" style={{ textDecoration: "none" }}>
+                  {I.link}
+                  <span className="col">
+                    <span className="ttl">{s.addConnector}</span>
+                    <span className="desc">{s.addConnectorDesc}</span>
+                  </span>
+                </Link>
+              ) : (
+                <>
+                  {userConnectors.map((c) => {
+                    const on = activeConnectorIds.includes(c.mcpId);
+                    return (
+                      <button
+                        key={c.mcpId}
+                        type="button"
+                        className="popover-row"
+                        data-active={on}
+                        onClick={() => toggleConnector(c.mcpId)}
+                      >
+                        {c.iconUrl ? (
+                          <img src={c.iconUrl} alt="" width={18} height={18} style={{ borderRadius: 4 }} />
+                        ) : (
+                          I.link
+                        )}
+                        <span className="col">
+                          <span className="ttl">{c.name}</span>
+                          <span className="desc">{c.category}</span>
+                        </span>
+                        {on && <span className="check" style={{ color: "var(--cyan)" }}>{I.check}</span>}
+                      </button>
+                    );
+                  })}
+                  <Link href="/mcps" className="popover-row" style={{ textDecoration: "none", borderTop: "1px solid var(--border)" }}>
+                    {I.plus}
+                    <span className="col"><span className="ttl">{s.addConnector}</span></span>
+                  </Link>
+                </>
+              )}
             </div>
           )}
+
           <span className="spacer" />
           <div style={{ position: "relative" }}>
             <button className="model-pill" type="button" data-open={modelOpen} onClick={() => { setModelOpen((v) => !v); setAddOpen(false); }}>
@@ -476,7 +530,14 @@ function Composer({
           </div>
           <button className="cmpr-icon" type="button" data-on={voiceOn} onClick={() => setVoiceOn((v) => !v)} aria-label="Mic">{I.mic}</button>
           <button className="cmpr-icon" type="button" aria-label="Voice">{I.voice}</button>
-          <button className="cmpr-icon" type="button" onClick={send} aria-label="Send" disabled={sending} style={{ width: "auto", padding: "0 10px", color: "var(--cyan)", borderColor: "var(--cyan-line)", background: "var(--cyan-soft)" }}>
+          <button
+            className="cmpr-icon"
+            type="button"
+            onClick={send}
+            aria-label="Send"
+            disabled={sending}
+            style={{ width: "auto", padding: "0 10px", color: "var(--cyan)", borderColor: "var(--cyan-line)", background: "var(--cyan-soft)" }}
+          >
             {sending ? "…" : "↵"}
           </button>
         </div>

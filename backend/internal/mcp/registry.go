@@ -8,7 +8,9 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"os"
+	"strings"
 	"sync"
 	"time"
 
@@ -23,6 +25,13 @@ type Server struct {
 	Category string `json:"category"`
 	Port     int    `json:"port"`
 	Base     string `json:"base"`
+	// IconURL points to the official-site favicon. Computed once at registry
+	// load time from Base via Google's S2 favicon endpoint — no network call.
+	IconURL string `json:"iconUrl,omitempty"`
+	// SiteURL is the human-facing landing page derived from Base (scheme +
+	// hostname only). The frontend uses this for the "Connect / Open site"
+	// flow on api-kind MCPs.
+	SiteURL string `json:"siteUrl,omitempty"`
 }
 
 type manifest struct {
@@ -46,6 +55,11 @@ func NewRegistry(path string) (*Registry, error) {
 	if err := json.Unmarshal(b, &m); err != nil {
 		return nil, err
 	}
+	// Enrich each server with iconUrl + siteUrl up-front so consumers don't
+	// have to recompute on every list call.
+	for i := range m.Servers {
+		m.Servers[i].SiteURL, m.Servers[i].IconURL = siteAndIcon(m.Servers[i].Base)
+	}
 	r := &Registry{
 		byID:   map[string]Server{},
 		all:    m.Servers,
@@ -63,6 +77,31 @@ func NewRegistry(path string) (*Registry, error) {
 		r.byID[s.ID] = s
 	}
 	return r, nil
+}
+
+// siteAndIcon derives the official site URL and a favicon URL from an MCP's
+// `base` field. Returns ("", "") if base isn't a parseable absolute URL.
+//
+// We use Google's S2 favicon CDN — no extra service required, no network call
+// at this layer, and the browser caches results aggressively.
+func siteAndIcon(base string) (string, string) {
+	if base == "" {
+		return "", ""
+	}
+	u, err := url.Parse(base)
+	if err != nil || u.Host == "" {
+		return "", ""
+	}
+	scheme := u.Scheme
+	if scheme == "" {
+		scheme = "https"
+	}
+	host := u.Host
+	site := fmt.Sprintf("%s://%s", scheme, host)
+	// Strip ports — favicon service wants bare domains.
+	host = strings.SplitN(host, ":", 2)[0]
+	icon := fmt.Sprintf("https://www.google.com/s2/favicons?domain=%s&sz=64", host)
+	return site, icon
 }
 
 func (r *Registry) Servers() []Server {

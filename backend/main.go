@@ -12,6 +12,7 @@ import (
 	"github.com/babagemed/backend/internal/admin"
 	"github.com/babagemed/backend/internal/api"
 	"github.com/babagemed/backend/internal/auth"
+	"github.com/babagemed/backend/internal/connectors"
 	"github.com/babagemed/backend/internal/db"
 	"github.com/babagemed/backend/internal/llm"
 	"github.com/babagemed/backend/internal/mcp"
@@ -133,6 +134,7 @@ func main() {
 		auth.NewHandler(authSvc).Register(r)
 		admin.NewHandler(dbConn, authSvc).Register(r)
 		spaces.New(dbConn, authSvc).Register(r)
+		connectors.New(dbConn, authSvc, registry).Register(r)
 	}
 
 	// Payments
