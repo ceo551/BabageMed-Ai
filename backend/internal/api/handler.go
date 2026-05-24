@@ -187,6 +187,13 @@ func (h *Handler) complete(ctx context.Context, req chatRequest, citations []map
 func buildSystem(mode, locale string, citations []map[string]any, spaceCtx []map[string]any, spaceName string) string {
 	var b strings.Builder
 	b.WriteString("You are BabageMed AI — a HIPAA-aware clinician-in-the-loop assistant. Always cite primary sources, surface uncertainty, and never give a binding diagnosis.\n")
+	// Inject the current server-side date so the model doesn't fall back on
+	// its training-time best guess (the observed bug: Gemini answering
+	// 2024-05-23 when asked the date in 2026). Includes day-of-week + UTC
+	// offset hint so questions like "متى ميعاد الموعد التالي" don't drift.
+	now := time.Now().UTC()
+	fmt.Fprintf(&b, "Today is %s (UTC). Trust this date over anything in your training data; never invent a different year.\n",
+		now.Format("Monday, January 2, 2006"))
 	if locale == "ar" {
 		b.WriteString("If the user writes in Arabic, respond in Arabic, but keep drug names, doses, ICD codes, and citations in English.\n")
 	}
