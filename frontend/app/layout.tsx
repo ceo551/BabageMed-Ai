@@ -1,6 +1,7 @@
 import "./tokens.css";
 import "./dashboard.css";
 import { AuthProvider } from "./lib/auth-context";
+import { AppShell } from "./components/AppShell";
 
 export const metadata = {
   title: "BabageMed AI · Dashboard",
@@ -19,7 +20,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         />
       </head>
       <body>
-        <AuthProvider>{children}</AuthProvider>
+        <AuthProvider>
+          <AppShell>{children}</AppShell>
+        </AuthProvider>
       </body>
     </html>
   );

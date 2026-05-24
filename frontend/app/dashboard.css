@@ -24,6 +24,14 @@ a { color: inherit; text-decoration: none; }
 
 .shell { display: grid; grid-template-columns: 280px 1fr; height: 100vh; overflow: hidden; transition: grid-template-columns .22s ease; }
 .shell[data-collapsed="true"] { grid-template-columns: 68px 1fr; }
+/* Persistent main column: per-page shells (.spaces-shell, .mcps-shell, etc.)
+ * render inside this column, so we need a vertical scroll here — the outer
+ * .shell stays viewport-locked. */
+.app-main { overflow-y: auto; overflow-x: hidden; min-width: 0; }
+.app-main::-webkit-scrollbar { width: 8px; }
+.app-main::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 99px; }
+/* Auth wrapper: minimal centring chrome for login/signup (no sidebar). */
+.auth-wrapper { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 24px; }
 
 /* SIDEBAR */
 .sidebar { position: relative; display: flex; flex-direction: column; background: linear-gradient(180deg, color-mix(in srgb, var(--panel-solid) 60%, transparent), color-mix(in srgb, var(--panel-solid) 30%, transparent)); border-inline-end: 1px solid var(--border); backdrop-filter: blur(12px); overflow: hidden; min-width: 0; }
