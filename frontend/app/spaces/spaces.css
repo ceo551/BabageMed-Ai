@@ -348,17 +348,37 @@
   font-size: 18px;
 }
 .sd-icon-btn:hover { color: var(--ink); background: var(--panel); border-color: var(--border); }
-.sd-share-btn {
-  background: transparent;
-  color: var(--ink);
+.sd-icon-btn[data-active="true"] { color: var(--ink); background: var(--panel); border-color: var(--border); }
+
+/* ⋮ menu — small dropdown anchored to the header actions container. */
+.sd-header-actions { position: relative; }
+.sd-menu {
+  position: absolute;
+  top: 100%;
+  inset-inline-end: 0;
+  margin-top: 6px;
+  min-width: 180px;
+  background: var(--panel-solid, #16181d);
   border: 1px solid var(--border);
-  border-radius: 10px;
-  padding: 7px 14px;
-  font-weight: 500;
-  cursor: pointer;
-  font: inherit;
+  border-radius: 12px;
+  box-shadow: 0 12px 32px -8px rgba(0,0,0,0.55);
+  padding: 4px;
+  z-index: 30;
+  display: flex; flex-direction: column;
 }
-.sd-share-btn:hover { border-color: var(--border-strong); background: var(--panel); }
+.sd-menu-item {
+  background: transparent;
+  border: 0;
+  padding: 8px 12px;
+  border-radius: 8px;
+  text-align: start;
+  color: var(--ink);
+  font: inherit;
+  cursor: pointer;
+}
+.sd-menu-item:hover { background: var(--panel); }
+.sd-menu-item.danger { color: var(--purple); }
+.sd-menu-item.danger:hover { background: var(--purple-soft); }
 .sd-error {
   border: 1px solid var(--purple-line);
   background: var(--purple-soft);
@@ -430,6 +450,35 @@
   font-size: 13px;
   line-height: 1.55;
   white-space: pre-wrap;
+}
+/* When the value is non-empty we wrap it in a button so the whole block is
+ * clickable to re-open the modal. Strip the default button look. */
+.sd-instructions-clickable {
+  background: transparent;
+  border: 0;
+  padding: 0;
+  width: 100%;
+  text-align: start;
+  cursor: text;
+  font: inherit;
+}
+.sd-instructions-clickable:hover { color: var(--ink); }
+
+/* Instructions modal-specific bits — the description line under the title
+ * and the larger textarea. Reuses .field-input from the new-space form. */
+.instructions-modal-sub {
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.55;
+  margin-bottom: 12px;
+  max-width: 64ch;
+}
+.instructions-textarea {
+  width: 100%;
+  min-height: 240px;
+  resize: vertical;
+  font-size: 14px;
+  line-height: 1.55;
 }
 .sd-edit-block .field-input {
   background: var(--panel-solid);

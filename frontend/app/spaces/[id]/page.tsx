@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import {
   spaces as spacesApi,
   type Space,
@@ -12,6 +12,7 @@ import {
 import { useAuth } from "../../lib/auth-context";
 import { MODELS, type Locale } from "../../i18n";
 import { I } from "../../icons";
+import { Modal } from "../../components/Modal";
 import "../spaces.css";
 
 // Space detail — Claude Projects-style layout.
@@ -26,10 +27,13 @@ import "../spaces.css";
 export default function SpaceDetailPage() {
   const params = useParams<{ id: string }>();
   const id = decodeURIComponent(params?.id || "");
+  const router = useRouter();
   const { user, loading } = useAuth();
   const [space, setSpace] = useState<Space | null>(null);
   const [files, setFiles] = useState<SpaceFile[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
 
   function refresh() {
     Promise.all([spacesApi.get(id), spacesApi.files(id)])
@@ -41,6 +45,27 @@ export default function SpaceDetailPage() {
     refresh();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loading, user, id]);
+
+  // Close the ⋮ dropdown when clicking outside.
+  useEffect(() => {
+    if (!menuOpen) return;
+    function onDoc(e: MouseEvent) {
+      if (!menuRef.current?.contains(e.target as Node)) setMenuOpen(false);
+    }
+    document.addEventListener("mousedown", onDoc);
+    return () => document.removeEventListener("mousedown", onDoc);
+  }, [menuOpen]);
+
+  async function deleteSpace() {
+    if (!space) return;
+    if (!confirm(`Delete "${space.name}" and all its files?`)) return;
+    try {
+      await spacesApi.remove(space.id);
+      router.push("/spaces");
+    } catch (e: any) {
+      setError(e?.error || String(e));
+    }
+  }
 
   if (loading || (!space && !error)) {
     return <div className="spaces-shell"><p className="lead">Loading…</p></div>;
@@ -79,10 +104,27 @@ export default function SpaceDetailPage() {
           <div className="sd-title">{space.name}</div>
           {space.description && <div className="sd-desc">{space.description}</div>}
         </div>
-        <div className="sd-header-actions">
-          <button className="sd-icon-btn" type="button" aria-label="More">⋮</button>
-          <button className="sd-icon-btn" type="button" aria-label="Star">☆</button>
-          <button className="sd-share-btn" type="button">Share</button>
+        <div className="sd-header-actions" ref={menuRef}>
+          <button
+            className="sd-icon-btn"
+            type="button"
+            aria-label="More options"
+            aria-haspopup="menu"
+            aria-expanded={menuOpen}
+            data-active={menuOpen}
+            onClick={() => setMenuOpen((v) => !v)}
+          >⋮</button>
+          {menuOpen && (
+            <div className="sd-menu" role="menu">
+              <button
+                type="button"
+                className="sd-menu-item danger"
+                onClick={() => { setMenuOpen(false); deleteSpace(); }}
+              >
+                Delete space
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
@@ -275,13 +317,70 @@ function SpaceComposer({ space, files }: { space: Space; files: SpaceFile[] }) {
 }
 
 // ─── Right-rail: Instructions ───────────────────────────────────────────────
+// The "+" button on the card opens a Claude-style modal (textarea + Cancel /
+// Save). Clicking the existing instructions text re-opens the same modal so
+// the user can edit. The card itself only renders the current value, never
+// an inline editor — matches the user-supplied mock.
 function InstructionsPanel({ space, onSaved }: { space: Space; onSaved: (sp: Space) => void }) {
-  const [editing, setEditing] = useState(false);
+  const [open, setOpen] = useState(false);
+
+  return (
+    <>
+      <div className="sd-card">
+        <div className="sd-card-head">
+          <div className="sd-card-title">Instructions</div>
+          <button
+            type="button"
+            className="sd-card-action"
+            onClick={() => setOpen(true)}
+            aria-label={space.instructions ? "Edit instructions" : "Add instructions"}
+          >+</button>
+        </div>
+        {space.instructions ? (
+          <button
+            type="button"
+            className="sd-instructions-text sd-instructions-clickable"
+            onClick={() => setOpen(true)}
+            aria-label="Edit instructions"
+          >
+            {space.instructions}
+          </button>
+        ) : (
+          <div className="sd-card-empty">Add instructions to tailor Claude's responses</div>
+        )}
+      </div>
+
+      <InstructionsModal
+        open={open}
+        space={space}
+        onClose={() => setOpen(false)}
+        onSaved={(sp) => { onSaved(sp); setOpen(false); }}
+      />
+    </>
+  );
+}
+
+// InstructionsModal — Claude "Set <name> instructions" dialog. Pre-fills with
+// the current value, sends PATCH on Save.
+function InstructionsModal({
+  open, space, onClose, onSaved,
+}: {
+  open: boolean;
+  space: Space;
+  onClose: () => void;
+  onSaved: (sp: Space) => void;
+}) {
   const [draft, setDraft] = useState(space.instructions || "");
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
-  useEffect(() => { setDraft(space.instructions || ""); }, [space.instructions]);
+  // Sync draft when the modal opens or the upstream value changes.
+  useEffect(() => {
+    if (open) {
+      setDraft(space.instructions || "");
+      setErr(null);
+    }
+  }, [open, space.instructions]);
 
   async function save() {
     setSaving(true);
@@ -289,7 +388,6 @@ function InstructionsPanel({ space, onSaved }: { space: Space; onSaved: (sp: Spa
     try {
       const sp = await spacesApi.update(space.id, { instructions: draft });
       onSaved(sp);
-      setEditing(false);
     } catch (e: any) {
       setErr(e?.error || String(e));
     } finally {
@@ -298,51 +396,44 @@ function InstructionsPanel({ space, onSaved }: { space: Space; onSaved: (sp: Spa
   }
 
   return (
-    <div className="sd-card">
-      <div className="sd-card-head">
-        <div className="sd-card-title">Instructions</div>
-        {!editing && (
-          <button
-            type="button"
-            className="sd-card-action"
-            onClick={() => setEditing(true)}
-            aria-label="Edit instructions"
-          >+</button>
-        )}
+    <Modal
+      open={open}
+      onClose={() => { if (!saving) onClose(); }}
+      title={`Set ${space.name} instructions`}
+      width={720}
+    >
+      <div className="instructions-modal-sub">
+        Tailor the agent's behaviour inside this space. The instructions are
+        prepended to every chat as a system prompt — they only affect this
+        space.
       </div>
-      {!editing ? (
-        space.instructions ? (
-          <div className="sd-instructions-text">{space.instructions}</div>
-        ) : (
-          <div className="sd-card-empty">Add instructions to tailor Claude's responses</div>
-        )
-      ) : (
-        <div className="sd-edit-block">
-          <textarea
-            className="field-input"
-            value={draft}
-            rows={5}
-            onChange={(e) => setDraft(e.target.value)}
-            placeholder="Custom instructions for the agent in this Space"
-          />
-          {err && <div className="new-space-error">{err}</div>}
-          <div className="new-space-actions" style={{ marginTop: 8 }}>
-            <button
-              type="button"
-              className="ghost-btn"
-              onClick={() => { setDraft(space.instructions || ""); setEditing(false); setErr(null); }}
-              disabled={saving}
-            >Cancel</button>
-            <button
-              type="button"
-              className="primary-btn"
-              onClick={save}
-              disabled={saving}
-            >{saving ? "Saving…" : "Save"}</button>
-          </div>
-        </div>
-      )}
-    </div>
+
+      <textarea
+        className="field-input instructions-textarea"
+        value={draft}
+        rows={10}
+        onChange={(e) => setDraft(e.target.value)}
+        placeholder="e.g. Always cite primary sources. Prefer concise, structured answers."
+        autoFocus
+      />
+
+      {err && <div className="new-space-error">{err}</div>}
+
+      <div className="new-space-actions" style={{ marginTop: 16 }}>
+        <button
+          type="button"
+          className="ghost-btn"
+          onClick={() => { if (!saving) onClose(); }}
+          disabled={saving}
+        >Cancel</button>
+        <button
+          type="button"
+          className="primary-btn"
+          onClick={save}
+          disabled={saving}
+        >{saving ? "Saving…" : "Save instructions"}</button>
+      </div>
+    </Modal>
   );
 }
 
