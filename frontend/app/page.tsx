@@ -6,6 +6,7 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { STR, MODELS, type Locale, type LocaleStrings } from "./i18n";
 import { I } from "./icons";
 import { useAuth } from "./lib/auth-context";
+import { ConnectorIcon } from "./components/ConnectorIcon";
 import {
   spaces as spacesApi,
   connectors as connectorsApi,
@@ -419,9 +420,9 @@ function Composer({
                 className="model-pill"
                 onClick={() => toggleConnector(id)}
                 title="Remove from this chat"
-                style={{ background: "var(--cyan-soft)", color: "var(--cyan)", borderColor: "var(--cyan-line)" }}
+                style={{ background: "var(--cyan-soft)", color: "var(--cyan)", borderColor: "var(--cyan-line)", display: "inline-flex", alignItems: "center", gap: 6 }}
               >
-                {c.iconUrl && <img src={c.iconUrl} alt="" width={14} height={14} style={{ marginInlineEnd: 4, verticalAlign: "middle" }} />}
+                <ConnectorIcon name={c.name} iconUrl={c.iconUrl} size={16} />
                 {c.name} ×
               </button>
             );
@@ -492,11 +493,7 @@ function Composer({
                         data-active={on}
                         onClick={() => toggleConnector(c.mcpId)}
                       >
-                        {c.iconUrl ? (
-                          <img src={c.iconUrl} alt="" width={18} height={18} style={{ borderRadius: 4 }} />
-                        ) : (
-                          I.link
-                        )}
+                        <ConnectorIcon name={c.name} iconUrl={c.iconUrl} size={22} />
                         <span className="col">
                           <span className="ttl">{c.name}</span>
                           <span className="desc">{c.category}</span>

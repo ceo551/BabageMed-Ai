@@ -9,6 +9,7 @@ import {
   type Connector,
 } from "../lib/api";
 import { useAuth } from "../lib/auth-context";
+import { ConnectorIcon } from "../components/ConnectorIcon";
 import "./mcps.css";
 
 // "Connectors" directory (mounted at /mcps for backwards-compatible URLs).
@@ -142,11 +143,7 @@ export default function ConnectorsBrowsePage() {
             <div key={s.id} className="mcp-card" data-connected={isMine}>
               <Link href={`/mcps/${encodeURIComponent(s.id)}`} className="card-body">
                 <div className="row">
-                  {s.iconUrl ? (
-                    <img src={s.iconUrl} alt="" className="card-icon" width={28} height={28} />
-                  ) : (
-                    <div className="card-icon placeholder" />
-                  )}
+                  <ConnectorIcon name={s.name} iconUrl={s.iconUrl} size={36} className="card-icon" />
                   <span className="name">{s.name}</span>
                   <span className={`kind ${s.kind}`}>{s.kind}</span>
                 </div>

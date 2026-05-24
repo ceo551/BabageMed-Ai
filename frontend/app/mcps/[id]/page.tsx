@@ -11,6 +11,7 @@ import {
   type ApiError,
 } from "../../lib/api";
 import { useAuth } from "../../lib/auth-context";
+import { ConnectorIcon } from "../../components/ConnectorIcon";
 import "../mcps.css";
 
 // Connector detail page — Claude-style one-click connect.
@@ -99,11 +100,7 @@ export default function McpDetailPage() {
       <div className="breadcrumb"><Link href="/mcps">Connectors</Link> / {server.id}</div>
 
       <div className="connector-header">
-        {server.iconUrl ? (
-          <img className="connector-icon" src={server.iconUrl} alt="" width={48} height={48} />
-        ) : (
-          <div className="connector-icon" style={{ background: "var(--panel)" }} />
-        )}
+        <ConnectorIcon name={server.name} iconUrl={server.iconUrl} size={56} className="connector-icon" />
         <div className="connector-meta">
           <h1>{server.name}</h1>
           <div className="row">
