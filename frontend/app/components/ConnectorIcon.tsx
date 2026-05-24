@@ -30,40 +30,53 @@ const MIN_NATURAL = 48;
 // High-quality canonical logos for the providers the user singled out plus a
 // few obvious "must look right" brands. Keys match the MCP id (lower-case)
 // from scripts/mcps.manifest.json.
+//
+// We deliberately prefer logo.clearbit.com URLs over hand-picked Wikimedia
+// paths because:
+//   * Clearbit's logo CDN doesn't randomly 404 when a path is renamed
+//     (the Mayo / Cleveland / NEJM Wikimedia URLs in the first pass were
+//     either wrong or served black-text-on-transparent SVGs that vanished
+//     against the dark UI).
+//   * Clearbit returns a single, predictable raster crop sized for icons.
+// For the handful of cases Clearbit doesn't know (the Wikimedia logos for
+// Google's product icons are nicer than Clearbit's), we leave an explicit
+// override.
 const OVERRIDES: Record<string, string> = {
-  // Google-family services — these always serve well from gstatic / wikimedia
-  // and the favicon services miss them.
+  // Google product icons — Wikimedia hosts the official multicolour SVGs.
   gmail:        "https://upload.wikimedia.org/wikipedia/commons/7/7e/Gmail_icon_%282020%29.svg",
   gcalendar:    "https://upload.wikimedia.org/wikipedia/commons/a/a5/Google_Calendar_icon_%282020%29.svg",
   gdrive:       "https://upload.wikimedia.org/wikipedia/commons/1/12/Google_Drive_icon_%282020%29.svg",
   googlescholar:"https://upload.wikimedia.org/wikipedia/commons/c/c7/Google_Scholar_logo.svg",
 
-  // Big-name medical brands the favicon scrapers struggle with.
-  mayoclinic:   "https://upload.wikimedia.org/wikipedia/commons/c/c0/Mayo_Clinic_logo.svg",
-  clevelandclinic: "https://upload.wikimedia.org/wikipedia/commons/d/d6/Cleveland_Clinic_logo.svg",
-  who:          "https://upload.wikimedia.org/wikipedia/commons/d/d7/Flag_of_WHO.svg",
-  cdc:          "https://upload.wikimedia.org/wikipedia/commons/3/35/US_CDC_logo.svg",
-  fda:          "https://upload.wikimedia.org/wikipedia/commons/3/3d/Food_and_Drug_Administration_logo.svg",
-  nih:          "https://upload.wikimedia.org/wikipedia/commons/4/4a/US-NIH-NLM-NCBI-Logo.svg",
-  ncbi:         "https://upload.wikimedia.org/wikipedia/commons/4/4a/US-NIH-NLM-NCBI-Logo.svg",
-  pubmed:       "https://upload.wikimedia.org/wikipedia/commons/4/4a/US-NIH-NLM-NCBI-Logo.svg",
-  nccn:         "https://www.nccn.org/Images/global/header/logo.png",
-  bmj:          "https://upload.wikimedia.org/wikipedia/commons/4/45/BMJ_Group_Logo.svg",
-  nejm:         "https://upload.wikimedia.org/wikipedia/commons/5/5c/NEJM_logo.svg",
-  lancet:       "https://upload.wikimedia.org/wikipedia/commons/d/dc/The_Lancet_logo.svg",
-  nature:       "https://upload.wikimedia.org/wikipedia/commons/8/80/Nature_logo.svg",
-  jamanetwork:  "https://upload.wikimedia.org/wikipedia/commons/9/9e/JAMA_Network_logo.svg",
-  medscape:     "https://upload.wikimedia.org/wikipedia/commons/2/23/Medscape_logo.svg",
+  // Big-name medical brands — go through Clearbit so we get a real raster
+  // logo even when the brand's own site only ships a tiny favicon.
+  mayoclinic:      "https://logo.clearbit.com/mayoclinic.org",
+  clevelandclinic: "https://logo.clearbit.com/clevelandclinic.org",
+  who:             "https://logo.clearbit.com/who.int",
+  cdc:             "https://logo.clearbit.com/cdc.gov",
+  fda:             "https://logo.clearbit.com/fda.gov",
+  nih:             "https://logo.clearbit.com/nih.gov",
+  ncbi:            "https://logo.clearbit.com/ncbi.nlm.nih.gov",
+  pubmed:          "https://logo.clearbit.com/pubmed.ncbi.nlm.nih.gov",
+  nccn:            "https://logo.clearbit.com/nccn.org",
+  bmj:             "https://logo.clearbit.com/bmj.com",
+  nejm:            "https://logo.clearbit.com/nejm.org",
+  lancet:          "https://logo.clearbit.com/thelancet.com",
+  jamanetwork:     "https://logo.clearbit.com/jamanetwork.com",
+  medscape:        "https://logo.clearbit.com/medscape.com",
+  webmd:           "https://logo.clearbit.com/webmd.com",
+  healthline:      "https://logo.clearbit.com/healthline.com",
+  drugscom:        "https://logo.clearbit.com/drugs.com",
 
-  // Productivity tools.
+  // Productivity tools — vendor CDNs (or Clearbit) all serve canonical marks.
   github:       "https://github.githubassets.com/assets/GitHub-Mark-ea2971cee799.png",
-  slack:        "https://upload.wikimedia.org/wikipedia/commons/d/d5/Slack_icon_2019.svg",
-  notion:       "https://upload.wikimedia.org/wikipedia/commons/4/45/Notion_app_logo.png",
-  linkedin:     "https://upload.wikimedia.org/wikipedia/commons/c/ca/LinkedIn_logo_initials.png",
+  slack:        "https://logo.clearbit.com/slack.com",
+  notion:       "https://logo.clearbit.com/notion.so",
+  linkedin:     "https://logo.clearbit.com/linkedin.com",
   huggingface:  "https://huggingface.co/front/assets/huggingface_logo-noborder.svg",
-  kaggle:       "https://upload.wikimedia.org/wikipedia/commons/7/7c/Kaggle_logo.png",
-  hostinger:    "https://www.hostinger.com/assets/icons/icon-256x256.png",
-  ms365:        "https://upload.wikimedia.org/wikipedia/commons/0/0e/Microsoft_365_%282022%29.svg",
+  kaggle:       "https://logo.clearbit.com/kaggle.com",
+  hostinger:    "https://logo.clearbit.com/hostinger.com",
+  ms365:        "https://logo.clearbit.com/microsoft.com",
 };
 
 export type ConnectorIconProps = {
@@ -173,7 +186,11 @@ export function ConnectorIcon({
         height: size,
         objectFit: "contain",
         borderRadius: radius ?? Math.round(size * 0.18),
-        background: "color-mix(in srgb, currentColor 6%, transparent)",
+        // Light backdrop + tiny inset padding so dark-text logos (Mayo, NEJM,
+        // Slack-style monochromes that are transparent black on transparent
+        // background) stay visible on the app's dark UI.
+        background: "#ffffff",
+        padding: Math.max(2, Math.round(size * 0.08)),
         flexShrink: 0,
       }}
       onLoad={(e) => {
