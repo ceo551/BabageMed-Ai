@@ -245,10 +245,29 @@ function json(res: ServerResponse, code: number, body: unknown) {
   res.end(JSON.stringify(body));
 }
 
+// Cap the inbound JSON-RPC / tool-call body at 10 MB. The MCP servers only
+// ever receive small JSON payloads (tool name + a handful of string args);
+// anything bigger is almost certainly an attack trying to OOM the pod by
+// streaming gigabytes. Without this cap, `data += c` grew unboundedly and
+// a single bad client could take down one of the 416 pods.
+const MAX_BODY_BYTES = 10 * 1024 * 1024;
+
 function readBody(req: IncomingMessage): Promise<string> {
   return new Promise((resolve, reject) => {
     let data = "";
-    req.on("data", (c) => (data += c));
+    let size = 0;
+    req.on("data", (c) => {
+      size += c.length;
+      if (size > MAX_BODY_BYTES) {
+        const err = Object.assign(new Error("request body too large"), { code: 413 });
+        // Stop accepting data and destroy the socket so the attacker can't
+        // keep pushing bytes after we've already decided to fail.
+        req.destroy(err);
+        reject(err);
+        return;
+      }
+      data += c;
+    });
     req.on("end", () => resolve(data));
     req.on("error", reject);
   });

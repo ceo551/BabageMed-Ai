@@ -85,6 +85,17 @@ spec:
             httpGet: { path: /health, port: http }
             initialDelaySeconds: 5
             periodSeconds: 15
+          # Liveness probe was missing — a hung Node event loop (pinned by a
+          # bad upstream, a leaked Playwright context, etc.) would leave the
+          # pod marked Ready forever. Generous initialDelay so we don't kill
+          # MCPs mid-cold-start, and high failureThreshold to tolerate the
+          # occasional slow /health under load before forcing a restart.
+          livenessProbe:
+            httpGet: { path: /health, port: http }
+            initialDelaySeconds: 60
+            periodSeconds: 30
+            timeoutSeconds: 10
+            failureThreshold: 5
           resources: {{- toYaml $resources | nindent 12 }}
 {{- end -}}
 {{- end -}}

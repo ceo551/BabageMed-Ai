@@ -41,7 +41,12 @@ export class Scraper {
   private context?: BrowserContext;
   private cache: TtlCache<{ status: number; html: string }>;
   private nextSlot = 0;
-  private robotsCache = new Map<string, ReturnType<RobotsParserFn>>();
+  // robots.txt cache must expire — sites do update their robots.txt and a
+  // long-running pod with a plain Map<> would never pick up the change.
+  // 6h TTL matches the practical "fresh enough" window most crawl-policy
+  // tooling uses; capping entries keeps the per-pod footprint bounded even
+  // if a scraper sees a long-tail of distinct origins.
+  private robotsCache = new TtlCache<ReturnType<RobotsParserFn>>(6 * 60 * 60, 1024);
 
   constructor(private opts: ScraperOptions) {
     this.cache = new TtlCache(opts.cacheTtlSec ?? 86400);
@@ -69,6 +74,9 @@ export class Scraper {
       } catch {
         robots = rp(origin + "/robots.txt", "");
       }
+      // TtlCache.set signature matches the prior Map.set call site exactly,
+      // so the only thing changing here is *expiry* — entries now age out
+      // after the cache's default TTL (6h) instead of living forever.
       this.robotsCache.set(origin, robots);
     }
     const ua = this.opts.userAgent || UA_DEFAULT;
