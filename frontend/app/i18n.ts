@@ -7,7 +7,7 @@ export type LocaleStrings = {
   greetAm: string; greetPm: string; greetEve: string; greetItalic: string;
   user: string; plan: string; status: string;
   placeholder: string; placeholderHint: string; disclaim: string;
-  addConnector: string; addConnectorDesc: string; addFile: string; addFileDesc: string;
+  addConnector: string; addConnectorDesc: string; addFile: string;
   fromTools: string; settings: string; settingsDesc: string; plans: string; plansDesc: string;
   logout: string; logoutDesc: string;
   appearance: string; language: string; themeLight: string; themeDark: string; themeSystem: string;
@@ -44,7 +44,6 @@ export const STR: Record<Locale, LocaleStrings> = {
     addConnector: "Add connector",
     addConnectorDesc: "MCP · Registry · EHR",
     addFile: "Add file or folder",
-    addFileDesc: "Lab PDFs · DICOM · CSV",
     fromTools: "From connected tools",
     settings: "Settings",
     settingsDesc: "Preferences · model defaults",
@@ -119,7 +118,6 @@ export const STR: Record<Locale, LocaleStrings> = {
     addConnector: "إضافة موصِّل",
     addConnectorDesc: "MCP · سجل · EHR",
     addFile: "إضافة ملف أو مجلد",
-    addFileDesc: "PDF · DICOM · CSV",
     fromTools: "من الأدوات المتّصلة",
     settings: "الإعدادات",
     settingsDesc: "تفضيلات · إعدادات النموذج",

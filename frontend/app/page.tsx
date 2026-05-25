@@ -218,10 +218,60 @@ function Composer({
   const [modelOpen, setModelOpen] = useState(false);
   const [voiceOn, setVoiceOn] = useState(false);
   const [sending, setSending] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [userSpaces, setUserSpaces] = useState<Space[]>([]);
   const [userConnectors, setUserConnectors] = useState<Connector[]>([]);
   const taRef = useRef<HTMLTextAreaElement>(null);
   const composerRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Click handler for the "Add file or folder" popover row. Opens the OS
+  // file picker; onFilesChosen does the actual upload + space attach.
+  function openFilePicker() {
+    setAddOpen(false);
+    fileInputRef.current?.click();
+  }
+
+  // Upload every chosen file to a Space and pin that space as the active
+  // chat context. If no space is active yet we create a "Quick uploads"
+  // space on the fly so the user doesn't have to detour through /spaces.
+  async function onFilesChosen(e: React.ChangeEvent<HTMLInputElement>) {
+    const files = e.target.files ? Array.from(e.target.files) : [];
+    // Reset the input so picking the same file twice still triggers change.
+    e.target.value = "";
+    if (files.length === 0) return;
+    setUploading(true);
+    try {
+      let targetSpaceId = activeSpaceId;
+      if (!targetSpaceId) {
+        const created = await spacesApi.create({
+          name: files[0].name.replace(/\.[^.]+$/, "") || "Quick uploads",
+          description: "",
+          icon: "📎",
+          instructions: "",
+        });
+        setUserSpaces((cur) => [created, ...cur]);
+        targetSpaceId = created.id;
+        session.setActiveSpaceId(created.id);
+      }
+      // Upload in parallel; tolerate per-file failures so a single bad
+      // PDF doesn't abort the whole batch.
+      await Promise.allSettled(files.map((f) => spacesApi.upload(targetSpaceId!, f)));
+    } catch (err: any) {
+      // Surface the failure in the transcript so the user knows the
+      // attach didn't take. (We don't have a dedicated toast yet.)
+      setMessages((cur) => [
+        ...cur,
+        {
+          id: `a-${newId()}`,
+          role: "assistant",
+          content: "Couldn't attach those files: " + (err?.error || String(err)),
+        },
+      ]);
+    } finally {
+      setUploading(false);
+    }
+  }
 
   useEffect(() => {
     spacesApi.list().then(setUserSpaces).catch(() => setUserSpaces([]));
@@ -462,6 +512,15 @@ function Composer({
 
   return (
     <div className="composer" ref={composerRef}>
+      {/* Hidden picker driven by the "Add file or folder" popover row. */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        multiple
+        hidden
+        onChange={onFilesChosen}
+        accept=".pdf,.csv,.txt,.md,.json,.dcm,application/pdf,text/csv,text/plain,application/json"
+      />
       <textarea
         ref={taRef}
         value={value}
@@ -524,13 +583,18 @@ function Composer({
           <div className="popover" role="menu" style={{ maxHeight: 460, overflowY: "auto" }}>
             <div className="pop-header">{s.addConnector}</div>
 
-            <Link href="/spaces" className="popover-row" style={{ textDecoration: "none" }}>
+            <button
+              type="button"
+              className="popover-row"
+              onClick={openFilePicker}
+              disabled={uploading}
+              style={{ width: "100%", textAlign: "start", border: 0, background: "transparent", cursor: uploading ? "progress" : "pointer" }}
+            >
               {I.folder}
               <span className="col">
-                <span className="ttl">{s.addFile}</span>
-                <span className="desc">{s.addFileDesc}</span>
+                <span className="ttl">{uploading ? "Uploading…" : s.addFile}</span>
               </span>
-            </Link>
+            </button>
 
             {userSpaces.length > 0 && (
               <>
