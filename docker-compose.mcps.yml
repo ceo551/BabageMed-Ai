@@ -39,19 +39,6 @@ services:
       - "6103:6103"
     restart: unless-stopped
     networks: [babagemed]
-  mcp-clevelandclinic:
-    build:
-      context: .
-      dockerfile: mcps/clevelandclinic/Dockerfile
-    image: babagemed/mcp-clevelandclinic:latest
-    env_file: .env
-    environment:
-      HTTP_ONLY: "1"
-      MCP_PORT: "6104"
-    ports:
-      - "6104:6104"
-    restart: unless-stopped
-    networks: [babagemed]
   mcp-who:
     build:
       context: .
@@ -128,32 +115,6 @@ services:
       MCP_PORT: "6110"
     ports:
       - "6110:6110"
-    restart: unless-stopped
-    networks: [babagemed]
-  mcp-medscape:
-    build:
-      context: .
-      dockerfile: mcps/medscape/Dockerfile
-    image: babagemed/mcp-medscape:latest
-    env_file: .env
-    environment:
-      HTTP_ONLY: "1"
-      MCP_PORT: "6111"
-    ports:
-      - "6111:6111"
-    restart: unless-stopped
-    networks: [babagemed]
-  mcp-webmd:
-    build:
-      context: .
-      dockerfile: mcps/webmd/Dockerfile
-    image: babagemed/mcp-webmd:latest
-    env_file: .env
-    environment:
-      HTTP_ONLY: "1"
-      MCP_PORT: "6112"
-    ports:
-      - "6112:6112"
     restart: unless-stopped
     networks: [babagemed]
   mcp-cochrane:
@@ -271,19 +232,6 @@ services:
       MCP_PORT: "6121"
     ports:
       - "6121:6121"
-    restart: unless-stopped
-    networks: [babagemed]
-  mcp-drugscom:
-    build:
-      context: .
-      dockerfile: mcps/drugscom/Dockerfile
-    image: babagemed/mcp-drugscom:latest
-    env_file: .env
-    environment:
-      HTTP_ONLY: "1"
-      MCP_PORT: "6122"
-    ports:
-      - "6122:6122"
     restart: unless-stopped
     networks: [babagemed]
   mcp-rxlist:
@@ -416,45 +364,6 @@ services:
       - "6132:6132"
     restart: unless-stopped
     networks: [babagemed]
-  mcp-ninds:
-    build:
-      context: .
-      dockerfile: mcps/ninds/Dockerfile
-    image: babagemed/mcp-ninds:latest
-    env_file: .env
-    environment:
-      HTTP_ONLY: "1"
-      MCP_PORT: "6133"
-    ports:
-      - "6133:6133"
-    restart: unless-stopped
-    networks: [babagemed]
-  mcp-niddk:
-    build:
-      context: .
-      dockerfile: mcps/niddk/Dockerfile
-    image: babagemed/mcp-niddk:latest
-    env_file: .env
-    environment:
-      HTTP_ONLY: "1"
-      MCP_PORT: "6134"
-    ports:
-      - "6134:6134"
-    restart: unless-stopped
-    networks: [babagemed]
-  mcp-biocodex:
-    build:
-      context: .
-      dockerfile: mcps/biocodex/Dockerfile
-    image: babagemed/mcp-biocodex:latest
-    env_file: .env
-    environment:
-      HTTP_ONLY: "1"
-      MCP_PORT: "6135"
-    ports:
-      - "6135:6135"
-    restart: unless-stopped
-    networks: [babagemed]
   mcp-fda:
     build:
       context: .
@@ -466,19 +375,6 @@ services:
       MCP_PORT: "6136"
     ports:
       - "6136:6136"
-    restart: unless-stopped
-    networks: [babagemed]
-  mcp-nhlbi:
-    build:
-      context: .
-      dockerfile: mcps/nhlbi/Dockerfile
-    image: babagemed/mcp-nhlbi:latest
-    env_file: .env
-    environment:
-      HTTP_ONLY: "1"
-      MCP_PORT: "6137"
-    ports:
-      - "6137:6137"
     restart: unless-stopped
     networks: [babagemed]
   mcp-kdigo:
@@ -494,19 +390,6 @@ services:
       - "6138:6138"
     restart: unless-stopped
     networks: [babagemed]
-  mcp-kidneyfoundation:
-    build:
-      context: .
-      dockerfile: mcps/kidneyfoundation/Dockerfile
-    image: babagemed/mcp-kidneyfoundation:latest
-    env_file: .env
-    environment:
-      HTTP_ONLY: "1"
-      MCP_PORT: "6139"
-    ports:
-      - "6139:6139"
-    restart: unless-stopped
-    networks: [babagemed]
   mcp-renalfellow:
     build:
       context: .
@@ -518,45 +401,6 @@ services:
       MCP_PORT: "6140"
     ports:
       - "6140:6140"
-    restart: unless-stopped
-    networks: [babagemed]
-  mcp-healio:
-    build:
-      context: .
-      dockerfile: mcps/healio/Dockerfile
-    image: babagemed/mcp-healio:latest
-    env_file: .env
-    environment:
-      HTTP_ONLY: "1"
-      MCP_PORT: "6141"
-    ports:
-      - "6141:6141"
-    restart: unless-stopped
-    networks: [babagemed]
-  mcp-cancerorg:
-    build:
-      context: .
-      dockerfile: mcps/cancerorg/Dockerfile
-    image: babagemed/mcp-cancerorg:latest
-    env_file: .env
-    environment:
-      HTTP_ONLY: "1"
-      MCP_PORT: "6142"
-    ports:
-      - "6142:6142"
-    restart: unless-stopped
-    networks: [babagemed]
-  mcp-oncolink:
-    build:
-      context: .
-      dockerfile: mcps/oncolink/Dockerfile
-    image: babagemed/mcp-oncolink:latest
-    env_file: .env
-    environment:
-      HTTP_ONLY: "1"
-      MCP_PORT: "6143"
-    ports:
-      - "6143:6143"
     restart: unless-stopped
     networks: [babagemed]
   mcp-rheumatology:
@@ -596,19 +440,6 @@ services:
       MCP_PORT: "6146"
     ports:
       - "6146:6146"
-    restart: unless-stopped
-    networks: [babagemed]
-  mcp-creakyjoints:
-    build:
-      context: .
-      dockerfile: mcps/creakyjoints/Dockerfile
-    image: babagemed/mcp-creakyjoints:latest
-    env_file: .env
-    environment:
-      HTTP_ONLY: "1"
-      MCP_PORT: "6147"
-    ports:
-      - "6147:6147"
     restart: unless-stopped
     networks: [babagemed]
   mcp-lupus:
@@ -663,19 +494,6 @@ services:
       - "6151:6151"
     restart: unless-stopped
     networks: [babagemed]
-  mcp-nimh:
-    build:
-      context: .
-      dockerfile: mcps/nimh/Dockerfile
-    image: babagemed/mcp-nimh:latest
-    env_file: .env
-    environment:
-      HTTP_ONLY: "1"
-      MCP_PORT: "6152"
-    ports:
-      - "6152:6152"
-    restart: unless-stopped
-    networks: [babagemed]
   mcp-rcpsych:
     build:
       context: .
@@ -687,19 +505,6 @@ services:
       MCP_PORT: "6153"
     ports:
       - "6153:6153"
-    restart: unless-stopped
-    networks: [babagemed]
-  mcp-psychiatrictimes:
-    build:
-      context: .
-      dockerfile: mcps/psychiatrictimes/Dockerfile
-    image: babagemed/mcp-psychiatrictimes:latest
-    env_file: .env
-    environment:
-      HTTP_ONLY: "1"
-      MCP_PORT: "6154"
-    ports:
-      - "6154:6154"
     restart: unless-stopped
     networks: [babagemed]
   mcp-nami:
@@ -791,45 +596,6 @@ services:
       MCP_PORT: "6161"
     ports:
       - "6161:6161"
-    restart: unless-stopped
-    networks: [babagemed]
-  mcp-healthdata:
-    build:
-      context: .
-      dockerfile: mcps/healthdata/Dockerfile
-    image: babagemed/mcp-healthdata:latest
-    env_file: .env
-    environment:
-      HTTP_ONLY: "1"
-      MCP_PORT: "6162"
-    ports:
-      - "6162:6162"
-    restart: unless-stopped
-    networks: [babagemed]
-  mcp-pathologyoutlines:
-    build:
-      context: .
-      dockerfile: mcps/pathologyoutlines/Dockerfile
-    image: babagemed/mcp-pathologyoutlines:latest
-    env_file: .env
-    environment:
-      HTTP_ONLY: "1"
-      MCP_PORT: "6163"
-    ports:
-      - "6163:6163"
-    restart: unless-stopped
-    networks: [babagemed]
-  mcp-testingcom:
-    build:
-      context: .
-      dockerfile: mcps/testingcom/Dockerfile
-    image: babagemed/mcp-testingcom:latest
-    env_file: .env
-    environment:
-      HTTP_ONLY: "1"
-      MCP_PORT: "6164"
-    ports:
-      - "6164:6164"
     restart: unless-stopped
     networks: [babagemed]
   mcp-dftb:
@@ -1001,19 +767,6 @@ services:
       - "6177:6177"
     restart: unless-stopped
     networks: [babagemed]
-  mcp-googlescholar:
-    build:
-      context: .
-      dockerfile: mcps/googlescholar/Dockerfile
-    image: babagemed/mcp-googlescholar:latest
-    env_file: .env
-    environment:
-      HTTP_ONLY: "1"
-      MCP_PORT: "6178"
-    ports:
-      - "6178:6178"
-    restart: unless-stopped
-    networks: [babagemed]
   mcp-gmail:
     build:
       context: .
@@ -1118,19 +871,6 @@ services:
       - "6186:6186"
     restart: unless-stopped
     networks: [babagemed]
-  mcp-acc:
-    build:
-      context: .
-      dockerfile: mcps/acc/Dockerfile
-    image: babagemed/mcp-acc:latest
-    env_file: .env
-    environment:
-      HTTP_ONLY: "1"
-      MCP_PORT: "6201"
-    ports:
-      - "6201:6201"
-    restart: unless-stopped
-    networks: [babagemed]
   mcp-ahajournals:
     build:
       context: .
@@ -1142,19 +882,6 @@ services:
       MCP_PORT: "6202"
     ports:
       - "6202:6202"
-    restart: unless-stopped
-    networks: [babagemed]
-  mcp-jacc:
-    build:
-      context: .
-      dockerfile: mcps/jacc/Dockerfile
-    image: babagemed/mcp-jacc:latest
-    env_file: .env
-    environment:
-      HTTP_ONLY: "1"
-      MCP_PORT: "6203"
-    ports:
-      - "6203:6203"
     restart: unless-stopped
     networks: [babagemed]
   mcp-escardio:
@@ -1300,19 +1027,6 @@ services:
       - "6214:6214"
     restart: unless-stopped
     networks: [babagemed]
-  mcp-openheart:
-    build:
-      context: .
-      dockerfile: mcps/openheart/Dockerfile
-    image: babagemed/mcp-openheart:latest
-    env_file: .env
-    environment:
-      HTTP_ONLY: "1"
-      MCP_PORT: "6215"
-    ports:
-      - "6215:6215"
-    restart: unless-stopped
-    networks: [babagemed]
   mcp-svs:
     build:
       context: .
@@ -1430,19 +1144,6 @@ services:
       - "6224:6224"
     restart: unless-stopped
     networks: [babagemed]
-  mcp-esmoopen:
-    build:
-      context: .
-      dockerfile: mcps/esmoopen/Dockerfile
-    image: babagemed/mcp-esmoopen:latest
-    env_file: .env
-    environment:
-      HTTP_ONLY: "1"
-      MCP_PORT: "6225"
-    ports:
-      - "6225:6225"
-    restart: unless-stopped
-    networks: [babagemed]
   mcp-aacr:
     build:
       context: .
@@ -1519,19 +1220,6 @@ services:
       MCP_PORT: "6231"
     ports:
       - "6231:6231"
-    restart: unless-stopped
-    networks: [babagemed]
-  mcp-astro:
-    build:
-      context: .
-      dockerfile: mcps/astro/Dockerfile
-    image: babagemed/mcp-astro:latest
-    env_file: .env
-    environment:
-      HTTP_ONLY: "1"
-      MCP_PORT: "6232"
-    ports:
-      - "6232:6232"
     restart: unless-stopped
     networks: [babagemed]
   mcp-ecancer:
@@ -1662,19 +1350,6 @@ services:
       MCP_PORT: "6242"
     ports:
       - "6242:6242"
-    restart: unless-stopped
-    networks: [babagemed]
-  mcp-neurologyjournal:
-    build:
-      context: .
-      dockerfile: mcps/neurologyjournal/Dockerfile
-    image: babagemed/mcp-neurologyjournal:latest
-    env_file: .env
-    environment:
-      HTTP_ONLY: "1"
-      MCP_PORT: "6243"
-    ports:
-      - "6243:6243"
     restart: unless-stopped
     networks: [babagemed]
   mcp-apa-psych:
@@ -1846,19 +1521,6 @@ services:
       - "6256:6256"
     restart: unless-stopped
     networks: [babagemed]
-  mcp-adc:
-    build:
-      context: .
-      dockerfile: mcps/adc/Dockerfile
-    image: babagemed/mcp-adc:latest
-    env_file: .env
-    environment:
-      HTTP_ONLY: "1"
-      MCP_PORT: "6257"
-    ports:
-      - "6257:6257"
-    restart: unless-stopped
-    networks: [babagemed]
   mcp-acr-rad:
     build:
       context: .
@@ -1937,19 +1599,6 @@ services:
       - "6263:6263"
     restart: unless-stopped
     networks: [babagemed]
-  mcp-insightsimaging:
-    build:
-      context: .
-      dockerfile: mcps/insightsimaging/Dockerfile
-    image: babagemed/mcp-insightsimaging:latest
-    env_file: .env
-    environment:
-      HTTP_ONLY: "1"
-      MCP_PORT: "6264"
-    ports:
-      - "6264:6264"
-    restart: unless-stopped
-    networks: [babagemed]
   mcp-springer-eurrad:
     build:
       context: .
@@ -1976,32 +1625,6 @@ services:
       - "6266:6266"
     restart: unless-stopped
     networks: [babagemed]
-  mcp-bnf:
-    build:
-      context: .
-      dockerfile: mcps/bnf/Dockerfile
-    image: babagemed/mcp-bnf:latest
-    env_file: .env
-    environment:
-      HTTP_ONLY: "1"
-      MCP_PORT: "6267"
-    ports:
-      - "6267:6267"
-    restart: unless-stopped
-    networks: [babagemed]
-  mcp-bnfc:
-    build:
-      context: .
-      dockerfile: mcps/bnfc/Dockerfile
-    image: babagemed/mcp-bnfc:latest
-    env_file: .env
-    environment:
-      HTTP_ONLY: "1"
-      MCP_PORT: "6268"
-    ports:
-      - "6268:6268"
-    restart: unless-stopped
-    networks: [babagemed]
   mcp-nice:
     build:
       context: .
@@ -2015,19 +1638,6 @@ services:
       - "6269:6269"
     restart: unless-stopped
     networks: [babagemed]
-  mcp-cks:
-    build:
-      context: .
-      dockerfile: mcps/cks/Dockerfile
-    image: babagemed/mcp-cks:latest
-    env_file: .env
-    environment:
-      HTTP_ONLY: "1"
-      MCP_PORT: "6270"
-    ports:
-      - "6270:6270"
-    restart: unless-stopped
-    networks: [babagemed]
   mcp-openprescribing:
     build:
       context: .
@@ -2039,19 +1649,6 @@ services:
       MCP_PORT: "6271"
     ports:
       - "6271:6271"
-    restart: unless-stopped
-    networks: [babagemed]
-  mcp-tga:
-    build:
-      context: .
-      dockerfile: mcps/tga/Dockerfile
-    image: babagemed/mcp-tga:latest
-    env_file: .env
-    environment:
-      HTTP_ONLY: "1"
-      MCP_PORT: "6272"
-    ports:
-      - "6272:6272"
     restart: unless-stopped
     networks: [babagemed]
   mcp-ema:
@@ -2091,19 +1688,6 @@ services:
       MCP_PORT: "6275"
     ports:
       - "6275:6275"
-    restart: unless-stopped
-    networks: [babagemed]
-  mcp-anvisa:
-    build:
-      context: .
-      dockerfile: mcps/anvisa/Dockerfile
-    image: babagemed/mcp-anvisa:latest
-    env_file: .env
-    environment:
-      HTTP_ONLY: "1"
-      MCP_PORT: "6276"
-    ports:
-      - "6276:6276"
     restart: unless-stopped
     networks: [babagemed]
   mcp-ashp-shortages:
@@ -2223,19 +1807,6 @@ services:
       - "6285:6285"
     restart: unless-stopped
     networks: [babagemed]
-  mcp-sages:
-    build:
-      context: .
-      dockerfile: mcps/sages/Dockerfile
-    image: babagemed/mcp-sages:latest
-    env_file: .env
-    environment:
-      HTTP_ONLY: "1"
-      MCP_PORT: "6286"
-    ports:
-      - "6286:6286"
-    restart: unless-stopped
-    networks: [babagemed]
   mcp-fascrs:
     build:
       context: .
@@ -2260,19 +1831,6 @@ services:
       MCP_PORT: "6288"
     ports:
       - "6288:6288"
-    restart: unless-stopped
-    networks: [babagemed]
-  mcp-asps:
-    build:
-      context: .
-      dockerfile: mcps/asps/Dockerfile
-    image: babagemed/mcp-asps:latest
-    env_file: .env
-    environment:
-      HTTP_ONLY: "1"
-      MCP_PORT: "6289"
-    ports:
-      - "6289:6289"
     restart: unless-stopped
     networks: [babagemed]
   mcp-isaps:
@@ -2340,19 +1898,6 @@ services:
       - "6294:6294"
     restart: unless-stopped
     networks: [babagemed]
-  mcp-esaic:
-    build:
-      context: .
-      dockerfile: mcps/esaic/Dockerfile
-    image: babagemed/mcp-esaic:latest
-    env_file: .env
-    environment:
-      HTTP_ONLY: "1"
-      MCP_PORT: "6295"
-    ports:
-      - "6295:6295"
-    restart: unless-stopped
-    networks: [babagemed]
   mcp-openanesthesia:
     build:
       context: .
@@ -2364,19 +1909,6 @@ services:
       MCP_PORT: "6296"
     ports:
       - "6296:6296"
-    restart: unless-stopped
-    networks: [babagemed]
-  mcp-apsf:
-    build:
-      context: .
-      dockerfile: mcps/apsf/Dockerfile
-    image: babagemed/mcp-apsf:latest
-    env_file: .env
-    environment:
-      HTTP_ONLY: "1"
-      MCP_PORT: "6297"
-    ports:
-      - "6297:6297"
     restart: unless-stopped
     networks: [babagemed]
   mcp-sccm:
@@ -2457,19 +1989,6 @@ services:
       - "6303:6303"
     restart: unless-stopped
     networks: [babagemed]
-  mcp-ukhsa:
-    build:
-      context: .
-      dockerfile: mcps/ukhsa/Dockerfile
-    image: babagemed/mcp-ukhsa:latest
-    env_file: .env
-    environment:
-      HTTP_ONLY: "1"
-      MCP_PORT: "6304"
-    ports:
-      - "6304:6304"
-    restart: unless-stopped
-    networks: [babagemed]
   mcp-ecdc:
     build:
       context: .
@@ -2522,19 +2041,6 @@ services:
       - "6308:6308"
     restart: unless-stopped
     networks: [babagemed]
-  mcp-healthgovau:
-    build:
-      context: .
-      dockerfile: mcps/healthgovau/Dockerfile
-    image: babagemed/mcp-healthgovau:latest
-    env_file: .env
-    environment:
-      HTTP_ONLY: "1"
-      MCP_PORT: "6309"
-    ports:
-      - "6309:6309"
-    restart: unless-stopped
-    networks: [babagemed]
   mcp-ssi:
     build:
       context: .
@@ -2559,32 +2065,6 @@ services:
       MCP_PORT: "6311"
     ports:
       - "6311:6311"
-    restart: unless-stopped
-    networks: [babagemed]
-  mcp-spfrance:
-    build:
-      context: .
-      dockerfile: mcps/spfrance/Dockerfile
-    image: babagemed/mcp-spfrance:latest
-    env_file: .env
-    environment:
-      HTTP_ONLY: "1"
-      MCP_PORT: "6312"
-    ports:
-      - "6312:6312"
-    restart: unless-stopped
-    networks: [babagemed]
-  mcp-africacdc:
-    build:
-      context: .
-      dockerfile: mcps/africacdc/Dockerfile
-    image: babagemed/mcp-africacdc:latest
-    env_file: .env
-    environment:
-      HTTP_ONLY: "1"
-      MCP_PORT: "6313"
-    ports:
-      - "6313:6313"
     restart: unless-stopped
     networks: [babagemed]
   mcp-wfpha:
@@ -2650,19 +2130,6 @@ services:
       MCP_PORT: "6318"
     ports:
       - "6318:6318"
-    restart: unless-stopped
-    networks: [babagemed]
-  mcp-eurosurveillance:
-    build:
-      context: .
-      dockerfile: mcps/eurosurveillance/Dockerfile
-    image: babagemed/mcp-eurosurveillance:latest
-    env_file: .env
-    environment:
-      HTTP_ONLY: "1"
-      MCP_PORT: "6319"
-    ports:
-      - "6319:6319"
     restart: unless-stopped
     networks: [babagemed]
   mcp-endocrine:
@@ -2769,19 +2236,6 @@ services:
       - "6327:6327"
     restart: unless-stopped
     networks: [babagemed]
-  mcp-aga:
-    build:
-      context: .
-      dockerfile: mcps/aga/Dockerfile
-    image: babagemed/mcp-aga:latest
-    env_file: .env
-    environment:
-      HTTP_ONLY: "1"
-      MCP_PORT: "6328"
-    ports:
-      - "6328:6328"
-    restart: unless-stopped
-    networks: [babagemed]
   mcp-acg:
     build:
       context: .
@@ -2886,19 +2340,6 @@ services:
       - "6336:6336"
     restart: unless-stopped
     networks: [babagemed]
-  mcp-gut:
-    build:
-      context: .
-      dockerfile: mcps/gut/Dockerfile
-    image: babagemed/mcp-gut:latest
-    env_file: .env
-    environment:
-      HTTP_ONLY: "1"
-      MCP_PORT: "6337"
-    ports:
-      - "6337:6337"
-    restart: unless-stopped
-    networks: [babagemed]
   mcp-ats:
     build:
       context: .
@@ -2977,19 +2418,6 @@ services:
       - "6343:6343"
     restart: unless-stopped
     networks: [babagemed]
-  mcp-erj-openres:
-    build:
-      context: .
-      dockerfile: mcps/erj-openres/Dockerfile
-    image: babagemed/mcp-erj-openres:latest
-    env_file: .env
-    environment:
-      HTTP_ONLY: "1"
-      MCP_PORT: "6344"
-    ports:
-      - "6344:6344"
-    restart: unless-stopped
-    networks: [babagemed]
   mcp-aad:
     build:
       context: .
@@ -3001,19 +2429,6 @@ services:
       MCP_PORT: "6345"
     ports:
       - "6345:6345"
-    restart: unless-stopped
-    networks: [babagemed]
-  mcp-bad:
-    build:
-      context: .
-      dockerfile: mcps/bad/Dockerfile
-    image: babagemed/mcp-bad:latest
-    env_file: .env
-    environment:
-      HTTP_ONLY: "1"
-      MCP_PORT: "6346"
-    ports:
-      - "6346:6346"
     restart: unless-stopped
     networks: [babagemed]
   mcp-eadv:
@@ -3157,19 +2572,6 @@ services:
       MCP_PORT: "6357"
     ports:
       - "6357:6357"
-    restart: unless-stopped
-    networks: [babagemed]
-  mcp-ascrs:
-    build:
-      context: .
-      dockerfile: mcps/ascrs/Dockerfile
-    image: babagemed/mcp-ascrs:latest
-    env_file: .env
-    environment:
-      HTTP_ONLY: "1"
-      MCP_PORT: "6358"
-    ports:
-      - "6358:6358"
     restart: unless-stopped
     networks: [babagemed]
   mcp-arvo:
@@ -3471,32 +2873,6 @@ services:
       - "6381:6381"
     restart: unless-stopped
     networks: [babagemed]
-  mcp-amssm:
-    build:
-      context: .
-      dockerfile: mcps/amssm/Dockerfile
-    image: babagemed/mcp-amssm:latest
-    env_file: .env
-    environment:
-      HTTP_ONLY: "1"
-      MCP_PORT: "6382"
-    ports:
-      - "6382:6382"
-    restart: unless-stopped
-    networks: [babagemed]
-  mcp-bjsm:
-    build:
-      context: .
-      dockerfile: mcps/bjsm/Dockerfile
-    image: babagemed/mcp-bjsm:latest
-    env_file: .env
-    environment:
-      HTTP_ONLY: "1"
-      MCP_PORT: "6383"
-    ports:
-      - "6383:6383"
-    restart: unless-stopped
-    networks: [babagemed]
   mcp-basem:
     build:
       context: .
@@ -3586,19 +2962,6 @@ services:
       MCP_PORT: "6390"
     ports:
       - "6390:6390"
-    restart: unless-stopped
-    networks: [babagemed]
-  mcp-idsa:
-    build:
-      context: .
-      dockerfile: mcps/idsa/Dockerfile
-    image: babagemed/mcp-idsa:latest
-    env_file: .env
-    environment:
-      HTTP_ONLY: "1"
-      MCP_PORT: "6391"
-    ports:
-      - "6391:6391"
     restart: unless-stopped
     networks: [babagemed]
   mcp-escmid:
@@ -3783,19 +3146,6 @@ services:
       - "6405:6405"
     restart: unless-stopped
     networks: [babagemed]
-  mcp-pathpedia:
-    build:
-      context: .
-      dockerfile: mcps/pathpedia/Dockerfile
-    image: babagemed/mcp-pathpedia:latest
-    env_file: .env
-    environment:
-      HTTP_ONLY: "1"
-      MCP_PORT: "6406"
-    ports:
-      - "6406:6406"
-    restart: unless-stopped
-    networks: [babagemed]
   mcp-acmg:
     build:
       context: .
@@ -3807,19 +3157,6 @@ services:
       MCP_PORT: "6407"
     ports:
       - "6407:6407"
-    restart: unless-stopped
-    networks: [babagemed]
-  mcp-omim:
-    build:
-      context: .
-      dockerfile: mcps/omim/Dockerfile
-    image: babagemed/mcp-omim:latest
-    env_file: .env
-    environment:
-      HTTP_ONLY: "1"
-      MCP_PORT: "6408"
-    ports:
-      - "6408:6408"
     restart: unless-stopped
     networks: [babagemed]
   mcp-orphanet:
@@ -3861,19 +3198,6 @@ services:
       - "6411:6411"
     restart: unless-stopped
     networks: [babagemed]
-  mcp-genomeweb:
-    build:
-      context: .
-      dockerfile: mcps/genomeweb/Dockerfile
-    image: babagemed/mcp-genomeweb:latest
-    env_file: .env
-    environment:
-      HTTP_ONLY: "1"
-      MCP_PORT: "6412"
-    ports:
-      - "6412:6412"
-    restart: unless-stopped
-    networks: [babagemed]
   mcp-ags:
     build:
       context: .
@@ -3885,45 +3209,6 @@ services:
       MCP_PORT: "6413"
     ports:
       - "6413:6413"
-    restart: unless-stopped
-    networks: [babagemed]
-  mcp-bgs:
-    build:
-      context: .
-      dockerfile: mcps/bgs/Dockerfile
-    image: babagemed/mcp-bgs:latest
-    env_file: .env
-    environment:
-      HTTP_ONLY: "1"
-      MCP_PORT: "6414"
-    ports:
-      - "6414:6414"
-    restart: unless-stopped
-    networks: [babagemed]
-  mcp-eugms:
-    build:
-      context: .
-      dockerfile: mcps/eugms/Dockerfile
-    image: babagemed/mcp-eugms:latest
-    env_file: .env
-    environment:
-      HTTP_ONLY: "1"
-      MCP_PORT: "6415"
-    ports:
-      - "6415:6415"
-    restart: unless-stopped
-    networks: [babagemed]
-  mcp-iagg:
-    build:
-      context: .
-      dockerfile: mcps/iagg/Dockerfile
-    image: babagemed/mcp-iagg:latest
-    env_file: .env
-    environment:
-      HTTP_ONLY: "1"
-      MCP_PORT: "6416"
-    ports:
-      - "6416:6416"
     restart: unless-stopped
     networks: [babagemed]
   mcp-aahpm:
@@ -3963,19 +3248,6 @@ services:
       MCP_PORT: "6419"
     ports:
       - "6419:6419"
-    restart: unless-stopped
-    networks: [babagemed]
-  mcp-capc:
-    build:
-      context: .
-      dockerfile: mcps/capc/Dockerfile
-    image: babagemed/mcp-capc:latest
-    env_file: .env
-    environment:
-      HTTP_ONLY: "1"
-      MCP_PORT: "6420"
-    ports:
-      - "6420:6420"
     restart: unless-stopped
     networks: [babagemed]
   mcp-mypcnow:
@@ -4277,19 +3549,6 @@ services:
       - "6443:6443"
     restart: unless-stopped
     networks: [babagemed]
-  mcp-aliem:
-    build:
-      context: .
-      dockerfile: mcps/aliem/Dockerfile
-    image: babagemed/mcp-aliem:latest
-    env_file: .env
-    environment:
-      HTTP_ONLY: "1"
-      MCP_PORT: "6444"
-    ports:
-      - "6444:6444"
-    restart: unless-stopped
-    networks: [babagemed]
   mcp-emdocs:
     build:
       context: .
@@ -4381,19 +3640,6 @@ services:
       - "6451:6451"
     restart: unless-stopped
     networks: [babagemed]
-  mcp-rcgp:
-    build:
-      context: .
-      dockerfile: mcps/rcgp/Dockerfile
-    image: babagemed/mcp-rcgp:latest
-    env_file: .env
-    environment:
-      HTTP_ONLY: "1"
-      MCP_PORT: "6452"
-    ports:
-      - "6452:6452"
-    restart: unless-stopped
-    networks: [babagemed]
   mcp-stfm:
     build:
       context: .
@@ -4405,19 +3651,6 @@ services:
       MCP_PORT: "6453"
     ports:
       - "6453:6453"
-    restart: unless-stopped
-    networks: [babagemed]
-  mcp-aapa:
-    build:
-      context: .
-      dockerfile: mcps/aapa/Dockerfile
-    image: babagemed/mcp-aapa:latest
-    env_file: .env
-    environment:
-      HTTP_ONLY: "1"
-      MCP_PORT: "6454"
-    ports:
-      - "6454:6454"
     restart: unless-stopped
     networks: [babagemed]
   mcp-rcp:
@@ -4470,19 +3703,6 @@ services:
       MCP_PORT: "6458"
     ports:
       - "6458:6458"
-    restart: unless-stopped
-    networks: [babagemed]
-  mcp-asn-nephrology:
-    build:
-      context: .
-      dockerfile: mcps/asn-nephrology/Dockerfile
-    image: babagemed/mcp-asn-nephrology:latest
-    env_file: .env
-    environment:
-      HTTP_ONLY: "1"
-      MCP_PORT: "6459"
-    ports:
-      - "6459:6459"
     restart: unless-stopped
     networks: [babagemed]
   mcp-era-renal:
@@ -4550,19 +3770,6 @@ services:
       - "6464:6464"
     restart: unless-stopped
     networks: [babagemed]
-  mcp-aplar:
-    build:
-      context: .
-      dockerfile: mcps/aplar/Dockerfile
-    image: babagemed/mcp-aplar:latest
-    env_file: .env
-    environment:
-      HTTP_ONLY: "1"
-      MCP_PORT: "6465"
-    ports:
-      - "6465:6465"
-    restart: unless-stopped
-    networks: [babagemed]
   mcp-avma:
     build:
       context: .
@@ -4574,19 +3781,6 @@ services:
       MCP_PORT: "6466"
     ports:
       - "6466:6466"
-    restart: unless-stopped
-    networks: [babagemed]
-  mcp-avmajournals:
-    build:
-      context: .
-      dockerfile: mcps/avmajournals/Dockerfile
-    image: babagemed/mcp-avmajournals:latest
-    env_file: .env
-    environment:
-      HTTP_ONLY: "1"
-      MCP_PORT: "6467"
-    ports:
-      - "6467:6467"
     restart: unless-stopped
     networks: [babagemed]
   mcp-wsava:
@@ -4628,19 +3822,6 @@ services:
       - "6470:6470"
     restart: unless-stopped
     networks: [babagemed]
-  mcp-actavetscand:
-    build:
-      context: .
-      dockerfile: mcps/actavetscand/Dockerfile
-    image: babagemed/mcp-actavetscand:latest
-    env_file: .env
-    environment:
-      HTTP_ONLY: "1"
-      MCP_PORT: "6471"
-    ports:
-      - "6471:6471"
-    restart: unless-stopped
-    networks: [babagemed]
   mcp-vetmedsci:
     build:
       context: .
@@ -4652,214 +3833,6 @@ services:
       MCP_PORT: "6472"
     ports:
       - "6472:6472"
-    restart: unless-stopped
-    networks: [babagemed]
-  mcp-plosone:
-    build:
-      context: .
-      dockerfile: mcps/plosone/Dockerfile
-    image: babagemed/mcp-plosone:latest
-    env_file: .env
-    environment:
-      HTTP_ONLY: "1"
-      MCP_PORT: "6473"
-    ports:
-      - "6473:6473"
-    restart: unless-stopped
-    networks: [babagemed]
-  mcp-plosmedicine:
-    build:
-      context: .
-      dockerfile: mcps/plosmedicine/Dockerfile
-    image: babagemed/mcp-plosmedicine:latest
-    env_file: .env
-    environment:
-      HTTP_ONLY: "1"
-      MCP_PORT: "6474"
-    ports:
-      - "6474:6474"
-    restart: unless-stopped
-    networks: [babagemed]
-  mcp-plosntds:
-    build:
-      context: .
-      dockerfile: mcps/plosntds/Dockerfile
-    image: babagemed/mcp-plosntds:latest
-    env_file: .env
-    environment:
-      HTTP_ONLY: "1"
-      MCP_PORT: "6475"
-    ports:
-      - "6475:6475"
-    restart: unless-stopped
-    networks: [babagemed]
-  mcp-plospathogens:
-    build:
-      context: .
-      dockerfile: mcps/plospathogens/Dockerfile
-    image: babagemed/mcp-plospathogens:latest
-    env_file: .env
-    environment:
-      HTTP_ONLY: "1"
-      MCP_PORT: "6476"
-    ports:
-      - "6476:6476"
-    restart: unless-stopped
-    networks: [babagemed]
-  mcp-plosgph:
-    build:
-      context: .
-      dockerfile: mcps/plosgph/Dockerfile
-    image: babagemed/mcp-plosgph:latest
-    env_file: .env
-    environment:
-      HTTP_ONLY: "1"
-      MCP_PORT: "6477"
-    ports:
-      - "6477:6477"
-    restart: unless-stopped
-    networks: [babagemed]
-  mcp-bmcmed:
-    build:
-      context: .
-      dockerfile: mcps/bmcmed/Dockerfile
-    image: babagemed/mcp-bmcmed:latest
-    env_file: .env
-    environment:
-      HTTP_ONLY: "1"
-      MCP_PORT: "6478"
-    ports:
-      - "6478:6478"
-    restart: unless-stopped
-    networks: [babagemed]
-  mcp-bmcph:
-    build:
-      context: .
-      dockerfile: mcps/bmcph/Dockerfile
-    image: babagemed/mcp-bmcph:latest
-    env_file: .env
-    environment:
-      HTTP_ONLY: "1"
-      MCP_PORT: "6479"
-    ports:
-      - "6479:6479"
-    restart: unless-stopped
-    networks: [babagemed]
-  mcp-bmcid:
-    build:
-      context: .
-      dockerfile: mcps/bmcid/Dockerfile
-    image: babagemed/mcp-bmcid:latest
-    env_file: .env
-    environment:
-      HTTP_ONLY: "1"
-      MCP_PORT: "6480"
-    ports:
-      - "6480:6480"
-    restart: unless-stopped
-    networks: [babagemed]
-  mcp-bmcpediatr:
-    build:
-      context: .
-      dockerfile: mcps/bmcpediatr/Dockerfile
-    image: babagemed/mcp-bmcpediatr:latest
-    env_file: .env
-    environment:
-      HTTP_ONLY: "1"
-      MCP_PORT: "6481"
-    ports:
-      - "6481:6481"
-    restart: unless-stopped
-    networks: [babagemed]
-  mcp-bmccancer:
-    build:
-      context: .
-      dockerfile: mcps/bmccancer/Dockerfile
-    image: babagemed/mcp-bmccancer:latest
-    env_file: .env
-    environment:
-      HTTP_ONLY: "1"
-      MCP_PORT: "6482"
-    ports:
-      - "6482:6482"
-    restart: unless-stopped
-    networks: [babagemed]
-  mcp-bmcpulm:
-    build:
-      context: .
-      dockerfile: mcps/bmcpulm/Dockerfile
-    image: babagemed/mcp-bmcpulm:latest
-    env_file: .env
-    environment:
-      HTTP_ONLY: "1"
-      MCP_PORT: "6483"
-    ports:
-      - "6483:6483"
-    restart: unless-stopped
-    networks: [babagemed]
-  mcp-bmccardio:
-    build:
-      context: .
-      dockerfile: mcps/bmccardio/Dockerfile
-    image: babagemed/mcp-bmccardio:latest
-    env_file: .env
-    environment:
-      HTTP_ONLY: "1"
-      MCP_PORT: "6484"
-    ports:
-      - "6484:6484"
-    restart: unless-stopped
-    networks: [babagemed]
-  mcp-bmcprimcare:
-    build:
-      context: .
-      dockerfile: mcps/bmcprimcare/Dockerfile
-    image: babagemed/mcp-bmcprimcare:latest
-    env_file: .env
-    environment:
-      HTTP_ONLY: "1"
-      MCP_PORT: "6485"
-    ports:
-      - "6485:6485"
-    restart: unless-stopped
-    networks: [babagemed]
-  mcp-bmjopen:
-    build:
-      context: .
-      dockerfile: mcps/bmjopen/Dockerfile
-    image: babagemed/mcp-bmjopen:latest
-    env_file: .env
-    environment:
-      HTTP_ONLY: "1"
-      MCP_PORT: "6486"
-    ports:
-      - "6486:6486"
-    restart: unless-stopped
-    networks: [babagemed]
-  mcp-bmjcases:
-    build:
-      context: .
-      dockerfile: mcps/bmjcases/Dockerfile
-    image: babagemed/mcp-bmjcases:latest
-    env_file: .env
-    environment:
-      HTTP_ONLY: "1"
-      MCP_PORT: "6487"
-    ports:
-      - "6487:6487"
-    restart: unless-stopped
-    networks: [babagemed]
-  mcp-bmjbestpractice:
-    build:
-      context: .
-      dockerfile: mcps/bmjbestpractice/Dockerfile
-    image: babagemed/mcp-bmjbestpractice:latest
-    env_file: .env
-    environment:
-      HTTP_ONLY: "1"
-      MCP_PORT: "6488"
-    ports:
-      - "6488:6488"
     restart: unless-stopped
     networks: [babagemed]
   mcp-jamanetworkopen:
@@ -4888,32 +3861,6 @@ services:
       - "6490:6490"
     restart: unless-stopped
     networks: [babagemed]
-  mcp-lancet:
-    build:
-      context: .
-      dockerfile: mcps/lancet/Dockerfile
-    image: babagemed/mcp-lancet:latest
-    env_file: .env
-    environment:
-      HTTP_ONLY: "1"
-      MCP_PORT: "6491"
-    ports:
-      - "6491:6491"
-    restart: unless-stopped
-    networks: [babagemed]
-  mcp-elife:
-    build:
-      context: .
-      dockerfile: mcps/elife/Dockerfile
-    image: babagemed/mcp-elife:latest
-    env_file: .env
-    environment:
-      HTTP_ONLY: "1"
-      MCP_PORT: "6492"
-    ports:
-      - "6492:6492"
-    restart: unless-stopped
-    networks: [babagemed]
   mcp-cureus:
     build:
       context: .
@@ -4938,136 +3885,6 @@ services:
       MCP_PORT: "6494"
     ports:
       - "6494:6494"
-    restart: unless-stopped
-    networks: [babagemed]
-  mcp-jmir:
-    build:
-      context: .
-      dockerfile: mcps/jmir/Dockerfile
-    image: babagemed/mcp-jmir:latest
-    env_file: .env
-    environment:
-      HTTP_ONLY: "1"
-      MCP_PORT: "6495"
-    ports:
-      - "6495:6495"
-    restart: unless-stopped
-    networks: [babagemed]
-  mcp-jmir-publichealth:
-    build:
-      context: .
-      dockerfile: mcps/jmir-publichealth/Dockerfile
-    image: babagemed/mcp-jmir-publichealth:latest
-    env_file: .env
-    environment:
-      HTTP_ONLY: "1"
-      MCP_PORT: "6496"
-    ports:
-      - "6496:6496"
-    restart: unless-stopped
-    networks: [babagemed]
-  mcp-jmir-mental:
-    build:
-      context: .
-      dockerfile: mcps/jmir-mental/Dockerfile
-    image: babagemed/mcp-jmir-mental:latest
-    env_file: .env
-    environment:
-      HTTP_ONLY: "1"
-      MCP_PORT: "6497"
-    ports:
-      - "6497:6497"
-    restart: unless-stopped
-    networks: [babagemed]
-  mcp-jmir-mhealth:
-    build:
-      context: .
-      dockerfile: mcps/jmir-mhealth/Dockerfile
-    image: babagemed/mcp-jmir-mhealth:latest
-    env_file: .env
-    environment:
-      HTTP_ONLY: "1"
-      MCP_PORT: "6498"
-    ports:
-      - "6498:6498"
-    restart: unless-stopped
-    networks: [babagemed]
-  mcp-mdpi-jcm:
-    build:
-      context: .
-      dockerfile: mcps/mdpi-jcm/Dockerfile
-    image: babagemed/mcp-mdpi-jcm:latest
-    env_file: .env
-    environment:
-      HTTP_ONLY: "1"
-      MCP_PORT: "6499"
-    ports:
-      - "6499:6499"
-    restart: unless-stopped
-    networks: [babagemed]
-  mcp-mdpi-cancers:
-    build:
-      context: .
-      dockerfile: mcps/mdpi-cancers/Dockerfile
-    image: babagemed/mcp-mdpi-cancers:latest
-    env_file: .env
-    environment:
-      HTTP_ONLY: "1"
-      MCP_PORT: "6500"
-    ports:
-      - "6500:6500"
-    restart: unless-stopped
-    networks: [babagemed]
-  mcp-mdpi-diagnostics:
-    build:
-      context: .
-      dockerfile: mcps/mdpi-diagnostics/Dockerfile
-    image: babagemed/mcp-mdpi-diagnostics:latest
-    env_file: .env
-    environment:
-      HTTP_ONLY: "1"
-      MCP_PORT: "6501"
-    ports:
-      - "6501:6501"
-    restart: unless-stopped
-    networks: [babagemed]
-  mcp-mdpi-nutrients:
-    build:
-      context: .
-      dockerfile: mcps/mdpi-nutrients/Dockerfile
-    image: babagemed/mcp-mdpi-nutrients:latest
-    env_file: .env
-    environment:
-      HTTP_ONLY: "1"
-      MCP_PORT: "6502"
-    ports:
-      - "6502:6502"
-    restart: unless-stopped
-    networks: [babagemed]
-  mcp-mdpi-antibiotics:
-    build:
-      context: .
-      dockerfile: mcps/mdpi-antibiotics/Dockerfile
-    image: babagemed/mcp-mdpi-antibiotics:latest
-    env_file: .env
-    environment:
-      HTTP_ONLY: "1"
-      MCP_PORT: "6503"
-    ports:
-      - "6503:6503"
-    restart: unless-stopped
-    networks: [babagemed]
-  mcp-hindawi-bmri:
-    build:
-      context: .
-      dockerfile: mcps/hindawi-bmri/Dockerfile
-    image: babagemed/mcp-hindawi-bmri:latest
-    env_file: .env
-    environment:
-      HTTP_ONLY: "1"
-      MCP_PORT: "6504"
-    ports:
-      - "6504:6504"
     restart: unless-stopped
     networks: [babagemed]
   mcp-wiley-bb:
@@ -5109,32 +3926,6 @@ services:
       - "6507:6507"
     restart: unless-stopped
     networks: [babagemed]
-  mcp-scielo:
-    build:
-      context: .
-      dockerfile: mcps/scielo/Dockerfile
-    image: babagemed/mcp-scielo:latest
-    env_file: .env
-    environment:
-      HTTP_ONLY: "1"
-      MCP_PORT: "6508"
-    ports:
-      - "6508:6508"
-    restart: unless-stopped
-    networks: [babagemed]
-  mcp-aosis:
-    build:
-      context: .
-      dockerfile: mcps/aosis/Dockerfile
-    image: babagemed/mcp-aosis:latest
-    env_file: .env
-    environment:
-      HTTP_ONLY: "1"
-      MCP_PORT: "6509"
-    ports:
-      - "6509:6509"
-    restart: unless-stopped
-    networks: [babagemed]
   mcp-phcfm:
     build:
       context: .
@@ -5148,19 +3939,6 @@ services:
       - "6510:6510"
     restart: unless-stopped
     networks: [babagemed]
-  mcp-samj:
-    build:
-      context: .
-      dockerfile: mcps/samj/Dockerfile
-    image: babagemed/mcp-samj:latest
-    env_file: .env
-    environment:
-      HTTP_ONLY: "1"
-      MCP_PORT: "6511"
-    ports:
-      - "6511:6511"
-    restart: unless-stopped
-    networks: [babagemed]
   mcp-samedical:
     build:
       context: .
@@ -5172,45 +3950,6 @@ services:
       MCP_PORT: "6512"
     ports:
       - "6512:6512"
-    restart: unless-stopped
-    networks: [babagemed]
-  mcp-jmaj:
-    build:
-      context: .
-      dockerfile: mcps/jmaj/Dockerfile
-    image: babagemed/mcp-jmaj:latest
-    env_file: .env
-    environment:
-      HTTP_ONLY: "1"
-      MCP_PORT: "6513"
-    ports:
-      - "6513:6513"
-    restart: unless-stopped
-    networks: [babagemed]
-  mcp-jnma:
-    build:
-      context: .
-      dockerfile: mcps/jnma/Dockerfile
-    image: babagemed/mcp-jnma:latest
-    env_file: .env
-    environment:
-      HTTP_ONLY: "1"
-      MCP_PORT: "6514"
-    ports:
-      - "6514:6514"
-    restart: unless-stopped
-    networks: [babagemed]
-  mcp-smjsg:
-    build:
-      context: .
-      dockerfile: mcps/smjsg/Dockerfile
-    image: babagemed/mcp-smjsg:latest
-    env_file: .env
-    environment:
-      HTTP_ONLY: "1"
-      MCP_PORT: "6515"
-    ports:
-      - "6515:6515"
     restart: unless-stopped
     networks: [babagemed]
   mcp-jkma:
@@ -5276,19 +4015,6 @@ services:
       MCP_PORT: "6520"
     ports:
       - "6520:6520"
-    restart: unless-stopped
-    networks: [babagemed]
-  mcp-teachmeanatomy:
-    build:
-      context: .
-      dockerfile: mcps/teachmeanatomy/Dockerfile
-    image: babagemed/mcp-teachmeanatomy:latest
-    env_file: .env
-    environment:
-      HTTP_ONLY: "1"
-      MCP_PORT: "6521"
-    ports:
-      - "6521:6521"
     restart: unless-stopped
     networks: [babagemed]
   mcp-statpearls:
@@ -5394,22 +4120,4 @@ services:
     ports:
       - "6529:6529"
     restart: unless-stopped
-    networks: [babagemed]
-  mcp-amia:
-    build:
-      context: .
-      dockerfile: mcps/amia/Dockerfile
-    image: babagemed/mcp-amia:latest
-    env_file: .env
-    environment:
-      HTTP_ONLY: "1"
-      MCP_PORT: "6530"
-    ports:
-      - "6530:6530"
-    restart: unless-stopped
-    networks: [babagemed]
-
-networks:
-  babagemed:
-    name: babagemed
-    driver: bridge
+    networks: [babagemed]

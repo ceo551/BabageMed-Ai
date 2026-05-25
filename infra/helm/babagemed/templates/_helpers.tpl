@@ -83,7 +83,7 @@ nginx.ingress.kubernetes.io/proxy-send-timeout: "300"
 {{- if eq .Values.mcps.preset "all" -}}
 {{ .Files.Get "mcps-all.txt" }}
 {{- else if eq .Values.mcps.preset "default" -}}
-pubmed icd10 mayoclinic clevelandclinic who cdc rsna nci npi clinicaltrials chembl medrxiv biorxiv dailymed medlineplus drugscom rxlist nhs healthline nejm bmj pubchem endotext ncbi fda kdigo kidneyfoundation nimh frontiers ourworldindata cms cochrane wikem eyewiki orthoinfo orthobullets statpearls emcrit geekymedics teachmeanatomy openanesthesia gold gina dermnet librepathology nice
+pubmed icd10 mayoclinic who cdc rsna nci npi clinicaltrials chembl medrxiv biorxiv dailymed medlineplus rxlist nhs healthline nejm bmj pubchem endotext ncbi fda kdigo frontiers ourworldindata cms cochrane wikem eyewiki orthoinfo orthobullets statpearls emcrit geekymedics openanesthesia gold gina dermnet librepathology nice
 {{- else -}}
 {{ join " " .Values.mcps.enabled }}
 {{- end -}}

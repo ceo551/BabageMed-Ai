@@ -41,19 +41,6 @@
       ]
     },
     {
-      "id": "clevelandclinic",
-      "name": "Cleveland Clinic",
-      "kind": "scrape",
-      "category": "patient-ref",
-      "port": 6104,
-      "base": "https://my.clevelandclinic.org",
-      "tools": [
-        "search",
-        "disease",
-        "treatment"
-      ]
-    },
-    {
       "id": "who",
       "name": "WHO",
       "kind": "api",
@@ -128,32 +115,6 @@
         "search",
         "article",
         "case"
-      ]
-    },
-    {
-      "id": "medscape",
-      "name": "Medscape",
-      "kind": "scrape",
-      "category": "clinical-ref",
-      "port": 6111,
-      "base": "https://www.medscape.com",
-      "tools": [
-        "search",
-        "article",
-        "drug"
-      ]
-    },
-    {
-      "id": "webmd",
-      "name": "WebMD",
-      "kind": "scrape",
-      "category": "patient-ref",
-      "port": 6112,
-      "base": "https://www.webmd.com",
-      "tools": [
-        "search",
-        "condition",
-        "drug"
       ]
     },
     {
@@ -268,19 +229,6 @@
         "search",
         "health",
         "drug"
-      ]
-    },
-    {
-      "id": "drugscom",
-      "name": "Drugs.com",
-      "kind": "scrape",
-      "category": "drugs",
-      "port": 6122,
-      "base": "https://www.drugs.com",
-      "tools": [
-        "search",
-        "drug",
-        "interaction"
       ]
     },
     {
@@ -409,42 +357,6 @@
       ]
     },
     {
-      "id": "ninds",
-      "name": "NINDS",
-      "kind": "scrape",
-      "category": "neurology",
-      "port": 6133,
-      "base": "https://www.ninds.nih.gov",
-      "tools": [
-        "search",
-        "disorder"
-      ]
-    },
-    {
-      "id": "niddk",
-      "name": "NIDDK",
-      "kind": "scrape",
-      "category": "nephrology",
-      "port": 6134,
-      "base": "https://www.niddk.nih.gov",
-      "tools": [
-        "search",
-        "topic"
-      ]
-    },
-    {
-      "id": "biocodex",
-      "name": "Biocodex Microbiota",
-      "kind": "scrape",
-      "category": "microbiota",
-      "port": 6135,
-      "base": "https://www.biocodexmicrobiotainstitute.com",
-      "tools": [
-        "search",
-        "article"
-      ]
-    },
-    {
       "id": "fda",
       "name": "FDA",
       "kind": "api",
@@ -460,18 +372,6 @@
       ]
     },
     {
-      "id": "nhlbi",
-      "name": "NHLBI",
-      "kind": "scrape",
-      "category": "cardiology",
-      "port": 6137,
-      "base": "https://www.nhlbi.nih.gov",
-      "tools": [
-        "search",
-        "topic"
-      ]
-    },
-    {
       "id": "kdigo",
       "name": "KDIGO",
       "kind": "scrape",
@@ -484,18 +384,6 @@
       ]
     },
     {
-      "id": "kidneyfoundation",
-      "name": "National Kidney Fdn.",
-      "kind": "scrape",
-      "category": "nephrology",
-      "port": 6139,
-      "base": "https://www.kidney.org",
-      "tools": [
-        "search",
-        "topic"
-      ]
-    },
-    {
       "id": "renalfellow",
       "name": "Renal Fellow Network",
       "kind": "scrape",
@@ -505,44 +393,6 @@
       "tools": [
         "search",
         "post"
-      ]
-    },
-    {
-      "id": "healio",
-      "name": "Healio",
-      "kind": "scrape",
-      "category": "news",
-      "port": 6141,
-      "base": "https://www.healio.com",
-      "tools": [
-        "search",
-        "article"
-      ]
-    },
-    {
-      "id": "cancerorg",
-      "name": "ACS cancer.org",
-      "kind": "scrape",
-      "category": "oncology",
-      "port": 6142,
-      "base": "https://www.cancer.org",
-      "tools": [
-        "search",
-        "cancer",
-        "treatment"
-      ]
-    },
-    {
-      "id": "oncolink",
-      "name": "OncoLink",
-      "kind": "scrape",
-      "category": "oncology",
-      "port": 6143,
-      "base": "https://www.oncolink.org",
-      "tools": [
-        "search",
-        "cancer",
-        "drug"
       ]
     },
     {
@@ -579,18 +429,6 @@
       "tools": [
         "search",
         "topic"
-      ]
-    },
-    {
-      "id": "creakyjoints",
-      "name": "CreakyJoints",
-      "kind": "scrape",
-      "category": "rheumatology",
-      "port": 6147,
-      "base": "https://creakyjoints.org",
-      "tools": [
-        "search",
-        "article"
       ]
     },
     {
@@ -642,18 +480,6 @@
       ]
     },
     {
-      "id": "nimh",
-      "name": "NIMH",
-      "kind": "scrape",
-      "category": "psychiatry",
-      "port": 6152,
-      "base": "https://www.nimh.nih.gov",
-      "tools": [
-        "search",
-        "topic"
-      ]
-    },
-    {
       "id": "rcpsych",
       "name": "RCPsych",
       "kind": "scrape",
@@ -663,18 +489,6 @@
       "tools": [
         "search",
         "mental-health"
-      ]
-    },
-    {
-      "id": "psychiatrictimes",
-      "name": "Psychiatric Times",
-      "kind": "scrape",
-      "category": "psychiatry",
-      "port": 6154,
-      "base": "https://www.psychiatrictimes.com",
-      "tools": [
-        "search",
-        "article"
       ]
     },
     {
@@ -759,42 +573,6 @@
       "tools": [
         "dataset",
         "chart"
-      ]
-    },
-    {
-      "id": "healthdata",
-      "name": "IHME healthdata.org",
-      "kind": "scrape",
-      "category": "public-health",
-      "port": 6162,
-      "base": "https://www.healthdata.org",
-      "tools": [
-        "search",
-        "gbd"
-      ]
-    },
-    {
-      "id": "pathologyoutlines",
-      "name": "PathologyOutlines",
-      "kind": "scrape",
-      "category": "pathology",
-      "port": 6163,
-      "base": "https://www.pathologyoutlines.com",
-      "tools": [
-        "search",
-        "topic"
-      ]
-    },
-    {
-      "id": "testingcom",
-      "name": "Testing.com",
-      "kind": "scrape",
-      "category": "lab",
-      "port": 6164,
-      "base": "https://www.testing.com",
-      "tools": [
-        "search",
-        "test"
       ]
     },
     {
@@ -963,19 +741,6 @@
       ]
     },
     {
-      "id": "googlescholar",
-      "name": "Google Scholar",
-      "kind": "scrape",
-      "category": "literature",
-      "port": 6178,
-      "base": "https://scholar.google.com",
-      "tools": [
-        "search",
-        "author",
-        "cite"
-      ]
-    },
-    {
       "id": "gmail",
       "name": "Gmail",
       "kind": "api",
@@ -1087,36 +852,12 @@
       ]
     },
     {
-      "id": "acc",
-      "name": "American College of Cardiology",
-      "kind": "scrape",
-      "category": "cardiology",
-      "port": 6201,
-      "base": "https://www.acc.org",
-      "tools": [
-        "search",
-        "fetch"
-      ]
-    },
-    {
       "id": "ahajournals",
       "name": "American Heart Association Journals",
       "kind": "scrape",
       "category": "cardiology",
       "port": 6202,
       "base": "https://www.ahajournals.org",
-      "tools": [
-        "search",
-        "fetch"
-      ]
-    },
-    {
-      "id": "jacc",
-      "name": "JACC Journals",
-      "kind": "scrape",
-      "category": "cardiology",
-      "port": 6203,
-      "base": "https://www.jacc.org",
       "tools": [
         "search",
         "fetch"
@@ -1255,18 +996,6 @@
       ]
     },
     {
-      "id": "openheart",
-      "name": "Open Heart (BMJ OA)",
-      "kind": "scrape",
-      "category": "cardiology",
-      "port": 6215,
-      "base": "https://openheart.bmj.com",
-      "tools": [
-        "search",
-        "fetch"
-      ]
-    },
-    {
       "id": "svs",
       "name": "Society for Vascular Surgery",
       "kind": "scrape",
@@ -1375,18 +1104,6 @@
       ]
     },
     {
-      "id": "esmoopen",
-      "name": "ESMO Open",
-      "kind": "scrape",
-      "category": "oncology",
-      "port": 6225,
-      "base": "https://www.esmoopen.com",
-      "tools": [
-        "search",
-        "fetch"
-      ]
-    },
-    {
       "id": "aacr",
       "name": "American Association for Cancer Research",
       "kind": "scrape",
@@ -1453,18 +1170,6 @@
       "category": "gyn-oncology",
       "port": 6231,
       "base": "https://igcs.org",
-      "tools": [
-        "search",
-        "fetch"
-      ]
-    },
-    {
-      "id": "astro",
-      "name": "American Society for Radiation Oncology",
-      "kind": "scrape",
-      "category": "radiation-oncology",
-      "port": 6232,
-      "base": "https://www.astro.org",
       "tools": [
         "search",
         "fetch"
@@ -1585,18 +1290,6 @@
       "category": "neurology",
       "port": 6242,
       "base": "https://www.ilae.org",
-      "tools": [
-        "search",
-        "fetch"
-      ]
-    },
-    {
-      "id": "neurologyjournal",
-      "name": "Neurology Journal (AAN)",
-      "kind": "scrape",
-      "category": "neurology",
-      "port": 6243,
-      "base": "https://www.neurology.org",
       "tools": [
         "search",
         "fetch"
@@ -1759,18 +1452,6 @@
       ]
     },
     {
-      "id": "adc",
-      "name": "Archives of Disease in Childhood (BMJ)",
-      "kind": "scrape",
-      "category": "pediatrics",
-      "port": 6257,
-      "base": "https://adc.bmj.com",
-      "tools": [
-        "search",
-        "fetch"
-      ]
-    },
-    {
       "id": "acr-rad",
       "name": "American College of Radiology",
       "kind": "scrape",
@@ -1843,18 +1524,6 @@
       ]
     },
     {
-      "id": "insightsimaging",
-      "name": "Insights into Imaging",
-      "kind": "scrape",
-      "category": "radiology",
-      "port": 6264,
-      "base": "https://insightsimaging.springeropen.com",
-      "tools": [
-        "search",
-        "fetch"
-      ]
-    },
-    {
       "id": "springer-eurrad",
       "name": "European Radiology (Springer)",
       "kind": "scrape",
@@ -1879,30 +1548,6 @@
       ]
     },
     {
-      "id": "bnf",
-      "name": "British National Formulary",
-      "kind": "scrape",
-      "category": "pharmacology",
-      "port": 6267,
-      "base": "https://bnf.nice.org.uk",
-      "tools": [
-        "search",
-        "fetch"
-      ]
-    },
-    {
-      "id": "bnfc",
-      "name": "British National Formulary for Children",
-      "kind": "scrape",
-      "category": "pharmacology",
-      "port": 6268,
-      "base": "https://bnfc.nice.org.uk",
-      "tools": [
-        "search",
-        "fetch"
-      ]
-    },
-    {
       "id": "nice",
       "name": "NICE (UK guidelines)",
       "kind": "scrape",
@@ -1915,36 +1560,12 @@
       ]
     },
     {
-      "id": "cks",
-      "name": "NICE Clinical Knowledge Summaries (CKS)",
-      "kind": "scrape",
-      "category": "primary-care",
-      "port": 6270,
-      "base": "https://cks.nice.org.uk",
-      "tools": [
-        "search",
-        "fetch"
-      ]
-    },
-    {
       "id": "openprescribing",
       "name": "OpenPrescribing.net",
       "kind": "scrape",
       "category": "pharmacoepidemiology",
       "port": 6271,
       "base": "https://openprescribing.net",
-      "tools": [
-        "search",
-        "fetch"
-      ]
-    },
-    {
-      "id": "tga",
-      "name": "Therapeutic Goods Administration (Australia)",
-      "kind": "scrape",
-      "category": "drug-regulation",
-      "port": 6272,
-      "base": "https://www.tga.gov.au",
       "tools": [
         "search",
         "fetch"
@@ -1981,18 +1602,6 @@
       "category": "drug-regulation",
       "port": 6275,
       "base": "https://www.pmda.go.jp/english/",
-      "tools": [
-        "search",
-        "fetch"
-      ]
-    },
-    {
-      "id": "anvisa",
-      "name": "ANVISA Brazil",
-      "kind": "scrape",
-      "category": "drug-regulation",
-      "port": 6276,
-      "base": "https://www.gov.br/anvisa",
       "tools": [
         "search",
         "fetch"
@@ -2107,18 +1716,6 @@
       ]
     },
     {
-      "id": "sages",
-      "name": "Society of American GI & Endoscopic Surgeons",
-      "kind": "scrape",
-      "category": "surgery",
-      "port": 6286,
-      "base": "https://www.sages.org",
-      "tools": [
-        "search",
-        "fetch"
-      ]
-    },
-    {
       "id": "fascrs",
       "name": "American Society of Colon and Rectal Surgeons",
       "kind": "scrape",
@@ -2137,18 +1734,6 @@
       "category": "surgery",
       "port": 6288,
       "base": "https://www.breastsurgeons.org",
-      "tools": [
-        "search",
-        "fetch"
-      ]
-    },
-    {
-      "id": "asps",
-      "name": "American Society of Plastic Surgeons",
-      "kind": "scrape",
-      "category": "plastic-surgery",
-      "port": 6289,
-      "base": "https://www.plasticsurgery.org",
       "tools": [
         "search",
         "fetch"
@@ -2215,36 +1800,12 @@
       ]
     },
     {
-      "id": "esaic",
-      "name": "European Society of Anaesthesiology & Intensive Care",
-      "kind": "scrape",
-      "category": "anesthesia",
-      "port": 6295,
-      "base": "https://www.esaic.org",
-      "tools": [
-        "search",
-        "fetch"
-      ]
-    },
-    {
       "id": "openanesthesia",
       "name": "OpenAnesthesia",
       "kind": "scrape",
       "category": "anesthesia",
       "port": 6296,
       "base": "https://www.openanesthesia.org",
-      "tools": [
-        "search",
-        "fetch"
-      ]
-    },
-    {
-      "id": "apsf",
-      "name": "Anesthesia Patient Safety Foundation",
-      "kind": "scrape",
-      "category": "anesthesia",
-      "port": 6297,
-      "base": "https://www.apsf.org",
       "tools": [
         "search",
         "fetch"
@@ -2323,18 +1884,6 @@
       ]
     },
     {
-      "id": "ukhsa",
-      "name": "UK Health Security Agency",
-      "kind": "scrape",
-      "category": "public-health",
-      "port": 6304,
-      "base": "https://www.gov.uk/government/organisations/uk-health-security-agency",
-      "tools": [
-        "search",
-        "fetch"
-      ]
-    },
-    {
       "id": "ecdc",
       "name": "ECDC Europe",
       "kind": "scrape",
@@ -2383,18 +1932,6 @@
       ]
     },
     {
-      "id": "healthgovau",
-      "name": "Australian Department of Health",
-      "kind": "scrape",
-      "category": "public-health",
-      "port": 6309,
-      "base": "https://www.health.gov.au",
-      "tools": [
-        "search",
-        "fetch"
-      ]
-    },
-    {
       "id": "ssi",
       "name": "Statens Serum Institut (Denmark)",
       "kind": "scrape",
@@ -2413,30 +1950,6 @@
       "category": "public-health",
       "port": 6311,
       "base": "https://www.rki.de/EN",
-      "tools": [
-        "search",
-        "fetch"
-      ]
-    },
-    {
-      "id": "spfrance",
-      "name": "Santé publique France",
-      "kind": "scrape",
-      "category": "public-health",
-      "port": 6312,
-      "base": "https://www.santepubliquefrance.fr",
-      "tools": [
-        "search",
-        "fetch"
-      ]
-    },
-    {
-      "id": "africacdc",
-      "name": "Africa CDC",
-      "kind": "scrape",
-      "category": "public-health",
-      "port": 6313,
-      "base": "https://africacdc.org",
       "tools": [
         "search",
         "fetch"
@@ -2497,18 +2010,6 @@
       "category": "epidemiology",
       "port": 6318,
       "base": "https://academic.oup.com/ije",
-      "tools": [
-        "search",
-        "fetch"
-      ]
-    },
-    {
-      "id": "eurosurveillance",
-      "name": "Eurosurveillance",
-      "kind": "scrape",
-      "category": "epidemiology",
-      "port": 6319,
-      "base": "https://www.eurosurveillance.org",
       "tools": [
         "search",
         "fetch"
@@ -2611,18 +2112,6 @@
       ]
     },
     {
-      "id": "aga",
-      "name": "American Gastroenterological Association",
-      "kind": "scrape",
-      "category": "gastroenterology",
-      "port": 6328,
-      "base": "https://gastro.org",
-      "tools": [
-        "search",
-        "fetch"
-      ]
-    },
-    {
       "id": "acg",
       "name": "American College of Gastroenterology",
       "kind": "scrape",
@@ -2719,18 +2208,6 @@
       ]
     },
     {
-      "id": "gut",
-      "name": "Gut (BMJ)",
-      "kind": "scrape",
-      "category": "gastroenterology",
-      "port": 6337,
-      "base": "https://gut.bmj.com",
-      "tools": [
-        "search",
-        "fetch"
-      ]
-    },
-    {
       "id": "ats",
       "name": "American Thoracic Society",
       "kind": "scrape",
@@ -2803,36 +2280,12 @@
       ]
     },
     {
-      "id": "erj-openres",
-      "name": "ERJ Open Research",
-      "kind": "scrape",
-      "category": "pulmonology",
-      "port": 6344,
-      "base": "https://openres.ersjournals.com",
-      "tools": [
-        "search",
-        "fetch"
-      ]
-    },
-    {
       "id": "aad",
       "name": "American Academy of Dermatology",
       "kind": "scrape",
       "category": "dermatology",
       "port": 6345,
       "base": "https://www.aad.org",
-      "tools": [
-        "search",
-        "fetch"
-      ]
-    },
-    {
-      "id": "bad",
-      "name": "British Association of Dermatologists",
-      "kind": "scrape",
-      "category": "dermatology",
-      "port": 6346,
-      "base": "https://www.bad.org.uk",
       "tools": [
         "search",
         "fetch"
@@ -2965,18 +2418,6 @@
       "category": "ophthalmology",
       "port": 6357,
       "base": "https://www.escrs.org",
-      "tools": [
-        "search",
-        "fetch"
-      ]
-    },
-    {
-      "id": "ascrs",
-      "name": "ASCRS",
-      "kind": "scrape",
-      "category": "ophthalmology",
-      "port": 6358,
-      "base": "https://ascrs.org",
       "tools": [
         "search",
         "fetch"
@@ -3259,30 +2700,6 @@
       ]
     },
     {
-      "id": "amssm",
-      "name": "American Medical Society for Sports Medicine",
-      "kind": "scrape",
-      "category": "sports-medicine",
-      "port": 6382,
-      "base": "https://www.amssm.org",
-      "tools": [
-        "search",
-        "fetch"
-      ]
-    },
-    {
-      "id": "bjsm",
-      "name": "British Journal of Sports Medicine (BMJ)",
-      "kind": "scrape",
-      "category": "sports-medicine",
-      "port": 6383,
-      "base": "https://bjsm.bmj.com",
-      "tools": [
-        "search",
-        "fetch"
-      ]
-    },
-    {
       "id": "basem",
       "name": "BASEM",
       "kind": "scrape",
@@ -3361,18 +2778,6 @@
       "category": "hematology",
       "port": 6390,
       "base": "https://wfh.org",
-      "tools": [
-        "search",
-        "fetch"
-      ]
-    },
-    {
-      "id": "idsa",
-      "name": "Infectious Diseases Society of America",
-      "kind": "scrape",
-      "category": "infectious-disease",
-      "port": 6391,
-      "base": "https://www.idsociety.org",
       "tools": [
         "search",
         "fetch"
@@ -3547,36 +2952,12 @@
       ]
     },
     {
-      "id": "pathpedia",
-      "name": "PathPedia",
-      "kind": "scrape",
-      "category": "pathology",
-      "port": 6406,
-      "base": "https://www.pathpedia.com",
-      "tools": [
-        "search",
-        "fetch"
-      ]
-    },
-    {
       "id": "acmg",
       "name": "American College of Medical Genetics",
       "kind": "scrape",
       "category": "genetics",
       "port": 6407,
       "base": "https://www.acmg.net",
-      "tools": [
-        "search",
-        "fetch"
-      ]
-    },
-    {
-      "id": "omim",
-      "name": "OMIM",
-      "kind": "scrape",
-      "category": "genetics",
-      "port": 6408,
-      "base": "https://www.omim.org",
       "tools": [
         "search",
         "fetch"
@@ -3619,60 +3000,12 @@
       ]
     },
     {
-      "id": "genomeweb",
-      "name": "GenomeWeb",
-      "kind": "scrape",
-      "category": "genetics",
-      "port": 6412,
-      "base": "https://www.genomeweb.com",
-      "tools": [
-        "search",
-        "fetch"
-      ]
-    },
-    {
       "id": "ags",
       "name": "American Geriatrics Society",
       "kind": "scrape",
       "category": "geriatrics",
       "port": 6413,
       "base": "https://www.americangeriatrics.org",
-      "tools": [
-        "search",
-        "fetch"
-      ]
-    },
-    {
-      "id": "bgs",
-      "name": "British Geriatrics Society",
-      "kind": "scrape",
-      "category": "geriatrics",
-      "port": 6414,
-      "base": "https://www.bgs.org.uk",
-      "tools": [
-        "search",
-        "fetch"
-      ]
-    },
-    {
-      "id": "eugms",
-      "name": "European Geriatric Medicine Society",
-      "kind": "scrape",
-      "category": "geriatrics",
-      "port": 6415,
-      "base": "https://www.eugms.org",
-      "tools": [
-        "search",
-        "fetch"
-      ]
-    },
-    {
-      "id": "iagg",
-      "name": "IAGG",
-      "kind": "scrape",
-      "category": "geriatrics",
-      "port": 6416,
-      "base": "https://www.iagg.info",
       "tools": [
         "search",
         "fetch"
@@ -3709,18 +3042,6 @@
       "category": "palliative-care",
       "port": 6419,
       "base": "https://www.hospiceuk.org",
-      "tools": [
-        "search",
-        "fetch"
-      ]
-    },
-    {
-      "id": "capc",
-      "name": "Center to Advance Palliative Care",
-      "kind": "scrape",
-      "category": "palliative-care",
-      "port": 6420,
-      "base": "https://www.capc.org",
       "tools": [
         "search",
         "fetch"
@@ -4003,18 +3324,6 @@
       ]
     },
     {
-      "id": "aliem",
-      "name": "ALiEM",
-      "kind": "scrape",
-      "category": "emergency",
-      "port": 6444,
-      "base": "https://www.aliem.com",
-      "tools": [
-        "search",
-        "fetch"
-      ]
-    },
-    {
       "id": "emdocs",
       "name": "EMDocs",
       "kind": "scrape",
@@ -4099,36 +3408,12 @@
       ]
     },
     {
-      "id": "rcgp",
-      "name": "Royal College of General Practitioners",
-      "kind": "scrape",
-      "category": "family-medicine",
-      "port": 6452,
-      "base": "https://www.rcgp.org.uk",
-      "tools": [
-        "search",
-        "fetch"
-      ]
-    },
-    {
       "id": "stfm",
       "name": "Society of Teachers of Family Medicine",
       "kind": "scrape",
       "category": "family-medicine",
       "port": 6453,
       "base": "https://stfm.org",
-      "tools": [
-        "search",
-        "fetch"
-      ]
-    },
-    {
-      "id": "aapa",
-      "name": "American Academy of PAs",
-      "kind": "scrape",
-      "category": "primary-care",
-      "port": 6454,
-      "base": "https://www.aapa.org",
       "tools": [
         "search",
         "fetch"
@@ -4177,18 +3462,6 @@
       "category": "internal-medicine",
       "port": 6458,
       "base": "https://www.acpjournals.org/journal/aim",
-      "tools": [
-        "search",
-        "fetch"
-      ]
-    },
-    {
-      "id": "asn-nephrology",
-      "name": "American Society of Nephrology",
-      "kind": "scrape",
-      "category": "nephrology",
-      "port": 6459,
-      "base": "https://www.asn-online.org",
       "tools": [
         "search",
         "fetch"
@@ -4255,36 +3528,12 @@
       ]
     },
     {
-      "id": "aplar",
-      "name": "APLAR",
-      "kind": "scrape",
-      "category": "rheumatology",
-      "port": 6465,
-      "base": "https://aplar.org",
-      "tools": [
-        "search",
-        "fetch"
-      ]
-    },
-    {
       "id": "avma",
       "name": "American Veterinary Medical Association",
       "kind": "scrape",
       "category": "veterinary",
       "port": 6466,
       "base": "https://www.avma.org",
-      "tools": [
-        "search",
-        "fetch"
-      ]
-    },
-    {
-      "id": "avmajournals",
-      "name": "AVMA Journals",
-      "kind": "scrape",
-      "category": "veterinary",
-      "port": 6467,
-      "base": "https://avmajournals.avma.org",
       "tools": [
         "search",
         "fetch"
@@ -4327,216 +3576,12 @@
       ]
     },
     {
-      "id": "actavetscand",
-      "name": "Acta Veterinaria Scandinavica",
-      "kind": "scrape",
-      "category": "veterinary",
-      "port": 6471,
-      "base": "https://actavetscand.biomedcentral.com",
-      "tools": [
-        "search",
-        "fetch"
-      ]
-    },
-    {
       "id": "vetmedsci",
       "name": "Veterinary Medicine and Science",
       "kind": "scrape",
       "category": "veterinary",
       "port": 6472,
       "base": "https://onlinelibrary.wiley.com/journal/20531095",
-      "tools": [
-        "search",
-        "fetch"
-      ]
-    },
-    {
-      "id": "plosone",
-      "name": "PLOS ONE",
-      "kind": "scrape",
-      "category": "oa-journal",
-      "port": 6473,
-      "base": "https://journals.plos.org/plosone",
-      "tools": [
-        "search",
-        "fetch"
-      ]
-    },
-    {
-      "id": "plosmedicine",
-      "name": "PLOS Medicine",
-      "kind": "scrape",
-      "category": "oa-journal",
-      "port": 6474,
-      "base": "https://journals.plos.org/plosmedicine",
-      "tools": [
-        "search",
-        "fetch"
-      ]
-    },
-    {
-      "id": "plosntds",
-      "name": "PLOS Neglected Tropical Diseases",
-      "kind": "scrape",
-      "category": "oa-journal",
-      "port": 6475,
-      "base": "https://journals.plos.org/plosntds",
-      "tools": [
-        "search",
-        "fetch"
-      ]
-    },
-    {
-      "id": "plospathogens",
-      "name": "PLOS Pathogens",
-      "kind": "scrape",
-      "category": "oa-journal",
-      "port": 6476,
-      "base": "https://journals.plos.org/plospathogens",
-      "tools": [
-        "search",
-        "fetch"
-      ]
-    },
-    {
-      "id": "plosgph",
-      "name": "PLOS Global Public Health",
-      "kind": "scrape",
-      "category": "oa-journal",
-      "port": 6477,
-      "base": "https://journals.plos.org/globalpublichealth",
-      "tools": [
-        "search",
-        "fetch"
-      ]
-    },
-    {
-      "id": "bmcmed",
-      "name": "BMC Medicine",
-      "kind": "scrape",
-      "category": "oa-journal",
-      "port": 6478,
-      "base": "https://bmcmedicine.biomedcentral.com",
-      "tools": [
-        "search",
-        "fetch"
-      ]
-    },
-    {
-      "id": "bmcph",
-      "name": "BMC Public Health",
-      "kind": "scrape",
-      "category": "oa-journal",
-      "port": 6479,
-      "base": "https://bmcpublichealth.biomedcentral.com",
-      "tools": [
-        "search",
-        "fetch"
-      ]
-    },
-    {
-      "id": "bmcid",
-      "name": "BMC Infectious Diseases",
-      "kind": "scrape",
-      "category": "oa-journal",
-      "port": 6480,
-      "base": "https://bmcinfectdis.biomedcentral.com",
-      "tools": [
-        "search",
-        "fetch"
-      ]
-    },
-    {
-      "id": "bmcpediatr",
-      "name": "BMC Pediatrics",
-      "kind": "scrape",
-      "category": "oa-journal",
-      "port": 6481,
-      "base": "https://bmcpediatr.biomedcentral.com",
-      "tools": [
-        "search",
-        "fetch"
-      ]
-    },
-    {
-      "id": "bmccancer",
-      "name": "BMC Cancer",
-      "kind": "scrape",
-      "category": "oa-journal",
-      "port": 6482,
-      "base": "https://bmccancer.biomedcentral.com",
-      "tools": [
-        "search",
-        "fetch"
-      ]
-    },
-    {
-      "id": "bmcpulm",
-      "name": "BMC Pulmonary Medicine",
-      "kind": "scrape",
-      "category": "oa-journal",
-      "port": 6483,
-      "base": "https://bmcpulmmed.biomedcentral.com",
-      "tools": [
-        "search",
-        "fetch"
-      ]
-    },
-    {
-      "id": "bmccardio",
-      "name": "BMC Cardiovascular Disorders",
-      "kind": "scrape",
-      "category": "oa-journal",
-      "port": 6484,
-      "base": "https://bmccardiovascdisord.biomedcentral.com",
-      "tools": [
-        "search",
-        "fetch"
-      ]
-    },
-    {
-      "id": "bmcprimcare",
-      "name": "BMC Primary Care",
-      "kind": "scrape",
-      "category": "oa-journal",
-      "port": 6485,
-      "base": "https://bmcprimcare.biomedcentral.com",
-      "tools": [
-        "search",
-        "fetch"
-      ]
-    },
-    {
-      "id": "bmjopen",
-      "name": "BMJ Open",
-      "kind": "scrape",
-      "category": "oa-journal",
-      "port": 6486,
-      "base": "https://bmjopen.bmj.com",
-      "tools": [
-        "search",
-        "fetch"
-      ]
-    },
-    {
-      "id": "bmjcases",
-      "name": "BMJ Case Reports",
-      "kind": "scrape",
-      "category": "oa-journal",
-      "port": 6487,
-      "base": "https://casereports.bmj.com",
-      "tools": [
-        "search",
-        "fetch"
-      ]
-    },
-    {
-      "id": "bmjbestpractice",
-      "name": "BMJ Best Practice",
-      "kind": "scrape",
-      "category": "guidelines",
-      "port": 6488,
-      "base": "https://bestpractice.bmj.com",
       "tools": [
         "search",
         "fetch"
@@ -4567,30 +3612,6 @@
       ]
     },
     {
-      "id": "lancet",
-      "name": "The Lancet",
-      "kind": "scrape",
-      "category": "journal",
-      "port": 6491,
-      "base": "https://www.thelancet.com",
-      "tools": [
-        "search",
-        "fetch"
-      ]
-    },
-    {
-      "id": "elife",
-      "name": "eLife",
-      "kind": "scrape",
-      "category": "oa-journal",
-      "port": 6492,
-      "base": "https://elifesciences.org",
-      "tools": [
-        "search",
-        "fetch"
-      ]
-    },
-    {
       "id": "cureus",
       "name": "Cureus",
       "kind": "scrape",
@@ -4609,126 +3630,6 @@
       "category": "oa-journal",
       "port": 6494,
       "base": "https://f1000research.com",
-      "tools": [
-        "search",
-        "fetch"
-      ]
-    },
-    {
-      "id": "jmir",
-      "name": "JMIR",
-      "kind": "scrape",
-      "category": "oa-journal",
-      "port": 6495,
-      "base": "https://www.jmir.org",
-      "tools": [
-        "search",
-        "fetch"
-      ]
-    },
-    {
-      "id": "jmir-publichealth",
-      "name": "JMIR Public Health & Surveillance",
-      "kind": "scrape",
-      "category": "oa-journal",
-      "port": 6496,
-      "base": "https://publichealth.jmir.org",
-      "tools": [
-        "search",
-        "fetch"
-      ]
-    },
-    {
-      "id": "jmir-mental",
-      "name": "JMIR Mental Health",
-      "kind": "scrape",
-      "category": "oa-journal",
-      "port": 6497,
-      "base": "https://mental.jmir.org",
-      "tools": [
-        "search",
-        "fetch"
-      ]
-    },
-    {
-      "id": "jmir-mhealth",
-      "name": "JMIR mHealth & uHealth",
-      "kind": "scrape",
-      "category": "oa-journal",
-      "port": 6498,
-      "base": "https://mhealth.jmir.org",
-      "tools": [
-        "search",
-        "fetch"
-      ]
-    },
-    {
-      "id": "mdpi-jcm",
-      "name": "MDPI Journal of Clinical Medicine",
-      "kind": "scrape",
-      "category": "oa-journal",
-      "port": 6499,
-      "base": "https://www.mdpi.com/journal/jcm",
-      "tools": [
-        "search",
-        "fetch"
-      ]
-    },
-    {
-      "id": "mdpi-cancers",
-      "name": "MDPI Cancers",
-      "kind": "scrape",
-      "category": "oa-journal",
-      "port": 6500,
-      "base": "https://www.mdpi.com/journal/cancers",
-      "tools": [
-        "search",
-        "fetch"
-      ]
-    },
-    {
-      "id": "mdpi-diagnostics",
-      "name": "MDPI Diagnostics",
-      "kind": "scrape",
-      "category": "oa-journal",
-      "port": 6501,
-      "base": "https://www.mdpi.com/journal/diagnostics",
-      "tools": [
-        "search",
-        "fetch"
-      ]
-    },
-    {
-      "id": "mdpi-nutrients",
-      "name": "MDPI Nutrients",
-      "kind": "scrape",
-      "category": "oa-journal",
-      "port": 6502,
-      "base": "https://www.mdpi.com/journal/nutrients",
-      "tools": [
-        "search",
-        "fetch"
-      ]
-    },
-    {
-      "id": "mdpi-antibiotics",
-      "name": "MDPI Antibiotics",
-      "kind": "scrape",
-      "category": "oa-journal",
-      "port": 6503,
-      "base": "https://www.mdpi.com/journal/antibiotics",
-      "tools": [
-        "search",
-        "fetch"
-      ]
-    },
-    {
-      "id": "hindawi-bmri",
-      "name": "Hindawi BioMed Research International",
-      "kind": "scrape",
-      "category": "oa-journal",
-      "port": 6504,
-      "base": "https://www.hindawi.com/journals/bmri/",
       "tools": [
         "search",
         "fetch"
@@ -4771,30 +3672,6 @@
       ]
     },
     {
-      "id": "scielo",
-      "name": "SciELO Brazil",
-      "kind": "scrape",
-      "category": "oa-journal",
-      "port": 6508,
-      "base": "https://www.scielo.br",
-      "tools": [
-        "search",
-        "fetch"
-      ]
-    },
-    {
-      "id": "aosis",
-      "name": "AOSIS (African journals)",
-      "kind": "scrape",
-      "category": "oa-journal",
-      "port": 6509,
-      "base": "https://journals.aosis.co.za",
-      "tools": [
-        "search",
-        "fetch"
-      ]
-    },
-    {
       "id": "phcfm",
       "name": "African Journal of Primary Health Care & Family Medicine",
       "kind": "scrape",
@@ -4807,60 +3684,12 @@
       ]
     },
     {
-      "id": "samj",
-      "name": "South African Medical Journal",
-      "kind": "scrape",
-      "category": "oa-journal",
-      "port": 6511,
-      "base": "https://samj.org.za",
-      "tools": [
-        "search",
-        "fetch"
-      ]
-    },
-    {
       "id": "samedical",
       "name": "South African Medical Association",
       "kind": "scrape",
       "category": "society",
       "port": 6512,
       "base": "https://samedical.org",
-      "tools": [
-        "search",
-        "fetch"
-      ]
-    },
-    {
-      "id": "jmaj",
-      "name": "JMA Journal (Japan)",
-      "kind": "scrape",
-      "category": "oa-journal",
-      "port": 6513,
-      "base": "https://www.jmaj.jp",
-      "tools": [
-        "search",
-        "fetch"
-      ]
-    },
-    {
-      "id": "jnma",
-      "name": "Journal of Nepal Medical Association",
-      "kind": "scrape",
-      "category": "oa-journal",
-      "port": 6514,
-      "base": "https://www.jnma.com.np",
-      "tools": [
-        "search",
-        "fetch"
-      ]
-    },
-    {
-      "id": "smjsg",
-      "name": "Singapore Medical Journal",
-      "kind": "scrape",
-      "category": "oa-journal",
-      "port": 6515,
-      "base": "https://www.smj.org.sg",
       "tools": [
         "search",
         "fetch"
@@ -4921,18 +3750,6 @@
       "category": "med-ed",
       "port": 6520,
       "base": "https://geekymedics.com",
-      "tools": [
-        "search",
-        "fetch"
-      ]
-    },
-    {
-      "id": "teachmeanatomy",
-      "name": "TeachMeAnatomy",
-      "kind": "scrape",
-      "category": "med-ed",
-      "port": 6521,
-      "base": "https://teachmeanatomy.info",
       "tools": [
         "search",
         "fetch"
@@ -5029,18 +3846,6 @@
       "category": "regulation",
       "port": 6529,
       "base": "https://www.fsmb.org",
-      "tools": [
-        "search",
-        "fetch"
-      ]
-    },
-    {
-      "id": "amia",
-      "name": "American Medical Informatics Association",
-      "kind": "scrape",
-      "category": "informatics",
-      "port": 6530,
-      "base": "https://www.amia.org",
       "tools": [
         "search",
         "fetch"

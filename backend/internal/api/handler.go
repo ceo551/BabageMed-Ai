@@ -324,7 +324,7 @@ func buildSystem(mode, locale string, citations []map[string]any, useMcps []stri
 			b.WriteString("RULES for using the retrieved context below:\n")
 			b.WriteString("1. Any specific factual claim that came from a connector MUST be backed by content visible in that connector's retrieval block. If the block doesn't contain the fact, do NOT claim it came from the connector.\n")
 			b.WriteString("2. If the retrieval is too thin to answer, say so explicitly — do not paper over gaps with training-data guesses dressed up as 'according to the source'.\n")
-			b.WriteString("3. At the end of every answer add a 'Sources:' line (or 'المصادر:' if responding in Arabic) listing only the connectors you ACTUALLY drew from, in this format:\n   Sources: pubmed, clevelandclinic\n")
+			b.WriteString("3. At the end of every answer add a 'Sources:' line (or 'المصادر:' if responding in Arabic) listing only the connectors you ACTUALLY drew from, in this format:\n   Sources: pubmed, mayoclinic\n")
 		}
 	}
 

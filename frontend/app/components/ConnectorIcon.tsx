@@ -46,12 +46,10 @@ const OVERRIDES: Record<string, string> = {
   gmail:        "https://upload.wikimedia.org/wikipedia/commons/7/7e/Gmail_icon_%282020%29.svg",
   gcalendar:    "https://upload.wikimedia.org/wikipedia/commons/a/a5/Google_Calendar_icon_%282020%29.svg",
   gdrive:       "https://upload.wikimedia.org/wikipedia/commons/1/12/Google_Drive_icon_%282020%29.svg",
-  googlescholar:"https://upload.wikimedia.org/wikipedia/commons/c/c7/Google_Scholar_logo.svg",
 
   // Big-name medical brands — go through Clearbit so we get a real raster
   // logo even when the brand's own site only ships a tiny favicon.
   mayoclinic:      "https://logo.clearbit.com/mayoclinic.org",
-  clevelandclinic: "https://logo.clearbit.com/clevelandclinic.org",
   who:             "https://logo.clearbit.com/who.int",
   cdc:             "https://logo.clearbit.com/cdc.gov",
   fda:             "https://logo.clearbit.com/fda.gov",
@@ -61,12 +59,8 @@ const OVERRIDES: Record<string, string> = {
   nccn:            "https://logo.clearbit.com/nccn.org",
   bmj:             "https://logo.clearbit.com/bmj.com",
   nejm:            "https://logo.clearbit.com/nejm.org",
-  lancet:          "https://logo.clearbit.com/thelancet.com",
   jamanetwork:     "https://logo.clearbit.com/jamanetwork.com",
-  medscape:        "https://logo.clearbit.com/medscape.com",
-  webmd:           "https://logo.clearbit.com/webmd.com",
   healthline:      "https://logo.clearbit.com/healthline.com",
-  drugscom:        "https://logo.clearbit.com/drugs.com",
 
   // Productivity tools — vendor CDNs (or Clearbit) all serve canonical marks.
   github:       "https://github.githubassets.com/assets/GitHub-Mark-ea2971cee799.png",
