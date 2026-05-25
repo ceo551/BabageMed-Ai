@@ -119,15 +119,20 @@ function DashboardInner() {
             </span>
           </h1>
         )}
-        <Composer
-          s={s}
-          locale={locale}
-          messages={messages}
-          setMessages={setMessages}
-          chatId={chatId}
-          setChatId={setChatId}
-        />
       </div>
+      {/* Composer is a sibling of .stage-inner, not a child, so it lives
+        * outside the scrolling area. This is the Claude/Gemini layout
+        * pattern — the transcript scrolls beneath a fixed composer dock
+        * instead of using position:sticky, which "un-sticks" once the
+        * user scrolls past the natural end of the column. */}
+      <Composer
+        s={s}
+        locale={locale}
+        messages={messages}
+        setMessages={setMessages}
+        chatId={chatId}
+        setChatId={setChatId}
+      />
     </section>
   );
 }
@@ -145,9 +150,11 @@ function Transcript({ messages }: { messages: ChatMessage[] }) {
   // overshoot from inertial scrolling doesn't lose the autofollow lock.
   const stickToBottomRef = useRef(true);
   useEffect(() => {
-    // .main is the actual scroll container (transcript itself doesn't scroll
-    // any more — see dashboard.css). Walk up to it.
-    const scroller = endRef.current?.closest(".main") as HTMLElement | null;
+    // The scrolling area is .stage-inner now that the composer was lifted
+    // out of it (see <section className="stage">…</section> structure).
+    // We watch its scroll position to decide whether to stick the view to
+    // the bottom as new tokens stream in.
+    const scroller = endRef.current?.closest(".stage-inner") as HTMLElement | null;
     if (!scroller) return;
     function onScroll() {
       if (!scroller) return;

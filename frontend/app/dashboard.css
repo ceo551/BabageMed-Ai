@@ -194,7 +194,19 @@ a { color: inherit; text-decoration: none; }
 }
 .main::-webkit-scrollbar { width: 8px; }
 .main::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 99px; }
-.stage { flex: 1; display: flex; align-items: center; justify-content: center; padding: 24px; overflow: auto; }
+/* Stage is a flex COLUMN by default so the empty-state greeting + composer
+ * stack vertically. Chat mode overrides justify-content + height to anchor
+ * the composer at the bottom and let the transcript scroll. */
+.stage {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  gap: 28px;
+  overflow: auto;
+}
 .stage-inner { width: 100%; max-width: 760px; display: flex; flex-direction: column; gap: 28px; }
 .greet { display: flex; align-items: center; gap: 16px; justify-content: center; font-family: var(--serif); font-weight: 400; font-size: 56px; line-height: 1.05; letter-spacing: -.01em; color: var(--ink); margin: 0; }
 .greet .star { width: 56px; height: 56px; flex-shrink: 0; }
@@ -288,38 +300,47 @@ a { color: inherit; text-decoration: none; }
  * "centre everything" to "fill the column top-to-bottom". justify-content
  * stretch on the cross axis + align-items: stretch on the main axis is what
  * actually centres the inner column when it has a max-width. */
+/* In chat mode the layout flips from "centre everything" to a column
+ * with a scrolling transcript and a docked composer. The composer is a
+ * SIBLING of .stage-inner now (not a child), so it lives outside the
+ * scrolling area — previously position:sticky un-stuck mid-scroll once
+ * the natural end of the column came into view, which is what made it
+ * float in the middle of a long answer. */
 .stage[data-chat="true"] {
-  justify-content: center;
-  align-items: stretch;
-  padding-block: 0;
-}
-.stage-inner[data-chat="true"] {
   display: flex;
   flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
+  padding-block: 0;
+  overflow: hidden;
+  height: 100vh;
   gap: 0;
-  max-width: 760px;
-  width: 100%;
-  margin-inline: auto; /* horizontal centring */
-  /* Fill at least the viewport so the composer's sticky bottom anchors
-   * to the bottom of the visible window even when the transcript is
-   * short (e.g. greeting + a single reply). When the conversation grows
-   * past 100vh, .main's overflow takes over and the composer sticks. */
-  min-height: 100vh;
 }
-.stage-inner[data-chat="true"] .transcript {
-  /* Grow to consume the slack between the top of .stage-inner and the
-   * pinned composer. Without this the transcript collapses to its
-   * content height and the composer floats up next to the last reply. */
+.stage[data-chat="true"] > .stage-inner {
   flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 760px;
+  margin-inline: auto;
+  overflow-y: auto;
+  overflow-x: hidden;
   min-height: 0;
+  padding-block: 32px 16px;
 }
-.stage-inner[data-chat="true"] .composer {
+.stage[data-chat="true"] > .stage-inner::-webkit-scrollbar { width: 8px; }
+.stage[data-chat="true"] > .stage-inner::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+  border-radius: 99px;
+}
+.stage[data-chat="true"] > .composer {
   flex: 0 0 auto;
-  position: sticky;
-  bottom: 24px;
-  /* Lift it above the transcript backdrop so streaming text doesn't peek
-   * through the composer's translucent border. */
+  width: 100%;
+  max-width: 760px;
+  margin: 0 auto 24px;
   z-index: 2;
+  /* Slight backdrop so any token that overshoots the scroll edge during
+   * a smooth-scroll animation is still hidden behind the composer. */
   background-color: var(--bg, #0a0c12);
 }
 
