@@ -28,6 +28,19 @@ type ChatMessage =
   | { id: string; role: "assistant"; content: string; citations?: Citation[] }
   | { id: string; role: "loading" };
 
+// React-key generator for optimistic message rows. Falls back to a counter +
+// Date.now() on environments without crypto.randomUUID (older Safari < 15.4,
+// SSR contexts where the crypto polyfill hasn't loaded yet). The counter is
+// what actually saves us from Date.now() collisions on rapid double-sends.
+let __idCounter = 0;
+function newId(): string {
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+    return crypto.randomUUID();
+  }
+  __idCounter = (__idCounter + 1) | 0;
+  return `${Date.now().toString(36)}-${__idCounter.toString(36)}`;
+}
+
 // Next.js 14's App Router requires components that call useSearchParams() to
 // either live inside a <Suspense> boundary OR have the route opted out of
 // prerendering. We use Suspense here so we keep client-side navigation fast
@@ -261,8 +274,12 @@ function Composer({
 
     // Optimistically push the user message + a loading placeholder so the
     // transcript animates open immediately.
-    const userId = `u-${Date.now()}`;
-    const loadingId = `l-${Date.now()}`;
+    // Date.now() collisions are theoretically possible on rapid double-send;
+    // crypto.randomUUID is universally available in evergreen browsers + Node,
+    // and the resulting React keys can never collide across optimistic +
+    // assistant + loading placeholders inside a single render.
+    const userId = `u-${newId()}`;
+    const loadingId = `l-${newId()}`;
     setMessages((cur) => [
       ...cur,
       { id: userId, role: "user", content: text },
@@ -338,7 +355,7 @@ function Composer({
         throw new Error(`HTTP ${r.status}`);
       }
 
-      const assistantId = `a-${Date.now()}`;
+      const assistantId = `a-${newId()}`;
       // Swap the loading row for a real assistant row (empty content; we'll
       // append chunks into it as they arrive).
       setMessages((cur) =>
@@ -436,7 +453,7 @@ function Composer({
       setMessages((cur) =>
         cur
           .filter((m) => m.id !== loadingId)
-          .concat({ id: `a-${Date.now()}`, role: "assistant", content: "Error: " + e.message })
+          .concat({ id: `a-${newId()}`, role: "assistant", content: "Error: " + e.message })
       );
     } finally {
       setSending(false);

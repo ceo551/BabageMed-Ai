@@ -30,7 +30,11 @@ spec:
     spec:
       containers:
         - name: cloudflared
-          image: cloudflare/cloudflared:latest
+          # Pinned to a specific Cloudflare release so a rolling restart can't
+          # silently land a new minor version with different defaults. Bump
+          # this tag deliberately when picking up a new cloudflared release;
+          # see https://github.com/cloudflare/cloudflared/releases.
+          image: cloudflare/cloudflared:2025.2.1
           args:
             - tunnel
             - --no-autoupdate

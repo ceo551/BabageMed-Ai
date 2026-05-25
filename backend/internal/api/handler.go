@@ -8,12 +8,14 @@ import (
 	"io"
 	"net/http"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/babagemed/backend/internal/cache"
 	"github.com/babagemed/backend/internal/llm"
 	"github.com/babagemed/backend/internal/mcp"
 	"github.com/go-chi/chi/v5"
+	"golang.org/x/sync/errgroup"
 )
 
 type Handler struct {
@@ -118,17 +120,32 @@ func (h *Handler) ChatStream(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Cache-Control", "no-cache")
 	w.Header().Set("Connection", "keep-alive")
 	flush, _ := w.(http.Flusher)
-	send := func(event string, data any) {
+	ctx := r.Context()
+	// send returns false once the client has gone away (context cancelled or
+	// the writer errored). Earlier this function ignored both signals, so a
+	// browser tab close mid-stream left the provider goroutine churning out
+	// deltas into a dead socket. The flusher's Flush() call itself doesn't
+	// surface a disconnect, but ctx.Err() does (chi's Timeout middleware
+	// cancels the request context when the client TCP connection closes).
+	send := func(event string, data any) bool {
+		if ctx.Err() != nil {
+			return false
+		}
 		b, _ := json.Marshal(data)
-		fmt.Fprintf(w, "event: %s\ndata: %s\n\n", event, string(b))
+		if _, err := fmt.Fprintf(w, "event: %s\ndata: %s\n\n", event, string(b)); err != nil {
+			return false
+		}
 		if flush != nil {
 			flush.Flush()
 		}
+		return true
 	}
 
 	send("status", map[string]string{"phase": "retrieval"})
-	citations, _ := h.gather(r.Context(), req)
-	send("citations", citations)
+	citations, _ := h.gather(ctx, req)
+	if !send("citations", citations) {
+		return
+	}
 	send("status", map[string]string{"phase": "reasoning"})
 
 	// Real provider streaming: forward each text delta as a 'delta' SSE event
@@ -142,14 +159,20 @@ func (h *Handler) ChatStream(w http.ResponseWriter, r *http.Request) {
 		send("error", map[string]string{"error": "messages required"})
 		return
 	}
-	res, err := h.llm.CompleteStream(r.Context(), llm.CompletionRequest{
+	res, err := h.llm.CompleteStream(ctx, llm.CompletionRequest{
 		Model:    req.Model,
 		Mode:     req.Mode,
 		Messages: req.Messages,
 		System:   system,
 	}, func(delta string) {
+		// If the client has disconnected the delta callback becomes a no-op;
+		// CompleteStream's upstream HTTP call will be cancelled by ctx soon
+		// after, so we don't burn CPU formatting unsent events.
 		send("delta", map[string]string{"text": delta})
 	})
+	if ctx.Err() != nil {
+		return
+	}
 	if err != nil {
 		send("error", map[string]string{"error": err.Error()})
 		return
@@ -179,27 +202,60 @@ func (h *Handler) gather(ctx context.Context, req chatRequest) ([]map[string]any
 		return nil, nil
 	}
 	last := req.Messages[len(req.Messages)-1].Content
-	out := []map[string]any{}
-	for _, id := range req.UseMcps {
-		// 5-minute cache on (mcpId, query) — same question routed to the
-		// same MCP within the window returns the cached result without
-		// hitting the upstream. No-op when REDIS_URL is unset.
-		cacheKey := "mcp:search:" + id + ":" + last
-		var cached any
-		if h.cache != nil && h.cache.GetJSON(ctx, cacheKey, &cached) {
-			out = append(out, map[string]any{"source": id, "result": cached})
+
+	// Fan out to all selected MCPs in parallel. Previously this was a serial
+	// loop with a 25s per-call timeout, so 3+ selected MCPs would blow past
+	// the 60s router timeout (middleware.Timeout in main.go) and the whole
+	// chat request would 504. errgroup with SetLimit caps the fan-out so a
+	// pathological case (every connector enabled) doesn't open hundreds of
+	// outbound HTTP connections at once.
+	type result struct {
+		idx    int
+		source string
+		value  any
+	}
+	results := make([]result, len(req.UseMcps))
+	var mu sync.Mutex // guards the results slice writes
+	g, gctx := errgroup.WithContext(ctx)
+	g.SetLimit(8)
+	for i, id := range req.UseMcps {
+		i, id := i, id
+		g.Go(func() error {
+			cacheKey := "mcp:search:" + id + ":" + last
+			var cached any
+			if h.cache != nil && h.cache.GetJSON(gctx, cacheKey, &cached) {
+				mu.Lock()
+				results[i] = result{idx: i, source: id, value: cached}
+				mu.Unlock()
+				return nil
+			}
+			ctxT, cancel := context.WithTimeout(gctx, 25*time.Second)
+			defer cancel()
+			res, err := h.reg.Call(ctxT, id, "search", map[string]string{"query": last})
+			if err != nil {
+				// Per-MCP failures are non-fatal — the chat still proceeds
+				// without that source. nil-valued result is the sentinel.
+				return nil
+			}
+			if h.cache != nil {
+				h.cache.SetJSON(ctx, cacheKey, res, 5*time.Minute)
+			}
+			mu.Lock()
+			results[i] = result{idx: i, source: id, value: res}
+			mu.Unlock()
+			return nil
+		})
+	}
+	// errgroup never returns an error here (every g.Go returns nil), but wait
+	// to make sure all goroutines have finished before we read results.
+	_ = g.Wait()
+
+	out := make([]map[string]any, 0, len(results))
+	for _, r := range results {
+		if r.value == nil {
 			continue
 		}
-		ctxT, cancel := context.WithTimeout(ctx, 25*time.Second)
-		res, err := h.reg.Call(ctxT, id, "search", map[string]string{"query": last})
-		cancel()
-		if err != nil {
-			continue
-		}
-		if h.cache != nil {
-			h.cache.SetJSON(ctx, cacheKey, res, 5*time.Minute)
-		}
-		out = append(out, map[string]any{"source": id, "result": res})
+		out = append(out, map[string]any{"source": r.source, "result": r.value})
 	}
 	return out, nil
 }

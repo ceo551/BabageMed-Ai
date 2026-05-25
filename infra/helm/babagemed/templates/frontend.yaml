@@ -56,6 +56,17 @@ spec:
             httpGet: { path: /, port: http }
             initialDelaySeconds: 10
             periodSeconds: 10
+          # A liveness probe was missing — a hung Next.js process (e.g. an
+          # unhandled promise rejection in the route handler that takes down
+          # the event loop) would keep the pod marked Ready forever. Long
+          # period + high failureThreshold avoids killing pods that are just
+          # slow on the cold path (route handler proxying the 416-MCP /health).
+          livenessProbe:
+            httpGet: { path: /, port: http }
+            initialDelaySeconds: 30
+            periodSeconds: 30
+            timeoutSeconds: 10
+            failureThreshold: 3
           resources: {{- toYaml .Values.frontend.resources | nindent 12 }}
           securityContext: {{- toYaml .Values.securityContext | nindent 12 }}
       {{- with .Values.nodeSelector }}

@@ -190,14 +190,27 @@ func prometheusTimer(id, tool string) func() {
 }
 
 // Health pings the /health endpoint of every MCP and reports status.
+// A semaphore caps concurrency at 32 so a 416-MCP fleet doesn't open hundreds
+// of simultaneous outbound connections (which previously stressed the http
+// transport's idle-conn pool and tripped DNS rate limits during /health).
 func (r *Registry) Health(ctx context.Context) map[string]string {
 	out := map[string]string{}
 	var mu sync.Mutex
 	var wg sync.WaitGroup
+	sem := make(chan struct{}, 32)
 	for _, s := range r.Servers() {
 		wg.Add(1)
 		go func(s Server) {
 			defer wg.Done()
+			select {
+			case sem <- struct{}{}:
+				defer func() { <-sem }()
+			case <-ctx.Done():
+				mu.Lock()
+				out[s.ID] = "down"
+				mu.Unlock()
+				return
+			}
 			req, _ := http.NewRequestWithContext(ctx, http.MethodGet, r.hostFor(s)+"/health", nil)
 			res, err := r.client.Do(req)
 			status := "down"
