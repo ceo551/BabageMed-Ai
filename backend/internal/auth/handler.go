@@ -17,6 +17,11 @@ func (h *Handler) Register(r chi.Router) {
 	r.Post("/api/auth/login", h.login)
 	r.Post("/api/auth/logout", h.logout)
 	r.Get("/api/auth/me", h.me)
+	// User-facing Settings page endpoints. PATCH is for the General tab
+	// (preferred name, profession, instructions); /usage drives the Usage
+	// tab. Both require a valid session — anonymous callers get 401.
+	r.Patch("/api/auth/me", h.updateMe)
+	r.Get("/api/auth/me/usage", h.usage)
 }
 
 type signupReq struct {
@@ -80,6 +85,63 @@ func (h *Handler) me(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	writeJSON(w, 200, map[string]any{"user": u})
+}
+
+// updateMe lets a signed-in user edit their own profile fields. Mirrors the
+// shape of the General Settings tab. We never let a user change their own
+// plan / isAdmin / email here — those go through the admin path.
+func (h *Handler) updateMe(w http.ResponseWriter, r *http.Request) {
+	u := FromContext(r.Context())
+	if u == nil {
+		var err error
+		u, err = h.s.userFromRequest(r)
+		if err != nil {
+			writeErr(w, 401, "not authenticated")
+			return
+		}
+	}
+	var b ProfilePatch
+	if err := json.NewDecoder(r.Body).Decode(&b); err != nil {
+		writeErr(w, 400, "invalid json")
+		return
+	}
+	if err := h.s.UpdateProfile(r.Context(), u.ID, b); err != nil {
+		writeErr(w, 500, err.Error())
+		return
+	}
+	refreshed, err := h.s.GetUser(r.Context(), u.ID)
+	if err != nil {
+		writeErr(w, 500, err.Error())
+		return
+	}
+	writeJSON(w, 200, map[string]any{"user": refreshed})
+}
+
+// usage returns a simple per-model query count for the signed-in user.
+// Grouped on chats.model so users can see how many conversations they've
+// run against each backing model (Opus 4.7 / Gemini 3.1 / etc.) over the
+// chosen window. No token / dollar accounting today — we'd need provider
+// usage hooks for that and the test cluster isn't enforcing limits yet.
+func (h *Handler) usage(w http.ResponseWriter, r *http.Request) {
+	u := FromContext(r.Context())
+	if u == nil {
+		var err error
+		u, err = h.s.userFromRequest(r)
+		if err != nil {
+			writeErr(w, 401, "not authenticated")
+			return
+		}
+	}
+	rows, err := h.s.UsageByModel(r.Context(), u.ID)
+	if err != nil {
+		writeErr(w, 500, err.Error())
+		return
+	}
+	writeJSON(w, 200, map[string]any{
+		"plan":   u.Plan,
+		"window": "30d",
+		"items":  rows,
+	})
 }
 
 func statusFor(err error, w http.ResponseWriter) {

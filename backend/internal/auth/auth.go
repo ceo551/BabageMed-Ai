@@ -8,6 +8,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
@@ -24,12 +25,15 @@ const (
 )
 
 type User struct {
-	ID          string    `json:"id"`
-	Email       string    `json:"email"`
-	DisplayName string    `json:"displayName"`
-	Plan        string    `json:"plan"`
-	IsAdmin     bool      `json:"isAdmin"`
-	CreatedAt   time.Time `json:"createdAt"`
+	ID            string    `json:"id"`
+	Email         string    `json:"email"`
+	DisplayName   string    `json:"displayName"`
+	PreferredName string    `json:"preferredName"`
+	Profession    string    `json:"profession"`
+	Instructions  string    `json:"instructions"`
+	Plan          string    `json:"plan"`
+	IsAdmin       bool      `json:"isAdmin"`
+	CreatedAt     time.Time `json:"createdAt"`
 }
 
 type ctxKey struct{ name string }
@@ -69,8 +73,8 @@ func (s *Service) Signup(ctx context.Context, email, password, displayName strin
 	err = s.db.Pool.QueryRow(ctx, `
         INSERT INTO users (email, password_hash, display_name)
         VALUES ($1, $2, NULLIF($3, ''))
-        RETURNING id, email, COALESCE(display_name, ''), plan, is_admin, created_at
-    `, email, string(hash), displayName).Scan(&u.ID, &u.Email, &u.DisplayName, &u.Plan, &u.IsAdmin, &u.CreatedAt)
+        RETURNING id, email, COALESCE(display_name, ''), preferred_name, profession, instructions, plan, is_admin, created_at
+    `, email, string(hash), displayName).Scan(&u.ID, &u.Email, &u.DisplayName, &u.PreferredName, &u.Profession, &u.Instructions, &u.Plan, &u.IsAdmin, &u.CreatedAt)
 	if err != nil {
 		if isUniqueViolation(err) {
 			return nil, "", ErrAlreadyExists
@@ -89,9 +93,9 @@ func (s *Service) Login(ctx context.Context, email, password, ua, ip string) (*U
 	var u User
 	var hash string
 	err := s.db.Pool.QueryRow(ctx, `
-        SELECT id, email, COALESCE(display_name, ''), plan, is_admin, created_at, password_hash
+        SELECT id, email, COALESCE(display_name, ''), preferred_name, profession, instructions, plan, is_admin, created_at, password_hash
         FROM users WHERE email = $1
-    `, email).Scan(&u.ID, &u.Email, &u.DisplayName, &u.Plan, &u.IsAdmin, &u.CreatedAt, &hash)
+    `, email).Scan(&u.ID, &u.Email, &u.DisplayName, &u.PreferredName, &u.Profession, &u.Instructions, &u.Plan, &u.IsAdmin, &u.CreatedAt, &hash)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, "", ErrInvalidCreds
@@ -125,10 +129,10 @@ func (s *Service) Me(ctx context.Context, token string) (*User, error) {
 	var u User
 	var exp time.Time
 	err := s.db.Pool.QueryRow(ctx, `
-        SELECT u.id, u.email, COALESCE(u.display_name, ''), u.plan, u.is_admin, u.created_at, s.expires_at
+        SELECT u.id, u.email, COALESCE(u.display_name, ''), u.preferred_name, u.profession, u.instructions, u.plan, u.is_admin, u.created_at, s.expires_at
         FROM sessions s JOIN users u ON u.id = s.user_id
         WHERE s.token_hash = $1
-    `, h).Scan(&u.ID, &u.Email, &u.DisplayName, &u.Plan, &u.IsAdmin, &u.CreatedAt, &exp)
+    `, h).Scan(&u.ID, &u.Email, &u.DisplayName, &u.PreferredName, &u.Profession, &u.Instructions, &u.Plan, &u.IsAdmin, &u.CreatedAt, &exp)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, ErrUnauthorised
@@ -140,6 +144,100 @@ func (s *Service) Me(ctx context.Context, token string) (*User, error) {
 		return nil, ErrSessionExpired
 	}
 	return &u, nil
+}
+
+// GetUser fetches a user by ID — used after PATCH /api/auth/me so the
+// response carries the freshly-persisted row.
+func (s *Service) GetUser(ctx context.Context, id string) (*User, error) {
+	var u User
+	err := s.db.Pool.QueryRow(ctx, `
+        SELECT id, email, COALESCE(display_name, ''), preferred_name, profession, instructions, plan, is_admin, created_at
+        FROM users WHERE id = $1
+    `, id).Scan(&u.ID, &u.Email, &u.DisplayName, &u.PreferredName, &u.Profession, &u.Instructions, &u.Plan, &u.IsAdmin, &u.CreatedAt)
+	if err != nil {
+		return nil, err
+	}
+	return &u, nil
+}
+
+// ProfilePatch carries the body of PATCH /api/auth/me. Every field is a
+// pointer so omission means "leave unchanged" — distinct from sending the
+// empty string which clears the field.
+type ProfilePatch struct {
+	DisplayName   *string `json:"displayName,omitempty"`
+	PreferredName *string `json:"preferredName,omitempty"`
+	Profession    *string `json:"profession,omitempty"`
+	Instructions  *string `json:"instructions,omitempty"`
+}
+
+// UpdateProfile applies any non-nil fields from the request to the user row.
+// Each field is independently patchable so the UI can ship Save calls for
+// just the changed sub-section. We don't expose plan / isAdmin / email here.
+func (s *Service) UpdateProfile(ctx context.Context, id string, p ProfilePatch) error {
+	set := []string{}
+	args := []any{}
+	if p.DisplayName != nil {
+		args = append(args, *p.DisplayName)
+		set = append(set, "display_name = NULLIF($"+strconv.Itoa(len(args))+", '')")
+	}
+	if p.PreferredName != nil {
+		args = append(args, *p.PreferredName)
+		set = append(set, "preferred_name = $"+strconv.Itoa(len(args)))
+	}
+	if p.Profession != nil {
+		args = append(args, *p.Profession)
+		set = append(set, "profession = $"+strconv.Itoa(len(args)))
+	}
+	if p.Instructions != nil {
+		args = append(args, *p.Instructions)
+		set = append(set, "instructions = $"+strconv.Itoa(len(args)))
+	}
+	if len(set) == 0 {
+		return nil
+	}
+	args = append(args, id)
+	q := "UPDATE users SET " + strings.Join(set, ", ") + " WHERE id = $" + strconv.Itoa(len(args))
+	_, err := s.db.Pool.Exec(ctx, q, args...)
+	return err
+}
+
+// UsageItem is one row of the Usage tab. Limit is a soft display number
+// (informational only — no enforcement layer yet) sourced from the user's
+// plan tier; 0 means "unlimited / not tracked".
+type UsageItem struct {
+	Model string `json:"model"`
+	Count int64  `json:"count"`
+	Limit int64  `json:"limit"`
+}
+
+// UsageByModel groups assistant-side messages by chat model for the last
+// 30 days. Joins chats on chat_messages so we count actual answers, not
+// just chat opens — and uses chats.model so streamed-but-aborted requests
+// (which never persist an assistant row) don't pad the count.
+func (s *Service) UsageByModel(ctx context.Context, userID string) ([]UsageItem, error) {
+	rows, err := s.db.Pool.Query(ctx, `
+        SELECT COALESCE(c.model, 'unknown') AS model, COUNT(*) AS n
+        FROM chat_messages m
+        JOIN chats c ON c.id = m.chat_id
+        WHERE c.user_id = $1
+          AND m.role = 'assistant'
+          AND m.created_at > now() - interval '30 days'
+        GROUP BY 1
+        ORDER BY n DESC
+    `, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := []UsageItem{}
+	for rows.Next() {
+		var it UsageItem
+		if err := rows.Scan(&it.Model, &it.Count); err != nil {
+			return nil, err
+		}
+		out = append(out, it)
+	}
+	return out, nil
 }
 
 // ─── HTTP middleware ───────────────────────────────────────────────────────

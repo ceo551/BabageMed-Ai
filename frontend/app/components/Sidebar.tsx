@@ -470,7 +470,7 @@ function AccountChip(props: {
 
           <div className="popover-sep" />
 
-          <Link href="/admin" className="tool-row" onClick={() => setOpen(false)}>
+          <Link href="/settings" className="tool-row" onClick={() => setOpen(false)}>
             <span className="swatch">{I.gear}</span>
             <span className="col">
               <span className="ttl">{s.settings}</span>

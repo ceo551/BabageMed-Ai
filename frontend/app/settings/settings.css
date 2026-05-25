@@ -1,0 +1,194 @@
+/* Settings page — two-column shell (left nav, right content).
+ * Same column widths and gutters as the connector / spaces detail pages so
+ * the user gets a consistent "sub-page" feel. The page is locked LTR (same
+ * pattern as /mcps) because the field labels and value formats are Latin
+ * script — the model picks RTL/LTR on its own via dir="auto" only inside
+ * editable textareas. */
+.settings-shell {
+  min-height: 100vh;
+  padding: 32px 24px 80px;
+  max-width: 1080px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  color: var(--ink);
+  direction: ltr;
+  text-align: start;
+}
+.settings-shell h1 {
+  margin: 0;
+  font-family: var(--serif);
+  font-size: 44px;
+}
+.settings-grid {
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  gap: 24px;
+  align-items: start;
+}
+@media (max-width: 720px) {
+  .settings-grid { grid-template-columns: 1fr; }
+}
+.settings-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  position: sticky;
+  top: 24px;
+}
+.settings-nav button {
+  display: block;
+  width: 100%;
+  text-align: start;
+  background: transparent;
+  color: var(--ink);
+  border: 1px solid transparent;
+  border-radius: 10px;
+  padding: 10px 14px;
+  font: inherit;
+  cursor: pointer;
+}
+.settings-nav button:hover { background: var(--panel); }
+.settings-nav button[data-active="true"] {
+  background: var(--panel-solid);
+  border-color: var(--border);
+  font-weight: 600;
+}
+.settings-pane {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+.settings-section {
+  background: var(--panel-solid);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.settings-section h2 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+}
+.settings-row {
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  gap: 16px;
+  align-items: center;
+  padding: 14px 0;
+  border-top: 1px solid var(--border);
+}
+.settings-row:first-of-type { border-top: 0; padding-top: 0; }
+.settings-row > .label { color: var(--ink); font-weight: 500; }
+.settings-row > .control {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+.settings-row.col {
+  grid-template-columns: 1fr;
+  align-items: stretch;
+}
+.settings-row.col > .label { font-weight: 600; }
+.settings-row.col > .hint { color: var(--muted); font-size: 13px; margin: -8px 0 4px; }
+.settings-row .input,
+.settings-row select,
+.settings-row textarea {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 12px;
+  color: var(--ink);
+  font: inherit;
+  outline: none;
+  min-width: 240px;
+}
+.settings-row textarea {
+  width: 100%;
+  resize: vertical;
+  min-height: 96px;
+}
+.settings-row .input:focus,
+.settings-row select:focus,
+.settings-row textarea:focus { border-color: var(--cyan-line); background: var(--cyan-soft); }
+.settings-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--cyan-soft);
+  color: var(--cyan);
+  border: 1px solid var(--cyan-line);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--mono);
+  font-weight: 700;
+  font-size: 12px;
+  letter-spacing: 0.05em;
+}
+.settings-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  padding-top: 6px;
+}
+.settings-save {
+  background: var(--cyan-soft);
+  color: var(--cyan);
+  border: 1px solid var(--cyan-line);
+  padding: 10px 18px;
+  border-radius: 10px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.settings-save[disabled] { opacity: .5; cursor: not-allowed; }
+.settings-saved {
+  color: var(--cyan);
+  font-size: 13px;
+}
+.settings-err {
+  border-radius: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--purple-line);
+  background: var(--purple-soft);
+  color: var(--purple);
+}
+
+/* Usage tab */
+.usage-card {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px 18px;
+  padding: 16px 18px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  align-items: center;
+}
+.usage-card .model-name { font-weight: 600; }
+.usage-card .count { font-family: var(--mono); color: var(--ink-2); }
+.usage-card .bar {
+  grid-column: 1 / -1;
+  height: 6px;
+  border-radius: 99px;
+  background: var(--bg-2);
+  overflow: hidden;
+}
+.usage-card .bar > span {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, var(--cyan), var(--purple));
+}
+.usage-empty {
+  color: var(--muted);
+  padding: 16px 18px;
+  text-align: center;
+  border: 1px dashed var(--border);
+  border-radius: 12px;
+}

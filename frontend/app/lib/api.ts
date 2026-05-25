@@ -29,10 +29,18 @@ export type User = {
   id: string;
   email: string;
   displayName: string;
+  preferredName: string;
+  profession: string;
+  instructions: string;
   plan: "free" | "pro" | "max" | string;
   isAdmin: boolean;
   createdAt: string;
 };
+
+export type ProfilePatch = Partial<Pick<User, "displayName" | "preferredName" | "profession" | "instructions">>;
+
+export type UsageItem = { model: string; count: number; limit: number };
+export type UsageReport = { plan: string; window: string; items: UsageItem[] };
 
 export const auth = {
   signup: (email: string, password: string, displayName?: string) =>
@@ -41,6 +49,24 @@ export const auth = {
     api.post<{ user: User; token: string }>("/api/auth/login", { email, password }),
   logout: () => api.post<{ ok: boolean }>("/api/auth/logout"),
   me:     () => api.get<{ user: User }>("/api/auth/me"),
+  // Settings → General: PATCH the four user-editable fields. The backend
+  // returns the refreshed row so the client doesn't have to re-fetch.
+  updateMe: async (patch: ProfilePatch): Promise<User> => {
+    const r = await fetch(`/api/backend/api/auth/me`, {
+      method: "PATCH",
+      credentials: "include",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(patch),
+    });
+    const text = await r.text();
+    let body: any = null;
+    try { body = text ? JSON.parse(text) : null; } catch { body = text; }
+    if (!r.ok) throw { error: (body && body.error) || text || r.statusText, status: r.status } as ApiError;
+    return body.user as User;
+  },
+  // Settings → Usage: counts of assistant messages grouped by model for
+  // the last 30 days. Limit is plan-derived and informational only.
+  usage: () => api.get<UsageReport>("/api/auth/me/usage"),
 };
 
 // ── MCPs ──
