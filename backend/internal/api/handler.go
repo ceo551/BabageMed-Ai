@@ -156,7 +156,7 @@ func (h *Handler) ChatStream(w http.ResponseWriter, r *http.Request) {
 	// Real provider streaming: forward each text delta as a 'delta' SSE event
 	// so the frontend types in tokens as they arrive instead of waiting on a
 	// single 'content' chunk at the end.
-	system := buildSystem(req.Mode, req.Locale, citations, req.SpaceContext, req.SpaceName)
+	system := buildSystem(req.Mode, req.Locale, citations, req.UseMcps, req.SpaceContext, req.SpaceName)
 	if req.Model == "" {
 		req.Model = "opus-4.7"
 	}
@@ -238,8 +238,18 @@ func (h *Handler) gather(ctx context.Context, req chatRequest) ([]map[string]any
 			defer cancel()
 			res, err := h.reg.Call(ctxT, id, "search", map[string]string{"query": last})
 			if err != nil {
-				// Per-MCP failures are non-fatal — the chat still proceeds
-				// without that source. nil-valued result is the sentinel.
+				// Per-MCP failures are non-fatal for the chat as a whole, but
+				// we DO surface a synthetic result documenting the failure
+				// so the model can say "Cleveland Clinic returned an error"
+				// instead of silently hallucinating an answer that looks
+				// like it came from there.
+				mu.Lock()
+				results[i] = result{
+					idx:    i,
+					source: id,
+					value:  map[string]any{"error": err.Error(), "note": "this connector returned an error; do not cite it"},
+				}
+				mu.Unlock()
 				return nil
 			}
 			if h.cache != nil {
@@ -266,7 +276,7 @@ func (h *Handler) gather(ctx context.Context, req chatRequest) ([]map[string]any
 }
 
 func (h *Handler) complete(ctx context.Context, req chatRequest, citations []map[string]any) (*llm.CompletionResponse, error) {
-	system := buildSystem(req.Mode, req.Locale, citations, req.SpaceContext, req.SpaceName)
+	system := buildSystem(req.Mode, req.Locale, citations, req.UseMcps, req.SpaceContext, req.SpaceName)
 	if req.Model == "" {
 		req.Model = "opus-4.7"
 	}
@@ -281,18 +291,14 @@ func (h *Handler) complete(ctx context.Context, req chatRequest, citations []map
 	})
 }
 
-func buildSystem(mode, locale string, citations []map[string]any, spaceCtx []map[string]any, spaceName string) string {
+func buildSystem(mode, locale string, citations []map[string]any, useMcps []string, spaceCtx []map[string]any, spaceName string) string {
 	var b strings.Builder
-	b.WriteString("You are BabageMed AI — a HIPAA-aware clinician-in-the-loop assistant. Always cite primary sources, surface uncertainty, and never give a binding diagnosis.\n")
-	// Inject the current server-side date so the model doesn't fall back on
-	// its training-time best guess (the observed bug: Gemini answering
-	// 2024-05-23 when asked the date in 2026). Includes day-of-week + UTC
-	// offset hint so questions like "متى ميعاد الموعد التالي" don't drift.
+	b.WriteString("You are BabageMed AI — a HIPAA-aware clinician-in-the-loop assistant. Surface uncertainty, never give a binding diagnosis.\n")
 	now := time.Now().UTC()
 	fmt.Fprintf(&b, "Today is %s (UTC). Trust this date over anything in your training data; never invent a different year.\n",
 		now.Format("Monday, January 2, 2006"))
 	if locale == "ar" {
-		b.WriteString("If the user writes in Arabic, respond in Arabic, but keep drug names, doses, ICD codes, and citations in English.\n")
+		b.WriteString("If the user writes in Arabic, respond in Arabic, but keep drug names, doses, ICD codes, and source IDs in English.\n")
 	}
 	switch mode {
 	case "deep":
@@ -302,14 +308,45 @@ func buildSystem(mode, locale string, citations []map[string]any, spaceCtx []map
 	default:
 		b.WriteString("Mode: bedside-fast. Concise, structured, actionable.\n")
 	}
-	if len(citations) > 0 {
-		b.WriteString("\nRetrieved context (from connected MCP servers):\n")
-		for _, c := range citations {
-			j, _ := json.Marshal(c)
-			b.Write(j)
-			b.WriteByte('\n')
+
+	// ─── grounding rules ──────────────────────────────────────────────────────
+	// These three are the heart of the no-fabrication policy. Without them the
+	// model treats the retrieval block as "optional flavor" and confidently
+	// invents content that *sounds* like it came from the connector — exactly
+	// the Cleveland Clinic hallucination the user reported.
+	if len(useMcps) > 0 {
+		fmt.Fprintf(&b, "\nThe user has connected these sources for this turn: %s.\n", strings.Join(useMcps, ", "))
+		if len(citations) == 0 {
+			// We asked the connectors and they returned nothing usable. Tell
+			// the model to say so EXPLICITLY rather than guessing.
+			b.WriteString("IMPORTANT: those connectors returned NO usable content for this query. You must NOT fabricate information attributed to them. State clearly that the source had no relevant content and answer only from general knowledge (or refuse if the question is specific to that source).\n")
+		} else {
+			b.WriteString("RULES for using the retrieved context below:\n")
+			b.WriteString("1. Any specific factual claim that came from a connector MUST be backed by content visible in that connector's retrieval block. If the block doesn't contain the fact, do NOT claim it came from the connector.\n")
+			b.WriteString("2. If the retrieval is too thin to answer, say so explicitly — do not paper over gaps with training-data guesses dressed up as 'according to the source'.\n")
+			b.WriteString("3. At the end of every answer add a 'Sources:' line (or 'المصادر:' if responding in Arabic) listing only the connectors you ACTUALLY drew from, in this format:\n   Sources: pubmed, clevelandclinic\n")
 		}
 	}
+
+	if len(citations) > 0 {
+		b.WriteString("\n=== Retrieved context (from connected MCP servers) ===\n")
+		for _, c := range citations {
+			src, _ := c["source"].(string)
+			fmt.Fprintf(&b, "\n--- source: %s ---\n", src)
+			// Try to format the result readably; fall back to raw JSON.
+			if res, ok := c["result"]; ok {
+				if s, ok := res.(string); ok {
+					b.WriteString(s)
+				} else {
+					j, _ := json.MarshalIndent(res, "", "  ")
+					b.Write(j)
+				}
+			}
+			b.WriteByte('\n')
+		}
+		b.WriteString("=== end retrieved context ===\n")
+	}
+
 	if len(spaceCtx) > 0 {
 		if spaceName != "" {
 			fmt.Fprintf(&b, "\nUser's space \"%s\" — relevant excerpts from uploaded files:\n", spaceName)
