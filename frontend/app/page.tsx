@@ -138,9 +138,27 @@ function DashboardInner() {
 // placeholder swaps in the pulsing brand mark while we're waiting on the LLM.
 function Transcript({ messages }: { messages: ChatMessage[] }) {
   const endRef = useRef<HTMLDivElement>(null);
-  // Use useLayoutEffect so the scroll happens before the browser paints —
-  // avoids a flash of "stuck at top" when a long message lands.
+  // Track whether the user has manually scrolled away from the bottom. When
+  // they have, we stop auto-following the stream — yanking the viewport on
+  // every delta while they're reading earlier output is the single biggest
+  // chat-UX irritant we had. The threshold is generous (120px) so a small
+  // overshoot from inertial scrolling doesn't lose the autofollow lock.
+  const stickToBottomRef = useRef(true);
+  useEffect(() => {
+    // .main is the actual scroll container (transcript itself doesn't scroll
+    // any more — see dashboard.css). Walk up to it.
+    const scroller = endRef.current?.closest(".main") as HTMLElement | null;
+    if (!scroller) return;
+    function onScroll() {
+      if (!scroller) return;
+      const distFromBottom = scroller.scrollHeight - scroller.scrollTop - scroller.clientHeight;
+      stickToBottomRef.current = distFromBottom < 120;
+    }
+    scroller.addEventListener("scroll", onScroll, { passive: true });
+    return () => scroller.removeEventListener("scroll", onScroll);
+  }, []);
   useLayoutEffect(() => {
+    if (!stickToBottomRef.current) return;
     endRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
   }, [messages]);
 
@@ -154,10 +172,16 @@ function Transcript({ messages }: { messages: ChatMessage[] }) {
                 src="/babagemed-icon.png"
                 alt=""
                 className="msg-loading-mark"
-                width={28}
-                height={28}
+                width={40}
+                height={40}
                 aria-hidden="true"
               />
+              {/* Three-dot wave so the user sees a heartbeat while the
+                  retrieval + first-token phases run. The pulse on the mark
+                  alone wasn't visible enough on light theme. */}
+              <span className="msg-loading-dots" aria-label="Generating">
+                <span /><span /><span />
+              </span>
             </div>
           );
         }
@@ -528,9 +552,13 @@ function Composer({
         placeholder={s.placeholder}
         rows={1}
         onKeyDown={(e) => {
-          if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
+          // Claude / ChatGPT / Gemini muscle memory: plain Enter sends, and
+          // Shift+Enter inserts a newline. Avoid sending while IME composition
+          // is in flight (Japanese / Chinese / Arabic accent stacks would
+          // submit prematurely on the candidate-selection Enter).
+          if (e.key === "Enter" && !e.shiftKey && !(e.nativeEvent as any).isComposing) {
             e.preventDefault();
-            send();
+            if (!sending) send();
           }
         }}
       />
@@ -692,9 +720,22 @@ function Composer({
           className="cmpr-icon"
           type="button"
           onClick={send}
-          aria-label="Send"
-          disabled={sending}
-          style={{ width: "auto", padding: "0 10px", color: "var(--cyan)", borderColor: "var(--cyan-line)", background: "var(--cyan-soft)" }}
+          aria-label={sending ? "Sending" : "Send"}
+          disabled={sending || value.trim() === ""}
+          // Disabled style is opt-in (cmpr-icon doesn't have a default
+          // disabled treatment yet); fade + neutral colors make the
+          // "you can't send an empty / in-flight message" state legible
+          // without sacrificing the cyan accent of the active state.
+          style={{
+            width: "auto",
+            padding: "0 10px",
+            color: sending || value.trim() === "" ? "var(--muted)" : "var(--cyan)",
+            borderColor: sending || value.trim() === "" ? "var(--border)" : "var(--cyan-line)",
+            background: sending || value.trim() === "" ? "var(--panel)" : "var(--cyan-soft)",
+            opacity: sending || value.trim() === "" ? 0.6 : 1,
+            cursor: sending ? "progress" : value.trim() === "" ? "not-allowed" : "pointer",
+            transition: "color .12s, background .12s, opacity .12s",
+          }}
         >
           {sending ? "…" : "↵"}
         </button>
