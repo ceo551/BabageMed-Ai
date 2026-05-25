@@ -66,7 +66,7 @@ export function Sidebar() {
           <span className="lbl">{s.spaces}</span>
           <span className="trail-chev">{I.chevR}</span>
         </Link>
-        <HistoryRow label={s.recent} />
+        <HistorySection label={s.recent} />
         <Link href="/mcps" className="sb-row" style={{ textDecoration: "none" }}>
           {I.connectors}
           <span className="lbl">{s.connectors}</span>
@@ -116,139 +116,100 @@ export function Sidebar() {
   );
 }
 
-// ─── History row + popover ────────────────────────────────────────────────
-// Sidebar entry that, when clicked, pops out a panel listing the user's
-// most-recent persisted chats. Click an item → /?c=<id> loads that
-// transcript in the dashboard. Delete (×) removes the chat row from the
-// list optimistically and fires DELETE in the background.
-function HistoryRow({ label }: { label: string }) {
+// ─── History section (inline, Claude-style) ───────────────────────────────
+// Previously this was a sidebar row that opened a portalled flyout to the
+// right — visually busy and out of step with how Claude/Gemini present
+// recent chats. Now it renders inline beneath the primary nav rows as a
+// scrollable list of the user's most-recent chats. Click → /?c=<id> loads
+// that transcript. The list refetches whenever the URL changes (a new
+// chat send pushes ?c=<NEW_ID> which triggers the refetch), and the
+// currently-loaded chat is highlighted via data-active.
+function HistorySection({ label }: { label: string }) {
   const router = useRouter();
+  const pathname = usePathname();
   const { user } = useAuth();
-  const [open, setOpen] = useState(false);
   const [items, setItems] = useState<Chat[]>([]);
   const [loading, setLoading] = useState(false);
-  const [popStyle, setPopStyle] = useState<React.CSSProperties>({});
-  const [mounted, setMounted] = useState(false);
-  const rowRef = useRef<HTMLButtonElement>(null);
-  const popRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => { setMounted(true); }, []);
+  // Read the current chat id from the URL search part. usePathname() doesn't
+  // include the query string, but it does fire on full URL changes so we
+  // re-derive activeChatId from window.location each render once mounted.
+  const [activeChatId, setActiveChatId] = useState<string>("");
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const u = new URL(window.location.href);
+    setActiveChatId(u.searchParams.get("c") || "");
+  }, [pathname]);
 
-  // Refresh the list every time the popover opens — the user might have
-  // started a new chat since they last looked, and a stale cache would hide
-  // it.
-  function loadList() {
+  // Refetch on mount and whenever the URL pathname changes (so creating a
+  // new chat or switching tabs surfaces the latest titles). Skip the call
+  // entirely for anonymous users — /api/chats requires auth.
+  useEffect(() => {
+    if (!user) { setItems([]); return; }
+    let cancelled = false;
     setLoading(true);
     chatsApi.list()
-      .then(setItems)
-      .catch(() => setItems([]))
-      .finally(() => setLoading(false));
-  }
-
-  function position() {
-    const el = rowRef.current;
-    if (!el) return;
-    const r = el.getBoundingClientRect();
-    const dir = document.documentElement.dir === "rtl" ? "rtl" : "ltr";
-    if (dir === "rtl") {
-      setPopStyle({ position: "fixed", top: r.top, right: window.innerWidth - r.left + 8, width: 320, zIndex: 50 });
-    } else {
-      setPopStyle({ position: "fixed", top: r.top, left: r.right + 8, width: 320, zIndex: 50 });
-    }
-  }
-
-  function toggle() {
-    if (!open) {
-      position();
-      loadList();
-      setOpen(true);
-    } else {
-      setOpen(false);
-    }
-  }
-
-  useEffect(() => {
-    if (!open) return;
-    function onDoc(e: MouseEvent) {
-      const target = e.target as Node;
-      if (!popRef.current?.contains(target) && !rowRef.current?.contains(target)) {
-        setOpen(false);
-      }
-    }
-    function onResize() { position(); }
-    document.addEventListener("mousedown", onDoc);
-    window.addEventListener("resize", onResize);
-    return () => {
-      document.removeEventListener("mousedown", onDoc);
-      window.removeEventListener("resize", onResize);
-    };
-  }, [open]);
+      .then((list) => { if (!cancelled) setItems(list); })
+      .catch(() => { if (!cancelled) setItems([]); })
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
+  }, [user, pathname]);
 
   async function removeChat(id: string, e: React.MouseEvent) {
-    e.stopPropagation(); e.preventDefault();
+    e.stopPropagation();
+    e.preventDefault();
     setItems((cur) => cur.filter((c) => c.id !== id));
-    try { await chatsApi.remove(id); } catch { /* refetch on next open will resync */ }
+    try {
+      await chatsApi.remove(id);
+      // If the active chat was just removed, drop the URL pointer so the
+      // dashboard resets to the greeting instead of trying to load a 404.
+      if (id === activeChatId) router.push("/");
+    } catch {
+      // Best-effort: a refetch on next navigation will resync.
+    }
+  }
+
+  if (!user) {
+    return (
+      <div className="sb-row" style={{ opacity: 0.6, cursor: "not-allowed" }}>
+        {I.history}
+        <span className="lbl">{label}</span>
+      </div>
+    );
   }
 
   return (
-    <>
-      <button
-        ref={rowRef}
-        type="button"
-        className="sb-row"
-        onClick={toggle}
-        data-active={open}
-        aria-expanded={open}
-        aria-haspopup="menu"
-        disabled={!user}
-        style={!user ? { opacity: 0.6, cursor: "not-allowed" } : undefined}
-        title={user ? label : `${label} (sign in to see your past chats)`}
-      >
-        {I.history}
-        <span className="lbl">{label}</span>
-        <span className="trail-chev">{I.chevR}</span>
-      </button>
-
-      {open && mounted && createPortal(
-        <div ref={popRef} className="tools-pop history-pop" style={popStyle} role="menu">
-          <div className="pop-header">{label}</div>
-          {loading ? (
-            <div className="tool-row" style={{ color: "var(--muted)", justifyContent: "center" }}>
-              Loading…
-            </div>
-          ) : items.length === 0 ? (
-            <div className="tool-row" style={{ color: "var(--muted)", justifyContent: "center" }}>
-              No chats yet
-            </div>
-          ) : (
-            items.slice(0, 40).map((c) => (
+    <div className="sb-history">
+      <div className="sb-section-label">{label}</div>
+      {loading && items.length === 0 ? (
+        <div className="sb-history-empty">Loading…</div>
+      ) : items.length === 0 ? (
+        <div className="sb-history-empty">No chats yet</div>
+      ) : (
+        <ul className="sb-history-list">
+          {items.slice(0, 40).map((c) => (
+            <li key={c.id}>
               <button
-                key={c.id}
                 type="button"
-                className="tool-row history-item"
-                onClick={() => {
-                  setOpen(false);
-                  router.push(`/?c=${encodeURIComponent(c.id)}`);
-                }}
+                className="sb-history-item"
+                data-active={c.id === activeChatId}
+                onClick={() => router.push(`/?c=${encodeURIComponent(c.id)}`)}
+                title={c.title || "Untitled chat"}
               >
-                <span className="col">
-                  <span className="ttl">{c.title || "Untitled chat"}</span>
-                  <span className="desc">{new Date(c.updatedAt).toLocaleString()}</span>
-                </span>
+                <span className="sb-history-title">{c.title || "Untitled chat"}</span>
                 <span
-                  className="history-del"
+                  className="sb-history-del"
                   role="button"
                   aria-label="Delete chat"
                   onClick={(e) => removeChat(c.id, e)}
                   title="Delete chat"
                 >×</span>
               </button>
-            ))
-          )}
-        </div>,
-        document.body
+            </li>
+          ))}
+        </ul>
       )}
-    </>
+    </div>
   );
 }
 
