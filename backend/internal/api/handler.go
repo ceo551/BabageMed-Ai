@@ -119,6 +119,11 @@ func (h *Handler) ChatStream(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/event-stream")
 	w.Header().Set("Cache-Control", "no-cache")
 	w.Header().Set("Connection", "keep-alive")
+	// Tells nginx (ingress-nginx) and any other reverse proxy in the chain
+	// not to buffer this response. Without it the LLM tokens collect at the
+	// nginx proxy_buffer and the browser sees the whole answer at once
+	// instead of the typewriter-streaming effect.
+	w.Header().Set("X-Accel-Buffering", "no")
 	flush, _ := w.(http.Flusher)
 	ctx := r.Context()
 	// send returns false once the client has gone away (context cancelled or

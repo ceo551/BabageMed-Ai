@@ -113,7 +113,12 @@ func main() {
 	r.Use(tracing.TraceIDHeader)
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
-	r.Use(middleware.Timeout(60 * time.Second))
+	// 5 min covers the worst-case streamed LLM response (Gemini "long-form
+	// clinical reasoning" answers can run ~60-90s end-to-end). The chat
+	// streaming handler honours ctx cancellation early once the client
+	// disconnects, so this large ceiling only kicks in for legitimately
+	// long-running answers, not as a "hide leaks" knob.
+	r.Use(middleware.Timeout(5 * time.Minute))
 	r.Use(metrics.Middleware())
 	r.Use(cors.Handler(cors.Options{
 		AllowedOrigins:   []string{"*"},

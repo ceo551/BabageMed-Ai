@@ -65,6 +65,16 @@ alb.ingress.kubernetes.io/listen-ports: '[{"HTTP":80},{"HTTPS":443}]'
 kubernetes.io/ingress.class: nginx
 {{ if .Values.ingress.tls.issuer }}cert-manager.io/cluster-issuer: {{ .Values.ingress.tls.issuer }}{{ end }}
 nginx.ingress.kubernetes.io/proxy-body-size: "20m"
+# Disable nginx response buffering so the SSE stream from /api/chat/stream
+# reaches the browser token-by-token instead of being held until the body
+# closes. The backend also emits X-Accel-Buffering: no on the stream itself
+# (per-response), but this annotation makes the behaviour the default for
+# the whole ingress so we don't have to chase per-path nginx rules.
+# Longer read timeout because a long Claude/Gemini answer can run over a
+# minute and the default 60s would 504 mid-stream.
+nginx.ingress.kubernetes.io/proxy-buffering: "off"
+nginx.ingress.kubernetes.io/proxy-read-timeout: "300"
+nginx.ingress.kubernetes.io/proxy-send-timeout: "300"
 {{- end -}}
 {{- end -}}
 
