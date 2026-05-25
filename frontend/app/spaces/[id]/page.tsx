@@ -136,7 +136,7 @@ export default function SpaceDetailPage() {
 
       <div className="sd-grid">
         <div className="sd-main">
-          <SpaceChat space={space} files={files} />
+          <SpaceChat space={space} files={files} onFilesChanged={refresh} />
         </div>
         <div className="sd-side">
           <InstructionsPanel space={space} onSaved={(sp) => setSpace(sp)} />
@@ -174,7 +174,7 @@ function spaceNewId(): string {
   return `${Date.now().toString(36)}-${__spaceIdCounter.toString(36)}`;
 }
 
-function SpaceChat({ space, files }: { space: Space; files: SpaceFile[] }) {
+function SpaceChat({ space, files, onFilesChanged }: { space: Space; files: SpaceFile[]; onFilesChanged: () => void }) {
   const [messages, setMessages] = useState<SpaceChatMessage[]>([]);
   const isChatting = messages.length > 0;
   return (
@@ -198,6 +198,7 @@ function SpaceChat({ space, files }: { space: Space; files: SpaceFile[] }) {
         files={files}
         messages={messages}
         setMessages={setMessages}
+        onFilesChanged={onFilesChanged}
       />
     </div>
   );
@@ -264,12 +265,13 @@ function SpaceTranscript({ messages }: { messages: SpaceChatMessage[] }) {
 }
 
 function SpaceChatComposer({
-  space, files, messages, setMessages,
+  space, files, messages, setMessages, onFilesChanged,
 }: {
   space: Space;
   files: SpaceFile[];
   messages: SpaceChatMessage[];
   setMessages: React.Dispatch<React.SetStateAction<SpaceChatMessage[]>>;
+  onFilesChanged: () => void;
 }) {
   // Model picker reads from the same persisted prefs store the dashboard
   // composer uses, so changing the model here is visible everywhere and
@@ -278,10 +280,47 @@ function SpaceChatComposer({
   const setModel = prefs.setModel;
   const [value, setValue] = useState("");
   const [sending, setSending] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [modelOpen, setModelOpen] = useState(false);
   const taRef = useRef<HTMLTextAreaElement>(null);
   const composerRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const locale: Locale = "en";
+
+  // "+" button on the composer bar → OS file picker → upload each chosen
+  // file directly into this space, then refresh the parent file list so
+  // the right rail + the 📎 pill update. Dashboard uses the same pattern.
+  function openFilePicker() {
+    fileInputRef.current?.click();
+  }
+  async function onFilesChosen(e: React.ChangeEvent<HTMLInputElement>) {
+    const picked = e.target.files ? Array.from(e.target.files) : [];
+    e.target.value = "";                  // allow re-picking the same file
+    if (picked.length === 0) return;
+    setUploading(true);
+    try {
+      // Parallel upload, tolerate per-file failures so one bad PDF doesn't
+      // abort the whole batch. Surfaces a transcript row on error so the
+      // user knows it didn't take.
+      const results = await Promise.allSettled(
+        picked.map((f) => spacesApi.upload(space.id, f)),
+      );
+      const failed = results.filter((r) => r.status === "rejected");
+      if (failed.length > 0) {
+        setMessages((cur) => [
+          ...cur,
+          {
+            id: `a-${spaceNewId()}`,
+            role: "assistant",
+            content: `Couldn't attach ${failed.length} file${failed.length === 1 ? "" : "s"}.`,
+          },
+        ]);
+      }
+      onFilesChanged();
+    } finally {
+      setUploading(false);
+    }
+  }
 
   useEffect(() => {
     const ta = taRef.current;
@@ -433,6 +472,15 @@ function SpaceChatComposer({
 
   return (
     <div className="composer sd-composer" ref={composerRef}>
+      {/* Hidden file picker driven by the "+" button below. */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        multiple
+        hidden
+        onChange={onFilesChosen}
+        accept=".pdf,.csv,.txt,.md,.json,.dcm,application/pdf,text/csv,text/plain,application/json"
+      />
       <textarea
         ref={taRef}
         value={value}
@@ -452,8 +500,11 @@ function SpaceChatComposer({
         <button
           className="add-btn"
           type="button"
-          aria-label="Files pinned"
-          title={`${files.length} file${files.length === 1 ? "" : "s"} in this space`}
+          onClick={openFilePicker}
+          disabled={uploading}
+          aria-label={uploading ? "Uploading" : "Add file"}
+          title={uploading ? "Uploading…" : `Add file to this space (${files.length} attached)`}
+          style={{ cursor: uploading ? "progress" : "pointer", opacity: uploading ? 0.6 : 1 }}
         >
           {I.plus}
         </button>
