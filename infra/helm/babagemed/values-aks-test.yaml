@@ -49,15 +49,20 @@ ingress:
   enabled: true
   className: nginx
   # Production hostname — A record points at the AKS ingress LB IP
-  # (74.162.202.246). Created on Hostinger via the babagemed.com zone.
+  # (20.203.126.171). On Cloudflare with Proxied=ON, so end-users
+  # actually hit Cloudflare's edge first; Cloudflare reaches Azure
+  # over Microsoft's backbone (which works even though direct
+  # public-internet → UAE-North LB times out from most networks).
   host: ai.babagemed.com
   tls:
-    enabled: true
-    # cert-manager ClusterIssuer (see infra/helm/babagemed/letsencrypt-clusterissuer.yaml).
-    # On Helm install the chart annotates the Ingress so cert-manager picks
-    # it up, runs the HTTP-01 challenge through ingress-nginx, and provisions
-    # a real Let's Encrypt cert in ~30-90s. Renews automatically every 60 days.
-    issuer: letsencrypt-prod
+    # TLS terminated at Cloudflare (Universal SSL on the edge), not at
+    # ingress-nginx. Cloudflare SSL/TLS mode = "Flexible": user↔CF over
+    # HTTPS, CF↔origin over HTTP. Saves us cert-manager + Let's Encrypt
+    # while keeping the browser padlock. To go full end-to-end TLS:
+    # flip this back to true + put a real cert in babagemed-tls AND set
+    # Cloudflare to "Full (strict)".
+    enabled: false
+    issuer: ""
 
 secrets:
   # No real API keys — chat will 401 but everything else (auth, MCP browser, tester) works

@@ -21,12 +21,12 @@ spec:
     - host: {{ .Values.ingress.host | quote }}
       http:
         paths:
-          - path: /api/backend
-            pathType: Prefix
-            backend:
-              service:
-                name: {{ .Release.Name }}-backend
-                port: { number: {{ .Values.backend.service.port }} }
+          # All paths — including /api/backend/* — go to the Next.js frontend.
+          # The frontend has an App Router route at app/api/backend/[...path]/route.ts
+          # that proxies to the Go backend (reading BACKEND_URL per-request, so it
+          # picks up the k8s-injected env). Routing /api/backend directly at the
+          # backend service here would skip that proxy and arrive with the wrong
+          # path prefix (404 for every call).
           - path: /
             pathType: Prefix
             backend:
