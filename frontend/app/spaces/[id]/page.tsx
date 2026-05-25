@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import {
   spaces as spacesApi,
@@ -13,6 +13,8 @@ import { useAuth } from "../../lib/auth-context";
 import { MODELS, type Locale } from "../../i18n";
 import { I } from "../../icons";
 import { Modal } from "../../components/Modal";
+import { AssistantMessage, type Citation } from "../../components/AssistantMessage";
+import { usePrefs, prefs } from "../../lib/store";
 import "../spaces.css";
 
 // Space detail — Claude Projects-style layout.
@@ -134,10 +136,7 @@ export default function SpaceDetailPage() {
 
       <div className="sd-grid">
         <div className="sd-main">
-          <SpaceComposer space={space} files={files} />
-          <div className="sd-chat-hint">
-            Start a chat to keep conversations organized and re-use {space.name} knowledge.
-          </div>
+          <SpaceChat space={space} files={files} />
         </div>
         <div className="sd-side">
           <InstructionsPanel space={space} onSaved={(sp) => setSpace(sp)} />
@@ -153,16 +152,132 @@ export default function SpaceDetailPage() {
   );
 }
 
-// ─── Composer ───────────────────────────────────────────────────────────────
-// Slimmed-down version of the dashboard composer that pins this space.
-function SpaceComposer({ space, files }: { space: Space; files: SpaceFile[] }) {
+// ─── Space chat shell ───────────────────────────────────────────────────────
+// Full Claude-Projects-style chat inside the space: scrollable transcript on
+// top, docked composer at the bottom. The composer is a sibling of the
+// transcript scroller (not a child), same pattern as the dashboard, so the
+// dock never floats mid-conversation. On send we stream from /api/chat/stream
+// — same SSE protocol the dashboard uses — and the assistant turn grows
+// token-by-token in the transcript. spaceContext + spaceName + instructions
+// are wired through so the model is grounded in this space's files.
+type SpaceChatMessage =
+  | { id: string; role: "user"; content: string }
+  | { id: string; role: "assistant"; content: string; citations?: Citation[] }
+  | { id: string; role: "loading" };
+
+let __spaceIdCounter = 0;
+function spaceNewId(): string {
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+    return crypto.randomUUID();
+  }
+  __spaceIdCounter = (__spaceIdCounter + 1) | 0;
+  return `${Date.now().toString(36)}-${__spaceIdCounter.toString(36)}`;
+}
+
+function SpaceChat({ space, files }: { space: Space; files: SpaceFile[] }) {
+  const [messages, setMessages] = useState<SpaceChatMessage[]>([]);
+  const isChatting = messages.length > 0;
+  return (
+    <div className="sd-chat" data-chatting={isChatting}>
+      {isChatting ? (
+        <SpaceTranscript messages={messages} />
+      ) : (
+        <div className="sd-chat-empty">
+          <div className="sd-chat-empty-title">
+            Start a chat to keep conversations organized and re-use{" "}
+            <strong style={{ color: "var(--ink)" }}>{space.name}</strong> knowledge.
+          </div>
+          <div className="sd-chat-empty-hint">
+            Files dropped on the right are auto-indexed and surfaced as context
+            when relevant.
+          </div>
+        </div>
+      )}
+      <SpaceChatComposer
+        space={space}
+        files={files}
+        messages={messages}
+        setMessages={setMessages}
+      />
+    </div>
+  );
+}
+
+function SpaceTranscript({ messages }: { messages: SpaceChatMessage[] }) {
+  const endRef = useRef<HTMLDivElement>(null);
+  // Auto-scroll only when the user is already at the bottom — same lock the
+  // dashboard transcript uses so reading earlier output doesn't fight the
+  // stream.
+  const stickRef = useRef(true);
+  useEffect(() => {
+    const scroller = endRef.current?.closest(".sd-chat-scroll") as HTMLElement | null;
+    if (!scroller) return;
+    function onScroll() {
+      if (!scroller) return;
+      const dist = scroller.scrollHeight - scroller.scrollTop - scroller.clientHeight;
+      stickRef.current = dist < 120;
+    }
+    scroller.addEventListener("scroll", onScroll, { passive: true });
+    return () => scroller.removeEventListener("scroll", onScroll);
+  }, []);
+  useEffect(() => {
+    if (!stickRef.current) return;
+    endRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+  }, [messages]);
+
+  return (
+    <div className="sd-chat-scroll">
+      <div className="transcript">
+        {messages.map((m) => {
+          if (m.role === "loading") {
+            return (
+              <div key={m.id} className="msg msg-assistant msg-loading">
+                <img
+                  src="/babagemed-icon.png"
+                  alt=""
+                  className="msg-loading-mark"
+                  width={40}
+                  height={40}
+                  aria-hidden="true"
+                />
+                <span className="msg-loading-dots" aria-label="Generating">
+                  <span /><span /><span />
+                </span>
+              </div>
+            );
+          }
+          if (m.role === "user") {
+            return (
+              <div key={m.id} className="msg-row msg-row-user">
+                <div className="msg msg-user" dir="auto">{m.content}</div>
+              </div>
+            );
+          }
+          return (
+            <AssistantMessage key={m.id} content={m.content} citations={m.citations} />
+          );
+        })}
+        <div ref={endRef} aria-hidden="true" />
+      </div>
+    </div>
+  );
+}
+
+function SpaceChatComposer({
+  space, files, messages, setMessages,
+}: {
+  space: Space;
+  files: SpaceFile[];
+  messages: SpaceChatMessage[];
+  setMessages: React.Dispatch<React.SetStateAction<SpaceChatMessage[]>>;
+}) {
+  // Model picker reads from the same persisted prefs store the dashboard
+  // composer uses, so changing the model here is visible everywhere and
+  // survives a page reload. Same for setModel.
+  const { model } = usePrefs();
+  const setModel = prefs.setModel;
   const [value, setValue] = useState("");
-  // useState narrows MODELS[0].id to the literal "opus-4.7" otherwise — widen
-  // back to the union so setModel(m.id) for any model is type-safe.
-  const [model, setModel] = useState<string>(MODELS[0].id);
   const [sending, setSending] = useState(false);
-  const [reply, setReply] = useState<string>("");
-  const [voiceOn, setVoiceOn] = useState(false);
   const [modelOpen, setModelOpen] = useState(false);
   const taRef = useRef<HTMLTextAreaElement>(null);
   const composerRef = useRef<HTMLDivElement>(null);
@@ -186,15 +301,40 @@ function SpaceComposer({ space, files }: { space: Space; files: SpaceFile[] }) {
   const currentModel = MODELS.find((m) => m.id === model) || MODELS[0];
 
   async function send() {
-    if (!value.trim() || sending) return;
+    const text = value.trim();
+    if (!text || sending) return;
     setSending(true);
-    setReply("");
+    setValue("");
+
+    const userId = `u-${spaceNewId()}`;
+    const loadingId = `l-${spaceNewId()}`;
+    const assistantId = `a-${spaceNewId()}`;
+
+    setMessages((cur) => [
+      ...cur,
+      { id: userId, role: "user", content: text },
+      { id: loadingId, role: "loading" },
+    ]);
+
+    // Best-effort space context — small top-k retrieval from indexed files.
+    let spaceContext: unknown[] = [];
     try {
-      let spaceContext: unknown[] = [];
-      try {
-        spaceContext = await spacesApi.context(space.id, value);
-      } catch {/* non-fatal */}
-      const r = await fetch("/api/backend/api/chat", {
+      spaceContext = await spacesApi.context(space.id, text);
+    } catch {
+      // non-fatal; the model just gets less grounding
+    }
+
+    // Build the message history to send (excluding the loading placeholder).
+    const historyForServer = [
+      ...messages.filter((m) => m.role !== "loading").map((m) => ({
+        role: m.role as "user" | "assistant",
+        content: m.role === "assistant" ? m.content : (m as { content: string }).content,
+      })),
+      { role: "user" as const, content: text },
+    ];
+
+    try {
+      const res = await fetch("/api/backend/api/chat/stream", {
         method: "POST",
         headers: { "content-type": "application/json" },
         credentials: "include",
@@ -202,117 +342,183 @@ function SpaceComposer({ space, files }: { space: Space; files: SpaceFile[] }) {
           model,
           mode: "bedside",
           locale,
-          messages: [{ role: "user", content: value }],
+          messages: historyForServer,
           useMcps: [],
           spaceContext,
           spaceName: space.name,
           spaceInstructions: space.instructions || "",
         }),
       });
-      const j = await r.json();
-      setReply(j?.completion?.content || j?.error || "(no response)");
+      if (!res.ok || !res.body) {
+        throw new Error(`stream failed (${res.status})`);
+      }
+      // Swap the loading row for an empty assistant row that we'll fill
+      // delta-by-delta as the SSE stream arrives.
+      setMessages((cur) =>
+        cur.filter((m) => m.id !== loadingId).concat({
+          id: assistantId, role: "assistant", content: "",
+        }),
+      );
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
+      let finalContent = "";
+      let citationsForTurn: Citation[] | undefined;
+
+      while (true) {
+        const { value: chunk, done } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(chunk, { stream: true });
+        let idx: number;
+        while ((idx = buffer.indexOf("\n\n")) !== -1) {
+          const frame = buffer.slice(0, idx);
+          buffer = buffer.slice(idx + 2);
+          let event = "message";
+          let data = "";
+          for (const line of frame.split("\n")) {
+            if (line.startsWith("event: ")) event = line.slice(7).trim();
+            else if (line.startsWith("data: ")) data += line.slice(6);
+          }
+          if (!data) continue;
+          let parsed: any = null;
+          try { parsed = JSON.parse(data); } catch { /* ignore non-JSON */ }
+          if (event === "citations" && Array.isArray(parsed)) {
+            citationsForTurn = parsed as Citation[];
+            setMessages((cur) => cur.map((m) =>
+              m.id === assistantId && m.role === "assistant"
+                ? { ...m, citations: citationsForTurn }
+                : m,
+            ));
+          } else if (event === "delta" && typeof parsed?.text === "string") {
+            finalContent += parsed.text;
+            const next = finalContent;
+            setMessages((cur) => cur.map((m) =>
+              m.id === assistantId && m.role === "assistant"
+                ? { ...m, content: next, citations: citationsForTurn }
+                : m,
+            ));
+          } else if (event === "content" && parsed?.content && finalContent === "") {
+            finalContent = parsed.content;
+            setMessages((cur) => cur.map((m) =>
+              m.id === assistantId && m.role === "assistant"
+                ? { ...m, content: parsed.content, citations: citationsForTurn }
+                : m,
+            ));
+          } else if (event === "error" && parsed?.error) {
+            setMessages((cur) => cur.map((m) =>
+              m.id === assistantId && m.role === "assistant"
+                ? { ...m, content: "Error: " + parsed.error }
+                : m,
+            ));
+          }
+        }
+      }
     } catch (e: any) {
-      setReply("Error: " + e.message);
+      setMessages((cur) =>
+        cur.filter((m) => m.id !== loadingId).concat({
+          id: `a-${spaceNewId()}`, role: "assistant",
+          content: "Error: " + (e?.message || String(e)),
+        }),
+      );
     } finally {
       setSending(false);
     }
   }
 
   function brandMark(brand: string) {
-    return brand === "anthropic" ? I.anthropicMark : brand === "google" ? I.geminiMark : <span style={{ width: 10, height: 10, borderRadius: "50%", background: "var(--muted-2)" }} />;
+    return brand === "anthropic" ? I.anthropicMark
+      : brand === "google" ? I.geminiMark
+      : <span style={{ width: 10, height: 10, borderRadius: "50%", background: "var(--muted-2)" }} />;
   }
 
   return (
-    <>
-      <div className="composer sd-composer" ref={composerRef}>
-        <textarea
-          ref={taRef}
-          value={value}
-          onChange={(e) => setValue(e.target.value)}
-          placeholder="How can I help you today?"
-          rows={1}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
-              e.preventDefault();
-              send();
-            }
-          }}
-        />
-        <div className="composer-bar">
+    <div className="composer sd-composer" ref={composerRef}>
+      <textarea
+        ref={taRef}
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
+        placeholder="How can I help you today?"
+        rows={1}
+        onKeyDown={(e) => {
+          // Match dashboard composer: plain Enter sends, Shift+Enter newline,
+          // IME composition guard so accent-stacks don't submit prematurely.
+          if (e.key === "Enter" && !e.shiftKey && !(e.nativeEvent as any).isComposing) {
+            e.preventDefault();
+            if (!sending) send();
+          }
+        }}
+      />
+      <div className="composer-bar">
+        <button
+          className="add-btn"
+          type="button"
+          aria-label="Files pinned"
+          title={`${files.length} file${files.length === 1 ? "" : "s"} in this space`}
+        >
+          {I.plus}
+        </button>
+        {files.length > 0 && (
+          <span className="model-pill" title="Files in this space are pinned as context">
+            📎 {files.length}
+          </span>
+        )}
+        <span className="spacer" />
+        <div style={{ position: "relative" }}>
           <button
-            className="add-btn"
+            className="model-pill"
             type="button"
-            aria-label="Add to chat"
-            title={`${files.length} file${files.length === 1 ? "" : "s"} in this space`}
+            data-open={modelOpen}
+            onClick={() => setModelOpen((v) => !v)}
           >
-            {I.plus}
+            <span className="brand-mark">{brandMark(currentModel.brand)}</span>
+            <span>{currentModel.short}</span>
+            {I.chev}
           </button>
-          {files.length > 0 && (
-            <span className="model-pill" title="Files in this space are pinned as context">
-              📎 {files.length}
-            </span>
-          )}
-          <span className="spacer" />
-          <div style={{ position: "relative" }}>
-            <button
-              className="model-pill"
-              type="button"
-              data-open={modelOpen}
-              onClick={() => setModelOpen((v) => !v)}
-            >
-              <span className="brand-mark">{brandMark(currentModel.brand)}</span>
-              <span>{currentModel.short}</span>
-              <span style={{ opacity: 0.6, fontSize: 11 }}>Adaptive</span>
-              {I.chev}
-            </button>
-            {modelOpen && (
-              <div className="model-pop" role="menu">
-                <div className="pop-header">Reasoning engine</div>
-                {MODELS.map((m) => (
-                  <button
-                    key={m.id}
-                    className="model-row"
-                    type="button"
-                    data-active={model === m.id}
-                    onClick={() => { setModel(m.id); setModelOpen(false); }}
-                  >
-                    <span className="brand-mark">{brandMark(m.brand)}</span>
-                    <span className="col">
-                      <span className="nm">{m.name}</span>
-                      <span className="meta-row">
-                        {m.pills[locale].map((p, i) => <span key={i} className="pill">{p}</span>)}
-                      </span>
+          {modelOpen && (
+            <div className="model-pop" role="menu">
+              <div className="pop-header">Reasoning engine</div>
+              {MODELS.map((m) => (
+                <button
+                  key={m.id}
+                  className="model-row"
+                  type="button"
+                  data-active={model === m.id}
+                  onClick={() => { setModel(m.id); setModelOpen(false); }}
+                >
+                  <span className="brand-mark">{brandMark(m.brand)}</span>
+                  <span className="col">
+                    <span className="nm">{m.name}</span>
+                    <span className="meta-row">
+                      {m.pills[locale].map((p, i) => <span key={i} className="pill">{p}</span>)}
                     </span>
-                    <span className="check">{I.check}</span>
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-          <button
-            className="cmpr-icon"
-            type="button"
-            data-on={voiceOn}
-            onClick={() => setVoiceOn((v) => !v)}
-            aria-label="Mic"
-          >{I.mic}</button>
-          <button className="cmpr-icon" type="button" aria-label="Voice">{I.voice}</button>
-          <button
-            className="cmpr-icon"
-            type="button"
-            onClick={send}
-            aria-label="Send"
-            disabled={sending}
-            style={{ width: "auto", padding: "0 10px", color: "var(--cyan)", borderColor: "var(--cyan-line)", background: "var(--cyan-soft)" }}
-          >
-            {sending ? "…" : "↵"}
-          </button>
+                  </span>
+                  <span className="check">{I.check}</span>
+                </button>
+              ))}
+            </div>
+          )}
         </div>
+        <button
+          className="cmpr-icon"
+          type="button"
+          onClick={send}
+          aria-label={sending ? "Sending" : "Send"}
+          disabled={sending || value.trim() === ""}
+          style={{
+            width: "auto",
+            padding: "0 10px",
+            color: sending || value.trim() === "" ? "var(--muted)" : "var(--cyan)",
+            borderColor: sending || value.trim() === "" ? "var(--border)" : "var(--cyan-line)",
+            background: sending || value.trim() === "" ? "var(--panel)" : "var(--cyan-soft)",
+            opacity: sending || value.trim() === "" ? 0.6 : 1,
+            cursor: sending ? "progress" : value.trim() === "" ? "not-allowed" : "pointer",
+            transition: "color .12s, background .12s, opacity .12s",
+          }}
+        >
+          {sending ? "…" : "↵"}
+        </button>
       </div>
-      {reply && (
-        <div className="sd-reply">{reply}</div>
-      )}
-    </>
+    </div>
   );
 }
 

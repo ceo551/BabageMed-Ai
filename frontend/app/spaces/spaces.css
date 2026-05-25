@@ -339,13 +339,20 @@ textarea.field-input { resize: vertical; min-height: 44px; line-height: 1.55; }
 }
 
 /* ─── Space detail (Claude-style Project page) ──────────────────────────── */
+/* Flex column at 100vh with overflow:hidden so the inner chat shell can
+ * own its own scroll without spilling onto the page. The padding instead
+ * of margin keeps the shell width-constrained while letting its child
+ * grid flex to fill the leftover vertical space. */
 .space-detail-shell {
   max-width: 1280px;
-  margin: 24px auto 80px;
-  padding: 0 24px;
+  width: 100%;
+  height: 100vh;
+  margin: 0 auto;
+  padding: 24px 24px 0;
   display: flex; flex-direction: column;
-  gap: 18px;
+  gap: 16px;
   color: var(--ink);
+  overflow: hidden;
 }
 .sd-topbar { font-size: 13px; }
 .sd-back {
@@ -425,36 +432,79 @@ textarea.field-input { resize: vertical; min-height: 44px; line-height: 1.55; }
   display: grid;
   grid-template-columns: minmax(0, 1fr) 360px;
   gap: 18px;
-  align-items: start;
+  align-items: stretch;     /* both columns fill the grid's height */
+  flex: 1;                  /* take all leftover height of the shell */
+  min-height: 0;            /* allow inner overflow:auto to take effect */
+  padding-bottom: 16px;
 }
 @media (max-width: 960px) {
   .sd-grid { grid-template-columns: 1fr; }
 }
 
-.sd-main { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
-.sd-side { display: flex; flex-direction: column; gap: 12px; }
-
-/* Composer reuses .composer + .composer-bar from dashboard.css; just tweak
- * surface so it sits on the space page nicely. */
-.sd-composer { background: var(--panel) !important; border-radius: 18px !important; }
-.sd-chat-hint {
-  text-align: center;
-  color: var(--muted);
-  font-size: 13px;
-  border: 1px solid var(--border);
-  border-radius: 14px;
-  padding: 18px;
-  background: color-mix(in srgb, var(--panel) 60%, transparent);
+.sd-main {
+  display: flex; flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;          /* the chat shell inside owns the scroll */
 }
-.sd-reply {
-  background: var(--panel-solid);
-  border: 1px solid var(--border);
-  border-radius: 14px;
-  padding: 16px;
-  color: var(--ink);
-  white-space: pre-wrap;
-  line-height: 1.6;
+.sd-side {
+  display: flex; flex-direction: column;
+  gap: 12px;
+  overflow-y: auto;          /* side rail scrolls independently */
+  min-height: 0;
+  padding-inline-end: 4px;   /* breathing room for the scrollbar */
+}
+
+/* Chat shell inside .sd-main: scrolling transcript + docked composer.
+ * Same layout pattern the dashboard uses, scoped to this column. */
+.sd-chat {
+  flex: 1;
+  display: flex; flex-direction: column;
+  min-height: 0;
+}
+.sd-chat-scroll {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  min-height: 0;
+  padding: 8px 4px 16px;
+}
+.sd-chat-scroll::-webkit-scrollbar { width: 10px; }
+.sd-chat-scroll::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+  border-radius: 99px;
+}
+.sd-chat-empty {
+  flex: 1;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 10px;
+  padding: 24px;
+  text-align: center;
+}
+.sd-chat-empty-title {
+  color: var(--muted);
   font-size: 14px;
+  line-height: 1.5;
+  max-width: 36ch;
+}
+.sd-chat-empty-hint {
+  color: var(--muted-2);
+  font-size: 12px;
+  max-width: 36ch;
+}
+/* Composer reuses .composer + .composer-bar from dashboard.css; the
+ * Space variant just tweaks the surface tone so it sits inside the
+ * space's lighter background and pins itself to the bottom of the
+ * column rather than centering. */
+.sd-composer {
+  background: var(--panel) !important;
+  border-radius: 18px !important;
+  flex: 0 0 auto;
+  width: 100%;
+  max-width: none;            /* fill the column — dashboard's 760px cap
+                                 is wrong inside a fixed-width sub-column */
+  margin-block-start: 8px;
 }
 
 /* Right-rail card primitive */

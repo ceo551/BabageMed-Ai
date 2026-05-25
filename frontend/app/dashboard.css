@@ -220,7 +220,11 @@ a { color: inherit; text-decoration: none; }
 .brand-greet .b3 { color: var(--yellow); font-family: var(--serif); font-style: italic; font-size: 50px; margin-inline-start: .15em; }
 
 /* COMPOSER */
-.composer { background: var(--panel-solid); border: 1px solid var(--border); border-radius: 18px; padding: 14px 14px 10px; box-shadow: var(--shadow); position: relative; }
+/* width + max-width here so the composer fills its column instead of
+ * shrinking to the textarea's content width. The flex parent
+ * (.stage in empty state, .stage-inner in chat state) centers it
+ * horizontally; this rule decides how wide it actually is. */
+.composer { background: var(--panel-solid); border: 1px solid var(--border); border-radius: 18px; padding: 14px 14px 10px; box-shadow: var(--shadow); position: relative; width: 100%; max-width: 760px; }
 .composer textarea { width: 100%; resize: none; background: transparent; border: 0; outline: 0; color: var(--ink); font-family: inherit; font-size: 16px; line-height: 1.5; min-height: 28px; padding: 6px 4px; }
 .composer textarea::placeholder { color: var(--muted); }
 .composer-bar { display: flex; align-items: center; gap: 8px; padding-top: 6px; }
