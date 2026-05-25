@@ -158,7 +158,18 @@ func (c *Client) Complete(ctx context.Context, req CompletionRequest) (*Completi
 	switch {
 	case strings.HasPrefix(req.Model, "opus") || strings.HasPrefix(req.Model, "claude") || strings.HasPrefix(req.Model, "sonnet") || strings.HasPrefix(req.Model, "haiku"):
 		provider = "anthropic"
-		out, err = c.callAnthropic(ctx, req)
+		// Mirror CompleteStream's preference: when a Vertex project is wired
+		// we use the Vertex AI Marketplace endpoint for Claude (no separate
+		// Anthropic API key, billed via GCP). Fall through to the direct
+		// Anthropic path only if Vertex errors AND AnthropicKey is set.
+		if c.cfg.VertexProject != "" {
+			out, err = c.callVertexAnthropic(ctx, req)
+			if err != nil && c.cfg.AnthropicKey != "" {
+				out, err = c.callAnthropic(ctx, req)
+			}
+		} else {
+			out, err = c.callAnthropic(ctx, req)
+		}
 	case strings.HasPrefix(req.Model, "gemini"):
 		provider = "google"
 		out, err = c.callGoogle(ctx, req)
@@ -226,6 +237,64 @@ func (c *Client) callAnthropic(ctx context.Context, req CompletionRequest) (*Com
 		text += c.Text
 	}
 	return &CompletionResponse{Provider: "anthropic", Model: m, Content: text}, nil
+}
+
+// callVertexAnthropic is the non-streaming twin of streamVertexAnthropic.
+// Used by Complete() (and therefore /api/chat) so anything that doesn't
+// hit the SSE path can still talk to Claude via Vertex Marketplace
+// without an ANTHROPIC_API_KEY. Endpoint URL ends with :rawPredict instead
+// of :streamRawPredict; body identical, response shape identical to the
+// direct Anthropic Messages API.
+func (c *Client) callVertexAnthropic(ctx context.Context, req CompletionRequest) (*CompletionResponse, error) {
+	if c.cfg.VertexProject == "" {
+		return nil, errors.New("VertexProject not configured")
+	}
+	location := c.cfg.VertexAnthropicLocation
+	if location == "" {
+		location = "us-east5"
+	}
+	m := anthropicModel(req.Model)
+	body, _ := json.Marshal(map[string]any{
+		"anthropic_version": "vertex-2023-10-16",
+		"max_tokens":        4096,
+		"system":            req.System,
+		"messages":          req.Messages,
+	})
+	url := fmt.Sprintf(
+		"https://%s-aiplatform.googleapis.com/v1/projects/%s/locations/%s/publishers/anthropic/models/%s:rawPredict",
+		location, c.cfg.VertexProject, location, m,
+	)
+	ts, err := c.vertexTokenSource()
+	if err != nil {
+		return nil, fmt.Errorf("vertex anthropic token source: %w", err)
+	}
+	tok, err := ts.Token()
+	if err != nil {
+		return nil, fmt.Errorf("vertex anthropic token: %w", err)
+	}
+	r, _ := http.NewRequestWithContext(ctx, "POST", url, bytes.NewReader(body))
+	r.Header.Set("Authorization", "Bearer "+tok.AccessToken)
+	r.Header.Set("content-type", "application/json")
+	res, err := c.http.Do(r)
+	if err != nil {
+		return nil, err
+	}
+	defer res.Body.Close()
+	raw, _ := io.ReadAll(res.Body)
+	if res.StatusCode >= 400 {
+		return nil, fmt.Errorf("vertex anthropic: %s: %s", res.Status, string(raw))
+	}
+	var out struct {
+		Content []struct{ Text string } `json:"content"`
+	}
+	if err := json.Unmarshal(raw, &out); err != nil {
+		return nil, err
+	}
+	text := ""
+	for _, blk := range out.Content {
+		text += blk.Text
+	}
+	return &CompletionResponse{Provider: "anthropic-vertex", Model: m, Content: text}, nil
 }
 
 // callGoogle dispatches Gemini calls to either Vertex AI (when
