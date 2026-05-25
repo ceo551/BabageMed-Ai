@@ -95,7 +95,10 @@ func main() {
 		// JSON pointing at the projected WIF token) drives ADC.
 		VertexProject:  os.Getenv("GOOGLE_CLOUD_PROJECT"),
 		VertexLocation: os.Getenv("GOOGLE_CLOUD_LOCATION"),
-		OpenAIKey:    os.Getenv("OPENAI_API_KEY"),
+		// Anthropic-on-Vertex runs in a different region set than Gemini —
+		// us-east5 is the canonical one. Empty → llm client defaults to that.
+		VertexAnthropicLocation: os.Getenv("VERTEX_ANTHROPIC_LOCATION"),
+		OpenAIKey:               os.Getenv("OPENAI_API_KEY"),
 	})
 
 	// Redis cache wrapper — gathers MCP search results so identical queries

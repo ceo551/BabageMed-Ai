@@ -92,6 +92,11 @@ gcp:
   project: "starlit-braid-497012-q5"
   projectNumber: "36958314605"
   location: "us-central1"
+  # Anthropic models live in a different region set than Gemini; us-east5 is
+  # the canonical region for Claude on Vertex AI Marketplace. Each Claude
+  # model (Opus 4.7, Opus 4.6, Sonnet, Haiku) is its own Marketplace product
+  # — subscribe per model at console.cloud.google.com/vertex-ai/publishers/anthropic
+  anthropicLocation: "us-east5"
   wifPool: "aks-pool"
   wifProvider: "aks-provider"
   vertexServiceAccount: "babagemed-vertex@starlit-braid-497012-q5.iam.gserviceaccount.com"

@@ -97,6 +97,11 @@ spec:
               value: {{ .Values.gcp.project | quote }}
             - name: GOOGLE_CLOUD_LOCATION
               value: {{ .Values.gcp.location | quote }}
+            # Anthropic-on-Vertex runs in a separate region (us-east5 is the
+            # canonical one for Claude). Falls back to the in-code default if
+            # the value is empty.
+            - name: VERTEX_ANTHROPIC_LOCATION
+              value: {{ .Values.gcp.anthropicLocation | default "us-east5" | quote }}
             {{- end }}
             {{- if .Values.redis.enabled }}
             # In-cluster Redis (see templates/redis.yaml). The backend's

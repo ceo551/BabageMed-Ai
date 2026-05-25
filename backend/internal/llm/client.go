@@ -29,7 +29,12 @@ type Config struct {
 	// and ignores GoogleKey.
 	VertexProject  string
 	VertexLocation string
-	OpenAIKey      string
+	// VertexAnthropicLocation is a SEPARATE region for Anthropic-on-Vertex
+	// because Claude is only available in a small set of regions (us-east5,
+	// europe-west1, asia-southeast1) — distinct from the Gemini region.
+	// Empty → defaults to us-east5 in the request builder.
+	VertexAnthropicLocation string
+	OpenAIKey               string
 }
 
 type Client struct {
@@ -109,7 +114,18 @@ func (c *Client) CompleteStream(ctx context.Context, req CompletionRequest, onDe
 	case strings.HasPrefix(req.Model, "opus"), strings.HasPrefix(req.Model, "claude"),
 		strings.HasPrefix(req.Model, "sonnet"), strings.HasPrefix(req.Model, "haiku"):
 		provider = "anthropic"
-		out, err = c.streamAnthropic(ctx, req, onDelta)
+		// Prefer Anthropic-on-Vertex when a GCP project is wired — no separate
+		// Anthropic API key, same Workload Identity Federation as Gemini, bills
+		// against the same $300 GCP free credit. Falls back to the direct
+		// Anthropic API on error if AnthropicKey is also configured.
+		if c.cfg.VertexProject != "" {
+			out, err = c.streamVertexAnthropic(ctx, req, onDelta)
+			if err != nil && c.cfg.AnthropicKey != "" {
+				out, err = c.streamAnthropic(ctx, req, onDelta)
+			}
+		} else {
+			out, err = c.streamAnthropic(ctx, req, onDelta)
+		}
 	case strings.HasPrefix(req.Model, "gemini"):
 		provider = "google"
 		out, err = c.streamGoogle(ctx, req, onDelta)
@@ -362,6 +378,101 @@ func (c *Client) streamAnthropic(ctx context.Context, req CompletionRequest, onD
 		return nil, fmt.Errorf("anthropic stream read: %w", err)
 	}
 	return &CompletionResponse{Provider: "anthropic", Model: model, Content: full.String()}, nil
+}
+
+// streamVertexAnthropic calls Claude through Vertex AI's publishers/anthropic
+// endpoint. Auth piggybacks on the SAME Workload Identity Federation that
+// drives Gemini — no Anthropic API key required. The SSE wire format is
+// identical to direct api.anthropic.com (content_block_delta with text_delta),
+// so the parser is shared in spirit but inlined here to keep the dependency
+// graph flat.
+//
+// Region defaults to us-east5 because that's where Anthropic's models are
+// hosted on Vertex AI today. The Gemini region (typically us-central1) does
+// NOT host Anthropic models; calls there 404. Override via env var
+// VERTEX_ANTHROPIC_LOCATION if Anthropic adds new regions.
+//
+// Model availability requires a one-time Marketplace subscription per model:
+// see https://console.cloud.google.com/vertex-ai/publishers/anthropic — each
+// Claude tier (Opus, Sonnet, Haiku) is its own product to enable.
+func (c *Client) streamVertexAnthropic(ctx context.Context, req CompletionRequest, onDelta func(string)) (*CompletionResponse, error) {
+	if c.cfg.VertexProject == "" {
+		return nil, errors.New("VertexProject not configured")
+	}
+	location := c.cfg.VertexAnthropicLocation
+	if location == "" {
+		location = "us-east5"
+	}
+	model := anthropicModel(req.Model)
+
+	// Vertex-on-Anthropic body intentionally has NO "model" field — the model
+	// is in the URL. It DOES need "anthropic_version" set to the Vertex SKU
+	// string ("vertex-2023-10-16" at the time of writing). max_tokens is
+	// required, same as direct Anthropic.
+	body, _ := json.Marshal(map[string]any{
+		"anthropic_version": "vertex-2023-10-16",
+		"max_tokens":        4096,
+		"system":            req.System,
+		"messages":          req.Messages,
+		"stream":            true,
+	})
+
+	url := fmt.Sprintf(
+		"https://%s-aiplatform.googleapis.com/v1/projects/%s/locations/%s/publishers/anthropic/models/%s:streamRawPredict",
+		location, c.cfg.VertexProject, location, model,
+	)
+
+	ts, err := c.vertexTokenSource()
+	if err != nil {
+		return nil, fmt.Errorf("vertex anthropic token source: %w", err)
+	}
+	tok, err := ts.Token()
+	if err != nil {
+		return nil, fmt.Errorf("vertex anthropic token: %w", err)
+	}
+
+	r, _ := http.NewRequestWithContext(ctx, "POST", url, bytes.NewReader(body))
+	r.Header.Set("Authorization", "Bearer "+tok.AccessToken)
+	r.Header.Set("content-type", "application/json")
+
+	res, err := c.http.Do(r)
+	if err != nil {
+		return nil, err
+	}
+	defer res.Body.Close()
+	if res.StatusCode >= 400 {
+		raw, _ := io.ReadAll(res.Body)
+		return nil, fmt.Errorf("vertex anthropic stream: %s: %s", res.Status, string(raw))
+	}
+
+	var full strings.Builder
+	sc := bufio.NewScanner(res.Body)
+	sc.Buffer(make([]byte, 0, 64*1024), 1024*1024)
+	for sc.Scan() {
+		line := sc.Text()
+		if !strings.HasPrefix(line, "data: ") {
+			continue
+		}
+		data := strings.TrimPrefix(line, "data: ")
+		var evt struct {
+			Type  string `json:"type"`
+			Delta struct {
+				Type string `json:"type"`
+				Text string `json:"text"`
+			} `json:"delta"`
+		}
+		if err := json.Unmarshal([]byte(data), &evt); err != nil {
+			continue
+		}
+		if evt.Type == "content_block_delta" && evt.Delta.Type == "text_delta" && evt.Delta.Text != "" {
+			full.WriteString(evt.Delta.Text)
+			onDelta(evt.Delta.Text)
+		}
+	}
+	if err := sc.Err(); err != nil {
+		return nil, fmt.Errorf("vertex anthropic stream read: %w", err)
+	}
+	return &CompletionResponse{Provider: "anthropic-vertex", Model: model, Content: full.String()}, nil
 }
 
 // streamGoogle calls either Vertex AI streamGenerateContent (when
