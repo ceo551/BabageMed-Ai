@@ -221,9 +221,19 @@ a { color: inherit; text-decoration: none; }
   gap: 0;
   max-width: 760px;
   width: 100%;
-  margin-inline: auto; /* the actual horizontal centring */
-  /* No fixed height: the page scrolls inside .main (which has overflow-y),
-   * and the composer is sticky-pinned to the bottom of the viewport. */
+  margin-inline: auto; /* horizontal centring */
+  /* Fill at least the viewport so the composer's sticky bottom anchors
+   * to the bottom of the visible window even when the transcript is
+   * short (e.g. greeting + a single reply). When the conversation grows
+   * past 100vh, .main's overflow takes over and the composer sticks. */
+  min-height: 100vh;
+}
+.stage-inner[data-chat="true"] .transcript {
+  /* Grow to consume the slack between the top of .stage-inner and the
+   * pinned composer. Without this the transcript collapses to its
+   * content height and the composer floats up next to the last reply. */
+  flex: 1 1 auto;
+  min-height: 0;
 }
 .stage-inner[data-chat="true"] .composer {
   flex: 0 0 auto;
