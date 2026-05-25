@@ -688,7 +688,6 @@ function Composer({
           )}
         </div>
         <button className="cmpr-icon" type="button" data-on={voiceOn} onClick={() => setVoiceOn((v) => !v)} aria-label="Mic">{I.mic}</button>
-        <button className="cmpr-icon" type="button" aria-label="Voice">{I.voice}</button>
         <button
           className="cmpr-icon"
           type="button"
