@@ -1,0 +1,59 @@
+# Cloudflared tunnel — outbound TLS connection from AKS to Cloudflare edge.
+# Sidesteps the inbound routing issue on the Azure UAE North public IP
+# (the LB's IP isn't reliably reachable from outside Azure, including from
+# Cloudflare's edge), so all traffic for ai.babagemed.com now flows:
+#
+#   browser ─► Cloudflare edge ─► cloudflared (outbound tunnel) ─► AKS pod
+#                                  │
+#                                  └─► ingress-nginx-controller.ingress-nginx
+#                                         ─► babagemed-frontend / -backend
+#
+# The TUNNEL_TOKEN secret is created out-of-band (see the PS script that
+# stamped it from a tempfile — the value never lives on disk or in shell
+# args). Two replicas so a node drain doesn't kill the public site.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cloudflared
+  namespace: ingress-nginx
+  labels:
+    app: cloudflared
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: cloudflared
+  template:
+    metadata:
+      labels:
+        app: cloudflared
+    spec:
+      containers:
+        - name: cloudflared
+          image: cloudflare/cloudflared:latest
+          args:
+            - tunnel
+            - --no-autoupdate
+            - --metrics
+            - 0.0.0.0:2000
+            - run
+          env:
+            - name: TUNNEL_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: cloudflared-token
+                  key: token
+          # cloudflared's /ready endpoint flaps during the initial Cloudflare
+          # handshake (200 → 502 → 200) on fresh tunnels, and a 1-failure
+          # threshold killed the pod inside a minute. TCP probe on the
+          # metrics port is what the official cloudflared k8s docs use —
+          # it only fails if the process actually died.
+          livenessProbe:
+            tcpSocket:
+              port: 2000
+            initialDelaySeconds: 30
+            periodSeconds: 30
+            failureThreshold: 3
+          resources:
+            requests: { cpu: 50m, memory: 64Mi }
+            limits:   { cpu: 500m, memory: 256Mi }
