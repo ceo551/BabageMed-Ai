@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useEffect, useRef, useState } from "react";
 import { STR, type Locale, type LocaleStrings } from "../i18n";
+import { usePrefs, prefs } from "./store";
 
 // Persisted in localStorage so a reload keeps the user's pick. Without this
 // setLocale("ar") would update state, then window.location.reload() would
@@ -66,7 +67,9 @@ export function UIProvider({ children }: { children: React.ReactNode }) {
   const [locale, setLocaleState] = useState<Locale>("en");
   const [theme, setThemeState] = useState<Theme>("system");
   const [systemTheme, setSystemTheme] = useState<"light" | "dark">("dark");
-  const [collapsed, setCollapsed] = useState(false);
+  // Sidebar collapse lives in the global prefs store so a reload restores
+  // the user's pick (previously useState reset to false on every reload).
+  const { sidebarCollapsed: collapsed } = usePrefs();
   const hydrated = useRef(false);
 
   const effectiveTheme = theme === "system" ? systemTheme : theme;
@@ -116,7 +119,7 @@ export function UIProvider({ children }: { children: React.ReactNode }) {
     theme, setTheme,
     effectiveTheme,
     collapsed,
-    toggleCollapsed: () => setCollapsed((v) => !v),
+    toggleCollapsed: prefs.toggleSidebar,
     s,
   };
 

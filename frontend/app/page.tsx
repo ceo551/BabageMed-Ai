@@ -6,6 +6,7 @@ import React, { Suspense, useEffect, useLayoutEffect, useMemo, useRef, useState 
 import { MODELS, type Locale, type LocaleStrings } from "./i18n";
 import { I } from "./icons";
 import { useUI } from "./lib/ui-context";
+import { usePrefs, useSession, prefs, session } from "./lib/store";
 import { ConnectorIcon } from "./components/ConnectorIcon";
 import { AssistantMessage, type Citation } from "./components/AssistantMessage";
 import {
@@ -49,13 +50,12 @@ function DashboardInner() {
   // means the effect re-runs and clears state — value itself is ignored.
   const nonceParam = params?.get("n") || "";
 
-  const [model, setModel] = useState<string>("opus-4.7");
-  const [mode, setMode] = useState<string>("bedside");
-  const [activeSpaceId, setActiveSpaceId] = useState<string>("");
-  const [activeConnectorIds, setActiveConnectorIds] = useState<string[]>([]);
+  // Chat-lifecycle state stays local to the dashboard because it's
+  // tightly coupled to the URL (?c=<id>) and the streaming-send pipeline.
+  // Cross-page state (model / mode / draft / active connectors / active
+  // space) lives in lib/store.ts so a quick trip to /mcps doesn't wipe
+  // a half-typed message or the user's connector picks.
   const [messages, setMessages] = useState<ChatMessage[]>([]);
-  // Currently active persisted chat. Null when we haven't created one yet
-  // (fresh session) — first send() will POST /api/chats and set it.
   const [chatId, setChatId] = useState<string>("");
 
   // Sync chat state with the URL: ?c=<id> loads that chat, no ?c means
@@ -79,11 +79,12 @@ function DashboardInner() {
         })
         .catch(() => { /* if it 404s / 401s, leave the transcript empty */ });
     } else {
-      // No chatId in URL → fresh chat. Reset everything.
+      // No chatId in URL → fresh chat. Reset conversation-scoped bits
+      // (messages, chatId, active connectors + space) but DO keep the
+      // user's model / mode picks across the "New" jump.
       setChatId("");
       setMessages([]);
-      setActiveSpaceId("");
-      setActiveConnectorIds([]);
+      session.resetForNewChat();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [chatIdParam, nonceParam]);
@@ -108,14 +109,6 @@ function DashboardInner() {
         <Composer
           s={s}
           locale={locale}
-          model={model}
-          setModel={setModel}
-          mode={mode}
-          setMode={setMode}
-          activeSpaceId={activeSpaceId}
-          setActiveSpaceId={setActiveSpaceId}
-          activeConnectorIds={activeConnectorIds}
-          setActiveConnectorIds={setActiveConnectorIds}
           messages={messages}
           setMessages={setMessages}
           chatId={chatId}
@@ -179,30 +172,37 @@ function Transcript({ messages }: { messages: ChatMessage[] }) {
 
 // ─── Composer ────────────────────────────────────────────────────────────────
 function Composer({
-  s, locale, model, setModel,
-  activeSpaceId, setActiveSpaceId,
-  activeConnectorIds, setActiveConnectorIds,
+  s, locale,
   messages, setMessages,
   chatId, setChatId,
 }: {
   s: LocaleStrings;
   locale: Locale;
-  model: string;
-  setModel: (m: string) => void;
-  mode: string;
-  setMode: (m: string) => void;
-  activeSpaceId: string;
-  setActiveSpaceId: (id: string) => void;
-  activeConnectorIds: string[];
-  setActiveConnectorIds: React.Dispatch<React.SetStateAction<string[]>>;
   messages: ChatMessage[];
   setMessages: React.Dispatch<React.SetStateAction<ChatMessage[]>>;
   chatId: string;
   setChatId: (id: string) => void;
 }) {
+  // Persisted prefs (model + mode) and in-memory session (draft, active
+  // connectors / space) come from the shared store so they survive
+  // navigation to /mcps, /spaces, etc. and back.
+  const { model, mode } = usePrefs();
+  const { draftText, activeSpaceId, activeConnectorIds } = useSession();
+  const value = draftText;
+  const setValue = session.setDraftText;
+  const setModel = prefs.setModel;
+  const setActiveSpaceId = session.setActiveSpaceId;
+  const setActiveConnectorIds = (
+    updater: string[] | ((cur: string[]) => string[]),
+  ) => {
+    const next = typeof updater === "function" ? updater(activeConnectorIds) : updater;
+    session.setActiveConnectorIds(next);
+  };
+  void mode; // mode currently hardcoded to "bedside" in send() — keep the
+             // store read so the chip will be wired when mode picker lands.
+
   const [addOpen, setAddOpen] = useState(false);
   const [modelOpen, setModelOpen] = useState(false);
-  const [value, setValue] = useState("");
   const [voiceOn, setVoiceOn] = useState(false);
   const [sending, setSending] = useState(false);
   const [userSpaces, setUserSpaces] = useState<Space[]>([]);
