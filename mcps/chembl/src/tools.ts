@@ -1,3 +1,4 @@
+// @generated-by write-real-tools.mjs (preserved by generate-mcps.mjs)
 import { z, McpServer, ApiClient } from "@babagemed/mcp-base";
 const api = new ApiClient({ base: "https://www.ebi.ac.uk/chembl/api/data", rps: 3 });
 export function registerTools(server: McpServer) {

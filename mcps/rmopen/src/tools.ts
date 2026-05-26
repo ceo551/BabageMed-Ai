@@ -1,3 +1,4 @@
+// @generated-by write-real-tools.mjs (preserved by generate-mcps.mjs)
 import { z, McpServer, ApiClient } from "@babagemed/mcp-base";
 const cr = new ApiClient({ base: "https://api.crossref.org", rps: 2, defaultHeaders: { "User-Agent": `BabageMedAI (mailto:${process.env.CROSSREF_MAILTO || "ceo@babagemed.com"})` } });
 export function registerTools(server: McpServer) {

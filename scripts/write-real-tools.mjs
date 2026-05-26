@@ -22,20 +22,35 @@ const MANIFEST_IDS = new Set(
   JSON.parse(readFileSync(join(__dirname, "mcps.manifest.json"), "utf8")).servers.map((s) => s.id),
 );
 
+// Marker scheme:
+//   "// @hand-edited"            → manual override. Preserved by BOTH
+//                                  generate-mcps.mjs (skips fallback)
+//                                  AND write-real-tools.mjs (skips real-
+//                                  template overwrite).
+//   "// @generated-by write-real-tools.mjs"
+//                                → auto-generated rich template. Skipped
+//                                  by generate-mcps.mjs's fallback
+//                                  overwrite, but write-real-tools.mjs
+//                                  is free to refresh it.
+const GENERATED_MARKER = "// @generated-by write-real-tools.mjs (preserved by generate-mcps.mjs)";
+
 function w(id, body) {
-  if (!MANIFEST_IDS.has(id)) {
-    // Don't recreate orphan MCP dirs that the manifest no longer lists.
-    return;
+  if (!MANIFEST_IDS.has(id)) return;
+  // Prepend the generated marker so generate-mcps.mjs preserves this
+  // file. Both markers contain the substring "@hand-edited" /
+  // "@generated-by" that generate-mcps.mjs checks for.
+  if (!body.startsWith("// @hand-edited") && !body.startsWith("// @generated-by")) {
+    body = GENERATED_MARKER + "\n" + body;
   }
   const p = join(ROOT, "mcps", id, "src", "tools.ts");
   if (!FORCE && existsSync(p)) {
     const cur = readFileSync(p, "utf8");
-    if (cur.includes("// @hand-edited")) {
-      // Skip files that explicitly opt out of regeneration.
-      process.stderr.write(`skip ${id} (hand-edited marker)\n`);
+    if (cur === body) return; // already up-to-date
+    if (cur.startsWith("// @hand-edited")) {
+      // Manual override — never overwrite.
+      process.stderr.write(`skip ${id} (manual hand-edit)\n`);
       return;
     }
-    if (cur === body) return; // already up-to-date, no diff
   }
   mkdirSync(dirname(p), { recursive: true });
   writeFileSync(p, body);

@@ -6,7 +6,7 @@ const server = new McpServer({
   name: "Statens Serum Institut (Denmark)",
   kind: "scrape",
   category: "public-health",
-  base: "https://www.ssi.dk/english",
+  base: "https://en.ssi.dk",
   port: 6310,
   version: "0.1.0",
 });

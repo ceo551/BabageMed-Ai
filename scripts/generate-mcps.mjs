@@ -320,17 +320,21 @@ for (const s of MANIFEST.servers) {
   w(join(dir, "tsconfig.json"), tsConfig());
   w(join(dir, "Dockerfile"), dockerfile(s));
   w(join(dir, "src", "index.ts"), indexTs(s));
-  // tools.ts: skip if the file is marked as hand-edited, otherwise
-  // write the fallback. write-real-tools.mjs runs AFTER us and may
-  // overwrite this with a per-API implementation. The marker check
-  // prevents this generator from clobbering the user's customisations
-  // BEFORE write-real-tools.mjs even has a chance to run.
+  // tools.ts: skip if the file has either marker:
+  //   "// @hand-edited"            — manual override
+  //   "// @generated-by write-real-tools.mjs" — auto-generated rich
+  //                                  template (only write-real-tools.mjs
+  //                                  may refresh it)
+  // Without this, running generate-mcps.mjs alone (without re-running
+  // write-real-tools.mjs after) would wipe every real-API MCP back to
+  // the fallback search/fetch shell.
   const toolsPath = join(dir, "src", "tools.ts");
-  if (existsSync(toolsPath) && readFileSync(toolsPath, "utf8").includes("// @hand-edited")) {
-    // Leave the file alone; the developer has opted out of regeneration.
-  } else {
-    w(toolsPath, fallbackTools(s));
+  let preserve = false;
+  if (existsSync(toolsPath)) {
+    const cur = readFileSync(toolsPath, "utf8");
+    preserve = cur.startsWith("// @hand-edited") || cur.startsWith("// @generated-by");
   }
+  if (!preserve) w(toolsPath, fallbackTools(s));
   written++;
 }
 

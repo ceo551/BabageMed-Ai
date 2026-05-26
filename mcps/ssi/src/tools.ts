@@ -1,7 +1,7 @@
 import { z, McpServer, Scraper, cheerioLoad } from "@babagemed/mcp-base";
 
 const scraper = new Scraper({
-  base: "https://www.ssi.dk/english",
+  base: "https://en.ssi.dk",
   userAgent: process.env.SCRAPER_USER_AGENT,
   rps: Number(process.env.SCRAPER_RATE_RPS ?? 1) || 1,
   timeoutMs: Number(process.env.SCRAPER_TIMEOUT_MS || 30000),
@@ -17,7 +17,7 @@ const SEL_RESULT  = "article, .post, .search-result, li";
 const SEL_TITLE   = "h1, h2, h3, .title, a";
 const SEL_LINK    = "a";
 const SEL_SNIPPET = "p, .excerpt, .summary";
-const ORIGIN      = "https://www.ssi.dk/english";
+const ORIGIN      = "https://en.ssi.dk";
 
 export function registerTools(server: McpServer) {
   server.tool({
@@ -37,7 +37,7 @@ export function registerTools(server: McpServer) {
         const href = $link.attr("href");
         if (!href) return;
         let abs: string;
-        try { abs = new URL(href, "https://www.ssi.dk/english").toString(); } catch { return; }
+        try { abs = new URL(href, "https://en.ssi.dk").toString(); } catch { return; }
         if (!abs.startsWith(ORIGIN)) return;
         if (results.some((x) => x.url === abs)) return;
         const title = ($row.find(SEL_TITLE).first().text() || $link.text() || "").trim();
@@ -53,7 +53,7 @@ export function registerTools(server: McpServer) {
           const text = $(a).text().trim();
           if (!href || text.length < 8) return;
           let abs: string;
-          try { abs = new URL(href, "https://www.ssi.dk/english").toString(); } catch { return; }
+          try { abs = new URL(href, "https://en.ssi.dk").toString(); } catch { return; }
           if (!abs.startsWith(ORIGIN)) return;
           if (results.some((x) => x.url === abs)) return;
           results.push({ title: text.slice(0, 240), url: abs, snippet: "" });
@@ -73,7 +73,7 @@ export function registerTools(server: McpServer) {
       // fetch tool will work; surface the constraint explicitly.
       try {
         const u = new URL(url);
-        const expected = new URL("https://www.ssi.dk/english").hostname;
+        const expected = new URL("https://en.ssi.dk").hostname;
         if (u.hostname !== expected && !u.hostname.endsWith("." + expected)) {
           return {
             error: "url not under this MCP's allowed host",

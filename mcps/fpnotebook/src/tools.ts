@@ -1,3 +1,4 @@
+// @generated-by write-real-tools.mjs (preserved by generate-mcps.mjs)
 import { z, McpServer, Scraper } from "@babagemed/mcp-base";
 const scraper = new Scraper({
   base: "https://fpnotebook.com",

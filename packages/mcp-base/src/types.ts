@@ -1,6 +1,11 @@
 import { z } from "zod";
 
-export type McpKind = "api" | "scrape" | "hybrid";
+// "stub" is for Phase-B connectors registered in the catalog but
+// returning {status:"not-configured"} from every tool until OAuth /
+// API-key wiring lands. Previously these were mis-classified as "api"
+// and the manifest reclassification (changing 223 entries from api →
+// stub) broke type-checking on every stub's src/index.ts.
+export type McpKind = "api" | "scrape" | "hybrid" | "stub";
 
 export interface McpServerInfo {
   id: string;

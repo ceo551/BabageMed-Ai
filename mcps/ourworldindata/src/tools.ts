@@ -1,3 +1,4 @@
+// @generated-by write-real-tools.mjs (preserved by generate-mcps.mjs)
 import { z, McpServer, ApiClient } from "@babagemed/mcp-base";
 const api = new ApiClient({ base: "https://ourworldindata.org", rps: 2 });
 export function registerTools(server: McpServer) {

@@ -5,7 +5,7 @@ const server = new McpServer({
   id: "jamanetwork",
   name: "JAMA Network",
   kind: "scrape",
-  category: "journal",
+  category: "journals",
   base: "https://jamanetwork.com",
   port: 6490,
   version: "0.1.0",

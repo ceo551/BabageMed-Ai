@@ -1779,7 +1779,7 @@
     "id": "jamanetwork",
     "port": 6490,
     "kind": "scrape",
-    "category": "journal"
+    "category": "journals"
   },
   {
     "id": "cureus",

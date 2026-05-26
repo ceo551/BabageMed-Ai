@@ -1,3 +1,4 @@
+// @generated-by write-real-tools.mjs (preserved by generate-mcps.mjs)
 import { z, McpServer, ApiClient } from "@babagemed/mcp-base";
 const api = new ApiClient({ base: "https://eutils.ncbi.nlm.nih.gov/entrez/eutils", rps: process.env.NCBI_API_KEY ? 9 : 2 });
 const KEY = process.env.NCBI_API_KEY;

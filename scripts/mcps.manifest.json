@@ -1934,7 +1934,7 @@
       "kind": "scrape",
       "category": "public-health",
       "port": 6310,
-      "base": "https://www.ssi.dk/english",
+      "base": "https://en.ssi.dk",
       "tools": [
         "search",
         "fetch"
@@ -3600,7 +3600,7 @@
       "id": "jamanetwork",
       "name": "JAMA Network",
       "kind": "scrape",
-      "category": "journal",
+      "category": "journals",
       "port": 6490,
       "base": "https://jamanetwork.com",
       "tools": [
