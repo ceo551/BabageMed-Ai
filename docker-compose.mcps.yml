@@ -624,19 +624,6 @@ services:
       - "6166:6166"
     restart: unless-stopped
     networks: [babagemed]
-  mcp-nhs2:
-    build:
-      context: .
-      dockerfile: mcps/nhs2/Dockerfile
-    image: babagemed/mcp-nhs2:latest
-    env_file: .env
-    environment:
-      HTTP_ONLY: "1"
-      MCP_PORT: "6167"
-    ports:
-      - "6167:6167"
-    restart: unless-stopped
-    networks: [babagemed]
   mcp-eyewiki:
     build:
       context: .

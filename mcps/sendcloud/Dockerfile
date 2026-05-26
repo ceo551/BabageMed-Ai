@@ -4,7 +4,7 @@
 # without explicit BuildKit opt-in.
 FROM node:20-bookworm-slim AS build
 WORKDIR /build
-# Shared base — gets its own layer so it caches across all 540 MCPs
+# Shared base — gets its own layer so it caches across all 539 MCPs
 COPY packages/mcp-base/package.json packages/mcp-base/tsconfig.json /build/packages/mcp-base/
 COPY packages/mcp-base/src /build/packages/mcp-base/src
 RUN \

@@ -598,19 +598,6 @@
       ]
     },
     {
-      "id": "nhs2",
-      "name": "NHS (mirror)",
-      "kind": "api",
-      "category": "patient-ref",
-      "port": 6167,
-      "base": "https://api.nhs.uk",
-      "tools": [
-        "conditions",
-        "medicines",
-        "live-well"
-      ]
-    },
-    {
       "id": "eyewiki",
       "name": "EyeWiki",
       "kind": "api",

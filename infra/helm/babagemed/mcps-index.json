@@ -288,12 +288,6 @@
     "category": "emergency"
   },
   {
-    "id": "nhs2",
-    "port": 6167,
-    "kind": "api",
-    "category": "patient-ref"
-  },
-  {
     "id": "eyewiki",
     "port": 6168,
     "kind": "api",
