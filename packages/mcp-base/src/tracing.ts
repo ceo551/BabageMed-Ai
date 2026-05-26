@@ -46,9 +46,11 @@ export function startTracing(serviceName: string, serviceVersion = "0.1.0"): voi
       });
       sdk.start();
       started = true;
+      // process.once so tests / hot-reload that re-invoke startTracing()
+      // never stack additional listeners (Node warns at 10).
       const shutdown = () => sdk.shutdown().catch(() => {});
-      process.on("SIGTERM", shutdown);
-      process.on("SIGINT", shutdown);
+      process.once("SIGTERM", shutdown);
+      process.once("SIGINT", shutdown);
       // log to stderr so we don't pollute the stdio MCP channel
       process.stderr.write(JSON.stringify({ t: new Date().toISOString(), lvl: "info", svc: serviceName, msg: "tracing started" }) + "\n");
     } catch (e: any) {

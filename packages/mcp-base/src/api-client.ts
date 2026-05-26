@@ -31,7 +31,10 @@ export class ApiClient {
   private async throttle() {
     if (!this.opts.rps || this.opts.rps <= 0) return;
     const interval = 1000 / this.opts.rps;
-    const now = Date.now();
+    // Monotonic clock — a system-clock jump backwards (NTP, suspend/
+    // resume) would otherwise make `nextSlot - now` huge and stall the
+    // next request for hours.
+    const now = performance.now();
     const wait = Math.max(0, this.nextSlot - now);
     this.nextSlot = Math.max(now, this.nextSlot) + interval;
     if (wait > 0) await new Promise((r) => setTimeout(r, wait));
@@ -50,7 +53,13 @@ export class ApiClient {
 
   async request<T = unknown>(path: string, options: RequestOptions = {}): Promise<T> {
     const url = this.buildUrl(path, options.query);
-    const key = `${options.method ?? "GET"} ${url} ${JSON.stringify(options.body ?? "")}`;
+    // Cache key must include the Authorization / cookie header so two
+    // different bearers (or one bearer rotating) don't share responses.
+    // Today the token is global per process, but the moment per-user
+    // auth lands without this fix one user would see another's data.
+    const auth = options.headers?.authorization || options.headers?.Authorization || this.opts.defaultHeaders?.Authorization || this.opts.defaultHeaders?.authorization || "";
+    const authFingerprint = auth ? simpleHash(auth) : "";
+    const key = `${options.method ?? "GET"} ${url} ${JSON.stringify(options.body ?? "")} ${authFingerprint}`;
     if (options.cache !== false && (options.method === undefined || options.method === "GET")) {
       const hit = this.cache.get(key) as T | undefined;
       if (hit !== undefined) return hit;
@@ -105,4 +114,13 @@ export class ApiClient {
   post<T = unknown>(path: string, body?: unknown, extra: Omit<RequestOptions, "method" | "body"> = {}) {
     return this.request<T>(path, { ...extra, method: "POST", body });
   }
+}
+
+// Tiny non-crypto hash — only used to fold the bearer token into the
+// cache key without storing it in plaintext. djb2 is fine for that.
+function simpleHash(s: string): string {
+  let h = 5381;
+  for (let i = 0; i < s.length; i++) h = (h * 33) ^ s.charCodeAt(i);
+  // unsigned 32-bit hex
+  return (h >>> 0).toString(16);
 }

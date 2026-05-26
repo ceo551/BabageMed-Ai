@@ -169,7 +169,18 @@ export class McpServer {
         }
         if (req.method === "POST" && url.pathname === "/rpc") {
           const body = await readBody(req);
-          const rpcReq: JsonRpcRequest = JSON.parse(body || "{}");
+          let rpcReq: JsonRpcRequest;
+          try {
+            rpcReq = JSON.parse(body || "{}");
+          } catch {
+            // Per JSON-RPC 2.0 spec, parse errors return -32700 with
+            // id:null inside a 200 envelope. Returning HTTP 500 (the
+            // previous behaviour via the outer try/catch) breaks clients
+            // that expect a structured RPC envelope.
+            stopHttp({ status: "200" });
+            this.metrics.httpRequests.inc({ path: labelPath, method, status: "200" });
+            return json(res, 200, { jsonrpc: "2.0", id: null, error: { code: -32700, message: "Parse error" } });
+          }
           const out = await this.handleJsonRpc(rpcReq);
           stopHttp({ status: "200" });
           this.metrics.httpRequests.inc({ path: labelPath, method, status: "200" });
