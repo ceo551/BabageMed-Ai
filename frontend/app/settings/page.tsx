@@ -150,12 +150,16 @@ function GeneralTab({ user, refresh }: { user: User; refresh: () => Promise<void
           <div className="control">
             <select value={profession} onChange={(e) => setProfession(e.target.value)}>
               <option value="">Select…</option>
-              <option value="clinician">Clinician (MD / DO / NP / PA)</option>
-              <option value="resident">Resident / Fellow</option>
-              <option value="student">Medical student</option>
+              <option value="healthcare">Healthcare &amp; life sciences</option>
+              <option value="writer">Writer / Content creator</option>
+              <option value="translator">Translator / Linguist</option>
+              <option value="business">Business / Operations</option>
+              <option value="finance">Financial</option>
+              <option value="consultant">Consultant / Professional services</option>
               <option value="researcher">Researcher / Scientist</option>
-              <option value="nurse">Nurse</option>
-              <option value="pharmacist">Pharmacist</option>
+              <option value="educator">Educator</option>
+              <option value="student">Student</option>
+              <option value="developer">Developer</option>
               <option value="other">Other</option>
             </select>
           </div>
@@ -176,14 +180,15 @@ function GeneralTab({ user, refresh }: { user: User; refresh: () => Promise<void
         <h2>Instructions for the assistant</h2>
         <div className="settings-row col">
           <div className="hint">
-            The assistant keeps these in mind across every chat. Useful for
-            specialty focus (e.g. &quot;I work in pediatric nephrology&quot;), preferred
-            citation style, or boilerplate disclaimers you always want appended.
+            The assistant keeps these in mind across every chat. Useful for tone,
+            domain focus, preferred output format, citation style, or boilerplate
+            disclaimers you always want appended. Per-feature instructions on
+            /features/* override these for that workflow.
           </div>
           <textarea
             value={instructions}
             onChange={(e) => setInstructions(e.target.value)}
-            placeholder="e.g. I primarily care for adult inpatients on a cardiology service; default to KDIGO / ACC guidelines when relevant."
+            placeholder="e.g. I'm a B2B SaaS founder writing for engineers. Prefer concise answers, code samples in TypeScript, and cite primary docs over blog posts."
             dir="auto"
             maxLength={4000}
           />

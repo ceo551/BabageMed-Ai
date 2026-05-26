@@ -66,6 +66,16 @@ a { color: inherit; text-decoration: none; }
 .shell[data-collapsed="true"] .sb-row { justify-content: center; padding-inline: 0; }
 .shell[data-collapsed="true"] .sb-new { justify-content: center; padding-inline: 0; }
 
+/* Collapsed sidebar — keep the 8 feature emojis visible but hide the long
+ * labels and the section header. Centered so each row reads as a single
+ * column of icons matching the Claude/Perplexity collapsed pattern. */
+.shell[data-collapsed="true"] .sb-feature-label,
+.shell[data-collapsed="true"] .sb-features .sb-section-label,
+.shell[data-collapsed="true"] .sb-history .sb-section-label,
+.shell[data-collapsed="true"] .sb-history-list,
+.shell[data-collapsed="true"] .sb-history-empty { display: none; }
+.shell[data-collapsed="true"] .sb-feature-item { justify-content: center; padding-inline: 0; }
+
 /* Inline history section (Claude-style "Recents" list inside the sidebar).
  * Lives inside .sb-body which already has overflow-y: auto, so the chat
  * list scrolls without growing the sidebar. The section header is the

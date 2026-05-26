@@ -161,7 +161,7 @@ export const I = {
     <img
       className="disc-logo"
       src="/babagemed-icon.png"
-      alt="BabageMed"
+      alt="Babbage AI"
       width={36}
       height={36}
       style={{ display: "block", borderRadius: 8 }}

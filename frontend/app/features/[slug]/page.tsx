@@ -1,6 +1,6 @@
 "use client";
 
-import { notFound, useParams, useRouter } from "next/navigation";
+import { notFound, useParams } from "next/navigation";
 import React, { useEffect, useRef, useState } from "react";
 import { useUI } from "../../lib/ui-context";
 import { useAuth } from "../../lib/auth-context";
@@ -21,7 +21,6 @@ import "./feature.css";
 // backend's feature row (slug = category id).
 export default function FeaturePage() {
   const { slug } = useParams<{ slug: string }>();
-  const router = useRouter();
   const { s, locale } = useUI();
   const { user, loading: authLoading } = useAuth();
   const meta = s.features.find((f) => f.slug === slug);

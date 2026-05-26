@@ -18,6 +18,11 @@ import "./mcps.css";
 //
 // The previous tester-style page (search-by-id grid that linked to per-tool
 // forms) was replaced with this Claude-style directory.
+// Page size for the catalog grid. With ~540 servers we render lazily —
+// 60 cards on first paint, then "Show more" reveals the next 60. This keeps
+// the initial layout under ~200 KB of DOM and the search filter responsive.
+const PAGE_SIZE = 60;
+
 export default function ConnectorsBrowsePage() {
   const { user } = useAuth();
   const [all, setAll] = useState<McpServer[]>([]);
@@ -27,6 +32,10 @@ export default function ConnectorsBrowsePage() {
   const [kind, setKind] = useState<"all" | "api" | "scrape" | "hybrid">("all");
   const [category, setCategory] = useState<string>("all");
   const [busy, setBusy] = useState<string | null>(null);
+  const [shown, setShown] = useState<number>(PAGE_SIZE);
+  // Reset pagination whenever the filter changes so the user always sees the
+  // top of the result set after typing.
+  useEffect(() => { setShown(PAGE_SIZE); }, [q, kind, category]);
 
   useEffect(() => {
     mcps.list()
@@ -136,7 +145,7 @@ export default function ConnectorsBrowsePage() {
       )}
 
       <div className="mcps-grid">
-        {filtered.map((s) => {
+        {filtered.slice(0, shown).map((s) => {
           const isMine = !!mine[s.id];
           const isBusy = busy === s.id;
           return (
@@ -165,6 +174,29 @@ export default function ConnectorsBrowsePage() {
           );
         })}
       </div>
+
+      {/* Show-more pager — appears only when there are more matches than the
+          current `shown` window. Keeps initial paint cheap on the full 540-
+          server catalog. */}
+      {filtered.length > shown && (
+        <div style={{ display: "flex", justifyContent: "center", marginTop: 16 }}>
+          <button
+            type="button"
+            className="connect-btn"
+            style={{
+              padding: "10px 22px",
+              borderRadius: 999,
+              fontSize: 13,
+              background: "var(--cyan-soft)",
+              color: "var(--cyan)",
+              border: "1px solid var(--cyan-line)",
+            }}
+            onClick={() => setShown((n) => n + PAGE_SIZE)}
+          >
+            Show {Math.min(PAGE_SIZE, filtered.length - shown)} more · {filtered.length - shown} left
+          </button>
+        </div>
+      )}
     </div>
   );
 }

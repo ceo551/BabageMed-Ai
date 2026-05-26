@@ -113,9 +113,9 @@ function DashboardInner() {
           <h1 className="greet">
             {I.star}
             <span className="brand-greet">
-              <span className="b1">Babage</span>
-              <span className="b2">Med</span>
-              <em className="b3"> Ai</em>
+              <span className="b1">Bab</span>
+              <span className="b2">bage</span>
+              <em className="b3"> AI</em>
             </span>
           </h1>
         )}
