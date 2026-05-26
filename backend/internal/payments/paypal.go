@@ -106,11 +106,11 @@ func (p *PayPal) Checkout(planID, returnURL, cancelURL string) (*PayPalCheckout,
 		"intent": "CAPTURE",
 		"purchase_units": []map[string]any{{
 			"reference_id": plan.ID,
-			"description":  plan.Name + " — BabageMed AI",
+			"description":  plan.Name + " — Babbage AI",
 			"amount":       map[string]string{"currency_code": "USD", "value": dollars},
 		}},
 		"application_context": map[string]any{
-			"brand_name":           "BabageMed AI",
+			"brand_name":           "Babbage AI",
 			"landing_page":         "NO_PREFERENCE",
 			"shipping_preference":  "NO_SHIPPING",
 			"user_action":          "PAY_NOW",

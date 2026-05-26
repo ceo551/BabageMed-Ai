@@ -294,6 +294,70 @@ export const spaces = {
     api.get<SpaceChunk[]>(`/api/spaces/${encodeURIComponent(id)}/context?q=${encodeURIComponent(q)}`),
 };
 
+// ── Features ─────────────────────────────────────────────────────────────
+// Per-feature workspace (Healthcare, Writing, Translation, …). The backend
+// upserts on first GET so the frontend never has to handle a 404 for one of
+// the 8 fixed slugs. Each feature stores instructions, skills, connectors,
+// and a flat file list (PDFs/text uploaded for grounding).
+export type FeatureFile = {
+  id: string;
+  name: string;
+  size: number;
+  mime: string;
+  createdAt: string;
+};
+export type Feature = {
+  slug: string;
+  instructions: string;
+  skills: string[];      // skill ids the user has toggled on
+  connectors: string[];  // mcp ids the user wants used for this feature
+  files: FeatureFile[];
+  updatedAt: string;
+};
+export type FeaturePatch = Partial<Pick<Feature, "instructions" | "skills" | "connectors">>;
+
+export const features = {
+  get: (slug: string) => api.get<Feature>(`/api/features/${encodeURIComponent(slug)}`),
+  update: async (slug: string, patch: FeaturePatch): Promise<Feature> => {
+    const r = await fetch(`/api/backend/api/features/${encodeURIComponent(slug)}`, {
+      method: "PATCH",
+      credentials: "include",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(patch),
+    });
+    const text = await r.text();
+    let body: any = null;
+    try { body = text ? JSON.parse(text) : null; } catch { body = text; }
+    if (!r.ok) throw { error: (body && body.error) || text || r.statusText, status: r.status } as ApiError;
+    return body;
+  },
+  upload: async (slug: string, files: FileList): Promise<Feature> => {
+    const fd = new FormData();
+    for (const f of Array.from(files)) fd.append("file", f);
+    const r = await fetch(`/api/backend/api/features/${encodeURIComponent(slug)}/files`, {
+      method: "POST",
+      credentials: "include",
+      body: fd,
+    });
+    const text = await r.text();
+    let body: any = null;
+    try { body = text ? JSON.parse(text) : null; } catch { body = text; }
+    if (!r.ok) throw { error: (body && body.error) || text || r.statusText, status: r.status } as ApiError;
+    return body;
+  },
+  removeFile: async (slug: string, fileId: string): Promise<Feature> => {
+    const r = await fetch(
+      `/api/backend/api/features/${encodeURIComponent(slug)}/files/${encodeURIComponent(fileId)}`,
+      { method: "DELETE", credentials: "include" },
+    );
+    const text = await r.text();
+    let body: any = null;
+    try { body = text ? JSON.parse(text) : null; } catch { body = text; }
+    if (!r.ok) throw { error: (body && body.error) || text || r.statusText, status: r.status } as ApiError;
+    return body;
+  },
+};
+
 export const admin = {
   stats:         () => api.get<AdminStats>("/api/admin/stats"),
   users:         (q = "", limit = 50, offset = 0) =>

@@ -1,6 +1,6 @@
 apiVersion: v2
 name: babagemed
-description: BabageMed AI — Next.js dashboard, Go backend, Postgres, and 416 Dockerized MCP servers.
+description: Babbage AI — Next.js dashboard, Go backend, Postgres, and Dockerized MCP connectors.
 type: application
 version: 0.1.0
 appVersion: "0.1.0"

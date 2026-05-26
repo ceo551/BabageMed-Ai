@@ -1,5 +1,14 @@
 export type Locale = "en" | "ar";
 
+export type FeatureMeta = {
+  slug: string;
+  label: string;
+  emoji: string;
+  // Tailwind-ish swatch color used in the sidebar dot and the feature page
+  // hero. Map: cyan | purple | yellow | green | pink | orange | blue | red.
+  color: "cyan" | "purple" | "yellow" | "green" | "pink" | "orange" | "blue" | "red";
+};
+
 export type LocaleStrings = {
   dir: "ltr" | "rtl";
   new: string; recent: string; customize: string; connectors: string; connectorsDesc: string;
@@ -12,14 +21,44 @@ export type LocaleStrings = {
   logout: string; logoutDesc: string;
   appearance: string; language: string; themeLight: string; themeDark: string; themeSystem: string;
   langEN: string; langAR: string;
-  spaces: string; spacesHeader: string; addSpace: string; addSpaceDesc: string;
-  spaceList: ReadonlyArray<{ id: string; t: string; meta: string; c: string }>;
+  // ── features (replaces spaces) ────────────────────────────────────────────
+  featuresHeader: string;
+  features: ReadonlyArray<FeatureMeta>;
+  instructions: string; instructionsDesc: string;
+  filesFolders: string; filesFoldersDesc: string;
+  skillsPanel: string; skillsPanelDesc: string;
+  connectorsPanel: string; connectorsPanelDesc: string;
+  // ── chat extras ───────────────────────────────────────────────────────────
   epic: string; pubmed: string; kdigo: string;
   modelHeader: string; modeHeader: string;
   modes: ReadonlyArray<{ id: string; label: string; color: string }>;
   recents: ReadonlyArray<{ id: number; t: string; w: string; c: string }>;
   toolList: ReadonlyArray<{ id: string; t: string; c: string; st: string }>;
 };
+
+// The 8 sidebar feature categories — single source of truth. Slug is used in
+// /features/<slug> URLs and as the persisted database id.
+const FEATURES_EN: ReadonlyArray<FeatureMeta> = [
+  { slug: "healthcare",   label: "Healthcare & life sciences",      emoji: "🩺", color: "cyan"   },
+  { slug: "writing",      label: "Writing & content creation",      emoji: "✍️", color: "purple" },
+  { slug: "translation",  label: "Translation & languages",         emoji: "🌐", color: "blue"   },
+  { slug: "business",     label: "Business",                         emoji: "💼", color: "yellow" },
+  { slug: "financial",    label: "Financial",                        emoji: "💹", color: "green"  },
+  { slug: "consulting",   label: "Consulting & Professional Services", emoji: "🤝", color: "orange" },
+  { slug: "math-science", label: "Mathematics & Science",            emoji: "🧪", color: "pink"   },
+  { slug: "education",    label: "Education",                        emoji: "🎓", color: "red"    },
+];
+
+const FEATURES_AR: ReadonlyArray<FeatureMeta> = [
+  { slug: "healthcare",   label: "الصحة وعلوم الحياة",                emoji: "🩺", color: "cyan"   },
+  { slug: "writing",      label: "الكتابة وإنتاج المحتوى",            emoji: "✍️", color: "purple" },
+  { slug: "translation",  label: "الترجمة واللغات",                   emoji: "🌐", color: "blue"   },
+  { slug: "business",     label: "الأعمال",                            emoji: "💼", color: "yellow" },
+  { slug: "financial",    label: "المالية",                            emoji: "💹", color: "green"  },
+  { slug: "consulting",   label: "الاستشارات والخدمات المهنية",        emoji: "🤝", color: "orange" },
+  { slug: "math-science", label: "الرياضيات والعلوم",                 emoji: "🧪", color: "pink"   },
+  { slug: "education",    label: "التعليم",                            emoji: "🎓", color: "red"    },
+];
 
 export const STR: Record<Locale, LocaleStrings> = {
   en: {
@@ -28,21 +67,21 @@ export const STR: Record<Locale, LocaleStrings> = {
     recent: "History",
     customize: "Customize",
     connectors: "Connectors",
-    connectorsDesc: "Registries · EHRs · MCP servers",
+    connectorsDesc: "MCP servers · APIs · web sources",
     skills: "Skills",
-    skillsDesc: "Dose calc · cite · differential…",
+    skillsDesc: "Reusable instructions and prompt presets",
     greetAm: "Good morning",
     greetPm: "Good afternoon",
     greetEve: "Good evening",
-    greetItalic: "Dr.",
+    greetItalic: "",
     user: "Ahmed Ramadan",
     plan: "Max plan",
-    status: "75+ registries online · p50 < 1s",
-    placeholder: "Ask a clinical question…",
-    placeholderHint: "e.g. eGFR 24, CKD-3b, Pip-Tazo dose adjust?",
-    disclaim: "Clinician-in-the-loop · cited · HIPAA · zero retention",
+    status: "Connectors online · streaming responses",
+    placeholder: "Ask anything…",
+    placeholderHint: "Pick a feature on the left for instructions, files, skills and connectors tuned to that workflow.",
+    disclaim: "Cited · zero retention · your data stays yours",
     addConnector: "Add connector",
-    addConnectorDesc: "MCP · Registry · EHR",
+    addConnectorDesc: "Pick from connected MCP servers",
     addFile: "Add file or folder",
     fromTools: "From connected tools",
     settings: "Settings",
@@ -50,7 +89,7 @@ export const STR: Record<Locale, LocaleStrings> = {
     plans: "Plans & billing",
     plansDesc: "Max plan · manage seats",
     logout: "Log out",
-    logoutDesc: "End clinical session",
+    logoutDesc: "End session",
     appearance: "Appearance",
     language: "Language",
     themeLight: "Light",
@@ -58,43 +97,28 @@ export const STR: Record<Locale, LocaleStrings> = {
     themeSystem: "System",
     langEN: "English",
     langAR: "العربية",
-    spaces: "Spaces",
-    spacesHeader: "Specialty spaces",
-    addSpace: "New space",
-    addSpaceDesc: "Cardiology, Neurology, custom…",
-    spaceList: [
-      { id: "icu", t: "ICU rounds", meta: "12 consults", c: "cyan" },
-      { id: "cardio", t: "Cardiology", meta: "34 consults", c: "purple" },
-      { id: "neuro", t: "Neurology", meta: "18 consults", c: "cyan" },
-      { id: "onc", t: "Oncology — breast", meta: "22 consults", c: "yellow" },
-      { id: "peds", t: "Pediatrics", meta: "9 consults", c: "purple" },
-    ],
-    epic: "Epic (EHR)",
+    featuresHeader: "Features",
+    features: FEATURES_EN,
+    instructions: "Instructions",
+    instructionsDesc: "Custom system prompt that runs on every chat in this feature.",
+    filesFolders: "Files & folders",
+    filesFoldersDesc: "PDFs, documents, or notes for grounding answers in this feature.",
+    skillsPanel: "Skills",
+    skillsPanelDesc: "Reusable instructions Babbage applies for tasks in this feature.",
+    connectorsPanel: "Connectors",
+    connectorsPanelDesc: "MCP servers Babbage may call for this feature.",
+    epic: "Epic",
     pubmed: "PubMed library",
     kdigo: "KDIGO guidelines",
     modelHeader: "Reasoning engine",
     modeHeader: "Mode",
     modes: [
-      { id: "bedside", label: "Bedside fast", color: "cyan" },
-      { id: "deep", label: "Deep reasoning", color: "purple" },
-      { id: "cited", label: "Cite mode", color: "yellow" },
+      { id: "bedside", label: "Fast",            color: "cyan"   },
+      { id: "deep",    label: "Deep reasoning",  color: "purple" },
+      { id: "cited",   label: "Cite mode",       color: "yellow" },
     ],
-    recents: [
-      { id: 1, t: "eGFR 24 — CKD-3b dose plan", w: "12m", c: "cyan" },
-      { id: 2, t: "Pip-Tazo vs Mero, sepsis bundle", w: "1h", c: "purple" },
-      { id: 3, t: "Atypical CXR, 62F PMHx COPD", w: "3h", c: "cyan" },
-      { id: 4, t: "Differential — recurrent syncope", w: "Yesterday", c: "yellow" },
-      { id: 5, t: "Anticoagulation in valvular AF", w: "Yesterday", c: "cyan" },
-      { id: 6, t: "Pediatric DKA fluid resus", w: "Mon", c: "purple" },
-      { id: 7, t: "ASCO breast Stage II adjuvant", w: "Mon", c: "cyan" },
-    ],
-    toolList: [
-      { id: "pubmed", t: "PubMed", c: "c", st: "ON" },
-      { id: "uptodate", t: "UpToDate", c: "c", st: "ON" },
-      { id: "kdigo", t: "KDIGO", c: "p", st: "ON" },
-      { id: "fda", t: "FDA DailyMed", c: "y", st: "ON" },
-      { id: "snomed", t: "SNOMED CT", c: "p", st: "ON" },
-    ],
+    recents: [],
+    toolList: [],
   },
   ar: {
     dir: "rtl",
@@ -102,21 +126,21 @@ export const STR: Record<Locale, LocaleStrings> = {
     recent: "السجلّ",
     customize: "تخصيص",
     connectors: "الموصّلات",
-    connectorsDesc: "سجلّات · EHR · خوادم MCP",
+    connectorsDesc: "خوادم MCP · APIs · مصادر ويب",
     skills: "المهارات",
-    skillsDesc: "حساب جرعة · استشهاد · تشخيص…",
+    skillsDesc: "تعليمات قابلة لإعادة الاستخدام",
     greetAm: "صباح الخير",
     greetPm: "مساء الخير",
     greetEve: "مساء الخير",
-    greetItalic: "د.",
+    greetItalic: "",
     user: "أحمد رمضان",
     plan: "خطة Max",
-    status: "‏75+ مرجعًا متّصلًا · زمن الاستجابة < ١ث",
-    placeholder: "اسأل سؤالًا سريريًّا…",
-    placeholderHint: "مثلًا: تعديل جرعة Pip-Tazo عند eGFR 24",
-    disclaim: "تحت إشراف الطبيب · موثّق · HIPAA · بدون احتفاظ بالبيانات",
+    status: "الموصّلات متّصلة · ردود متدفّقة",
+    placeholder: "اسأل أى سؤال…",
+    placeholderHint: "اختر ميزة من اليمين لتعليمات وملفات ومهارات وموصّلات خاصة بها.",
+    disclaim: "موثّق · بدون احتفاظ بالبيانات · بياناتك ملكك",
     addConnector: "إضافة موصِّل",
-    addConnectorDesc: "MCP · سجل · EHR",
+    addConnectorDesc: "من خوادم MCP المتّصلة",
     addFile: "إضافة ملف أو مجلد",
     fromTools: "من الأدوات المتّصلة",
     settings: "الإعدادات",
@@ -124,7 +148,7 @@ export const STR: Record<Locale, LocaleStrings> = {
     plans: "الخطط والفوترة",
     plansDesc: "خطة Max · إدارة المقاعد",
     logout: "تسجيل الخروج",
-    logoutDesc: "إنهاء الجلسة السريرية",
+    logoutDesc: "إنهاء الجلسة",
     appearance: "المظهر",
     language: "اللغة",
     themeLight: "فاتح",
@@ -132,43 +156,28 @@ export const STR: Record<Locale, LocaleStrings> = {
     themeSystem: "تبعًا للنظام",
     langEN: "English",
     langAR: "العربية",
-    spaces: "المساحات",
-    spacesHeader: "مساحات التخصص",
-    addSpace: "مساحة جديدة",
-    addSpaceDesc: "قلبية، عصبية، مخصصة…",
-    spaceList: [
-      { id: "icu", t: "جولات العناية المركّزة", meta: "±١٢ استشارة", c: "cyan" },
-      { id: "cardio", t: "أمراض القلب", meta: "±٣٤ استشارة", c: "purple" },
-      { id: "neuro", t: "أعصاب", meta: "±١٨ استشارة", c: "cyan" },
-      { id: "onc", t: "أورام — ثدي", meta: "±٢٢ استشارة", c: "yellow" },
-      { id: "peds", t: "أطفال", meta: "±٩ استشارات", c: "purple" },
-    ],
-    epic: "Epic (EHR)",
+    featuresHeader: "الميزات",
+    features: FEATURES_AR,
+    instructions: "التعليمات",
+    instructionsDesc: "نص توجيه يُطبَّق على كل محادثة فى هذه الميزة.",
+    filesFolders: "الملفات والمجلدات",
+    filesFoldersDesc: "ملفات PDF أو مستندات أو ملاحظات تستند إليها الإجابات.",
+    skillsPanel: "المهارات",
+    skillsPanelDesc: "تعليمات قابلة لإعادة الاستخدام يستخدمها Babbage لمهام هذه الميزة.",
+    connectorsPanel: "الموصّلات",
+    connectorsPanelDesc: "خوادم MCP التى يستدعيها Babbage لهذه الميزة.",
+    epic: "Epic",
     pubmed: "مكتبة PubMed",
     kdigo: "إرشادات KDIGO",
     modelHeader: "محرّك الاستدلال",
     modeHeader: "الوضع",
     modes: [
-      { id: "bedside", label: "سريع · بجانب السرير", color: "cyan" },
-      { id: "deep", label: "استدلال عميق", color: "purple" },
-      { id: "cited", label: "وضع الاستشهاد", color: "yellow" },
+      { id: "bedside", label: "سريع",              color: "cyan"   },
+      { id: "deep",    label: "استدلال عميق",       color: "purple" },
+      { id: "cited",   label: "وضع الاستشهاد",      color: "yellow" },
     ],
-    recents: [
-      { id: 1, t: "‏eGFR 24 — خطة جرعات CKD-3b", w: "12د", c: "cyan" },
-      { id: 2, t: "‏Pip-Tazo مقابل Mero في الإنتان", w: "1س", c: "purple" },
-      { id: 3, t: "صورة صدر غير نمطية — ٦٢ أنثى", w: "3س", c: "cyan" },
-      { id: 4, t: "تشخيص تفريقي — إغماء متكرر", w: "أمس", c: "yellow" },
-      { id: 5, t: "مضادات التخثر في AF صمامي", w: "أمس", c: "cyan" },
-      { id: 6, t: "إنعاش سوائل DKA أطفال", w: "الإثنين", c: "purple" },
-      { id: 7, t: "علاج مساعد سرطان ثدي II", w: "الإثنين", c: "cyan" },
-    ],
-    toolList: [
-      { id: "pubmed", t: "PubMed", c: "c", st: "متصل" },
-      { id: "uptodate", t: "UpToDate", c: "c", st: "متصل" },
-      { id: "kdigo", t: "KDIGO", c: "p", st: "متصل" },
-      { id: "fda", t: "FDA DailyMed", c: "y", st: "متصل" },
-      { id: "snomed", t: "SNOMED CT", c: "p", st: "متصل" },
-    ],
+    recents: [],
+    toolList: [],
   },
 };
 

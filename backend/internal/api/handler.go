@@ -293,7 +293,7 @@ func (h *Handler) complete(ctx context.Context, req chatRequest, citations []map
 
 func buildSystem(mode, locale string, citations []map[string]any, useMcps []string, spaceCtx []map[string]any, spaceName string) string {
 	var b strings.Builder
-	b.WriteString("You are BabageMed AI — a HIPAA-aware clinician-in-the-loop assistant. Surface uncertainty, never give a binding diagnosis.\n")
+	b.WriteString("You are Babbage AI — a careful, source-aware assistant. State uncertainty plainly and never invent facts. If retrieved sources don't cover the question, say so explicitly.\n")
 	now := time.Now().UTC()
 	fmt.Fprintf(&b, "Today is %s (UTC). Trust this date over anything in your training data; never invent a different year.\n",
 		now.Format("Monday, January 2, 2006"))

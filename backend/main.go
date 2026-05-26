@@ -20,6 +20,7 @@ import (
 	"github.com/babagemed/backend/internal/mcp"
 	"github.com/babagemed/backend/internal/metrics"
 	"github.com/babagemed/backend/internal/payments"
+	"github.com/babagemed/backend/internal/features"
 	"github.com/babagemed/backend/internal/spaces"
 	"github.com/babagemed/backend/internal/tracing"
 	"github.com/go-chi/chi/v5"
@@ -153,6 +154,7 @@ func main() {
 		auth.NewHandler(authSvc).Register(r)
 		admin.NewHandler(dbConn, authSvc).Register(r)
 		spaces.New(dbConn, authSvc).Register(r)
+		features.New(dbConn, authSvc).Register(r)
 		connectors.New(dbConn, authSvc, registry).Register(r)
 		chats.New(dbConn, authSvc).Register(r)
 	}

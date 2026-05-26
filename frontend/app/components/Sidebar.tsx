@@ -8,6 +8,15 @@ import { I } from "../icons";
 import { useAuth } from "../lib/auth-context";
 import { useUI } from "../lib/ui-context";
 import { chats as chatsApi, type Chat } from "../lib/api";
+import type { FeatureMeta } from "../i18n";
+
+// Pull the feature slug out of the current pathname so the matching sidebar
+// row gets the active treatment. Returns "" outside the /features/* routes.
+function featureSlugFromPath(p: string | null): string {
+  if (!p) return "";
+  const m = p.match(/^\/features\/([^/?#]+)/);
+  return m ? decodeURIComponent(m[1]) : "";
+}
 
 // Sidebar — persistent across pages (mounted by AppShell).
 //
@@ -44,8 +53,8 @@ export function Sidebar() {
         <Link className="sb-brand" href="/">
           {I.discLogo}
           <span className="wm">
-            <span className="b1">Babage</span>
-            <span className="b2">Med</span>
+            <span className="b1">Bab</span>
+            <span className="b2">bage</span>
             <span className="b3">AI</span>
           </span>
         </Link>
@@ -61,12 +70,17 @@ export function Sidebar() {
           <span className="kbd">⌘ K</span>
         </button>
 
-        <Link href="/spaces" className="sb-row" style={{ textDecoration: "none" }}>
-          {I.spaces}
-          <span className="lbl">{s.spaces}</span>
-          <span className="trail-chev">{I.chevR}</span>
-        </Link>
+        {/* Features — fixed 8-category nav. Replaces the legacy "Spaces" link
+            with one explicit row per feature so the active item is visible
+            at a glance and there's no extra dropdown to discover. */}
+        <FeaturesSection
+          label={s.featuresHeader}
+          items={s.features}
+          activeSlug={featureSlugFromPath(pathname)}
+        />
+
         <HistorySection label={s.recent} />
+
         <Link href="/mcps" className="sb-row" style={{ textDecoration: "none" }}>
           {I.connectors}
           <span className="lbl">{s.connectors}</span>
@@ -113,6 +127,43 @@ export function Sidebar() {
         )}
       </div>
     </aside>
+  );
+}
+
+// ─── Features section ─────────────────────────────────────────────────────
+// Renders one row per fixed feature category (Healthcare, Writing,
+// Translation, Business, Financial, Consulting, Math & Science, Education).
+// Active row is highlighted via data-active so the user always knows which
+// workflow's context (instructions/files/skills/connectors) is in use.
+function FeaturesSection({
+  label,
+  items,
+  activeSlug,
+}: {
+  label: string;
+  items: ReadonlyArray<FeatureMeta>;
+  activeSlug: string;
+}) {
+  return (
+    <div className="sb-features">
+      <div className="sb-section-label">{label}</div>
+      <ul className="sb-features-list">
+        {items.map((f) => (
+          <li key={f.slug}>
+            <Link
+              href={`/features/${f.slug}`}
+              className="sb-feature-item"
+              data-active={f.slug === activeSlug}
+              data-color={f.color}
+              title={f.label}
+            >
+              <span className="sb-feature-emoji" aria-hidden="true">{f.emoji}</span>
+              <span className="sb-feature-label">{f.label}</span>
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </div>
   );
 }
 

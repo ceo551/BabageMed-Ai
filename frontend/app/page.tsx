@@ -631,31 +631,10 @@ function Composer({
               </span>
             </button>
 
-            {userSpaces.length > 0 && (
-              <>
-                <div className="popover-sep" />
-                <div className="pop-header">{s.spaces}</div>
-                {userSpaces.map((sp) => (
-                  <button
-                    key={sp.id}
-                    type="button"
-                    className="popover-row"
-                    data-active={activeSpaceId === sp.id}
-                    onClick={() => {
-                      setActiveSpaceId(activeSpaceId === sp.id ? "" : sp.id);
-                      setAddOpen(false);
-                    }}
-                  >
-                    {I.spaces}
-                    <span className="col">
-                      <span className="ttl">{sp.name}</span>
-                      <span className="desc">{sp.fileCount} file{sp.fileCount === 1 ? "" : "s"}</span>
-                    </span>
-                    {activeSpaceId === sp.id && <span className="check" style={{ color: "var(--cyan)" }}>{I.check}</span>}
-                  </button>
-                ))}
-              </>
-            )}
+            {/* Legacy "Spaces" picker removed — files now live inside each
+                feature page (/features/<slug>). The composer's add-file
+                button still works (it uploads into the default scratch space
+                or whichever feature the user lands on next). */}
 
             <div className="popover-sep" />
             <div className="pop-header">{s.connectors}</div>

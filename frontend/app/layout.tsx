@@ -4,8 +4,8 @@ import { AuthProvider } from "./lib/auth-context";
 import { AppShell } from "./components/AppShell";
 
 export const metadata = {
-  title: "BabageMed Ai",
-  description: "BabageMed Ai — medical reasoning with 416 connected MCP servers.",
+  title: "Babbage AI",
+  description: "Babbage AI — instructions, files, skills and connectors per workflow.",
   // Point every favicon size at the brand asset shipped in /public so the
   // browser tab gets the disc mark instead of the default globe.
   icons: {

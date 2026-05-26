@@ -1,6 +1,6 @@
-# BabageMed AI
+# Babbage AI
 
-Clinical assistant — Next.js dashboard + Go backend + **416 Dockerized TypeScript MCP servers** covering medical APIs, registries, journals, guidelines, society websites, FOAMed/educational refs, and productivity tools.
+Customisable AI workflows — Next.js dashboard + Go backend + Dockerized TypeScript MCP servers. The product surfaces 8 fixed feature categories (Healthcare & life sciences · Writing & content creation · Translation & languages · Business · Financial · Consulting · Mathematics & Science · Education), each with its own instructions, files, skills, and connector picks.
 
 ## Architecture
 

@@ -1,0 +1,220 @@
+/* Per-feature workspace page.
+ *
+ * Layout: hero (emoji + title + lead) on top, then a 2-column grid of cards
+ * (Instructions | Files / Skills | Connectors). Single-column under 880px.
+ *
+ * Each .feat-card is a self-contained panel matching the second mockup the
+ * user shipped — rounded border, padded header with title + action button,
+ * body with the actual content (textarea, file list, skill toggles, etc.).
+ */
+
+.feat-shell {
+  --hue-bg:   transparent;
+  --hue-line: var(--border);
+  --hue-ink:  var(--ink);
+  padding: 24px 32px;
+  max-width: 1180px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  min-height: 100vh;
+  box-sizing: border-box;
+}
+
+/* Hero color theming — one accent per category. The shell's --hue-* vars
+ * cascade into every child .feat-card so the active feature's color is
+ * consistent across the page. */
+.feat-shell[data-color="cyan"]   { --hue-bg: var(--cyan-soft);   --hue-line: var(--cyan-line);   --hue-ink: var(--cyan);   }
+.feat-shell[data-color="purple"] { --hue-bg: var(--purple-soft); --hue-line: var(--purple-line); --hue-ink: var(--purple); }
+.feat-shell[data-color="yellow"] { --hue-bg: rgba(250,204,21,.10); --hue-line: rgba(250,204,21,.30); --hue-ink: rgb(250,204,21); }
+.feat-shell[data-color="green"]  { --hue-bg: rgba(74,222,128,.10); --hue-line: rgba(74,222,128,.30); --hue-ink: rgb(74,222,128);  }
+.feat-shell[data-color="blue"]   { --hue-bg: rgba(96,165,250,.10); --hue-line: rgba(96,165,250,.30); --hue-ink: rgb(96,165,250);  }
+.feat-shell[data-color="pink"]   { --hue-bg: rgba(244,114,182,.10); --hue-line: rgba(244,114,182,.30); --hue-ink: rgb(244,114,182); }
+.feat-shell[data-color="orange"] { --hue-bg: rgba(251,146,60,.10);  --hue-line: rgba(251,146,60,.30);  --hue-ink: rgb(251,146,60);  }
+.feat-shell[data-color="red"]    { --hue-bg: rgba(248,113,113,.10); --hue-line: rgba(248,113,113,.30); --hue-ink: rgb(248,113,113); }
+
+.feat-hero {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  padding: 18px 20px;
+  border-radius: 16px;
+  background: var(--hue-bg);
+  border: 1px solid var(--hue-line);
+}
+.feat-emoji {
+  width: 56px;
+  height: 56px;
+  border-radius: 14px;
+  background: var(--panel);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+  flex-shrink: 0;
+}
+.feat-hero-text h1 { margin: 0 0 4px; font-size: 22px; color: var(--hue-ink); }
+.feat-hero-text .lead { margin: 0; color: var(--ink-2); font-size: 14px; }
+
+.feat-err {
+  border-radius: 10px;
+  padding: 10px 14px;
+  border: 1px solid var(--purple-line);
+  background: var(--purple-soft);
+  color: var(--purple);
+  font-size: 13px;
+}
+
+.feat-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+@media (max-width: 880px) { .feat-grid { grid-template-columns: 1fr; } }
+
+.feat-card {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 180px;
+}
+.feat-card-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.feat-card-head h3 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink);
+  letter-spacing: 0.01em;
+  flex: 1;
+}
+.feat-card-edit, .feat-card-add {
+  width: 26px;
+  height: 26px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--muted);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background .12s, color .12s, border-color .12s;
+}
+.feat-card-edit:hover, .feat-card-add:hover {
+  background: var(--bg-2);
+  color: var(--ink);
+  border-color: var(--border);
+}
+
+.feat-card-skel {
+  height: 80px;
+  border-radius: 10px;
+  background: linear-gradient(90deg, var(--bg-2), var(--panel), var(--bg-2));
+  background-size: 200% 100%;
+  animation: feat-skel 1.4s linear infinite;
+}
+@keyframes feat-skel { from { background-position: 0% 0; } to { background-position: -200% 0; } }
+.feat-card-empty {
+  color: var(--muted);
+  font-size: 13px;
+  padding: 18px 4px;
+  text-align: center;
+}
+
+.feat-instr-input {
+  width: 100%;
+  min-height: 120px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--ink);
+  border-radius: 10px;
+  padding: 10px 12px;
+  font: inherit;
+  font-size: 14px;
+  line-height: 1.5;
+  resize: vertical;
+  outline: none;
+  transition: border-color .12s;
+}
+.feat-instr-input:focus { border-color: var(--hue-line); }
+
+.feat-card-foot {
+  display: flex;
+  justify-content: flex-end;
+  min-height: 16px;
+}
+.feat-save-status { color: var(--muted); font-size: 11px; }
+
+/* Files list */
+.feat-files { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.feat-file-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--bg-2);
+}
+.feat-file-icon { width: 18px; height: 18px; color: var(--muted); flex-shrink: 0; display: inline-flex; align-items: center; }
+.feat-file-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; }
+.feat-file-size { color: var(--muted); font-size: 11px; flex-shrink: 0; }
+.feat-file-del {
+  width: 22px; height: 22px;
+  border-radius: 6px; border: 0;
+  background: transparent; color: var(--muted-2);
+  font-size: 16px; line-height: 1; cursor: pointer;
+}
+.feat-file-del:hover { background: var(--purple-soft); color: var(--purple); }
+
+/* Skills toggles */
+.feat-skills { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.feat-skill-row {
+  display: flex; flex-direction: column;
+  gap: 2px;
+  width: 100%;
+  text-align: start;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--bg-2);
+  cursor: pointer;
+  position: relative;
+  transition: background .12s, border-color .12s, color .12s;
+}
+.feat-skill-row:hover { background: var(--panel); }
+.feat-skill-row[data-active="true"] {
+  background: var(--hue-bg);
+  border-color: var(--hue-line);
+  color: var(--hue-ink);
+}
+.feat-skill-name { font-size: 13px; font-weight: 500; }
+.feat-skill-desc { font-size: 11px; color: var(--muted); }
+.feat-skill-row[data-active="true"] .feat-skill-desc { color: var(--hue-ink); opacity: 0.8; }
+.feat-skill-check { position: absolute; top: 6px; inset-inline-end: 8px; color: var(--hue-ink); }
+
+/* Connectors empty state */
+.feat-conn-empty { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 16px 4px; text-align: center; }
+.feat-conn-empty p { color: var(--muted); font-size: 13px; margin: 0; }
+.feat-conn-cta {
+  display: inline-block;
+  padding: 8px 14px;
+  border-radius: 999px;
+  background: var(--hue-bg);
+  border: 1px solid var(--hue-line);
+  color: var(--hue-ink);
+  font-size: 13px;
+  font-weight: 500;
+  text-decoration: none;
+  cursor: pointer;
+}
+.feat-conn-cta:hover { filter: brightness(1.1); }

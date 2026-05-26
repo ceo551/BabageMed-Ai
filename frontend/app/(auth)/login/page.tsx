@@ -34,7 +34,7 @@ export default function LoginPage() {
     <div className="auth-shell">
       <form className="auth-card" onSubmit={submit}>
         <h1>Welcome back</h1>
-        <p className="lead">Sign in to continue with BabageMed AI.</p>
+        <p className="lead">Sign in to continue with Babbage AI.</p>
         {err && <div className="auth-err">{err}</div>}
         <div className="auth-field">
           <label htmlFor="email">Email</label>

@@ -27,3 +27,11 @@ __pycache__/
 .build-worker.ps1
 .frontend-fail.log
 *-build*.log
+
+# Local audit/scratch artifacts
+.vid/
+scripts/robots-report.json
+scripts/robots-blocked.txt
+scripts/robots-errors.txt
+scripts/robots-purge-summary.json
+scripts/reaudit-report.json

@@ -70,6 +70,53 @@ a { color: inherit; text-decoration: none; }
  * Lives inside .sb-body which already has overflow-y: auto, so the chat
  * list scrolls without growing the sidebar. The section header is the
  * uppercase chip-style label Claude uses above its Recents block. */
+/* Features section — sits above History, lists the 8 fixed categories.
+ * Each row gets a left emoji + label; the active row picks up a tinted
+ * background matching its category color (data-color="cyan"/"purple"/etc.) */
+.sb-features { display: flex; flex-direction: column; gap: 2px; margin-top: 4px; }
+.sb-features-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 1px; }
+.sb-feature-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--ink-2);
+  font-size: 13px;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background .12s, color .12s, border-color .12s;
+  min-width: 0;
+}
+.sb-feature-item:hover { background: var(--panel); color: var(--ink); }
+.sb-feature-emoji {
+  width: 22px;
+  height: 22px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  flex-shrink: 0;
+}
+.sb-feature-label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sb-feature-item[data-active="true"] { color: var(--ink); background: var(--panel); border-color: var(--border); }
+.sb-feature-item[data-color="cyan"][data-active="true"]    { background: var(--cyan-soft);   border-color: var(--cyan-line);   color: var(--cyan);   }
+.sb-feature-item[data-color="purple"][data-active="true"]  { background: var(--purple-soft); border-color: var(--purple-line); color: var(--purple); }
+.sb-feature-item[data-color="yellow"][data-active="true"]  { background: rgba(250,204,21,.10); border-color: rgba(250,204,21,.30); color: rgb(250,204,21); }
+.sb-feature-item[data-color="green"][data-active="true"]   { background: rgba(74,222,128,.10); border-color: rgba(74,222,128,.30); color: rgb(74,222,128); }
+.sb-feature-item[data-color="blue"][data-active="true"]    { background: rgba(96,165,250,.10); border-color: rgba(96,165,250,.30); color: rgb(96,165,250); }
+.sb-feature-item[data-color="pink"][data-active="true"]    { background: rgba(244,114,182,.10); border-color: rgba(244,114,182,.30); color: rgb(244,114,182); }
+.sb-feature-item[data-color="orange"][data-active="true"]  { background: rgba(251,146,60,.10); border-color: rgba(251,146,60,.30); color: rgb(251,146,60); }
+.sb-feature-item[data-color="red"][data-active="true"]     { background: rgba(248,113,113,.10); border-color: rgba(248,113,113,.30); color: rgb(248,113,113); }
+
 .sb-history { display: flex; flex-direction: column; gap: 2px; min-height: 0; margin-top: 6px; }
 .sb-section-label {
   font-family: var(--mono);
