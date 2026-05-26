@@ -23,6 +23,7 @@ import (
 	"github.com/babagemed/backend/internal/features"
 	"github.com/babagemed/backend/internal/spaces"
 	"github.com/babagemed/backend/internal/tracing"
+	"github.com/babagemed/backend/internal/updates"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
@@ -158,6 +159,11 @@ func main() {
 		connectors.New(dbConn, authSvc, registry).Register(r)
 		chats.New(dbConn, authSvc).Register(r)
 	}
+
+	// Desktop auto-updater. Anonymous-readable. Reads manifest source from
+	// env (DESKTOP_UPDATES_MANIFEST{,_URL,_PATH}); when unconfigured the
+	// handler still mounts but answers 204 on every poll.
+	updates.New(updates.ConfigFromEnv()).Register(r)
 
 	// Payments
 	payH := payments.NewHandler()
