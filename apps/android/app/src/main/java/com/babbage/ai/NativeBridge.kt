@@ -83,6 +83,12 @@ class NativeBridge(
     // Pending file-picker request id (set when JS calls pickFile, consumed
     // when the document picker activity returns).
     private var pickingId: Int = 0
+    // Cap file picker payloads at 10 MiB. Loading the whole file into
+    // RAM + base64-encoding it (inflating ~33%) used to OOM the app on
+    // multi-hundred-MB picks and ANR the main thread on smaller ones.
+    // Anything larger should go through a streaming upload via the
+    // web-side fetch with the URI handed back as a content:// URL.
+    private val maxFilePickBytes = 10 * 1024 * 1024
     private val docPicker: ActivityResultLauncher<String> =
         activity.registerForActivityResult(ActivityResultContracts.GetContent()) { uri ->
             val id = pickingId
@@ -93,7 +99,32 @@ class NativeBridge(
                 return@registerForActivityResult
             }
             try {
-                val data = activity.contentResolver.openInputStream(uri)?.use { it.readBytes() } ?: ByteArray(0)
+                // Probe the size first via OpenableColumns.SIZE; bail
+                // before reading anything if it's over the cap.
+                var size: Long = -1
+                activity.contentResolver.query(uri, arrayOf(android.provider.OpenableColumns.SIZE), null, null, null)?.use { c ->
+                    if (c.moveToFirst()) size = c.getLong(0)
+                }
+                if (size > maxFilePickBytes) {
+                    reject(id, "file too large (${size} bytes; max ${maxFilePickBytes})")
+                    return@registerForActivityResult
+                }
+                val data = activity.contentResolver.openInputStream(uri)?.use { input ->
+                    val out = java.io.ByteArrayOutputStream()
+                    val buf = ByteArray(64 * 1024)
+                    var total = 0L
+                    while (true) {
+                        val n = input.read(buf)
+                        if (n <= 0) break
+                        total += n
+                        if (total > maxFilePickBytes) {
+                            reject(id, "file too large")
+                            return@registerForActivityResult
+                        }
+                        out.write(buf, 0, n)
+                    }
+                    out.toByteArray()
+                } ?: ByteArray(0)
                 val mime = activity.contentResolver.getType(uri) ?: "application/octet-stream"
                 val b64 = Base64.encodeToString(data, Base64.NO_WRAP)
                 val name = uri.lastPathSegment ?: "file"
@@ -118,6 +149,19 @@ class NativeBridge(
         // requires it.
         main.post {
             try {
+                // Origin check: addJavascriptInterface attaches this object
+                // to ALL frames in the WebView. An iframe loaded from a
+                // third-party CDN, an OAuth redirect on an attacker's
+                // domain, or a compromised script could otherwise call
+                // BabbageNativeRaw.dispatch(...). Reject any frame whose
+                // origin isn't on our allow-list.
+                val currentUrl = webView.url ?: ""
+                val host = try { android.net.Uri.parse(currentUrl).host ?: "" } catch (_: Throwable) { "" }
+                val originAllowed = host == "babagemed.com" || host.endsWith(".babagemed.com") || currentUrl.startsWith("http://10.0.2.2:") // emulator dev
+                if (!originAllowed) {
+                    reject(id, "origin not allowed")
+                    return@post
+                }
                 val payload = JSONObject(jsonPayload)
                 when (action) {
                     "shareText"    -> shareText(id, payload)
@@ -138,12 +182,29 @@ class NativeBridge(
 
     private fun shareText(id: Int, payload: JSONObject) {
         val text = payload.optString("text")
-        val intent = Intent(Intent.ACTION_SEND).apply {
-            type = "text/plain"
-            putExtra(Intent.EXTRA_TEXT, text)
+        if (text.isEmpty()) {
+            reject(id, "text required")
+            return
         }
-        activity.startActivity(Intent.createChooser(intent, null))
-        resolve(id, true)
+        // Android's IPC bundles cap at ~1 MiB; oversized text crashes
+        // the share sheet with TransactionTooLargeException. Cap at 256
+        // KiB — any reasonable share fits.
+        if (text.length > 256 * 1024) {
+            reject(id, "text too large")
+            return
+        }
+        try {
+            val intent = Intent(Intent.ACTION_SEND).apply {
+                type = "text/plain"
+                putExtra(Intent.EXTRA_TEXT, text)
+            }
+            activity.startActivity(Intent.createChooser(intent, null).apply {
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            })
+            resolve(id, true)
+        } catch (t: Throwable) {
+            reject(id, t.message ?: "share failed")
+        }
     }
 
     private fun haptic(id: Int, payload: JSONObject) {
@@ -231,17 +292,19 @@ class NativeBridge(
     }
 
     private fun reject(id: Int, error: String) {
-        val safe = error.replace("\\", "\\\\").replace("\"", "\\\"")
-        val js = "window.__babbageResolve(${id}, false, null, \"$safe\")"
+        // JSONObject.quote handles all the cases the ad-hoc string-replace
+        // version missed: \n, \r, \t, U+2028, U+2029, etc.
+        val js = "window.__babbageResolve(${id}, false, null, ${JSONObject.quote(error)})"
         webView.post { webView.evaluateJavascript(js, null) }
     }
 
     private fun toJs(value: Any?): String = when (value) {
-        null      -> "null"
-        is Boolean -> value.toString()
-        is Number -> value.toString()
+        null         -> "null"
+        is Boolean   -> value.toString()
+        is Number    -> value.toString()
         is JSONObject -> value.toString()
-        else -> "\"${value.toString().replace("\\", "\\\\").replace("\"", "\\\"")}\""
+        // Use JSONObject.quote for safe string serialisation.
+        else         -> JSONObject.quote(value.toString())
     }
 
     private fun ensureChannel() {

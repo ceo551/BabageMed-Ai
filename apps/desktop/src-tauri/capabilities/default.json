@@ -28,8 +28,10 @@
     "fs:allow-write-text-file",
     "fs:allow-write-file",
     "fs:allow-exists",
-    "fs:scope-download-recursive",
-    "fs:scope-document-recursive",
+    "fs:allow-applocaldata-read",
+    "fs:allow-applocaldata-read-recursive",
+    "fs:allow-applocaldata-write",
+    "fs:allow-applocaldata-write-recursive",
 
     "os:default",
     "os:allow-platform",

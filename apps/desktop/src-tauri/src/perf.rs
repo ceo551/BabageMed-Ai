@@ -20,15 +20,19 @@ pub fn install_pre_init_env() {
     // when an Nvidia/AMD GPU is present. WebView2 honours the same
     // chromium switches Chrome uses, comma-separated.
     #[cfg(target_os = "windows")]
+    // --ignore-gpu-blocklist previously listed: Chromium maintains that
+    // blocklist for specific driver bugs that cause data corruption or
+    // crashes; overriding it can produce wrong-pixel reads from one site
+    // into another. We accept the cost of slightly worse perf on
+    // blocklisted drivers (fallback to software composite) for the
+    // security guarantee.
     ensure(
         "WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS",
         concat!(
             "--enable-gpu-rasterization ",
             "--enable-zero-copy ",
-            "--ignore-gpu-blocklist ",
             "--enable-accelerated-video-decode ",
-            "--enable-features=VaapiVideoDecoder,UseSkiaRenderer,CanvasOopRasterization ",
-            "--disable-features=UseChromeOSDirectVideoDecoder ",
+            "--enable-features=UseSkiaRenderer,CanvasOopRasterization ",
             "--use-angle=d3d11"
         ),
     );

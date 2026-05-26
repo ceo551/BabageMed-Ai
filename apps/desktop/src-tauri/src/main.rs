@@ -38,9 +38,17 @@ fn main() {
             }
             // Forward CLI args (and deep-link URLs delivered as argv on
             // Windows/Linux) to the web app so it can route to the right
-            // screen.
+            // screen — but ONLY for our own babbage:// scheme, not the
+            // full argv. Any process can launch the desktop binary with
+            // arbitrary flags; we don't want a launcher shortcut or a
+            // malicious bookmark file to deliver privileged "internal"
+            // instructions to the React layer.
+            let safe: Vec<&String> = argv
+                .iter()
+                .filter(|s| s.starts_with("babbage://") || s.starts_with("https://babagemed.com"))
+                .collect();
             if let Some(w) = app.get_webview_window("main") {
-                if let Ok(json) = serde_json::to_string(&argv) {
+                if let Ok(json) = serde_json::to_string(&safe) {
                     let _ = w.eval(&format!(
                         "window.dispatchEvent(new CustomEvent('babbage:cli', {{ detail: {} }}))",
                         json

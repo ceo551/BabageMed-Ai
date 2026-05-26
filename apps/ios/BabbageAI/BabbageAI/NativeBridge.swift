@@ -91,19 +91,38 @@ final class NativeBridge: NSObject, WKScriptMessageHandlerWithReply {
         }
     }
 
+    // Notifications: check current authorization first. Requesting on
+    // every call re-prompts on every iOS launch where the user is
+    // undecided, and on permanent-denied silently fails forever.
     private func notify(_ payload: [String: Any], reply: @escaping (Any?, String?) -> Void) {
         let title = (payload["title"] as? String) ?? "Babbage AI"
         let body  = (payload["body"]  as? String) ?? ""
         let center = UNUserNotificationCenter.current()
-        center.requestAuthorization(options: [.alert, .sound, .badge]) { granted, err in
-            guard granted, err == nil else { reply(false, err?.localizedDescription); return }
-            let content = UNMutableNotificationContent()
-            content.title = title
-            content.body  = body
-            content.sound = .default
-            let req = UNNotificationRequest(identifier: UUID().uuidString, content: content, trigger: nil)
-            center.add(req) { e in
-                if let e { reply(nil, e.localizedDescription) } else { reply(true, nil) }
+        center.getNotificationSettings { settings in
+            let post: () -> Void = {
+                let content = UNMutableNotificationContent()
+                content.title = title
+                content.body  = body
+                content.sound = .default
+                let req = UNNotificationRequest(identifier: UUID().uuidString, content: content, trigger: nil)
+                center.add(req) { e in
+                    DispatchQueue.main.async {
+                        if let e { reply(nil, e.localizedDescription) } else { reply(true, nil) }
+                    }
+                }
+            }
+            switch settings.authorizationStatus {
+            case .authorized, .provisional, .ephemeral:
+                post()
+            case .notDetermined:
+                center.requestAuthorization(options: [.alert, .sound, .badge]) { granted, err in
+                    if granted && err == nil { post() }
+                    else {
+                        DispatchQueue.main.async { reply(false, err?.localizedDescription ?? "denied") }
+                    }
+                }
+            default:
+                DispatchQueue.main.async { reply(false, "notifications denied") }
             }
         }
     }
@@ -138,6 +157,13 @@ final class NativeBridge: NSObject, WKScriptMessageHandlerWithReply {
     private var filePickerReply: ((Any?, String?) -> Void)?
 
     private func pickFile(_ payload: [String: Any], reply: @escaping (Any?, String?) -> Void) {
+        // Refuse overlapping picks. A second pickFile while one is in
+        // flight previously dropped the first reply and left its JS
+        // Promise hanging forever.
+        guard filePickerReply == nil else {
+            reply(nil, "another pickFile call is in flight")
+            return
+        }
         guard let host = hostController else { reply(nil, "no host"); return }
         let mime = (payload["mime"] as? String) ?? "*/*"
         let types: [UTType] = {
@@ -153,16 +179,36 @@ final class NativeBridge: NSObject, WKScriptMessageHandlerWithReply {
     }
 }
 
+private let maxPickedFileBytes: Int64 = 10 * 1024 * 1024
+
 extension NativeBridge: UIDocumentPickerDelegate {
     func documentPicker(_ controller: UIDocumentPickerViewController, didPickDocumentsAt urls: [URL]) {
         let reply = filePickerReply
         filePickerReply = nil
         guard let url = urls.first else { reply?(nil, nil); return }
         do {
-            let data = try Data(contentsOf: url)
-            let mime = UTType(filenameExtension: url.pathExtension)?.preferredMIMEType ?? "application/octet-stream"
-            let b64 = data.base64EncodedString()
-            reply?(["name": url.lastPathComponent, "mime": mime, "dataUrl": "data:\(mime);base64,\(b64)"], nil)
+            // Size-gate BEFORE reading. Loading a 500 MB pick into memory
+            // and then base64-inflating it 33% would OOM-kill the app.
+            let attrs = try FileManager.default.attributesOfItem(atPath: url.path)
+            let size = (attrs[.size] as? NSNumber)?.int64Value ?? 0
+            if size > maxPickedFileBytes {
+                reply?(nil, "file too large (\(size) bytes; max \(maxPickedFileBytes))")
+                return
+            }
+            // Encode off the main thread so the picker UI doesn't hitch
+            // while we base64 a multi-MB file.
+            DispatchQueue.global(qos: .userInitiated).async {
+                do {
+                    let data = try Data(contentsOf: url)
+                    let mime = UTType(filenameExtension: url.pathExtension)?.preferredMIMEType ?? "application/octet-stream"
+                    let b64 = data.base64EncodedString()
+                    DispatchQueue.main.async {
+                        reply?(["name": url.lastPathComponent, "mime": mime, "dataUrl": "data:\(mime);base64,\(b64)"], nil)
+                    }
+                } catch {
+                    DispatchQueue.main.async { reply?(nil, error.localizedDescription) }
+                }
+            }
         } catch {
             reply?(nil, error.localizedDescription)
         }

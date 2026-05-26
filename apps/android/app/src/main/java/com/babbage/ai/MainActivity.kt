@@ -151,12 +151,21 @@ class MainActivity : ComponentActivity() {
             view: WebView?,
             request: WebResourceRequest?,
         ): Boolean {
+            val url = request?.url ?: return false
+            val scheme = url.scheme?.lowercase()
+            // Reject schemes that can drive the WebView into running JS
+            // ("javascript:"), reading the device filesystem ("file:" /
+            // "content:"), or launching arbitrary Android activities
+            // ("intent:") via crafted intent: URLs. Only http(s):
+            // navigations are considered.
+            if (scheme != "https" && scheme != "http") {
+                return true
+            }
             // External (non-babagemed) URLs spin out to the system browser
             // so OAuth callbacks etc. don't leave the WebView trapped on a
             // third-party site.
-            val url = request?.url ?: return false
-            val host = url.host ?: return false
-            if (host.endsWith("babagemed.com")) return false
+            val host = url.host ?: return true
+            if (host == "babagemed.com" || host.endsWith(".babagemed.com")) return false
             try {
                 startActivity(Intent(Intent.ACTION_VIEW, url))
             } catch (_: Exception) { /* no browser installed */ }

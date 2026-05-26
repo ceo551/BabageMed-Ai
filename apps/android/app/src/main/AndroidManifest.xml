@@ -50,15 +50,21 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
 
-            <!-- App Links: open https://babagemed.com/* in the app when
-                 installed. Requires /.well-known/assetlinks.json published
-                 at the babagemed.com root with this app's SHA-256 fingerprint
-                 — see README. -->
+            <!-- App Links: open app-routable paths under https://babagemed.com
+                 in the app when installed. Requires /.well-known/assetlinks.json
+                 published at the babagemed.com root with this app's SHA-256
+                 fingerprint — see README.
+                 Restrict to explicit pathPrefix entries so we don't hijack
+                 marketing pages or unrelated URLs. -->
             <intent-filter android:autoVerify="true">
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
-                <data android:scheme="https" android:host="babagemed.com" />
+                <data android:scheme="https" android:host="babagemed.com" android:pathPrefix="/c/" />
+                <data android:scheme="https" android:host="babagemed.com" android:pathPrefix="/features/" />
+                <data android:scheme="https" android:host="babagemed.com" android:pathPrefix="/mcps" />
+                <data android:scheme="https" android:host="babagemed.com" android:pathPrefix="/settings" />
+                <data android:scheme="https" android:host="babagemed.com" android:pathPrefix="/billing" />
             </intent-filter>
         </activity>
     </application>

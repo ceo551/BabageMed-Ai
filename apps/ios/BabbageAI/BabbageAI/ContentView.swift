@@ -114,6 +114,37 @@ struct WebShell: UIViewRepresentable {
         var bridge: NativeBridge?
         init(_ parent: WebShell) { self.parent = parent }
 
+        // Allow only main-frame navigations to babagemed.com (and its
+        // subdomains). Everything else — javascript:, file:, third-party
+        // https: links — is rejected here OR opened in Safari so it
+        // doesn't run inside our WebView, which has the NativeBridge
+        // attached.
+        func webView(_ webView: WKWebView, decidePolicyFor navigationAction: WKNavigationAction,
+                     decisionHandler: @escaping (WKNavigationActionPolicy) -> Void) {
+            guard let url = navigationAction.request.url else {
+                decisionHandler(.cancel); return
+            }
+            let scheme = (url.scheme ?? "").lowercased()
+            guard scheme == "https" || scheme == "http" else {
+                // javascript:, file:, etc — refuse outright.
+                decisionHandler(.cancel); return
+            }
+            let host = url.host ?? ""
+            if host == "babagemed.com" || host.hasSuffix(".babagemed.com") {
+                decisionHandler(.allow); return
+            }
+            // External link → open in Safari instead of letting it
+            // navigate inside our trusted WebView.
+            if navigationAction.targetFrame?.isMainFrame == true {
+                UIApplication.shared.open(url, options: [:], completionHandler: nil)
+                decisionHandler(.cancel); return
+            }
+            // Sub-frame to a foreign host (e.g. payment iframe) — let
+            // WebKit handle it; the NativeBridge is restricted to the
+            // main frame via WKUserScript's forMainFrameOnly=true.
+            decisionHandler(.allow)
+        }
+
         func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
             // First navigation finishes — re-resolve the host controller in
             // case the window wasn't ready when makeUIView ran.
