@@ -5,7 +5,6 @@
 // devices.
 
 use serde::Serialize;
-use std::time::Instant;
 use sysinfo::{Components, Disks, MemoryRefreshKind, Networks, RefreshKind, System};
 use tokio::sync::Mutex;
 
@@ -14,18 +13,17 @@ use tokio::sync::Mutex;
 /// (cpu_usage needs two consecutive samples).
 pub struct SysState {
     pub sys: Mutex<System>,
-    pub boot_at: Instant,
 }
 
 impl SysState {
     pub fn new() -> Self {
         let mut sys = System::new_with_specifics(
-            RefreshKind::nothing()
+            RefreshKind::new()
                 .with_cpu(sysinfo::CpuRefreshKind::everything())
                 .with_memory(MemoryRefreshKind::everything()),
         );
         sys.refresh_all();
-        Self { sys: Mutex::new(sys), boot_at: Instant::now() }
+        Self { sys: Mutex::new(sys) }
     }
 }
 
@@ -174,7 +172,10 @@ pub async fn system_snapshot(state: tauri::State<'_, SysState>) -> Result<System
         .iter()
         .map(|c| ThermalSensor {
             label: c.label().to_string(),
-            temperature_c: c.temperature(),
+            // sysinfo 0.32 returns f32 directly (no Option); the API has
+            // sentinel values but we surface them as-is — the UI can hide
+            // negatives or NaN as "unsupported".
+            temperature_c: Some(c.temperature()),
             critical_c: c.critical(),
         })
         .collect();

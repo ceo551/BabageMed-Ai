@@ -1,7 +1,7 @@
 // Window/perf utilities the React layer triggers via @tauri-apps/api.
 
 use serde::Serialize;
-use tauri::{Manager, WebviewWindow};
+use tauri::WebviewWindow;
 
 #[derive(Serialize)]
 pub struct AppInfo {

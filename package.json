@@ -2,7 +2,7 @@
   "name": "babagemed-ai",
   "version": "0.1.0",
   "private": true,
-  "workspaces": ["packages/*", "mcps/*", "frontend"],
+  "workspaces": ["packages/*", "mcps/*", "apps/web", "apps/desktop"],
   "scripts": {
     "generate:mcps": "node scripts/generate-mcps.mjs && node scripts/write-real-tools.mjs",
     "build:base": "cd packages/mcp-base && npm run build",

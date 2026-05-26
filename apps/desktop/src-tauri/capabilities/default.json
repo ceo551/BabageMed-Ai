@@ -61,7 +61,6 @@
     "log:default",
     "updater:default",
     "deep-link:default",
-    "single-instance:default",
     "window-state:default",
     "autostart:default",
 
