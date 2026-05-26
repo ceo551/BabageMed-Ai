@@ -4,7 +4,8 @@ import { notFound, useParams, useRouter } from "next/navigation";
 import React, { useEffect, useRef, useState } from "react";
 import { useUI } from "../../lib/ui-context";
 import { useAuth } from "../../lib/auth-context";
-import { features as featuresApi, type Feature, type FeatureFile } from "../../lib/api";
+import { features as featuresApi, mcps as mcpsApi, type Feature, type FeatureFile, type McpServer } from "../../lib/api";
+import { ConnectorIcon } from "../../components/ConnectorIcon";
 import { I } from "../../icons";
 import "./feature.css";
 
@@ -109,6 +110,7 @@ export default function FeaturePage() {
         <ConnectorsCard
           loading={loading}
           selected={feature?.connectors || []}
+          featureSlug={meta.slug}
           onChange={async (connectors) => {
             const updated = await featuresApi.update(meta.slug, { connectors });
             setFeature(updated);
@@ -296,34 +298,109 @@ function SkillsCard({
 }
 
 // ─── Connectors card ─────────────────────────────────────────────────────
+// Reads the full MCP catalog (~540 servers), filters by:
+//   - search text box (case-insensitive substring match on name + id)
+//   - the feature's preferred slug (servers tagged with feature===slug land
+//     at the top so users see the most-relevant connectors first)
+// Multi-select toggles persist immediately via featuresApi.update.
 function ConnectorsCard({
   loading,
   selected,
   onChange,
+  featureSlug,
 }: {
   loading: boolean;
   selected: string[];
   onChange: (s: string[]) => Promise<void>;
+  featureSlug: string;
 }) {
   const { s } = useUI();
+  const [catalog, setCatalog] = useState<McpServer[]>([]);
+  const [loadingCat, setLoadingCat] = useState(true);
+  const [q, setQ] = useState("");
   const set = new Set(selected);
+
+  useEffect(() => {
+    let cancelled = false;
+    mcpsApi.list()
+      .then(({ servers }) => { if (!cancelled) setCatalog(servers); })
+      .catch(() => { if (!cancelled) setCatalog([]); })
+      .finally(() => { if (!cancelled) setLoadingCat(false); });
+    return () => { cancelled = true; };
+  }, []);
+
   function toggle(id: string) {
     const next = new Set(set);
     if (next.has(id)) next.delete(id); else next.add(id);
     onChange(Array.from(next));
   }
+
+  // Filter + rank: matching servers first, then alphabetical by name. Servers
+  // tagged with `feature === featureSlug` get a free 1000-point boost so the
+  // most-relevant connectors land at the top of the list before any search.
+  const query = q.trim().toLowerCase();
+  const filtered = catalog
+    .filter((m) => {
+      if (!query) return true;
+      return m.name.toLowerCase().includes(query) || m.id.toLowerCase().includes(query);
+    })
+    .map((m) => ({
+      m,
+      score:
+        ((m as any).feature === featureSlug ? 1000 : 0) +
+        (set.has(m.id) ? 500 : 0),
+    }))
+    .sort((a, b) => (b.score - a.score) || a.m.name.localeCompare(b.m.name));
+
+  const showLimit = 40;
+  const visible   = filtered.slice(0, showLimit);
+
   return (
-    <section className="feat-card" aria-label={s.connectorsPanel}>
+    <section className="feat-card feat-card-tall" aria-label={s.connectorsPanel}>
       <header className="feat-card-head">
         <h3>{s.connectorsPanel}</h3>
+        <span className="feat-conn-count">
+          {set.size}/{catalog.length}
+        </span>
       </header>
-      {loading ? (
+      {(loading || loadingCat) ? (
         <div className="feat-card-skel" aria-busy="true" />
       ) : (
-        <div className="feat-conn-empty">
-          <p>{s.connectorsPanelDesc}</p>
-          <a href="/mcps" className="feat-conn-cta">{s.addConnector}</a>
-        </div>
+        <>
+          <input
+            type="search"
+            className="feat-conn-search"
+            placeholder={s.addConnectorDesc}
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+          />
+          <ul className="feat-conn-list">
+            {visible.map(({ m }) => (
+              <li key={m.id}>
+                <button
+                  type="button"
+                  className="feat-conn-row"
+                  data-active={set.has(m.id)}
+                  onClick={() => toggle(m.id)}
+                  title={m.name}
+                >
+                  <ConnectorIcon id={m.id} name={m.name} iconUrl={m.iconUrl} size={18} />
+                  <span className="feat-conn-name">{m.name}</span>
+                  <span className="feat-conn-cat">{m.category}</span>
+                  {set.has(m.id) && <span className="feat-conn-check">{I.check}</span>}
+                </button>
+              </li>
+            ))}
+            {filtered.length > showLimit && (
+              <li className="feat-conn-more">
+                {filtered.length - showLimit} more — refine search to narrow.
+              </li>
+            )}
+            {filtered.length === 0 && (
+              <li className="feat-conn-empty-row">No connectors match.</li>
+            )}
+          </ul>
+        </>
       )}
     </section>
   );

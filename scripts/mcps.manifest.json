@@ -3850,6 +3850,3128 @@
         "search",
         "fetch"
       ]
+    },
+    {
+      "id": "outlook",
+      "name": "Outlook",
+      "kind": "api",
+      "category": "communication",
+      "feature": "business",
+      "port": 6530,
+      "base": "",
+      "homepage": "https://outlook.live.com",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "hubspot",
+      "name": "HubSpot",
+      "kind": "api",
+      "category": "sales",
+      "feature": "business",
+      "port": 6531,
+      "base": "",
+      "homepage": "https://www.hubspot.com",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "monday",
+      "name": "Monday.com",
+      "kind": "api",
+      "category": "operations",
+      "feature": "business",
+      "port": 6532,
+      "base": "",
+      "homepage": "https://monday.com",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "snowflake",
+      "name": "Snowflake",
+      "kind": "api",
+      "category": "data",
+      "feature": "business",
+      "port": 6533,
+      "base": "",
+      "homepage": "https://www.snowflake.com",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "stripe",
+      "name": "Stripe",
+      "kind": "api",
+      "category": "finance",
+      "feature": "financial",
+      "port": 6534,
+      "base": "",
+      "homepage": "https://stripe.com",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "motherduck",
+      "name": "MotherDuck",
+      "kind": "api",
+      "category": "data",
+      "feature": "math-science",
+      "port": 6535,
+      "base": "",
+      "homepage": "https://motherduck.com",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "vercel",
+      "name": "Vercel",
+      "kind": "api",
+      "category": "developer",
+      "feature": "business",
+      "port": 6536,
+      "base": "",
+      "homepage": "https://vercel.com",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "supabase",
+      "name": "Supabase",
+      "kind": "api",
+      "category": "developer",
+      "feature": "business",
+      "port": 6537,
+      "base": "",
+      "homepage": "https://supabase.com",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "google-forms",
+      "name": "Google Forms",
+      "kind": "api",
+      "category": "productivity",
+      "feature": "education",
+      "port": 6538,
+      "base": "",
+      "homepage": "https://forms.google.com",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "youtube-analytics",
+      "name": "YouTube Analytics",
+      "kind": "api",
+      "category": "creative",
+      "feature": "writing",
+      "port": 6539,
+      "base": "",
+      "homepage": "https://analytics.youtube.com",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "facebook-pages",
+      "name": "Facebook Pages",
+      "kind": "api",
+      "category": "communication",
+      "feature": "writing",
+      "port": 6540,
+      "base": "",
+      "homepage": "https://www.facebook.com",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "twitch",
+      "name": "Twitch",
+      "kind": "api",
+      "category": "creative",
+      "feature": "writing",
+      "port": 6541,
+      "base": "",
+      "homepage": "https://www.twitch.tv",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "google-tasks",
+      "name": "Google Tasks",
+      "kind": "api",
+      "category": "productivity",
+      "feature": "business",
+      "port": 6542,
+      "base": "",
+      "homepage": "https://tasks.google.com",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "google-cloud-vision",
+      "name": "Google Cloud Vision",
+      "kind": "api",
+      "category": "ai",
+      "feature": "math-science",
+      "port": 6543,
+      "base": "",
+      "homepage": "https://cloud.google.com/vision",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "docusign",
+      "name": "Docusign",
+      "kind": "api",
+      "category": "operations",
+      "feature": "business",
+      "port": 6544,
+      "base": "",
+      "homepage": "https://www.docusign.com",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "google-ads",
+      "name": "Google Ads",
+      "kind": "api",
+      "category": "marketing",
+      "feature": "business",
+      "port": 6545,
+      "base": "",
+      "homepage": "https://ads.google.com",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "findymail",
+      "name": "Findymail",
+      "kind": "api",
+      "category": "sales",
+      "feature": "business",
+      "port": 6546,
+      "base": "",
+      "homepage": "https://findymail.com",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "vimeo",
+      "name": "Vimeo",
+      "kind": "api",
+      "category": "creative",
+      "feature": "writing",
+      "port": 6547,
+      "base": "",
+      "homepage": "https://vimeo.com",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "google-tag-manager",
+      "name": "Google Tag Manager",
+      "kind": "api",
+      "category": "marketing",
+      "feature": "business",
+      "port": 6548,
+      "base": "",
+      "homepage": "https://tagmanager.google.com",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "google-meet",
+      "name": "Google Meet",
+      "kind": "api",
+      "category": "communication",
+      "feature": "business",
+      "port": 6549,
+      "base": "",
+      "homepage": "https://meet.google.com",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "strava",
+      "name": "Strava",
+      "kind": "api",
+      "category": "lifestyle",
+      "feature": "healthcare",
+      "port": 6550,
+      "base": "",
+      "homepage": "https://www.strava.com",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "lucid",
+      "name": "Lucid",
+      "kind": "api",
+      "category": "creative",
+      "feature": "writing",
+      "port": 6551,
+      "base": "",
+      "homepage": "https://lucid.app",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "biorender",
+      "name": "BioRender",
+      "kind": "api",
+      "category": "creative",
+      "feature": "math-science",
+      "port": 6552,
+      "base": "",
+      "homepage": "https://www.biorender.com",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "figma",
+      "name": "Figma",
+      "kind": "api",
+      "category": "creative",
+      "feature": "writing",
+      "port": 6553,
+      "base": "",
+      "homepage": "https://www.figma.com",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "canva-enterprise",
+      "name": "Canva Enterprise",
+      "kind": "api",
+      "category": "creative",
+      "feature": "writing",
+      "port": 6554,
+      "base": "",
+      "homepage": "https://www.canva.com/enterprise",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "docugenerate",
+      "name": "DocuGenerate",
+      "kind": "api",
+      "category": "operations",
+      "feature": "consulting",
+      "port": 6555,
+      "base": "",
+      "homepage": "https://www.docugenerate.com",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "leonardo-ai",
+      "name": "Leonardo AI",
+      "kind": "api",
+      "category": "ai",
+      "feature": "writing",
+      "port": 6556,
+      "base": "",
+      "homepage": "https://leonardo.ai",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "spotify",
+      "name": "Spotify",
+      "kind": "api",
+      "category": "creative",
+      "feature": "writing",
+      "port": 6557,
+      "base": "",
+      "homepage": "https://www.spotify.com",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "bannerbear",
+      "name": "Bannerbear",
+      "kind": "api",
+      "category": "creative",
+      "feature": "writing",
+      "port": 6558,
+      "base": "",
+      "homepage": "https://www.bannerbear.com",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "egnyte",
+      "name": "Egnyte",
+      "kind": "api",
+      "category": "storage",
+      "feature": "business",
+      "port": 6559,
+      "base": "",
+      "homepage": "https://www.egnyte.com",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "google-photos",
+      "name": "Google Photos",
+      "kind": "api",
+      "category": "storage",
+      "feature": "writing",
+      "port": 6560,
+      "base": "",
+      "homepage": "https://photos.google.com",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "pdf-co",
+      "name": "PDF.co",
+      "kind": "api",
+      "category": "operations",
+      "feature": "consulting",
+      "port": 6561,
+      "base": "",
+      "homepage": "https://pdf.co",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "mux",
+      "name": "Mux",
+      "kind": "api",
+      "category": "creative",
+      "feature": "writing",
+      "port": 6562,
+      "base": "",
+      "homepage": "https://www.mux.com",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "youtube-data",
+      "name": "YouTube Data",
+      "kind": "api",
+      "category": "creative",
+      "feature": "writing",
+      "port": 6563,
+      "base": "",
+      "homepage": "https://developers.google.com/youtube/v3",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "intercom",
+      "name": "Intercom",
+      "kind": "api",
+      "category": "communication",
+      "feature": "business",
+      "port": 6564,
+      "base": "",
+      "homepage": "https://www.intercom.com",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "x-twitter",
+      "name": "X (Twitter)",
+      "kind": "api",
+      "category": "communication",
+      "feature": "writing",
+      "port": 6565,
+      "base": "",
+      "homepage": "https://x.com",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "smstools",
+      "name": "SMSTools",
+      "kind": "api",
+      "category": "communication",
+      "feature": "business",
+      "port": 6566,
+      "base": "",
+      "homepage": "https://www.smstools.com",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "z-api",
+      "name": "Z-API (WhatsApp)",
+      "kind": "api",
+      "category": "communication",
+      "feature": "business",
+      "port": 6567,
+      "base": "",
+      "homepage": "https://z-api.io",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "zoom-admin",
+      "name": "Zoom Admin",
+      "kind": "api",
+      "category": "communication",
+      "feature": "business",
+      "port": 6568,
+      "base": "",
+      "homepage": "https://zoom.us",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "help-scout",
+      "name": "Help Scout",
+      "kind": "api",
+      "category": "communication",
+      "feature": "business",
+      "port": 6569,
+      "base": "",
+      "homepage": "https://www.helpscout.com",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "missive",
+      "name": "Missive",
+      "kind": "api",
+      "category": "communication",
+      "feature": "business",
+      "port": 6570,
+      "base": "",
+      "homepage": "https://missiveapp.com",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "sendblue",
+      "name": "Sendblue",
+      "kind": "api",
+      "category": "communication",
+      "feature": "business",
+      "port": 6571,
+      "base": "",
+      "homepage": "https://sendblue.co",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "zoho-mail",
+      "name": "Zoho Mail",
+      "kind": "api",
+      "category": "communication",
+      "feature": "business",
+      "port": 6572,
+      "base": "",
+      "homepage": "https://www.zoho.com/mail",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "postmark",
+      "name": "Postmark",
+      "kind": "api",
+      "category": "communication",
+      "feature": "business",
+      "port": 6573,
+      "base": "",
+      "homepage": "https://postmarkapp.com",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "twilio",
+      "name": "Twilio",
+      "kind": "api",
+      "category": "communication",
+      "feature": "business",
+      "port": 6574,
+      "base": "",
+      "homepage": "https://www.twilio.com",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "zoom",
+      "name": "Zoom",
+      "kind": "api",
+      "category": "communication",
+      "feature": "business",
+      "port": 6575,
+      "base": "",
+      "homepage": "https://zoom.us",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "freshdesk",
+      "name": "Freshdesk",
+      "kind": "api",
+      "category": "communication",
+      "feature": "business",
+      "port": 6576,
+      "base": "",
+      "homepage": "https://www.freshdesk.com",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "mixmax",
+      "name": "MixMax",
+      "kind": "api",
+      "category": "communication",
+      "feature": "business",
+      "port": 6577,
+      "base": "",
+      "homepage": "https://mixmax.com",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "loops-so",
+      "name": "Loops.so",
+      "kind": "api",
+      "category": "communication",
+      "feature": "business",
+      "port": 6578,
+      "base": "",
+      "homepage": "https://loops.so",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "telegram",
+      "name": "Telegram",
+      "kind": "api",
+      "category": "communication",
+      "feature": "business",
+      "port": 6579,
+      "base": "",
+      "homepage": "https://telegram.org",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "atlassian",
+      "name": "Atlassian (Jira/Confluence)",
+      "kind": "api",
+      "category": "operations",
+      "feature": "business",
+      "port": 6580,
+      "base": "",
+      "homepage": "https://www.atlassian.com",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "ticket-tailor",
+      "name": "Ticket Tailor",
+      "kind": "api",
+      "category": "operations",
+      "feature": "business",
+      "port": 6581,
+      "base": "",
+      "homepage": "https://www.tickettailor.com",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "shopify",
+      "name": "Shopify",
+      "kind": "api",
+      "category": "operations",
+      "feature": "business",
+      "port": 6582,
+      "base": "",
+      "homepage": "https://www.shopify.com",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "carta",
+      "name": "Carta",
+      "kind": "api",
+      "category": "finance",
+      "feature": "financial",
+      "port": 6583,
+      "base": "",
+      "homepage": "https://carta.com",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "sendcloud",
+      "name": "Sendcloud",
+      "kind": "api",
+      "category": "operations",
+      "feature": "business",
+      "port": 6584,
+      "base": "",
+      "homepage": "https://www.sendcloud.com",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "drata",
+      "name": "Drata",
+      "kind": "api",
+      "category": "operations",
+      "feature": "consulting",
+      "port": 6585,
+      "base": "",
+      "homepage": "https://drata.com",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "microsoft-bookings",
+      "name": "Microsoft Bookings",
+      "kind": "api",
+      "category": "operations",
+      "feature": "business",
+      "port": 6586,
+      "base": "",
+      "homepage": "https://www.microsoft.com/microsoft-365/business/scheduling-and-booking-app",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "brex",
+      "name": "Brex",
+      "kind": "api",
+      "category": "finance",
+      "feature": "financial",
+      "port": 6587,
+      "base": "",
+      "homepage": "https://www.brex.com",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "clockify",
+      "name": "Clockify",
+      "kind": "api",
+      "category": "operations",
+      "feature": "business",
+      "port": 6588,
+      "base": "",
+      "homepage": "https://clockify.me",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "google-workspace-admin",
+      "name": "Google Workspace Admin",
+      "kind": "api",
+      "category": "operations",
+      "feature": "business",
+      "port": 6589,
+      "base": "",
+      "homepage": "https://workspace.google.com",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "personio",
+      "name": "Personio",
+      "kind": "api",
+      "category": "hr",
+      "feature": "business",
+      "port": 6590,
+      "base": "",
+      "homepage": "https://www.personio.com",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "zoho-desk",
+      "name": "Zoho Desk",
+      "kind": "api",
+      "category": "communication",
+      "feature": "business",
+      "port": 6591,
+      "base": "",
+      "homepage": "https://www.zoho.com/desk",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "microsoft-entra-id",
+      "name": "Microsoft Entra ID",
+      "kind": "api",
+      "category": "operations",
+      "feature": "business",
+      "port": 6592,
+      "base": "",
+      "homepage": "https://www.microsoft.com/security/business/identity-access/microsoft-entra-id",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "google-business-profile",
+      "name": "Google Business Profile",
+      "kind": "api",
+      "category": "marketing",
+      "feature": "business",
+      "port": 6593,
+      "base": "",
+      "homepage": "https://www.google.com/business",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "calendly",
+      "name": "Calendly",
+      "kind": "api",
+      "category": "productivity",
+      "feature": "business",
+      "port": 6594,
+      "base": "",
+      "homepage": "https://calendly.com",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "msdynamics-365-business",
+      "name": "Microsoft Dynamics 365 Business",
+      "kind": "api",
+      "category": "operations",
+      "feature": "business",
+      "port": 6595,
+      "base": "",
+      "homepage": "https://dynamics.microsoft.com",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "rippling",
+      "name": "Rippling",
+      "kind": "api",
+      "category": "hr",
+      "feature": "business",
+      "port": 6596,
+      "base": "",
+      "homepage": "https://rippling.com",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "bluesky",
+      "name": "Bluesky",
+      "kind": "api",
+      "category": "communication",
+      "feature": "writing",
+      "port": 6597,
+      "base": "",
+      "homepage": "https://bsky.app",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "bamboohr",
+      "name": "BambooHR",
+      "kind": "api",
+      "category": "hr",
+      "feature": "business",
+      "port": 6598,
+      "base": "",
+      "homepage": "https://www.bamboohr.com",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "toggl-track",
+      "name": "Toggl Track",
+      "kind": "api",
+      "category": "productivity",
+      "feature": "business",
+      "port": 6599,
+      "base": "",
+      "homepage": "https://toggl.com/track",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "gong",
+      "name": "Gong",
+      "kind": "api",
+      "category": "sales",
+      "feature": "business",
+      "port": 6600,
+      "base": "",
+      "homepage": "https://www.gong.io",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "expensify",
+      "name": "Expensify",
+      "kind": "api",
+      "category": "finance",
+      "feature": "financial",
+      "port": 6601,
+      "base": "",
+      "homepage": "https://www.expensify.com",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "unleashed-software",
+      "name": "Unleashed Software",
+      "kind": "api",
+      "category": "operations",
+      "feature": "business",
+      "port": 6602,
+      "base": "",
+      "homepage": "https://www.unleashedsoftware.com",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "ashby",
+      "name": "Ashby",
+      "kind": "api",
+      "category": "hr",
+      "feature": "business",
+      "port": 6603,
+      "base": "",
+      "homepage": "https://www.ashbyhq.com",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "cal-com",
+      "name": "Cal.com",
+      "kind": "api",
+      "category": "productivity",
+      "feature": "business",
+      "port": 6604,
+      "base": "",
+      "homepage": "https://cal.com",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "optimoroute",
+      "name": "OptimoRoute",
+      "kind": "api",
+      "category": "operations",
+      "feature": "business",
+      "port": 6605,
+      "base": "",
+      "homepage": "https://optimoroute.com",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "connectwise-psa",
+      "name": "Connectwise PSA",
+      "kind": "api",
+      "category": "operations",
+      "feature": "consulting",
+      "port": 6606,
+      "base": "",
+      "homepage": "https://www.connectwise.com/platform/business-management/psa",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "drip",
+      "name": "Drip",
+      "kind": "api",
+      "category": "marketing",
+      "feature": "business",
+      "port": 6607,
+      "base": "",
+      "homepage": "https://www.drip.com",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "lemlist",
+      "name": "lemlist",
+      "kind": "api",
+      "category": "sales",
+      "feature": "business",
+      "port": 6608,
+      "base": "",
+      "homepage": "https://lemlist.com",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "mailerlite",
+      "name": "MailerLite",
+      "kind": "api",
+      "category": "marketing",
+      "feature": "business",
+      "port": 6609,
+      "base": "",
+      "homepage": "https://www.mailerlite.com",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "copper",
+      "name": "Copper",
+      "kind": "api",
+      "category": "sales",
+      "feature": "business",
+      "port": 6610,
+      "base": "",
+      "homepage": "https://www.copper.com",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "customer-io",
+      "name": "Customer.io",
+      "kind": "api",
+      "category": "marketing",
+      "feature": "business",
+      "port": 6611,
+      "base": "",
+      "homepage": "https://customer.io",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "contactout",
+      "name": "ContactOut",
+      "kind": "api",
+      "category": "sales",
+      "feature": "business",
+      "port": 6612,
+      "base": "",
+      "homepage": "https://contactout.com",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "elastic-email",
+      "name": "Elastic Email",
+      "kind": "api",
+      "category": "marketing",
+      "feature": "business",
+      "port": 6613,
+      "base": "",
+      "homepage": "https://elasticemail.com",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "lusha",
+      "name": "Lusha",
+      "kind": "api",
+      "category": "sales",
+      "feature": "business",
+      "port": 6614,
+      "base": "",
+      "homepage": "https://www.lusha.com",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "pipeline",
+      "name": "Pipeline",
+      "kind": "api",
+      "category": "sales",
+      "feature": "business",
+      "port": 6615,
+      "base": "",
+      "homepage": "https://www.pipeline.com",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "wealthbox",
+      "name": "Wealthbox",
+      "kind": "api",
+      "category": "finance",
+      "feature": "financial",
+      "port": 6616,
+      "base": "",
+      "homepage": "https://www.wealthbox.com",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "salesforce",
+      "name": "Salesforce",
+      "kind": "api",
+      "category": "sales",
+      "feature": "business",
+      "port": 6617,
+      "base": "",
+      "homepage": "https://www.salesforce.com",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "convertkit",
+      "name": "ConvertKit",
+      "kind": "api",
+      "category": "marketing",
+      "feature": "writing",
+      "port": 6618,
+      "base": "",
+      "homepage": "https://convertkit.com",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "instantly",
+      "name": "Instantly",
+      "kind": "api",
+      "category": "sales",
+      "feature": "business",
+      "port": 6619,
+      "base": "",
+      "homepage": "https://instantly.ai",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "outreach",
+      "name": "Outreach",
+      "kind": "api",
+      "category": "sales",
+      "feature": "business",
+      "port": 6620,
+      "base": "",
+      "homepage": "https://www.outreach.io",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "msdynamics-365-sales",
+      "name": "Microsoft Dynamics 365 Sales",
+      "kind": "api",
+      "category": "sales",
+      "feature": "business",
+      "port": 6621,
+      "base": "",
+      "homepage": "https://dynamics.microsoft.com",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "activecampaign",
+      "name": "ActiveCampaign",
+      "kind": "api",
+      "category": "marketing",
+      "feature": "business",
+      "port": 6622,
+      "base": "",
+      "homepage": "https://www.activecampaign.com",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "mailgun",
+      "name": "Mailgun",
+      "kind": "api",
+      "category": "marketing",
+      "feature": "business",
+      "port": 6623,
+      "base": "",
+      "homepage": "https://www.mailgun.com",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "aweber",
+      "name": "AWeber",
+      "kind": "api",
+      "category": "marketing",
+      "feature": "business",
+      "port": 6624,
+      "base": "",
+      "homepage": "https://www.aweber.com",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "mastodon",
+      "name": "Mastodon",
+      "kind": "api",
+      "category": "communication",
+      "feature": "writing",
+      "port": 6625,
+      "base": "",
+      "homepage": "https://joinmastodon.org",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "attio",
+      "name": "Attio",
+      "kind": "api",
+      "category": "sales",
+      "feature": "business",
+      "port": 6626,
+      "base": "",
+      "homepage": "https://attio.com",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "sms-messages",
+      "name": "SMS Messages (Lleida.net)",
+      "kind": "api",
+      "category": "communication",
+      "feature": "business",
+      "port": 6627,
+      "base": "",
+      "homepage": "https://www.lleida.net",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "front",
+      "name": "Front",
+      "kind": "api",
+      "category": "communication",
+      "feature": "business",
+      "port": 6628,
+      "base": "",
+      "homepage": "https://front.com",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "wordpress-org",
+      "name": "WordPress.org",
+      "kind": "api",
+      "category": "cms",
+      "feature": "writing",
+      "port": 6629,
+      "base": "",
+      "homepage": "https://wordpress.org",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "freshsales",
+      "name": "Freshsales",
+      "kind": "api",
+      "category": "sales",
+      "feature": "business",
+      "port": 6630,
+      "base": "",
+      "homepage": "https://www.freshworks.com/crm/sales",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "zoho-crm",
+      "name": "Zoho CRM",
+      "kind": "api",
+      "category": "sales",
+      "feature": "business",
+      "port": 6631,
+      "base": "",
+      "homepage": "https://www.zoho.com/crm",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "brevo",
+      "name": "Brevo",
+      "kind": "api",
+      "category": "marketing",
+      "feature": "business",
+      "port": 6632,
+      "base": "",
+      "homepage": "https://www.brevo.com",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "pipedrive",
+      "name": "Pipedrive",
+      "kind": "api",
+      "category": "sales",
+      "feature": "business",
+      "port": 6633,
+      "base": "",
+      "homepage": "https://www.pipedrive.com",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "close",
+      "name": "Close",
+      "kind": "api",
+      "category": "sales",
+      "feature": "business",
+      "port": 6634,
+      "base": "",
+      "homepage": "https://close.com",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "streak",
+      "name": "Streak",
+      "kind": "api",
+      "category": "sales",
+      "feature": "business",
+      "port": 6635,
+      "base": "",
+      "homepage": "https://www.streak.com",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "circleback",
+      "name": "Circleback",
+      "kind": "api",
+      "category": "productivity",
+      "feature": "business",
+      "port": 6636,
+      "base": "",
+      "homepage": "https://circleback.ai",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "fireflies",
+      "name": "Fireflies.ai",
+      "kind": "api",
+      "category": "productivity",
+      "feature": "business",
+      "port": 6637,
+      "base": "",
+      "homepage": "https://fireflies.ai",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "jotform",
+      "name": "Jotform",
+      "kind": "api",
+      "category": "productivity",
+      "feature": "business",
+      "port": 6638,
+      "base": "",
+      "homepage": "https://www.jotform.com",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "granola",
+      "name": "Granola",
+      "kind": "api",
+      "category": "productivity",
+      "feature": "business",
+      "port": 6639,
+      "base": "",
+      "homepage": "https://www.granola.ai",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "coda",
+      "name": "Coda",
+      "kind": "api",
+      "category": "productivity",
+      "feature": "writing",
+      "port": 6640,
+      "base": "",
+      "homepage": "https://coda.io",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "taiga",
+      "name": "Taiga",
+      "kind": "api",
+      "category": "operations",
+      "feature": "business",
+      "port": 6641,
+      "base": "",
+      "homepage": "https://www.taiga.io",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "snipe-it",
+      "name": "Snipe-IT",
+      "kind": "api",
+      "category": "operations",
+      "feature": "business",
+      "port": 6642,
+      "base": "",
+      "homepage": "https://snipeitapp.com",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "typeform",
+      "name": "Typeform",
+      "kind": "api",
+      "category": "productivity",
+      "feature": "business",
+      "port": 6643,
+      "base": "",
+      "homepage": "https://www.typeform.com",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "highlevel-oauth",
+      "name": "HighLevel (OAuth)",
+      "kind": "api",
+      "category": "marketing",
+      "feature": "business",
+      "port": 6644,
+      "base": "",
+      "homepage": "https://www.gohighlevel.com",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "constant-contact",
+      "name": "Constant Contact",
+      "kind": "api",
+      "category": "marketing",
+      "feature": "business",
+      "port": 6645,
+      "base": "",
+      "homepage": "https://www.constantcontact.com",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "fibery",
+      "name": "Fibery",
+      "kind": "api",
+      "category": "productivity",
+      "feature": "business",
+      "port": 6646,
+      "base": "",
+      "homepage": "https://fibery.io",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "google-appsheet",
+      "name": "Google AppSheet",
+      "kind": "api",
+      "category": "developer",
+      "feature": "business",
+      "port": 6647,
+      "base": "",
+      "homepage": "https://about.appsheet.com",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "dub",
+      "name": "Dub",
+      "kind": "api",
+      "category": "developer",
+      "feature": "business",
+      "port": 6648,
+      "base": "",
+      "homepage": "https://dub.co",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "microsoft-onenote",
+      "name": "Microsoft OneNote",
+      "kind": "api",
+      "category": "productivity",
+      "feature": "education",
+      "port": 6649,
+      "base": "",
+      "homepage": "https://www.onenote.com",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "microsoft-365-people",
+      "name": "Microsoft 365 People",
+      "kind": "api",
+      "category": "productivity",
+      "feature": "business",
+      "port": 6650,
+      "base": "",
+      "homepage": "https://www.microsoft.com/microsoft-365",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "teamwork",
+      "name": "Teamwork",
+      "kind": "api",
+      "category": "operations",
+      "feature": "business",
+      "port": 6651,
+      "base": "",
+      "homepage": "https://www.teamwork.com",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "google-sheets",
+      "name": "Google Sheets",
+      "kind": "api",
+      "category": "productivity",
+      "feature": "business",
+      "port": 6652,
+      "base": "",
+      "homepage": "https://sheets.google.com",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "raindrop",
+      "name": "Raindrop.io",
+      "kind": "api",
+      "category": "productivity",
+      "feature": "education",
+      "port": 6653,
+      "base": "",
+      "homepage": "https://raindrop.io",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "servicenow",
+      "name": "ServiceNow",
+      "kind": "api",
+      "category": "operations",
+      "feature": "business",
+      "port": 6654,
+      "base": "",
+      "homepage": "https://www.servicenow.com",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "meistertask",
+      "name": "MeisterTask",
+      "kind": "api",
+      "category": "operations",
+      "feature": "business",
+      "port": 6655,
+      "base": "",
+      "homepage": "https://www.meistertask.com",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "canvas-lms",
+      "name": "Canvas LMS",
+      "kind": "api",
+      "category": "education",
+      "feature": "education",
+      "port": 6656,
+      "base": "",
+      "homepage": "https://www.instructure.com",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "google-docs",
+      "name": "Google Docs",
+      "kind": "api",
+      "category": "productivity",
+      "feature": "writing",
+      "port": 6657,
+      "base": "",
+      "homepage": "https://docs.google.com",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "dart",
+      "name": "Dart",
+      "kind": "api",
+      "category": "operations",
+      "feature": "business",
+      "port": 6658,
+      "base": "",
+      "homepage": "https://www.itsdart.com",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "podio",
+      "name": "Podio",
+      "kind": "api",
+      "category": "operations",
+      "feature": "business",
+      "port": 6659,
+      "base": "",
+      "homepage": "https://podio.com",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "microsoft-365-planner",
+      "name": "Microsoft 365 Planner",
+      "kind": "api",
+      "category": "operations",
+      "feature": "business",
+      "port": 6660,
+      "base": "",
+      "homepage": "https://tasks.office.com",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "motion",
+      "name": "Motion",
+      "kind": "api",
+      "category": "productivity",
+      "feature": "business",
+      "port": 6661,
+      "base": "",
+      "homepage": "https://www.usemotion.com",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "microsoft-excel",
+      "name": "Microsoft Excel",
+      "kind": "api",
+      "category": "productivity",
+      "feature": "business",
+      "port": 6662,
+      "base": "",
+      "homepage": "https://www.microsoft.com/excel",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "acuity-scheduling",
+      "name": "Acuity Scheduling",
+      "kind": "api",
+      "category": "productivity",
+      "feature": "business",
+      "port": 6663,
+      "base": "",
+      "homepage": "https://acuityscheduling.com",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "wati",
+      "name": "WATI",
+      "kind": "api",
+      "category": "marketing",
+      "feature": "business",
+      "port": 6664,
+      "base": "",
+      "homepage": "https://www.wati.io",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "google-maps-places",
+      "name": "Google Maps (Places API)",
+      "kind": "api",
+      "category": "developer",
+      "feature": "business",
+      "port": 6665,
+      "base": "",
+      "homepage": "https://developers.google.com/maps",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "surveymonkey",
+      "name": "SurveyMonkey",
+      "kind": "api",
+      "category": "productivity",
+      "feature": "education",
+      "port": 6666,
+      "base": "",
+      "homepage": "https://www.surveymonkey.com",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "google-slides",
+      "name": "Google Slides",
+      "kind": "api",
+      "category": "productivity",
+      "feature": "writing",
+      "port": 6667,
+      "base": "",
+      "homepage": "https://slides.google.com",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "freshservice",
+      "name": "Freshservice",
+      "kind": "api",
+      "category": "operations",
+      "feature": "business",
+      "port": 6668,
+      "base": "",
+      "homepage": "https://www.freshworks.com/freshservice",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "roam-research",
+      "name": "Roam Research",
+      "kind": "api",
+      "category": "productivity",
+      "feature": "education",
+      "port": 6669,
+      "base": "",
+      "homepage": "https://roamresearch.com",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "procore",
+      "name": "Procore",
+      "kind": "api",
+      "category": "operations",
+      "feature": "consulting",
+      "port": 6670,
+      "base": "",
+      "homepage": "https://www.procore.com",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "pipefy",
+      "name": "Pipefy",
+      "kind": "api",
+      "category": "operations",
+      "feature": "business",
+      "port": 6671,
+      "base": "",
+      "homepage": "https://www.pipefy.com",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "tidycal",
+      "name": "TidyCal",
+      "kind": "api",
+      "category": "productivity",
+      "feature": "business",
+      "port": 6672,
+      "base": "",
+      "homepage": "https://tidycal.com",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "basecamp",
+      "name": "Basecamp",
+      "kind": "api",
+      "category": "operations",
+      "feature": "business",
+      "port": 6673,
+      "base": "",
+      "homepage": "https://basecamp.com",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "zoho-projects",
+      "name": "Zoho Projects",
+      "kind": "api",
+      "category": "operations",
+      "feature": "business",
+      "port": 6674,
+      "base": "",
+      "homepage": "https://www.zoho.com/projects",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "google-classroom",
+      "name": "Google Classroom",
+      "kind": "api",
+      "category": "education",
+      "feature": "education",
+      "port": 6675,
+      "base": "",
+      "homepage": "https://classroom.google.com",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "trello",
+      "name": "Trello",
+      "kind": "api",
+      "category": "operations",
+      "feature": "business",
+      "port": 6676,
+      "base": "",
+      "homepage": "https://trello.com",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "mixpanel",
+      "name": "Mixpanel",
+      "kind": "api",
+      "category": "analytics",
+      "feature": "business",
+      "port": 6677,
+      "base": "",
+      "homepage": "https://mixpanel.com",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "airtop",
+      "name": "Airtop",
+      "kind": "api",
+      "category": "ai",
+      "feature": "business",
+      "port": 6678,
+      "base": "",
+      "homepage": "https://airtop.ai",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "harpa-ai",
+      "name": "HARPA AI",
+      "kind": "api",
+      "category": "ai",
+      "feature": "writing",
+      "port": 6679,
+      "base": "",
+      "homepage": "https://harpa.ai",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "google-cloud",
+      "name": "Google Cloud",
+      "kind": "api",
+      "category": "developer",
+      "feature": "business",
+      "port": 6680,
+      "base": "",
+      "homepage": "https://cloud.google.com",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "finnhub",
+      "name": "Finnhub",
+      "kind": "api",
+      "category": "finance",
+      "feature": "financial",
+      "port": 6681,
+      "base": "",
+      "homepage": "https://finnhub.io",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "chartmogul",
+      "name": "ChartMogul",
+      "kind": "api",
+      "category": "analytics",
+      "feature": "business",
+      "port": 6682,
+      "base": "",
+      "homepage": "https://chartmogul.com",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "google-analytics",
+      "name": "Google Analytics",
+      "kind": "api",
+      "category": "analytics",
+      "feature": "business",
+      "port": 6683,
+      "base": "",
+      "homepage": "https://analytics.google.com",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "hex",
+      "name": "Hex",
+      "kind": "api",
+      "category": "data",
+      "feature": "math-science",
+      "port": 6684,
+      "base": "",
+      "homepage": "https://hex.tech",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "metabase",
+      "name": "Metabase",
+      "kind": "api",
+      "category": "analytics",
+      "feature": "business",
+      "port": 6685,
+      "base": "",
+      "homepage": "https://www.metabase.com",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "mboum",
+      "name": "Mboum (stocks)",
+      "kind": "api",
+      "category": "finance",
+      "feature": "financial",
+      "port": 6686,
+      "base": "",
+      "homepage": "https://mboum.com",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "deepgram",
+      "name": "Deepgram",
+      "kind": "api",
+      "category": "ai",
+      "feature": "writing",
+      "port": 6687,
+      "base": "",
+      "homepage": "https://deepgram.com",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "airweave",
+      "name": "Airweave",
+      "kind": "api",
+      "category": "ai",
+      "feature": "business",
+      "port": 6688,
+      "base": "",
+      "homepage": "https://airweave.ai",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "google-search-console",
+      "name": "Google Search Console",
+      "kind": "api",
+      "category": "marketing",
+      "feature": "business",
+      "port": 6689,
+      "base": "",
+      "homepage": "https://search.google.com/search-console",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "livekit",
+      "name": "LiveKit",
+      "kind": "api",
+      "category": "developer",
+      "feature": "business",
+      "port": 6690,
+      "base": "",
+      "homepage": "https://livekit.io",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "axesso-amazon",
+      "name": "Axesso Data Service - Amazon",
+      "kind": "api",
+      "category": "data",
+      "feature": "business",
+      "port": 6691,
+      "base": "",
+      "homepage": "https://www.axesso.de",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "posthog",
+      "name": "PostHog",
+      "kind": "api",
+      "category": "analytics",
+      "feature": "business",
+      "port": 6692,
+      "base": "",
+      "homepage": "https://posthog.com",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "ms-power-bi",
+      "name": "Microsoft Power BI",
+      "kind": "api",
+      "category": "analytics",
+      "feature": "business",
+      "port": 6693,
+      "base": "",
+      "homepage": "https://powerbi.microsoft.com",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "stytch",
+      "name": "Stytch",
+      "kind": "api",
+      "category": "developer",
+      "feature": "business",
+      "port": 6694,
+      "base": "",
+      "homepage": "https://stytch.com",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "jam",
+      "name": "Jam.dev",
+      "kind": "api",
+      "category": "developer",
+      "feature": "business",
+      "port": 6695,
+      "base": "",
+      "homepage": "https://jam.dev",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "doordash",
+      "name": "DoorDash",
+      "kind": "api",
+      "category": "operations",
+      "feature": "business",
+      "port": 6696,
+      "base": "",
+      "homepage": "https://www.doordash.com",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "cloudinary",
+      "name": "Cloudinary",
+      "kind": "api",
+      "category": "creative",
+      "feature": "writing",
+      "port": 6697,
+      "base": "",
+      "homepage": "https://cloudinary.com",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "sentry",
+      "name": "Sentry",
+      "kind": "api",
+      "category": "developer",
+      "feature": "business",
+      "port": 6698,
+      "base": "",
+      "homepage": "https://sentry.io",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "wordpress-com",
+      "name": "WordPress.com",
+      "kind": "api",
+      "category": "cms",
+      "feature": "writing",
+      "port": 6699,
+      "base": "",
+      "homepage": "https://wordpress.com",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "context7",
+      "name": "Context7",
+      "kind": "api",
+      "category": "developer",
+      "feature": "business",
+      "port": 6700,
+      "base": "",
+      "homepage": "https://context7.com",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "datadog",
+      "name": "Datadog",
+      "kind": "api",
+      "category": "developer",
+      "feature": "business",
+      "port": 6701,
+      "base": "",
+      "homepage": "https://www.datadoghq.com",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "linear",
+      "name": "Linear",
+      "kind": "api",
+      "category": "developer",
+      "feature": "business",
+      "port": 6702,
+      "base": "",
+      "homepage": "https://linear.app",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "wix",
+      "name": "Wix",
+      "kind": "api",
+      "category": "cms",
+      "feature": "writing",
+      "port": 6703,
+      "base": "",
+      "homepage": "https://www.wix.com",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "cloudflare-browser",
+      "name": "Cloudflare Browser Rendering",
+      "kind": "api",
+      "category": "developer",
+      "feature": "business",
+      "port": 6704,
+      "base": "",
+      "homepage": "https://developers.cloudflare.com/browser-rendering",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "squarespace",
+      "name": "Squarespace",
+      "kind": "api",
+      "category": "cms",
+      "feature": "writing",
+      "port": 6705,
+      "base": "",
+      "homepage": "https://www.squarespace.com",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "telnyx",
+      "name": "Telnyx",
+      "kind": "api",
+      "category": "communication",
+      "feature": "business",
+      "port": 6706,
+      "base": "",
+      "homepage": "https://telnyx.com",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "blogger",
+      "name": "Blogger",
+      "kind": "api",
+      "category": "cms",
+      "feature": "writing",
+      "port": 6707,
+      "base": "",
+      "homepage": "https://www.blogger.com",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "ms-sql-server",
+      "name": "Microsoft SQL Server",
+      "kind": "api",
+      "category": "data",
+      "feature": "business",
+      "port": 6708,
+      "base": "",
+      "homepage": "https://www.microsoft.com/sql-server",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "webflow",
+      "name": "Webflow",
+      "kind": "api",
+      "category": "cms",
+      "feature": "writing",
+      "port": 6709,
+      "base": "",
+      "homepage": "https://webflow.com",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "firecrawl",
+      "name": "FireCrawl",
+      "kind": "api",
+      "category": "developer",
+      "feature": "business",
+      "port": 6710,
+      "base": "",
+      "homepage": "https://www.firecrawl.dev",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "digitalocean",
+      "name": "DigitalOcean",
+      "kind": "api",
+      "category": "developer",
+      "feature": "business",
+      "port": 6711,
+      "base": "",
+      "homepage": "https://www.digitalocean.com",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "cloudflare",
+      "name": "Cloudflare",
+      "kind": "api",
+      "category": "developer",
+      "feature": "business",
+      "port": 6712,
+      "base": "",
+      "homepage": "https://www.cloudflare.com",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "postgresql",
+      "name": "PostgreSQL",
+      "kind": "api",
+      "category": "data",
+      "feature": "business",
+      "port": 6713,
+      "base": "",
+      "homepage": "https://www.postgresql.org",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "zerobounce",
+      "name": "ZeroBounce",
+      "kind": "api",
+      "category": "marketing",
+      "feature": "business",
+      "port": 6714,
+      "base": "",
+      "homepage": "https://www.zerobounce.net",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "alpaca",
+      "name": "Alpaca",
+      "kind": "api",
+      "category": "finance",
+      "feature": "financial",
+      "port": 6715,
+      "base": "",
+      "homepage": "https://alpaca.markets",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "sanity",
+      "name": "Sanity",
+      "kind": "api",
+      "category": "cms",
+      "feature": "writing",
+      "port": 6716,
+      "base": "",
+      "homepage": "https://www.sanity.io",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "bitbucket",
+      "name": "Bitbucket",
+      "kind": "api",
+      "category": "developer",
+      "feature": "business",
+      "port": 6717,
+      "base": "",
+      "homepage": "https://bitbucket.org",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "netlify",
+      "name": "Netlify",
+      "kind": "api",
+      "category": "developer",
+      "feature": "business",
+      "port": 6718,
+      "base": "",
+      "homepage": "https://www.netlify.com",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "ms-azure-sql",
+      "name": "Microsoft Azure SQL Database",
+      "kind": "api",
+      "category": "data",
+      "feature": "business",
+      "port": 6719,
+      "base": "",
+      "homepage": "https://azure.microsoft.com/services/sql-database",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "qdrant",
+      "name": "Qdrant",
+      "kind": "api",
+      "category": "ai",
+      "feature": "math-science",
+      "port": 6720,
+      "base": "",
+      "homepage": "https://qdrant.tech",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "replicate",
+      "name": "Replicate",
+      "kind": "api",
+      "category": "ai",
+      "feature": "math-science",
+      "port": 6721,
+      "base": "",
+      "homepage": "https://replicate.com",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "aws",
+      "name": "AWS",
+      "kind": "api",
+      "category": "developer",
+      "feature": "business",
+      "port": 6722,
+      "base": "",
+      "homepage": "https://aws.amazon.com",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "fal-ai",
+      "name": "fal.ai",
+      "kind": "api",
+      "category": "ai",
+      "feature": "writing",
+      "port": 6723,
+      "base": "",
+      "homepage": "https://fal.ai",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "nango",
+      "name": "Nango",
+      "kind": "api",
+      "category": "developer",
+      "feature": "business",
+      "port": 6724,
+      "base": "",
+      "homepage": "https://www.nango.dev",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "prodpad",
+      "name": "ProdPad",
+      "kind": "api",
+      "category": "productivity",
+      "feature": "business",
+      "port": 6725,
+      "base": "",
+      "homepage": "https://www.prodpad.com",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "resend",
+      "name": "Resend",
+      "kind": "api",
+      "category": "developer",
+      "feature": "business",
+      "port": 6726,
+      "base": "",
+      "homepage": "https://resend.com",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "prisma-postgres",
+      "name": "Prisma Postgres",
+      "kind": "api",
+      "category": "data",
+      "feature": "business",
+      "port": 6727,
+      "base": "",
+      "homepage": "https://www.prisma.io",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "clerk",
+      "name": "Clerk",
+      "kind": "api",
+      "category": "developer",
+      "feature": "business",
+      "port": 6728,
+      "base": "",
+      "homepage": "https://clerk.com",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "carbon-arc",
+      "name": "Carbon Arc",
+      "kind": "api",
+      "category": "finance",
+      "feature": "financial",
+      "port": 6729,
+      "base": "",
+      "homepage": "https://carbonarc.co",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "link-ai",
+      "name": "Link (CLI)",
+      "kind": "api",
+      "category": "finance",
+      "feature": "financial",
+      "port": 6730,
+      "base": "",
+      "homepage": "https://www.cdp.com",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "morningstar",
+      "name": "Morningstar",
+      "kind": "api",
+      "category": "finance",
+      "feature": "financial",
+      "port": 6731,
+      "base": "",
+      "homepage": "https://www.morningstar.com",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "factset",
+      "name": "FactSet",
+      "kind": "api",
+      "category": "finance",
+      "feature": "financial",
+      "port": 6732,
+      "base": "",
+      "homepage": "https://www.factset.com",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "ramp",
+      "name": "Ramp",
+      "kind": "api",
+      "category": "finance",
+      "feature": "financial",
+      "port": 6733,
+      "base": "",
+      "homepage": "https://ramp.com",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "plaid",
+      "name": "Plaid",
+      "kind": "api",
+      "category": "finance",
+      "feature": "financial",
+      "port": 6734,
+      "base": "",
+      "homepage": "https://plaid.com",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "perplexity-finance",
+      "name": "Perplexity Finance",
+      "kind": "api",
+      "category": "finance",
+      "feature": "financial",
+      "port": 6735,
+      "base": "",
+      "homepage": "https://www.perplexity.ai/finance",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "midpage",
+      "name": "Midpage",
+      "kind": "api",
+      "category": "research",
+      "feature": "consulting",
+      "port": 6736,
+      "base": "",
+      "homepage": "https://www.midpage.ai",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "cb-insights",
+      "name": "CB Insights",
+      "kind": "api",
+      "category": "research",
+      "feature": "business",
+      "port": 6737,
+      "base": "",
+      "homepage": "https://www.cbinsights.com",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "mailchimp",
+      "name": "Mailchimp",
+      "kind": "api",
+      "category": "marketing",
+      "feature": "business",
+      "port": 6738,
+      "base": "",
+      "homepage": "https://mailchimp.com",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "eventbrite",
+      "name": "Eventbrite",
+      "kind": "api",
+      "category": "operations",
+      "feature": "business",
+      "port": 6739,
+      "base": "",
+      "homepage": "https://www.eventbrite.com",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "discord-bot",
+      "name": "Discord Bot",
+      "kind": "api",
+      "category": "communication",
+      "feature": "business",
+      "port": 6740,
+      "base": "",
+      "homepage": "https://discord.com",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "bingx",
+      "name": "BingX",
+      "kind": "api",
+      "category": "finance",
+      "feature": "financial",
+      "port": 6741,
+      "base": "",
+      "homepage": "https://bingx.com",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "dataforseo",
+      "name": "DataForSEO",
+      "kind": "api",
+      "category": "marketing",
+      "feature": "business",
+      "port": 6742,
+      "base": "",
+      "homepage": "https://dataforseo.com",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "zendesk",
+      "name": "Zendesk",
+      "kind": "api",
+      "category": "communication",
+      "feature": "business",
+      "port": 6743,
+      "base": "",
+      "homepage": "https://www.zendesk.com",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "resend-mail",
+      "name": "Resend Mail",
+      "kind": "api",
+      "category": "developer",
+      "feature": "business",
+      "port": 6744,
+      "base": "",
+      "homepage": "https://resend.com",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "quickbooks",
+      "name": "QuickBooks",
+      "kind": "api",
+      "category": "finance",
+      "feature": "financial",
+      "port": 6745,
+      "base": "",
+      "homepage": "https://quickbooks.intuit.com",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "xero-accounting",
+      "name": "Xero Accounting",
+      "kind": "api",
+      "category": "finance",
+      "feature": "financial",
+      "port": 6746,
+      "base": "",
+      "homepage": "https://www.xero.com",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "bigcommerce",
+      "name": "BigCommerce",
+      "kind": "api",
+      "category": "operations",
+      "feature": "business",
+      "port": 6747,
+      "base": "",
+      "homepage": "https://www.bigcommerce.com",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "zoho-books",
+      "name": "Zoho Books",
+      "kind": "api",
+      "category": "finance",
+      "feature": "financial",
+      "port": 6748,
+      "base": "",
+      "homepage": "https://www.zoho.com/books",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "google-merchant-center",
+      "name": "Google Merchant Center",
+      "kind": "api",
+      "category": "marketing",
+      "feature": "business",
+      "port": 6749,
+      "base": "",
+      "homepage": "https://merchants.google.com",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "google-contacts",
+      "name": "Google Contacts",
+      "kind": "api",
+      "category": "productivity",
+      "feature": "business",
+      "port": 6750,
+      "base": "",
+      "homepage": "https://contacts.google.com",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "google-chat",
+      "name": "Google Chat",
+      "kind": "api",
+      "category": "communication",
+      "feature": "business",
+      "port": 6751,
+      "base": "",
+      "homepage": "https://chat.google.com",
+      "tools": [
+        "search",
+        "fetch"
+      ]
+    },
+    {
+      "id": "webscraping-ai",
+      "name": "WebScraping.AI",
+      "kind": "api",
+      "category": "developer",
+      "feature": "business",
+      "port": 6752,
+      "base": "",
+      "homepage": "https://webscraping.ai",
+      "tools": [
+        "search",
+        "fetch"
+      ]
     }
   ]
 }

@@ -202,19 +202,95 @@
 .feat-skill-row[data-active="true"] .feat-skill-desc { color: var(--hue-ink); opacity: 0.8; }
 .feat-skill-check { position: absolute; top: 6px; inset-inline-end: 8px; color: var(--hue-ink); }
 
-/* Connectors empty state */
-.feat-conn-empty { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 16px 4px; text-align: center; }
-.feat-conn-empty p { color: var(--muted); font-size: 13px; margin: 0; }
-.feat-conn-cta {
-  display: inline-block;
-  padding: 8px 14px;
+/* Connectors picker — full catalog browser inside the card. */
+.feat-card-tall { min-height: 320px; }
+.feat-conn-count {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--muted);
+  background: var(--bg-2);
+  border: 1px solid var(--border);
   border-radius: 999px;
-  background: var(--hue-bg);
-  border: 1px solid var(--hue-line);
-  color: var(--hue-ink);
-  font-size: 13px;
-  font-weight: 500;
-  text-decoration: none;
-  cursor: pointer;
+  padding: 2px 8px;
 }
-.feat-conn-cta:hover { filter: brightness(1.1); }
+.feat-conn-search {
+  width: 100%;
+  border: 1px solid var(--border);
+  background: var(--bg-2);
+  color: var(--ink);
+  border-radius: 999px;
+  padding: 7px 14px;
+  font: inherit;
+  font-size: 13px;
+  outline: none;
+  transition: border-color .12s;
+}
+.feat-conn-search:focus { border-color: var(--hue-line); }
+.feat-conn-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  max-height: 320px;
+  overflow-y: auto;
+}
+.feat-conn-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 7px 10px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--ink-2);
+  text-align: start;
+  cursor: pointer;
+  transition: background .12s, border-color .12s, color .12s;
+  position: relative;
+  min-width: 0;
+}
+.feat-conn-row:hover { background: var(--bg-2); color: var(--ink); }
+.feat-conn-row[data-active="true"] {
+  background: var(--hue-bg);
+  border-color: var(--hue-line);
+  color: var(--hue-ink);
+}
+.feat-conn-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13px;
+}
+.feat-conn-cat {
+  font-size: 10px;
+  font-family: var(--mono);
+  color: var(--muted-2);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  padding: 2px 6px;
+  border-radius: 6px;
+  flex-shrink: 0;
+}
+.feat-conn-row[data-active="true"] .feat-conn-cat {
+  background: var(--bg-2);
+  border-color: var(--hue-line);
+  color: var(--hue-ink);
+}
+.feat-conn-check {
+  color: var(--hue-ink);
+  flex-shrink: 0;
+}
+.feat-conn-more,
+.feat-conn-empty-row {
+  padding: 8px 10px;
+  color: var(--muted);
+  font-size: 11px;
+  text-align: center;
+}
