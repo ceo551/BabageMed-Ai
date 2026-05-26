@@ -49,8 +49,8 @@ the 540 connectors are written **once**, in `apps/web/`.
 ### Run the backend + web locally
 
 ```bash
-# 1. Backend (Go 1.22+ + Postgres 16)
-cd backend && cp .env.example .env && go run .
+# 1. Backend (Go 1.23+ + Postgres 16)
+cd backend && cp ../.env.example .env && go run .
 
 # 2. Web frontend
 cd apps/web && npm install && npm run dev   # http://localhost:3000
