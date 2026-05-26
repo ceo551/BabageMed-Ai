@@ -106,16 +106,13 @@ spec:
               app.kubernetes.io/name: babagemed
               app.kubernetes.io/component: postgres
       ports: [ { protocol: TCP, port: 5432 } ]
-    # → every MCP
-    - to:
-        - podSelector:
-            matchLabels:
-              app.kubernetes.io/name: babagemed
-              app.kubernetes.io/component: mcp
-      ports:
-        - { protocol: TCP, port: 6101 }   # range covered explicitly because podSelector ports are exact
-        # NetworkPolicy v1 doesn't support port ranges directly; the controller
-        # will allow any port on the matched pods because we omit the rest below.
+    # → every MCP. NetworkPolicy v1 doesn't support port ranges, and the
+    # MCP fleet binds to a wide range (6101..6752). The simplest correct
+    # form is a single rule with NO `ports:` clause, which allows ALL
+    # ports on pods matching the selector — locked down to the MCP
+    # workload label so it's still a meaningful policy. The previous
+    # two-rule shape (one with port 6101, one without) was misleading
+    # and the trailing rule was doing all the work anyway.
     - to:
         - podSelector:
             matchLabels:

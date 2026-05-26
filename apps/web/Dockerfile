@@ -1,7 +1,11 @@
 FROM node:20-bookworm-slim AS deps
 WORKDIR /app
 COPY package.json package-lock.json* ./
-RUN npm install --no-audit --no-fund
+# `npm ci` not `npm install`: ci installs exactly the lockfile and fails
+# on drift, so the production image and the lockfile checked into git
+# can never diverge silently. `--ignore-scripts` blocks postinstall
+# hooks from third-party packages, the standard supply-chain mitigation.
+RUN npm ci --no-audit --no-fund --ignore-scripts
 
 FROM node:20-bookworm-slim AS build
 WORKDIR /app
@@ -23,4 +27,6 @@ COPY --from=build /app/.next/static ./.next/static
 COPY --from=build /app/public ./public
 EXPOSE 3000
 USER node
+HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
+  CMD node -e "fetch('http://127.0.0.1:3000/').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
 CMD ["node", "server.js"]

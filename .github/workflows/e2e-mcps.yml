@@ -25,6 +25,9 @@ on:
     # Nightly run against main so we catch sites that changed their HTML.
     - cron: "23 3 * * *"
 
+permissions:
+  contents: read
+
 concurrency:
   group: e2e-mcps-${{ github.ref }}
   cancel-in-progress: true

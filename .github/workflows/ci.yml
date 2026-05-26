@@ -5,6 +5,11 @@ on:
   push:
     branches: [main, develop, "claude/**"]
 
+# Default least-privilege token. Individual jobs that need more should
+# request `permissions:` at the job level.
+permissions:
+  contents: read
+
 concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true

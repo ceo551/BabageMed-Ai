@@ -1,8 +1,11 @@
 {{- if .Values.redis.enabled -}}
-# Minimal in-cluster Redis. No persistence (cache is regenerable), no auth
-# (NetworkPolicy + ClusterIP keep it private). Good enough for the 5-minute
-# MCP-search TTL we use it for. Swap for Azure Cache for Redis or
-# bitnami/redis chart when this stops being enough.
+# In-cluster Redis. Cache only — no persistence, AOF off.
+#
+# Auth: a generated random password lives in the babagemed-env Secret as
+# REDIS_PASSWORD, and Redis is started with --requirepass. Even though
+# the ClusterIP is private and the NetworkPolicy (when enabled) locks
+# ingress to the backend, requiring a password is cheap defence in depth
+# and means an exposed kubectl port-forward isn't an automatic data leak.
 apiVersion: v1
 kind: Service
 metadata:
@@ -39,9 +42,20 @@ spec:
         app.kubernetes.io/name: babagemed
         app.kubernetes.io/component: redis
     spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 999
+        fsGroup: 999
       containers:
         - name: redis
           image: redis:7-alpine
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            runAsUser: 999
+            capabilities:
+              drop: ["ALL"]
           args:
             - "--maxmemory"
             - "{{ .Values.redis.maxmemory | default "128mb" }}"
@@ -51,6 +65,14 @@ spec:
             - ""              # disable RDB snapshots
             - "--appendonly"
             - "no"            # disable AOF (we don't need durability)
+            - "--requirepass"
+            - "$(REDIS_PASSWORD)"
+          env:
+            - name: REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.mcps.envFromSecret | default "babagemed-env" }}
+                  key: REDIS_PASSWORD
           ports:
             - name: redis
               containerPort: 6379
@@ -62,11 +84,18 @@ spec:
               cpu: 200m
               memory: 192Mi
           readinessProbe:
-            tcpSocket: { port: redis }
+            exec:
+              command: ["sh", "-c", "redis-cli -a \"$REDIS_PASSWORD\" --no-auth-warning ping | grep -q PONG"]
             initialDelaySeconds: 2
             periodSeconds: 5
           livenessProbe:
             tcpSocket: { port: redis }
             initialDelaySeconds: 10
             periodSeconds: 20
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: tmp
+          emptyDir: {}
 {{- end -}}

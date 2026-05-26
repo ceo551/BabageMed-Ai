@@ -16,8 +16,19 @@ on:
       - "desktop-v*"
   workflow_dispatch:
 
+permissions:
+  contents: read
+
+concurrency:
+  # Don't cancel tag builds — those produce releases — only cancel
+  # outdated branch / PR builds.
+  group: desktop-${{ github.ref }}
+  cancel-in-progress: ${{ !startsWith(github.ref, 'refs/tags/') }}
+
 jobs:
   build:
+    permissions:
+      contents: write  # tauri-action needs this when releaseDraft=true
     strategy:
       fail-fast: false
       matrix:

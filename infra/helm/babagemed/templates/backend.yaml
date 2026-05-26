@@ -127,10 +127,17 @@ spec:
               value: {{ .Values.gcp.anthropicLocation | default "us-east5" | quote }}
             {{- end }}
             {{- if .Values.redis.enabled }}
-            # In-cluster Redis (see templates/redis.yaml). The backend's
-            # cache package no-ops when this is unset.
+            # In-cluster Redis (see templates/redis.yaml). REDIS_PASSWORD
+            # is injected from the Secret because it's randomly generated
+            # at chart install time and stable across upgrades. The
+            # backend's cache package URL-encodes the password.
+            - name: REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.mcps.envFromSecret | default "babagemed-env" }}
+                  key: REDIS_PASSWORD
             - name: REDIS_URL
-              value: "redis://{{ .Release.Name }}-redis:6379/0"
+              value: "redis://:$(REDIS_PASSWORD)@{{ .Release.Name }}-redis:6379/0"
             {{- end }}
             {{- if $desktopCM }}
             # Wired here (not in the Secret) so the path stays in sync

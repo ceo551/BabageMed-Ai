@@ -15,6 +15,12 @@ permissions:
   contents: write           # for the GitOps tag-bump commit
   packages: write           # for ghcr.io
 
+# Don't run two image builds for the same ref simultaneously — the GitOps
+# bump-commit step would race and re-push outdated tags.
+concurrency:
+  group: build-images-${{ github.ref }}
+  cancel-in-progress: ${{ !startsWith(github.ref, 'refs/tags/') }}
+
 env:
   REGISTRY: ${{ vars.REGISTRY || format('ghcr.io/{0}', github.repository_owner) }}
 
