@@ -68,6 +68,23 @@ export function registerTools(server: McpServer) {
     description: "Fetch a Sendcloud page and return cleaned text content.",
     input: z.object({ url: z.string().url() }),
     handler: async ({ url }) => {
+      // Friendlier rejection than the Scraper's bare "host not allowed".
+      // Callers often paste a URL from a different site assuming any
+      // fetch tool will work; surface the constraint explicitly.
+      try {
+        const u = new URL(url);
+        const expected = new URL("about:blank").hostname;
+        if (u.hostname !== expected && !u.hostname.endsWith("." + expected)) {
+          return {
+            error: "url not under this MCP's allowed host",
+            allowedHost: expected,
+            providedHost: u.hostname,
+            hint: "Use the MCP whose base matches the URL host, or call the chrome MCP for cross-origin browsing.",
+          };
+        }
+      } catch {
+        return { error: "invalid url", url };
+      }
       const r = await scraper.fetchHtml(url, { browser: false });
       const $ = r.$;
       $("script,style,nav,footer,header,form,iframe,aside,.ad,.advert,.related").remove();

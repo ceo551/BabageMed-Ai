@@ -6,6 +6,11 @@
 // which silently destroyed any hand-edit to a tools.ts. We now preserve
 // the file when it carries the "// @hand-edited" marker on its first
 // line. Run with FORCE=1 to override.
+//
+// Also: every w() call is filtered against the manifest. The previous
+// version had hard-coded entries for MCPs that had been purged from
+// the manifest (e.g. googlescholar, medscape, webmd, …) and silently
+// recreated the orphan directories on every run.
 import { writeFileSync, mkdirSync, existsSync, readFileSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -13,8 +18,15 @@ import { fileURLToPath } from "node:url";
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(__dirname, "..");
 const FORCE = process.env.FORCE === "1";
+const MANIFEST_IDS = new Set(
+  JSON.parse(readFileSync(join(__dirname, "mcps.manifest.json"), "utf8")).servers.map((s) => s.id),
+);
 
 function w(id, body) {
+  if (!MANIFEST_IDS.has(id)) {
+    // Don't recreate orphan MCP dirs that the manifest no longer lists.
+    return;
+  }
   const p = join(ROOT, "mcps", id, "src", "tools.ts");
   if (!FORCE && existsSync(p)) {
     const cur = readFileSync(p, "utf8");
@@ -1153,8 +1165,19 @@ const sites = [
   ["globalfamilydoctor","https://www.globalfamilydoctor.com", "https://www.globalfamilydoctor.com/site/search.aspx?q={q}", { contentSelector: "main, body" }],
   ["gamma",           "https://gamma.app", "https://gamma.app/explore?q={q}", { contentSelector: "main, body" }],
 ];
+// Filter against the manifest so we don't recreate orphan MCP
+// directories that the manifest no longer references. The previous
+// behaviour silently regenerated 19 dead directories on every run.
+const MANIFEST = JSON.parse(readFileSync(join(__dirname, "mcps.manifest.json"), "utf8"));
+const validIds = new Set(MANIFEST.servers.map((s) => s.id));
+let written = 0;
 for (const [id, base, qs, parsers] of sites) {
+  if (!validIds.has(id)) {
+    process.stderr.write(`skip ${id} (not in manifest)\n`);
+    continue;
+  }
   w(id, richScrape(id, base, qs, parsers));
+  written++;
 }
 
-console.log("wrote real tools for " + (28 + sites.length) + " MCPs (rest use generic fallback)");
+console.log("wrote real tools for " + (28 + written) + " MCPs (rest use generic fallback)");

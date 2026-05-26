@@ -279,6 +279,23 @@ export function registerTools(server: McpServer) {
     description: ${JSON.stringify(`Fetch a ${s.name} page and return cleaned text content.`)},
     input: z.object({ url: z.string().url() }),
     handler: async ({ url }) => {
+      // Friendlier rejection than the Scraper's bare "host not allowed".
+      // Callers often paste a URL from a different site assuming any
+      // fetch tool will work; surface the constraint explicitly.
+      try {
+        const u = new URL(url);
+        const expected = new URL(${JSON.stringify(s.base || "about:blank")}).hostname;
+        if (u.hostname !== expected && !u.hostname.endsWith("." + expected)) {
+          return {
+            error: "url not under this MCP's allowed host",
+            allowedHost: expected,
+            providedHost: u.hostname,
+            hint: "Use the MCP whose base matches the URL host, or call the chrome MCP for cross-origin browsing.",
+          };
+        }
+      } catch {
+        return { error: "invalid url", url };
+      }
       const r = await scraper.fetchHtml(url, { browser: false });
       const $ = r.$;
       $("script,style,nav,footer,header,form,iframe,aside,.ad,.advert,.related").remove();
@@ -303,9 +320,17 @@ for (const s of MANIFEST.servers) {
   w(join(dir, "tsconfig.json"), tsConfig());
   w(join(dir, "Dockerfile"), dockerfile(s));
   w(join(dir, "src", "index.ts"), indexTs(s));
-  // Always rewrite the fallback tools.ts; write-real-tools.mjs runs after and
-  // overwrites the ones with hand-written implementations, so this is safe.
-  w(join(dir, "src", "tools.ts"), fallbackTools(s));
+  // tools.ts: skip if the file is marked as hand-edited, otherwise
+  // write the fallback. write-real-tools.mjs runs AFTER us and may
+  // overwrite this with a per-API implementation. The marker check
+  // prevents this generator from clobbering the user's customisations
+  // BEFORE write-real-tools.mjs even has a chance to run.
+  const toolsPath = join(dir, "src", "tools.ts");
+  if (existsSync(toolsPath) && readFileSync(toolsPath, "utf8").includes("// @hand-edited")) {
+    // Leave the file alone; the developer has opted out of regeneration.
+  } else {
+    w(toolsPath, fallbackTools(s));
+  }
   written++;
 }
 
