@@ -273,6 +273,33 @@ secrets:
   scraperRateRps: "1"
   scraperProxyUrl: ""
 
+# ─── Desktop auto-updater (Tauri) ────────────────────────────────────────
+# Backend route /api/desktop/update/{target}/{arch}/{version} answers
+# either 204 (no update) or the Tauri-shaped JSON pointing at the new
+# binary + its signature. The manifest can come from three sources;
+# pick one. When all three are empty and disabled=false, the endpoint
+# silently answers 204 — safe default for fresh deploys.
+#
+# Production recommendation: publish a `latest.json` as a GitHub release
+# asset and set `manifestUrl` to its raw URL. The backend caches it for
+# 5 minutes so polling cost is bounded regardless of fleet size.
+desktopUpdates:
+  enabled: true
+  disabled: false        # set true to force-204 even when sources are set
+  # Inline JSON (cap a few KB; lives in the backend Secret).
+  manifest: ""
+  # Remote JSON URL (GitHub Releases asset, S3, etc).
+  manifestUrl: ""
+  # ConfigMap with the manifest. When configMap.name is set, the chart
+  # mounts that ConfigMap into the backend pod and wires
+  # DESKTOP_UPDATES_MANIFEST_PATH automatically — you don't need to also
+  # set manifestUrl or manifest above. Useful when ops want to update the
+  # manifest without a chart upgrade: `kubectl create configmap ... --from-file`.
+  configMap:
+    name: ""
+    key: "latest.json"
+    mountPath: "/etc/babagemed/desktop-updates"
+
 # ─── Service account ──────────────────────────────────────────────────────
 serviceAccount:
   create: true

@@ -44,8 +44,10 @@ spec:
       {{- with .Values.image.pullSecrets }}
       imagePullSecrets: {{- toYaml . | nindent 8 }}
       {{- end }}
-      {{- if .Values.gcp.enabled }}
+      {{- $desktopCM := and .Values.desktopUpdates.enabled .Values.desktopUpdates.configMap.name -}}
+      {{- if or .Values.gcp.enabled $desktopCM }}
       volumes:
+        {{- if .Values.gcp.enabled }}
         # Projected k8s SA token, signed by the AKS OIDC issuer, scoped to
         # the WIF provider's audience. Rotates automatically every <1h.
         - name: gcp-token
@@ -64,6 +66,20 @@ spec:
             items:
               - key: external-account.json
                 path: external-account.json
+        {{- end }}
+        {{- if $desktopCM }}
+        # Tauri update manifest, mounted read-only. Operators can update it
+        # without a chart upgrade: `kubectl create configmap NAME --from-file=KEY=path
+        # --dry-run=client -o yaml | kubectl apply -f -`. The backend's
+        # 5-min in-memory cache plus kubelet's configmap refresh (~minute)
+        # means rollouts take a couple of minutes — by design.
+        - name: desktop-updates
+          configMap:
+            name: {{ .Values.desktopUpdates.configMap.name }}
+            items:
+              - key: {{ .Values.desktopUpdates.configMap.key | default "latest.json" }}
+                path: {{ .Values.desktopUpdates.configMap.key | default "latest.json" }}
+        {{- end }}
       {{- end }}
       containers:
         - name: backend
@@ -72,14 +88,21 @@ spec:
           ports:
             - name: http
               containerPort: 8080
-          {{- if .Values.gcp.enabled }}
+          {{- if or .Values.gcp.enabled $desktopCM }}
           volumeMounts:
+            {{- if .Values.gcp.enabled }}
             - name: gcp-token
               mountPath: /var/run/secrets/tokens
               readOnly: true
             - name: gcp-wif-config
               mountPath: /var/secrets/google
               readOnly: true
+            {{- end }}
+            {{- if $desktopCM }}
+            - name: desktop-updates
+              mountPath: {{ .Values.desktopUpdates.configMap.mountPath | default "/etc/babagemed/desktop-updates" }}
+              readOnly: true
+            {{- end }}
           {{- end }}
           env:
             - name: PORT
@@ -108,6 +131,13 @@ spec:
             # cache package no-ops when this is unset.
             - name: REDIS_URL
               value: "redis://{{ .Release.Name }}-redis:6379/0"
+            {{- end }}
+            {{- if $desktopCM }}
+            # Wired here (not in the Secret) so the path stays in sync
+            # with the volumeMount above when an operator overrides
+            # configMap.mountPath / configMap.key.
+            - name: DESKTOP_UPDATES_MANIFEST_PATH
+              value: {{ printf "%s/%s" (.Values.desktopUpdates.configMap.mountPath | default "/etc/babagemed/desktop-updates") (.Values.desktopUpdates.configMap.key | default "latest.json") | quote }}
             {{- end }}
           envFrom:
             - secretRef:
