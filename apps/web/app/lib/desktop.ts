@@ -91,20 +91,6 @@ export type AppInfo = {
   logical_cores: number;
 };
 
-type Tauri = {
-  invoke: <T>(cmd: string, args?: Record<string, unknown>) => Promise<T>;
-};
-
-function tauri(): Tauri | null {
-  if (typeof window === "undefined") return null;
-  const w = window as unknown as { __TAURI_INTERNALS__?: unknown };
-  if (!w.__TAURI_INTERNALS__) return null;
-  // Dynamic import keeps Next.js from bundling @tauri-apps/api in the
-  // browser build. The module is only resolved when the desktop shell
-  // has injected its globals.
-  return null;
-}
-
 async function invoke<T>(cmd: string, args?: Record<string, unknown>): Promise<T | null> {
   if (typeof window === "undefined") return null;
   const w = window as unknown as { __TAURI_INTERNALS__?: { invoke: <T>(c: string, a?: Record<string, unknown>) => Promise<T> } };
@@ -117,10 +103,17 @@ export const isDesktop = (): boolean => {
   return Boolean((window as unknown as { __TAURI_INTERNALS__?: unknown }).__TAURI_INTERNALS__);
 };
 
+// Detect the mobile shells by probing the actual JS bridge rather than
+// the user-agent string — UA can be spoofed by browser devtools or
+// extensions, so any code that grants extra capability based on it
+// would be bypassable. The native shells inject window.BabbageNative
+// with a typed `platform` field that's not present in browsers.
 export const isMobileNative = (): "ios" | "android" | null => {
-  if (typeof navigator === "undefined") return null;
-  if (navigator.userAgent.includes("Babbage-iOS")) return "ios";
-  if (navigator.userAgent.includes("Babbage-Android")) return "android";
+  if (typeof window === "undefined") return null;
+  const bridge = (window as unknown as { BabbageNative?: { platform?: string } }).BabbageNative;
+  if (!bridge || typeof bridge.platform !== "string") return null;
+  if (bridge.platform === "ios") return "ios";
+  if (bridge.platform === "android") return "android";
   return null;
 };
 

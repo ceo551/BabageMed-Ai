@@ -71,6 +71,11 @@ function DashboardInner() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [chatId, setChatId] = useState<string>("");
 
+  // Track which load is "live" so a fast switch (A → B → A) doesn't let
+  // A's slow response overwrite B's messages. Belt-and-braces alongside
+  // the AbortController in the Composer's streaming send.
+  const liveChatLoadRef = useRef<string>("");
+
   // Sync chat state with the URL: ?c=<id> loads that chat, no ?c means
   // brand-new chat. The nonce param also forces a reset when clicking
   // "New" while already on /.
@@ -79,8 +84,11 @@ function DashboardInner() {
       // Load existing chat. Skip if it's already the active one.
       if (chatIdParam === chatId) return;
       setChatId(chatIdParam);
-      chatsApi.messages(chatIdParam)
+      const requestedId = chatIdParam;
+      liveChatLoadRef.current = requestedId;
+      chatsApi.messages(requestedId)
         .then((rows) => {
+          if (requestedId !== liveChatLoadRef.current) return;
           setMessages(rows.map((r) => {
             if (r.role === "user") {
               return { id: r.id, role: "user", content: r.content } as ChatMessage;
@@ -256,6 +264,24 @@ function Composer({
   const composerRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // AbortController of the currently-streaming chat fetch. Switching chats
+  // (or unmounting) aborts the previous stream so tokens don't keep
+  // arriving and writing into stale React state.
+  const streamAbortRef = useRef<AbortController | null>(null);
+  // Mirror of chatId in a ref so the in-flight SSE loop can detect a
+  // chat switch without taking a dependency on state and re-creating the
+  // closure on every change.
+  const activeChatIdRef = useRef<string>(chatId);
+  useEffect(() => {
+    if (activeChatIdRef.current && activeChatIdRef.current !== chatId) {
+      streamAbortRef.current?.abort();
+      streamAbortRef.current = null;
+    }
+    activeChatIdRef.current = chatId;
+  }, [chatId]);
+  // Abort on unmount.
+  useEffect(() => () => { streamAbortRef.current?.abort(); }, []);
+
   // Click handler for the "Add file or folder" popover row. Opens the OS
   // file picker; onFilesChosen does the actual upload + space attach.
   function openFilePicker() {
@@ -422,15 +448,20 @@ function Composer({
       });
 
       // Stream via /api/chat/stream — server emits SSE events
-      // (status / citations / content / error / done). The content event
-      // currently carries the full completion in one shot (the backend
-      // doesn't proxy provider-side streaming yet), so we typewriter-animate
-      // it on the client to give the Claude/Gemini "watch it write" feel.
+      // (status / citations / content / error / done).
+      // AbortController so chat switches / unmounts mid-stream actually
+      // close the upstream connection instead of leaving it pulling tokens
+      // into a stale closure (which would then setMessages on a dead chat).
+      const controller = new AbortController();
+      streamAbortRef.current?.abort();
+      streamAbortRef.current = controller;
+      const sendingForChat = activeChatId;
       const r = await fetch("/api/backend/api/chat/stream", {
         method: "POST",
         headers: { "content-type": "application/json", "accept": "text/event-stream" },
         credentials: "include",
         body,
+        signal: controller.signal,
       });
       if (!r.ok || !r.body) {
         throw new Error(`HTTP ${r.status}`);
@@ -466,9 +497,22 @@ function Composer({
           let data = "";
           for (const line of frame.split("\n")) {
             if (line.startsWith("event: ")) event = line.slice(7).trim();
-            else if (line.startsWith("data: ")) data += line.slice(6);
+            else if (line.startsWith("data: ")) {
+              // Per SSE spec, multi-line data fields are joined by '\n'.
+              // The previous concatenation dropped the separator, mangling
+              // any delta that contained a literal newline (which JSON-
+              // encoded text deltas regularly do).
+              data += (data ? "\n" : "") + line.slice(6);
+            }
           }
           if (!data) continue;
+          // If the user has switched chats while this stream is in flight,
+          // drop further updates. The AbortController above should already
+          // have killed the connection — this is belt-and-braces.
+          if (sendingForChat !== activeChatIdRef.current) {
+            controller.abort();
+            return;
+          }
 
           let parsed: any = null;
           try { parsed = JSON.parse(data); } catch { /* ignore non-JSON */ }
@@ -538,6 +582,7 @@ function Composer({
       );
     } finally {
       setSending(false);
+      streamAbortRef.current = null;
     }
   }
 

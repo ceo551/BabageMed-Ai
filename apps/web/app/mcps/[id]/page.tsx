@@ -80,6 +80,10 @@ export default function McpDetailPage() {
   async function submitApiKey(skip: boolean) {
     setKeyModalOpen(false);
     const trimmed = apiKeyDraft.trim();
+    // Wipe the draft from React state as soon as the submit is in flight
+    // so React DevTools / heap snapshots don't capture the plaintext key
+    // longer than necessary. The trimmed value lives only in this closure.
+    setApiKeyDraft("");
     if (skip || !trimmed) {
       // User chose to connect without a key — still useful for read-only
       // public APIs (PubMed, openFDA, etc) that work unauthenticated.

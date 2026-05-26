@@ -364,18 +364,27 @@ export const admin = {
     api.get<{ users: AdminUser[]; limit: number; offset: number }>(
       `/api/admin/users?q=${encodeURIComponent(q)}&limit=${limit}&offset=${offset}`
     ),
-  updateUser:    (id: string, patch: Partial<{ plan: string; isAdmin: boolean; displayName: string }>) =>
-    fetch(`/api/backend/api/admin/users/${encodeURIComponent(id)}`, {
+  // Throw on non-2xx so admin UI surfaces failures instead of silently
+  // ignoring 401/403/500 (the previous .then((r) => r.json()) treated
+  // every response as success, leaving operators confused).
+  updateUser:    async (id: string, patch: Partial<{ plan: string; isAdmin: boolean; displayName: string }>) => {
+    const r = await fetch(`/api/backend/api/admin/users/${encodeURIComponent(id)}`, {
       method: "PATCH",
       credentials: "include",
       headers: { "content-type": "application/json" },
       body: JSON.stringify(patch),
-    }).then((r) => r.json()),
-  deleteUser:    (id: string) =>
-    fetch(`/api/backend/api/admin/users/${encodeURIComponent(id)}`, {
+    });
+    if (!r.ok) throw new Error(`updateUser: HTTP ${r.status}`);
+    return r.json();
+  },
+  deleteUser:    async (id: string) => {
+    const r = await fetch(`/api/backend/api/admin/users/${encodeURIComponent(id)}`, {
       method: "DELETE",
       credentials: "include",
-    }).then((r) => r.json()),
+    });
+    if (!r.ok) throw new Error(`deleteUser: HTTP ${r.status}`);
+    return r.json();
+  },
   payments:      (status = "", limit = 50, offset = 0) =>
     api.get<{ payments: AdminPayment[]; limit: number; offset: number }>(
       `/api/admin/payments?status=${encodeURIComponent(status)}&limit=${limit}&offset=${offset}`

@@ -89,23 +89,36 @@ function UsersTab() {
       setRows(r.users);
       setErr(null);
     } catch (e: any) {
-      setErr(e.error || String(e));
+      setErr(e.error || e.message || String(e));
     }
   }
-  useEffect(() => { refresh(); /* eslint-disable-line react-hooks/exhaustive-deps */ }, [q]);
+  // 250 ms debounce so each keystroke doesn't drive an admin query, and a
+  // generation counter so an earlier slow response doesn't overwrite a
+  // later fast one. Without these the table flickers and races on every
+  // typed character.
+  useEffect(() => {
+    let live = true;
+    const t = setTimeout(() => { if (live) refresh(); }, 250);
+    return () => { live = false; clearTimeout(t); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [q]);
 
   async function setPlan(id: string, plan: string) {
-    await admin.updateUser(id, { plan });
-    refresh();
+    try { await admin.updateUser(id, { plan }); refresh(); }
+    catch (e: any) { setErr(e.message || String(e)); }
   }
   async function setAdmin(id: string, isAdmin: boolean) {
-    await admin.updateUser(id, { isAdmin });
-    refresh();
+    try { await admin.updateUser(id, { isAdmin }); refresh(); }
+    catch (e: any) { setErr(e.message || String(e)); }
   }
   async function del(id: string, email: string) {
     if (!confirm(`Delete ${email}? This is permanent.`)) return;
-    const r = await admin.deleteUser(id);
-    if (r.error) alert(r.error);
+    try {
+      const r = await admin.deleteUser(id);
+      if (r?.error) alert(r.error);
+    } catch (e: any) {
+      alert(e.message || String(e));
+    }
     refresh();
   }
 

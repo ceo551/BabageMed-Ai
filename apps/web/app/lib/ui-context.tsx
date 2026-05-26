@@ -75,24 +75,31 @@ export function UIProvider({ children }: { children: React.ReactNode }) {
   const effectiveTheme = theme === "system" ? systemTheme : theme;
   const s = STR[locale];
 
-  // One-shot rehydration from localStorage on mount.
+  // One-shot rehydration from localStorage on mount. The `hydrated` ref
+  // gates subsequent effects (none currently, but kept for future code
+  // that needs to know "we've finished reading persisted state").
   useEffect(() => {
+    if (hydrated.current) return;
     const stored = readLocale();
-    if (stored !== locale) setLocaleState(stored);
+    setLocaleState((cur) => (cur === stored ? cur : stored));
     const t = readTheme();
-    if (t !== theme) setThemeState(t);
+    setThemeState((cur) => (cur === t ? cur : t));
     hydrated.current = true;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Setters that ALSO persist to localStorage so the pick survives a reload.
+  // We persist BEFORE updating state so a rapid hydration-in-flight + click
+  // race can't have hydration overwrite the user's pick: by the time the
+  // hydration effect reads localStorage on next mount the user value is
+  // already there.
   function setLocale(l: Locale) {
-    setLocaleState(l);
     if (typeof window !== "undefined") window.localStorage.setItem(LS_LOCALE, l);
+    setLocaleState(l);
   }
   function setTheme(t: Theme) {
-    setThemeState(t);
     if (typeof window !== "undefined") window.localStorage.setItem(LS_THEME, t);
+    setThemeState(t);
   }
 
   // Track the OS-level colour-scheme preference so "system" is meaningful.

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, Suspense } from "react";
+import { useEffect, useRef, useState, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 
 function Inner() {
@@ -8,14 +8,21 @@ function Inner() {
   const router = useRouter();
   const [state, setState] = useState<"capturing" | "success" | "error">("capturing");
   const [detail, setDetail] = useState<string>("");
+  // Guard against double-capture: React StrictMode fires the effect twice
+  // in dev, and `params` is also a fresh reference on every render. The
+  // server should be idempotent on order_id, but a duplicate POST is
+  // wasteful and creates two payment audit rows.
+  const captured = useRef(false);
 
   useEffect(() => {
+    if (captured.current) return;
     const orderID = params.get("token") || params.get("orderID");
     if (!orderID) {
       setState("error");
       setDetail("Missing PayPal order id.");
       return;
     }
+    captured.current = true;
     fetch("/api/backend/api/payments/paypal/capture", {
       method: "POST",
       headers: { "content-type": "application/json" },
@@ -35,7 +42,9 @@ function Inner() {
         setState("error");
         setDetail(e.message);
       });
-  }, [params]);
+    // Deliberately only depend on params.get(...) snapshot via the ref guard.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>

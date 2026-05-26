@@ -32,6 +32,17 @@ export function AssistantMessage({
       <div className="md-body" dir="auto">
         <ReactMarkdown
           remarkPlugins={[remarkGfm]}
+          // Allow only http(s):, mailto:, and relative URLs. Defence in depth
+          // against a future regression where the backend forwards user-
+          // controlled markdown — javascript:, data:, and chrome-extension:
+          // URLs are stripped (rendered as plain text).
+          urlTransform={(url) => {
+            if (!url) return url;
+            const u = url.trim();
+            if (u.startsWith("#") || u.startsWith("/")) return u;
+            if (/^https?:/i.test(u) || /^mailto:/i.test(u)) return u;
+            return ""; // ReactMarkdown drops the href.
+          }}
           components={{
             a: ({ href, children }) => (
               <a href={href} target="_blank" rel="noopener noreferrer">{children}</a>

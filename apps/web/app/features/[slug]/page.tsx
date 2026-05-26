@@ -1,7 +1,7 @@
 "use client";
 
 import { notFound, useParams } from "next/navigation";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useUI } from "../../lib/ui-context";
 import { useAuth } from "../../lib/auth-context";
 import { features as featuresApi, mcps as mcpsApi, type Feature, type FeatureFile, type McpServer } from "../../lib/api";
@@ -138,6 +138,10 @@ function InstructionsCard({
   const tRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   // Keep the textarea in sync if the backend value changes (e.g. first fetch)
   useEffect(() => { setDraft(value); }, [value]);
+  // Cancel the in-flight debounce on unmount — otherwise the timeout
+  // fires after the component is gone and calls onSave → setFeature on
+  // a dead component (React warning + wasted PATCH).
+  useEffect(() => () => { if (tRef.current) clearTimeout(tRef.current); }, []);
 
   function onInput(v: string) {
     setDraft(v);
@@ -261,11 +265,24 @@ function SkillsCard({
   onChange: (s: string[]) => Promise<void>;
 }) {
   const { s } = useUI();
-  const set = new Set(selected);
+  // Local optimistic state — two rapid toggles previously raced because
+  // both clicks computed `next` from the same `selected` prop snapshot
+  // and the later PATCH overwrote the earlier one. Now the source of
+  // truth lives here and onChange is awaited.
+  const [local, setLocal] = React.useState<string[]>(selected);
+  React.useEffect(() => { setLocal(selected); }, [selected]);
+  const set = React.useMemo(() => new Set(local), [local]);
+
+  const pendingRef = React.useRef<Promise<void>>(Promise.resolve());
   function toggle(id: string) {
-    const next = new Set(set);
-    if (next.has(id)) next.delete(id); else next.add(id);
-    onChange(Array.from(next));
+    setLocal((cur) => {
+      const next = new Set(cur);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      const arr = Array.from(next);
+      // Serialize PATCHes — chain on the last one so order is preserved.
+      pendingRef.current = pendingRef.current.then(() => onChange(arr).catch(() => {}));
+      return arr;
+    });
   }
   return (
     <section className="feat-card" aria-label={s.skillsPanel}>
@@ -317,7 +334,12 @@ function ConnectorsCard({
   const [catalog, setCatalog] = useState<McpServer[]>([]);
   const [loadingCat, setLoadingCat] = useState(true);
   const [q, setQ] = useState("");
-  const set = new Set(selected);
+  // Same local-optimistic + serialized-PATCH pattern as the skills picker —
+  // see comment above.
+  const [local, setLocal] = useState<string[]>(selected);
+  useEffect(() => { setLocal(selected); }, [selected]);
+  const set = useMemo(() => new Set(local), [local]);
+  const pendingRef = useRef<Promise<void>>(Promise.resolve());
 
   useEffect(() => {
     let cancelled = false;
@@ -329,9 +351,13 @@ function ConnectorsCard({
   }, []);
 
   function toggle(id: string) {
-    const next = new Set(set);
-    if (next.has(id)) next.delete(id); else next.add(id);
-    onChange(Array.from(next));
+    setLocal((cur) => {
+      const next = new Set(cur);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      const arr = Array.from(next);
+      pendingRef.current = pendingRef.current.then(() => onChange(arr).catch(() => {}));
+      return arr;
+    });
   }
 
   // Filter + rank: matching servers first, then alphabetical by name. Servers

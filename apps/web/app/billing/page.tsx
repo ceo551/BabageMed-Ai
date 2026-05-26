@@ -23,14 +23,37 @@ export default function BillingPage() {
 
   useEffect(() => {
     Promise.all([
-      fetch("/api/backend/api/payments/plans").then((r) => r.json()),
-      fetch("/api/backend/api/payments/providers").then((r) => r.json()),
-    ]).then(([p, pr]) => {
-      setPlans(p?.plans || []);
-      setProviders(pr || { paymob: false, paypal: false });
-    });
+      fetch("/api/backend/api/payments/plans").then((r) => r.ok ? r.json() : Promise.reject(new Error(`plans ${r.status}`))),
+      fetch("/api/backend/api/payments/providers").then((r) => r.ok ? r.json() : Promise.reject(new Error(`providers ${r.status}`))),
+    ])
+      .then(([p, pr]) => {
+        setPlans(p?.plans || []);
+        setProviders(pr || { paymob: false, paypal: false });
+      })
+      .catch((e) => setError(e.message));
     setLocale((document.documentElement.lang as "en" | "ar") || "en");
   }, []);
+
+  // Validate redirect URLs against an allow-list of known payment-provider
+  // hosts before navigating. If the backend is ever compromised or returns
+  // a bad response, this stops the page from sending the user to an
+  // attacker-controlled site.
+  const PAYMENT_HOSTS = [
+    /(^|\.)paymob\.com$/i,
+    /(^|\.)accept\.paymob\.com$/i,
+    /(^|\.)paypal\.com$/i,
+    /(^|\.)sandbox\.paypal\.com$/i,
+  ];
+  function safeNavigate(url: string) {
+    try {
+      const u = new URL(url);
+      if (!/^https?:$/.test(u.protocol)) throw new Error("non-http URL");
+      if (!PAYMENT_HOSTS.some((re) => re.test(u.hostname))) throw new Error("untrusted host: " + u.hostname);
+      window.location.href = url;
+    } catch (e: any) {
+      setError("Refusing to redirect: " + e.message);
+    }
+  }
 
   async function payWithPaymob(planID: string) {
     setBusy(planID + ":paymob");
@@ -43,7 +66,7 @@ export default function BillingPage() {
       });
       const j = await r.json();
       if (!r.ok) throw new Error(j.error || "Paymob checkout failed");
-      window.location.href = j.iframe_url;
+      safeNavigate(j.iframe_url);
     } catch (e: any) {
       setError(e.message);
     } finally {
@@ -66,7 +89,7 @@ export default function BillingPage() {
       });
       const j = await r.json();
       if (!r.ok) throw new Error(j.error || "PayPal checkout failed");
-      window.location.href = j.approve_url;
+      safeNavigate(j.approve_url);
     } catch (e: any) {
       setError(e.message);
     } finally {

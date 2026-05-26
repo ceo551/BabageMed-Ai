@@ -209,14 +209,26 @@ function HistorySection({ label }: { label: string }) {
   async function removeChat(id: string, e: React.MouseEvent) {
     e.stopPropagation();
     e.preventDefault();
-    setItems((cur) => cur.filter((c) => c.id !== id));
+    // Snapshot the row so we can put it back if the DELETE fails — the
+    // previous "next navigation will resync" comment was wrong because
+    // pathname doesn't change for in-place deletes, leaving the user
+    // believing a chat was deleted when it wasn't.
+    let removed: Chat | undefined;
+    setItems((cur) => {
+      removed = cur.find((c) => c.id === id);
+      return cur.filter((c) => c.id !== id);
+    });
     try {
       await chatsApi.remove(id);
       // If the active chat was just removed, drop the URL pointer so the
       // dashboard resets to the greeting instead of trying to load a 404.
       if (id === activeChatId) router.push("/");
     } catch {
-      // Best-effort: a refetch on next navigation will resync.
+      // Rollback — re-insert at its original position (top-of-list).
+      if (removed) {
+        const r = removed;
+        setItems((cur) => (cur.some((c) => c.id === r.id) ? cur : [r, ...cur]));
+      }
     }
   }
 
