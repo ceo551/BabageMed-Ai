@@ -102,7 +102,7 @@ function dockerfile(s) {
 # without explicit BuildKit opt-in.
 FROM node:20-bookworm-slim AS build
 WORKDIR /build
-# Shared base — gets its own layer so it caches across all 416 MCPs
+# Shared base — gets its own layer so it caches across all ${MANIFEST.servers.length} MCPs
 COPY packages/mcp-base/package.json packages/mcp-base/tsconfig.json /build/packages/mcp-base/
 COPY packages/mcp-base/src /build/packages/mcp-base/src
 RUN \\
@@ -124,8 +124,13 @@ ENV NODE_ENV=production HTTP_ONLY=1
 COPY --from=build /build/mcps/${s.id} /app
 COPY --from=build /build/packages/mcp-base /app/node_modules/@babagemed/mcp-base
 EXPOSE ${s.port}
+# Drop privileges — the Playwright base image ships with a pwuser
+# (uid 1000) for exactly this purpose. Without it the renderer + the
+# Node parent both run as root inside the container, which combined
+# with any code-injection path would give attackers a root shell.
+USER pwuser
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \\
-  CMD node -e "fetch('http://localhost:${s.port}/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+  CMD node -e "fetch('http://localhost:${s.port}/health').then(r=>{r.arrayBuffer().finally(()=>process.exit(r.ok?0:1))}).catch(()=>process.exit(1))"
 CMD ["node", "dist/index.js"]
 `
     : `${common}
@@ -137,7 +142,7 @@ COPY --from=build /build/packages/mcp-base /app/node_modules/@babagemed/mcp-base
 EXPOSE ${s.port}
 USER node
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \\
-  CMD node -e "fetch('http://localhost:${s.port}/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+  CMD node -e "fetch('http://localhost:${s.port}/health').then(r=>{r.arrayBuffer().finally(()=>process.exit(r.ok?0:1))}).catch(()=>process.exit(1))"
 CMD ["node", "dist/index.js"]
 `;
 }
@@ -187,13 +192,22 @@ export function registerTools(server: McpServer) {
   }
   // scrape default — uses per-site search URL + result selectors when available
   const pat = resolvePattern(s.id, s.base);
-  const origin = new URL(s.base).origin;
+  // ORIGIN is used as a prefix-filter on result links. When the manifest
+  // `base` includes a path (e.g. https://academic.oup.com/eurheartj for
+  // an OUP journal), `new URL(...).origin` strips it, so the filter ends
+  // up accepting any article on academic.oup.com — including sibling
+  // journals — as a result of this MCP. Preserve the path when present
+  // so the prefix actually constrains to the relevant section.
+  const baseUrl = new URL(s.base);
+  const origin = baseUrl.pathname && baseUrl.pathname !== "/"
+    ? baseUrl.origin + baseUrl.pathname.replace(/\/+$/, "")
+    : baseUrl.origin;
   return `import { z, McpServer, Scraper, cheerioLoad } from "@babagemed/mcp-base";
 
 const scraper = new Scraper({
   base: ${JSON.stringify(s.base)},
   userAgent: process.env.SCRAPER_USER_AGENT,
-  rps: Number(process.env.SCRAPER_RATE_RPS || 1),
+  rps: Number(process.env.SCRAPER_RATE_RPS ?? 1) || 1,
   timeoutMs: Number(process.env.SCRAPER_TIMEOUT_MS || 30000),
   headless: (process.env.SCRAPER_HEADLESS ?? "true") !== "false",
   cacheTtlSec: Number(process.env.SCRAPER_CACHE_TTL_SEC || 86400),

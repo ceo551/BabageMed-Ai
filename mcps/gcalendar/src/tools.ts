@@ -1,3 +1,4 @@
+// @hand-edited — do not regenerate via write-real-tools.mjs
 import { z, McpServer, ApiClient } from "@babagemed/mcp-base";
 import { googleAccessToken } from "./google.js";
 // Lazy, persistent client — see mcps/gmail for the rationale (per-call

@@ -1,3 +1,4 @@
+// @hand-edited — do not regenerate via write-real-tools.mjs
 import { z, McpServer, ApiClient } from "@babagemed/mcp-base";
 
 let cached: { v: string; exp: number } | null = null;

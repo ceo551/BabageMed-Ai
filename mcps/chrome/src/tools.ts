@@ -1,3 +1,4 @@
+// @hand-edited — do not regenerate via write-real-tools.mjs
 import { z, McpServer, Scraper } from "@babagemed/mcp-base";
 
 // `allowedHosts: ["*"]` is intentional and dangerous — this MCP is meant

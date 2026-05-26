@@ -1,15 +1,30 @@
 #!/usr/bin/env node
 // Writes real (non-fallback) tools.ts for MCPs that have well-documented public APIs.
-// Run AFTER generate-mcps.mjs. Will overwrite fallback files.
-import { writeFileSync, mkdirSync } from "node:fs";
+// Run AFTER generate-mcps.mjs.
+//
+// SAFETY: this script previously called writeFileSync unconditionally,
+// which silently destroyed any hand-edit to a tools.ts. We now preserve
+// the file when it carries the "// @hand-edited" marker on its first
+// line. Run with FORCE=1 to override.
+import { writeFileSync, mkdirSync, existsSync, readFileSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(__dirname, "..");
+const FORCE = process.env.FORCE === "1";
 
 function w(id, body) {
   const p = join(ROOT, "mcps", id, "src", "tools.ts");
+  if (!FORCE && existsSync(p)) {
+    const cur = readFileSync(p, "utf8");
+    if (cur.includes("// @hand-edited")) {
+      // Skip files that explicitly opt out of regeneration.
+      process.stderr.write(`skip ${id} (hand-edited marker)\n`);
+      return;
+    }
+    if (cur === body) return; // already up-to-date, no diff
+  }
   mkdirSync(dirname(p), { recursive: true });
   writeFileSync(p, body);
 }

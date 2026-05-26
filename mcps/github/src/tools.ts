@@ -1,3 +1,4 @@
+// @hand-edited — do not regenerate via write-real-tools.mjs
 import { z, McpServer, ApiClient } from "@babagemed/mcp-base";
 
 const TOKEN = process.env.GITHUB_TOKEN || "";

@@ -1,3 +1,4 @@
+// @hand-edited — do not regenerate via write-real-tools.mjs
 import { z, McpServer, ApiClient } from "@babagemed/mcp-base";
 const api = new ApiClient({ base: "https://ghoapi.azureedge.net/api", rps: 3 });
 export function registerTools(server: McpServer) {
