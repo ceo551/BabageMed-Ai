@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <!-- Bundle identity. Xcode wires the rest from build settings, but the
+         display strings live here so localisation kits can override per
+         language. -->
+    <key>CFBundleDevelopmentRegion</key>
+    <string>en</string>
+    <key>CFBundleDisplayName</key>
+    <string>Babbage AI</string>
+    <key>CFBundleExecutable</key>
+    <string>$(EXECUTABLE_NAME)</string>
+    <key>CFBundleIdentifier</key>
+    <string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+    <key>CFBundleName</key>
+    <string>$(PRODUCT_NAME)</string>
+    <key>CFBundlePackageType</key>
+    <string>$(PRODUCT_BUNDLE_PACKAGE_TYPE)</string>
+    <key>CFBundleShortVersionString</key>
+    <string>0.1.0</string>
+    <key>CFBundleVersion</key>
+    <string>1</string>
+    <key>LSRequiresIPhoneOS</key>
+    <true/>
+
+    <!-- App Transport Security: tighten to the production domains we trust.
+         App Store review rejects blanket NSAllowsArbitraryLoads = true. -->
+    <key>NSAppTransportSecurity</key>
+    <dict>
+        <key>NSExceptionDomains</key>
+        <dict>
+            <key>babagemed.com</key>
+            <dict>
+                <key>NSIncludesSubdomains</key>
+                <true/>
+                <key>NSExceptionAllowsInsecureHTTPLoads</key>
+                <false/>
+                <key>NSExceptionMinimumTLSVersion</key>
+                <string>TLSv1.2</string>
+            </dict>
+        </dict>
+    </dict>
+
+    <!-- Permission strings shown to the user when the WebView requests
+         camera / microphone / location. App Store review WILL reject any
+         build that uses these APIs without a purpose string. -->
+    <key>NSCameraUsageDescription</key>
+    <string>Babbage AI uses the camera so you can attach photos or scan documents into your workflow.</string>
+    <key>NSMicrophoneUsageDescription</key>
+    <string>Babbage AI uses the microphone for voice dictation in the chat composer.</string>
+    <key>NSLocationWhenInUseUsageDescription</key>
+    <string>Babbage AI uses your location to enrich connector data (e.g. nearby clinics, local financial data).</string>
+    <key>NSPhotoLibraryUsageDescription</key>
+    <string>Babbage AI accesses your photo library so you can attach images to a chat.</string>
+
+    <!-- Universal links — wire AASA file at babagemed.com/.well-known/apple-app-site-association
+         so https://babagemed.com/* opens directly in the app when installed. -->
+    <key>com.apple.developer.associated-domains</key>
+    <array>
+        <string>applinks:babagemed.com</string>
+    </array>
+
+    <key>UIApplicationSceneManifest</key>
+    <dict>
+        <key>UIApplicationSupportsMultipleScenes</key>
+        <true/>
+    </dict>
+
+    <key>UILaunchScreen</key>
+    <dict>
+        <key>UIColorName</key>
+        <string>LaunchBackground</string>
+    </dict>
+
+    <key>UIRequiredDeviceCapabilities</key>
+    <array>
+        <string>arm64</string>
+    </array>
+
+    <key>UISupportedInterfaceOrientations</key>
+    <array>
+        <string>UIInterfaceOrientationPortrait</string>
+        <string>UIInterfaceOrientationLandscapeLeft</string>
+        <string>UIInterfaceOrientationLandscapeRight</string>
+    </array>
+
+    <key>UISupportedInterfaceOrientations~ipad</key>
+    <array>
+        <string>UIInterfaceOrientationPortrait</string>
+        <string>UIInterfaceOrientationPortraitUpsideDown</string>
+        <string>UIInterfaceOrientationLandscapeLeft</string>
+        <string>UIInterfaceOrientationLandscapeRight</string>
+    </array>
+</dict>
+</plist>

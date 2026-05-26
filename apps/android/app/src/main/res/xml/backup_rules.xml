@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- No app data is auto-backed-up: auth tokens live in WebView cookies that
+     get rotated on the server side anyway, and a stale token in a restore
+     would just trigger re-login. -->
+<full-backup-content>
+    <exclude domain="root"     path="."/>
+    <exclude domain="database" path="."/>
+    <exclude domain="sharedpref" path="."/>
+</full-backup-content>

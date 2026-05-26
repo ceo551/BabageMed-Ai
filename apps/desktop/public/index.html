@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Babbage AI</title>
+  <style>
+    html, body { margin:0; padding:0; height:100%; background:#0a0a0c; color:#e9e9ee; font-family: -apple-system, "Segoe UI", Roboto, sans-serif; }
+    .splash { display:flex; flex-direction:column; align-items:center; justify-content:center; height:100%; gap:18px; }
+    .ring { width:48px; height:48px; border-radius:50%; border:3px solid #2a2a33; border-top-color:#22d3ee; animation: spin 0.9s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    h1 { font-size:22px; font-weight:600; margin:0; }
+    p  { font-size:13px; color:#9a9aa6; margin:0; }
+  </style>
+</head>
+<body>
+  <div class="splash">
+    <div class="ring"></div>
+    <h1>Babbage AI</h1>
+    <p>Loading desktop client…</p>
+  </div>
+  <script>
+    // Bounce to the hosted web app once the window is ready. tauri.conf.json
+    // already sets `url` for the main window so this splash only flashes on
+    // very slow links. In dev (tauri dev), the devUrl override loads
+    // localhost:3000 directly.
+    if (!window.location.href.includes("babagemed.com")) {
+      window.location.href = "https://babagemed.com";
+    }
+  </script>
+</body>
+</html>

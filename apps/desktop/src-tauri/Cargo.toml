@@ -1,0 +1,27 @@
+[package]
+name = "babbage-desktop"
+version = "0.1.0"
+description = "Babbage AI desktop client"
+authors = ["Babbage AI"]
+license = "Proprietary"
+repository = "https://github.com/ceo551/BabageMed-Ai"
+edition = "2021"
+rust-version = "1.77"
+
+# Profile that produces ~6 MB binaries on release builds. Without this Tauri's
+# default profile inherits cargo defaults and ships a ~24 MB binary.
+[profile.release]
+panic        = "abort"   # smaller, faster — no unwind tables
+codegen-units = 1
+lto          = true
+opt-level    = "s"       # optimize for binary size
+strip        = true
+
+[build-dependencies]
+tauri-build = { version = "2.0", features = [] }
+
+[dependencies]
+tauri        = { version = "2.0", features = [] }
+tauri-plugin-shell = "2.0"
+serde        = { version = "1.0", features = ["derive"] }
+serde_json   = "1.0"

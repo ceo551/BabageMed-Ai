@@ -16,5 +16,10 @@ spec:
   ignore: |
     # Don't pull these into the working copy Flux clones.
     /node_modules
-    /frontend/.next
+    /apps/web/.next
+    /apps/web/node_modules
+    /apps/desktop/src-tauri/target
+    /apps/android/build
+    /apps/android/.gradle
+    /apps/ios/build
     /backend/bin

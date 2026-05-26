@@ -80,8 +80,8 @@ jobs:
       - name: Build & push
         uses: docker/build-push-action@v6
         with:
-          context: ${{ matrix.target == 'frontend' && './frontend' || '.' }}
-          file: ${{ matrix.target == 'frontend' && './frontend/Dockerfile' || './backend/Dockerfile' }}
+          context: ${{ matrix.target == 'frontend' && './apps/web' || '.' }}
+          file: ${{ matrix.target == 'frontend' && './apps/web/Dockerfile' || './backend/Dockerfile' }}
           push: true
           platforms: linux/amd64
           tags: |

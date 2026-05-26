@@ -26,9 +26,9 @@ echo "▶ building backend"
 docker buildx build --platform "$PLATFORM" --push \
   -f backend/Dockerfile -t "$REGISTRY/backend:$TAG" .
 
-echo "▶ building frontend"
+echo "▶ building web (frontend)"
 docker buildx build --platform "$PLATFORM" --push \
-  -f frontend/Dockerfile -t "$REGISTRY/frontend:$TAG" ./frontend
+  -f apps/web/Dockerfile -t "$REGISTRY/frontend:$TAG" ./apps/web
 
 # MCP list
 if [ -z "${MCPS:-}" ]; then
