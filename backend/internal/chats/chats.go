@@ -10,6 +10,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"io"
 	"net/http"
 	"strings"
 	"time"
@@ -93,7 +94,16 @@ func (s *Service) handleList(w http.ResponseWriter, r *http.Request) {
 func (s *Service) handleCreate(w http.ResponseWriter, r *http.Request) {
 	u := auth.FromContext(r.Context())
 	var body struct{ Title, Model, Mode string }
-	_ = json.NewDecoder(r.Body).Decode(&body)
+	// Don't swallow decode errors — an unparseable body usually means a
+	// client bug and silently creating an empty-titled chat hides it.
+	// An empty body is fine (typed as the zero value) so we only fail
+	// when the body is non-empty AND malformed.
+	if r.ContentLength != 0 {
+		if err := json.NewDecoder(io.LimitReader(r.Body, 1<<20)).Decode(&body); err != nil {
+			http.Error(w, "invalid json", http.StatusBadRequest)
+			return
+		}
+	}
 	body.Title = trimTitle(body.Title)
 
 	var c Chat
@@ -214,12 +224,22 @@ func (s *Service) handleAppendMessage(w http.ResponseWriter, r *http.Request) {
 		Citations json.RawMessage `json:"citations,omitempty"`
 		Meta      json.RawMessage `json:"meta,omitempty"`
 	}
-	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+	// 4 MiB request body cap. A typed message + citations + meta should be
+	// well under 1 MB; capping keeps a runaway client from spilling tens
+	// of MB into Postgres on every persist.
+	if err := json.NewDecoder(io.LimitReader(r.Body, 4<<20)).Decode(&body); err != nil {
 		http.Error(w, "bad json", 400)
 		return
 	}
 	if body.Role != "user" && body.Role != "assistant" && body.Role != "system" {
 		http.Error(w, "invalid role", 400)
+		return
+	}
+	// content_length cap: anything wildly larger than the request budget
+	// indicates a client bug, not a legitimate message.
+	const maxMessageContent = 3 * 1024 * 1024
+	if len(body.Content) > maxMessageContent {
+		http.Error(w, "message too large", http.StatusRequestEntityTooLarge)
 		return
 	}
 

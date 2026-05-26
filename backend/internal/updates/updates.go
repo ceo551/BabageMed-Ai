@@ -190,10 +190,16 @@ func (s *Service) manifest(ctx context.Context) (*Manifest, error) {
 		return nil, fmt.Errorf("manifest is missing version or platforms")
 	}
 
+	// Double-check under the write lock: another caller may have populated
+	// the cache while we were fetching. Without this, two concurrent
+	// pollers each do a fetch + Unmarshal even though one would suffice.
 	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.cached != nil && time.Now().Before(s.expires) {
+		return s.cached, nil
+	}
 	s.cached = &mf
 	s.expires = time.Now().Add(s.cfg.CacheTTL)
-	s.mu.Unlock()
 	return &mf, nil
 }
 

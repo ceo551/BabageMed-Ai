@@ -2,19 +2,32 @@ package payments
 
 import (
 	"encoding/json"
+	"errors"
 	"io"
 	"net/http"
 	"os"
 	"strconv"
+	"strings"
 
 	"github.com/babagemed/backend/internal/auth"
 	"github.com/go-chi/chi/v5"
 )
 
+// errBadBody is matched by handlers that want to surface a 400 instead of a 401
+// when the request body itself can't be parsed.
+var errBadBody = errors.New("bad webhook body")
+
+// Required is the subset of *auth.Service we depend on; declared as an
+// interface so test handlers don't need a full Service.
+type Required interface {
+	Required(http.Handler) http.Handler
+}
+
 type Handler struct {
-	pm    *Paymob
-	pp    *PayPal
-	store *Store // nil if DB not configured — webhooks still verify, just don't persist
+	pm      *Paymob
+	pp      *PayPal
+	store   *Store   // nil if DB not configured — webhooks still verify, just don't persist
+	authSvc Required // nil → checkout endpoints stay anonymous
 }
 
 func NewHandler() *Handler {
@@ -27,15 +40,32 @@ func (h *Handler) WithStore(s *Store) *Handler {
 	return h
 }
 
+// WithAuth gates checkout/capture behind a real user session. Webhooks
+// stay unauthenticated (they're verified by HMAC / PayPal signature
+// instead) because the upstream call comes from the payment provider,
+// not the user's browser.
+func (h *Handler) WithAuth(a Required) *Handler {
+	h.authSvc = a
+	return h
+}
+
 func (h *Handler) Register(r chi.Router) {
 	r.Get("/api/payments/plans", h.ListPlans)
 	r.Get("/api/payments/providers", h.Providers)
 
-	r.Post("/api/payments/paymob/checkout", h.PaymobCheckout)
-	r.Post("/api/payments/paymob/webhook", h.PaymobWebhook)
+	gated := func(p string, f http.HandlerFunc) {
+		if h.authSvc != nil {
+			r.With(h.authSvc.Required).Post(p, f)
+		} else {
+			r.Post(p, f)
+		}
+	}
+	gated("/api/payments/paymob/checkout", h.PaymobCheckout)
+	gated("/api/payments/paypal/checkout", h.PayPalCheckout)
+	gated("/api/payments/paypal/capture", h.PayPalCapture)
 
-	r.Post("/api/payments/paypal/checkout", h.PayPalCheckout)
-	r.Post("/api/payments/paypal/capture", h.PayPalCapture)
+	// Webhooks are signature-verified, not session-verified.
+	r.Post("/api/payments/paymob/webhook", h.PaymobWebhook)
 	r.Post("/api/payments/paypal/webhook", h.PayPalWebhook)
 }
 
@@ -65,7 +95,7 @@ func (h *Handler) PaymobCheckout(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "invalid json", 400)
 		return
 	}
-	out, err := h.pm.Checkout(b.PlanID, b.Billing)
+	out, err := h.pm.Checkout(r.Context(), b.PlanID, b.Billing)
 	if err != nil {
 		writeJSON(w, 502, map[string]string{"error": err.Error()})
 		return
@@ -83,7 +113,7 @@ func (h *Handler) PaymobCheckout(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) PaymobWebhook(w http.ResponseWriter, r *http.Request) {
 	hmacQ := r.URL.Query().Get("hmac")
-	body, _ := io.ReadAll(r.Body)
+	body, _ := io.ReadAll(io.LimitReader(r.Body, 1<<20))
 	var env struct {
 		Type string         `json:"type"`
 		Obj  map[string]any `json:"obj"`
@@ -140,7 +170,7 @@ func (h *Handler) PayPalCheckout(w http.ResponseWriter, r *http.Request) {
 	if b.CancelURL == "" {
 		b.CancelURL = os.Getenv("PUBLIC_BASE_URL") + "/billing/cancel"
 	}
-	out, err := h.pp.Checkout(b.PlanID, b.ReturnURL, b.CancelURL)
+	out, err := h.pp.Checkout(r.Context(), b.PlanID, b.ReturnURL, b.CancelURL)
 	if err != nil {
 		writeJSON(w, 502, map[string]string{"error": err.Error()})
 		return
@@ -164,7 +194,7 @@ func (h *Handler) PayPalCapture(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "order_id required", 400)
 		return
 	}
-	out, err := h.pp.Capture(b.OrderID)
+	out, err := h.pp.Capture(r.Context(), b.OrderID)
 	if err != nil {
 		writeJSON(w, 502, map[string]string{"error": err.Error()})
 		return
@@ -176,9 +206,18 @@ func (h *Handler) PayPalCapture(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) PayPalWebhook(w http.ResponseWriter, r *http.Request) {
-	body, _ := io.ReadAll(r.Body)
-	ok, err := h.pp.VerifyWebhook(r.Header, body)
+	// Cap body so a malicious request can't OOM the process. PayPal webhook
+	// events are typically <2 KB; 1 MiB is generously above any real payload.
+	body, _ := io.ReadAll(io.LimitReader(r.Body, 1<<20))
+	ok, err := h.pp.VerifyWebhook(r.Context(), r.Header, body)
 	if err != nil {
+		// A bad-body error (failed JSON parse) is the caller's fault →
+		// 400, not 401, so the upstream PayPal retry logic doesn't loop
+		// against a malformed message we'd never accept.
+		if errors.Is(err, errBadBody) || strings.HasPrefix(err.Error(), "bad webhook body") {
+			writeJSON(w, 400, map[string]string{"error": err.Error()})
+			return
+		}
 		writeJSON(w, 401, map[string]string{"error": err.Error()})
 		return
 	}

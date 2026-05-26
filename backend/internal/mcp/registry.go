@@ -211,7 +211,11 @@ func (r *Registry) Health(ctx context.Context) map[string]string {
 				mu.Unlock()
 				return
 			}
-			req, _ := http.NewRequestWithContext(ctx, http.MethodGet, r.hostFor(s)+"/health", nil)
+			// Health checks are cheap and we have 540 of them — a per-call
+			// 3s ceiling keeps a single stuck MCP from holding a goroutine
+			// open for the full 60s of the shared client timeout.
+			hctx, cancel := context.WithTimeout(ctx, 3*time.Second)
+			req, _ := http.NewRequestWithContext(hctx, http.MethodGet, r.hostFor(s)+"/health", nil)
 			res, err := r.client.Do(req)
 			status := "down"
 			if err == nil {
@@ -222,6 +226,7 @@ func (r *Registry) Health(ctx context.Context) map[string]string {
 				}
 				res.Body.Close()
 			}
+			cancel()
 			mu.Lock()
 			out[s.ID] = status
 			mu.Unlock()

@@ -14,6 +14,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"strings"
 	"net/http"
 
 	"github.com/babagemed/backend/internal/auth"
@@ -219,9 +220,25 @@ func (s *Service) handleDisconnect(w http.ResponseWriter, r *http.Request) {
 
 func writeJSON(w http.ResponseWriter, v any, err error) {
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		http.Error(w, err.Error(), statusFromErr(err))
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
 	_ = json.NewEncoder(w).Encode(v)
+}
+
+func statusFromErr(err error) int {
+	if errors.Is(err, pgx.ErrNoRows) {
+		return http.StatusNotFound
+	}
+	low := strings.ToLower(err.Error())
+	switch {
+	case strings.Contains(low, "not found"), strings.Contains(low, "no such"), strings.Contains(low, "not connected"):
+		return http.StatusNotFound
+	case strings.Contains(low, "forbidden"), strings.Contains(low, "not allowed"):
+		return http.StatusForbidden
+	case strings.Contains(low, "invalid"), strings.Contains(low, "required"):
+		return http.StatusBadRequest
+	}
+	return http.StatusInternalServerError
 }

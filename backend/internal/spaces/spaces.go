@@ -283,7 +283,15 @@ func (s *Service) UploadFile(ctx context.Context, userID, spaceID, name, mime st
 	if err != nil {
 		return nil, err
 	}
-	defer tx.Rollback(ctx) //nolint:errcheck
+	// Use a fresh context for rollback so a cancelled request ctx (client
+	// disconnected mid-upload) doesn't leave the connection in a half-
+	// broken state. pgx returns the connection to the pool only if the
+	// rollback message actually goes through.
+	defer func() {
+		rbCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		_ = tx.Rollback(rbCtx)
+	}()
 
 	var f File
 	err = tx.QueryRow(ctx, `
@@ -467,6 +475,14 @@ func (s *Service) handleUpload(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "read: "+err.Error(), http.StatusBadRequest)
 		return
 	}
+	// Detect "hit the limit" right here: io.LimitReader stops at N+1
+	// returning a short read instead of an error, so without this check
+	// the caller can push almost 11 MB before the inner UploadFile
+	// re-checks at line 273.
+	if len(body) > maxUploadBytes {
+		http.Error(w, "file too large", http.StatusRequestEntityTooLarge)
+		return
+	}
 	mime := hdr.Header.Get("Content-Type")
 	if mime == "" {
 		mime = "application/octet-stream"
@@ -490,13 +506,43 @@ func (s *Service) handleContext(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, out, err)
 }
 
+// writeJSON serialises v or, when err != nil, picks an HTTP status code
+// from the error shape. Previously every error became 400 — including
+// lookups for missing resources and genuine DB outages — which confused
+// callers and hid real failures.
 func writeJSON(w http.ResponseWriter, v any, err error) {
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		http.Error(w, err.Error(), httpStatusFromErr(err))
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
 	_ = json.NewEncoder(w).Encode(v)
+}
+
+func httpStatusFromErr(err error) int {
+	if err == nil {
+		return http.StatusOK
+	}
+	if errors.Is(err, pgx.ErrNoRows) {
+		return http.StatusNotFound
+	}
+	s := err.Error()
+	low := strings.ToLower(s)
+	switch {
+	case strings.Contains(low, "not found"), strings.Contains(low, "no such"):
+		return http.StatusNotFound
+	case strings.Contains(low, "forbidden"), strings.Contains(low, "not allowed"):
+		return http.StatusForbidden
+	case strings.Contains(low, "too large"), strings.Contains(low, "exceeds"):
+		return http.StatusRequestEntityTooLarge
+	case strings.Contains(low, "invalid"), strings.Contains(low, "required"):
+		return http.StatusBadRequest
+	case strings.Contains(low, "conflict"), strings.Contains(low, "exists"):
+		return http.StatusConflict
+	}
+	// Unrecognised → 500. Genuine DB outages now surface correctly instead
+	// of being mis-reported as 400s.
+	return http.StatusInternalServerError
 }
 
 // ─── Text utilities ────────────────────────────────────────────────────────

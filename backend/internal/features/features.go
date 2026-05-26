@@ -26,6 +26,7 @@ import (
 	"github.com/babagemed/backend/internal/auth"
 	"github.com/babagemed/backend/internal/db"
 	"github.com/go-chi/chi/v5"
+	"github.com/jackc/pgx/v5"
 )
 
 const maxUploadBytes = 10 * 1024 * 1024 // 10 MB per file
@@ -189,12 +190,18 @@ func (s *Service) addFile(ctx context.Context, userID, slug, name, mime string, 
 }
 
 func (s *Service) removeFile(ctx context.Context, userID, slug, fileID string) (*Feature, error) {
-	_, err := s.db.Pool.Exec(ctx, `
+	tag, err := s.db.Pool.Exec(ctx, `
 		DELETE FROM feature_files
 		WHERE user_id = $1 AND slug = $2 AND id::text = $3
 	`, userID, slug, fileID)
 	if err != nil {
 		return nil, err
+	}
+	// Without this check, deleting a non-existent file returns the
+	// unchanged feature blob and the client can't tell "deleted" from
+	// "no-op" (helpful when retry-deleting from the UI is in flight).
+	if tag.RowsAffected() == 0 {
+		return nil, errors.New("file not found")
 	}
 	return s.get(ctx, userID, slug)
 }
@@ -270,7 +277,17 @@ func (s *Service) handleDeleteFile(w http.ResponseWriter, r *http.Request) {
 func writeJSON(w http.ResponseWriter, v any, err error) {
 	w.Header().Set("Content-Type", "application/json")
 	if err != nil {
-		w.WriteHeader(500)
+		code := 500
+		low := strings.ToLower(err.Error())
+		switch {
+		case errors.Is(err, pgx.ErrNoRows), strings.Contains(low, "not found"):
+			code = http.StatusNotFound
+		case strings.Contains(low, "forbidden"):
+			code = http.StatusForbidden
+		case strings.Contains(low, "invalid"), strings.Contains(low, "required"):
+			code = http.StatusBadRequest
+		}
+		w.WriteHeader(code)
 		_ = json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
 		return
 	}

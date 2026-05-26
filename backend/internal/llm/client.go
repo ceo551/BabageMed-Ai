@@ -197,16 +197,12 @@ func (c *Client) callAnthropic(ctx context.Context, req CompletionRequest) (*Com
 	if c.cfg.AnthropicKey == "" {
 		return nil, errors.New("ANTHROPIC_API_KEY not configured")
 	}
-	modelMap := map[string]string{
-		"opus-4.7":  "claude-opus-4-7",
-		"opus-4.6":  "claude-opus-4-6",
-		"sonnet":    "claude-sonnet-4-6",
-		"haiku":     "claude-haiku-4-5",
-	}
-	m, ok := modelMap[req.Model]
-	if !ok {
-		m = "claude-opus-4-7"
-	}
+	// Source of truth is anthropicModelMap (line 380). The local copy
+	// above had drifted — a client sending model="claude-3-5-sonnet"
+	// silently became Opus. Use the shared map and pass through unknown
+	// IDs verbatim so power users can target a freshly released model
+	// without a backend deploy.
+	m := resolveAnthropicModel(req.Model)
 	body, _ := json.Marshal(map[string]any{
 		"model":      m,
 		"max_tokens": 4096,
@@ -377,6 +373,10 @@ func (c *Client) callGoogle(ctx context.Context, req CompletionRequest) (*Comple
 
 // ─── Streaming implementations ─────────────────────────────────────────────
 // anthropicModelMap reused by both Complete and CompleteStream.
+//
+// Power users can also pass a fully-qualified model ID (anything starting
+// with "claude-") and we forward it verbatim, so a freshly-released
+// Anthropic model doesn't need a backend redeploy.
 var anthropicModelMap = map[string]string{
 	"opus-4.7": "claude-opus-4-7",
 	"opus-4.6": "claude-opus-4-6",
@@ -385,8 +385,19 @@ var anthropicModelMap = map[string]string{
 }
 
 func anthropicModel(id string) string {
+	return resolveAnthropicModel(id)
+}
+
+func resolveAnthropicModel(id string) string {
+	if id == "" {
+		return "claude-opus-4-7"
+	}
 	if m, ok := anthropicModelMap[id]; ok {
 		return m
+	}
+	// Pass through fully-qualified IDs unchanged.
+	if strings.HasPrefix(id, "claude-") {
+		return id
 	}
 	return "claude-opus-4-7"
 }
@@ -421,7 +432,7 @@ func (c *Client) streamAnthropic(ctx context.Context, req CompletionRequest, onD
 
 	var full strings.Builder
 	sc := bufio.NewScanner(res.Body)
-	sc.Buffer(make([]byte, 0, 64*1024), 1024*1024)
+	sc.Buffer(make([]byte, 0, 64*1024), 16*1024*1024) // 16 MiB — long thinking blocks easily exceed the default 64 KB
 	for sc.Scan() {
 		line := sc.Text()
 		if !strings.HasPrefix(line, "data: ") {
@@ -516,7 +527,7 @@ func (c *Client) streamVertexAnthropic(ctx context.Context, req CompletionReques
 
 	var full strings.Builder
 	sc := bufio.NewScanner(res.Body)
-	sc.Buffer(make([]byte, 0, 64*1024), 1024*1024)
+	sc.Buffer(make([]byte, 0, 64*1024), 16*1024*1024) // 16 MiB — long thinking blocks easily exceed the default 64 KB
 	for sc.Scan() {
 		line := sc.Text()
 		if !strings.HasPrefix(line, "data: ") {
@@ -612,7 +623,7 @@ func (c *Client) streamGoogle(ctx context.Context, req CompletionRequest, onDelt
 
 	var full strings.Builder
 	sc := bufio.NewScanner(res.Body)
-	sc.Buffer(make([]byte, 0, 64*1024), 4*1024*1024)
+	sc.Buffer(make([]byte, 0, 64*1024), 16*1024*1024)
 	for sc.Scan() {
 		line := sc.Text()
 		if !strings.HasPrefix(line, "data: ") {
@@ -671,7 +682,7 @@ func (c *Client) streamOpenAI(ctx context.Context, req CompletionRequest, onDelt
 
 	var full strings.Builder
 	sc := bufio.NewScanner(res.Body)
-	sc.Buffer(make([]byte, 0, 64*1024), 1024*1024)
+	sc.Buffer(make([]byte, 0, 64*1024), 16*1024*1024) // 16 MiB — long thinking blocks easily exceed the default 64 KB
 	for sc.Scan() {
 		line := sc.Text()
 		if !strings.HasPrefix(line, "data: ") {

@@ -3,12 +3,14 @@ package admin
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"strconv"
 
 	"github.com/babagemed/backend/internal/auth"
 	"github.com/babagemed/backend/internal/db"
 	"github.com/go-chi/chi/v5"
+	"github.com/jackc/pgx/v5"
 )
 
 type Handler struct {
@@ -124,7 +126,13 @@ func (h *Handler) GetUser(w http.ResponseWriter, r *http.Request) {
         FROM users WHERE id = $1
     `, id).Scan(&u.ID, &u.Email, &u.DisplayName, &u.Plan, &u.IsAdmin, &u.CreatedAt)
 	if err != nil {
-		writeErr(w, 404, "user not found")
+		// Distinguish "row doesn't exist" from a real DB outage so
+		// operators don't see "user not found" while Postgres is down.
+		if errors.Is(err, pgx.ErrNoRows) {
+			writeErr(w, 404, "user not found")
+			return
+		}
+		writeErr(w, 500, err.Error())
 		return
 	}
 	writeJSON(w, 200, u)
@@ -309,8 +317,13 @@ func (h *Handler) ListSessions(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) RevokeSession(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
-	if _, err := h.db.Pool.Exec(r.Context(), `DELETE FROM sessions WHERE id = $1`, id); err != nil {
+	tag, err := h.db.Pool.Exec(r.Context(), `DELETE FROM sessions WHERE id = $1`, id)
+	if err != nil {
 		writeErr(w, 500, err.Error())
+		return
+	}
+	if tag.RowsAffected() == 0 {
+		writeErr(w, 404, "session not found")
 		return
 	}
 	writeJSON(w, 200, map[string]bool{"ok": true})

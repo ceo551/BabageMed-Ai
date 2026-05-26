@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
@@ -125,11 +126,23 @@ func main() {
 	// long-running answers, not as a "hide leaks" knob.
 	r.Use(middleware.Timeout(5 * time.Minute))
 	r.Use(metrics.Middleware())
+	// CORS — wildcard origin + AllowCredentials=true is invalid per spec
+	// (browsers reject the response), so we read an explicit allow-list
+	// from CORS_ALLOWED_ORIGINS (comma-separated). PUBLIC_BASE_URL is
+	// always allowed because that's where the canonical web client lives.
+	// The Tauri desktop shell sends Origin "tauri://localhost" on macOS/
+	// Linux and "http://tauri.localhost" on Windows — both are added by
+	// default so signed-in users on desktop still work without operators
+	// having to remember to add them.
+	allowedOrigins := buildAllowedOrigins(
+		os.Getenv("CORS_ALLOWED_ORIGINS"),
+		os.Getenv("PUBLIC_BASE_URL"),
+	)
 	r.Use(cors.Handler(cors.Options{
-		AllowedOrigins:   []string{"*"},
-		AllowedMethods:   []string{"GET", "POST", "OPTIONS"},
-		AllowedHeaders:   []string{"*"},
-		ExposedHeaders:   []string{"Content-Type"},
+		AllowedOrigins:   allowedOrigins,
+		AllowedMethods:   []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
+		AllowedHeaders:   []string{"Authorization", "Content-Type", "X-Requested-With"},
+		ExposedHeaders:   []string{"Content-Type", "X-Trace-Id"},
 		AllowCredentials: true,
 		MaxAge:           300,
 	}))
@@ -140,11 +153,22 @@ func main() {
 	r.Get("/health", apiH.Health)
 	r.Method("GET", "/metrics", metrics.Handler())
 
-	// MCP browse + call — anonymous-readable
+	// MCP browse — anonymous-readable. The /call endpoint, however, runs
+	// real upstream queries (paid APIs, scrape jobs) so we gate it behind
+	// auth when the DB is configured. When auth is disabled (DEV mode
+	// without DATABASE_URL) the endpoint stays open so local development
+	// is unaffected.
 	r.Get("/api/mcp/servers", apiH.ListServers)
 	r.Get("/api/mcp/servers/{id}", apiH.GetServer)
 	r.Get("/api/mcp/servers/{id}/tools", apiH.ListTools)
-	r.Post("/api/mcp/call/{id}/{tool}", apiH.CallTool)
+	if authSvc != nil {
+		r.Group(func(pr chi.Router) {
+			pr.Use(authSvc.Required)
+			pr.Post("/api/mcp/call/{id}/{tool}", apiH.CallTool)
+		})
+	} else {
+		r.Post("/api/mcp/call/{id}/{tool}", apiH.CallTool)
+	}
 
 	// Chat — usable anonymously, but if auth is on we'll persist messages.
 	r.Post("/api/chat", apiH.Chat)
@@ -170,13 +194,27 @@ func main() {
 	if payStore != nil {
 		payH.WithStore(payStore)
 	}
+	if authSvc != nil {
+		payH.WithAuth(authSvc)
+	}
 	payH.Register(r)
 
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "8080"
 	}
-	srv := &http.Server{Addr: ":" + port, Handler: r, ReadHeaderTimeout: 10 * time.Second}
+	srv := &http.Server{
+		Addr:              ":" + port,
+		Handler:           r,
+		ReadHeaderTimeout: 10 * time.Second,
+		// ReadTimeout 2× the chi Timeout middleware so slow uploaders
+		// (e.g. mobile networks finishing a multi-MB Space upload) aren't
+		// cut off mid-body. IdleTimeout matches typical reverse-proxy
+		// keep-alive caps so dead connections don't camp on goroutines.
+		ReadTimeout:  10 * time.Minute,
+		WriteTimeout: 10 * time.Minute,
+		IdleTimeout:  120 * time.Second,
+	}
 
 	go func() {
 		log.Printf("backend listening on :%s", port)
@@ -197,4 +235,39 @@ func main() {
 	if shutdownTracing != nil {
 		_ = shutdownTracing(ctx)
 	}
+}
+
+// buildAllowedOrigins assembles the CORS allow-list from env. Empty
+// PUBLIC_BASE_URL is OK during local dev — we fall back to a sensible
+// set of localhost origins so `npm run dev` works out of the box.
+func buildAllowedOrigins(csv, publicBase string) []string {
+	seen := map[string]bool{}
+	out := []string{}
+	add := func(o string) {
+		o = strings.TrimSpace(strings.TrimRight(o, "/"))
+		if o == "" || seen[o] {
+			return
+		}
+		seen[o] = true
+		out = append(out, o)
+	}
+	for _, o := range strings.Split(csv, ",") {
+		add(o)
+	}
+	add(publicBase)
+	// Tauri desktop shells.
+	add("tauri://localhost")
+	add("http://tauri.localhost")
+	// Local dev — Next.js dev server + the desktop dev WebView.
+	if publicBase == "" {
+		add("http://localhost:3000")
+		add("http://127.0.0.1:3000")
+	}
+	if len(out) == 0 {
+		// Last-resort: be safe and only allow same-origin
+		// (no Origin header). Returning [] would make chi/cors panic on
+		// startup, so use a sentinel that matches nothing useful.
+		out = append(out, "http://invalid.local")
+	}
+	return out
 }

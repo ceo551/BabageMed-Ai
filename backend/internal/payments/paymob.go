@@ -12,6 +12,7 @@ package payments
 
 import (
 	"bytes"
+	"context"
 	"crypto/hmac"
 	"crypto/sha512"
 	"encoding/hex"
@@ -75,7 +76,7 @@ type PaymobCheckout struct {
 }
 
 // Checkout creates a full Paymob order and returns the hosted iframe URL.
-func (p *Paymob) Checkout(planID string, b BillingInfo) (*PaymobCheckout, error) {
+func (p *Paymob) Checkout(ctx context.Context, planID string, b BillingInfo) (*PaymobCheckout, error) {
 	if !p.Configured() {
 		return nil, errors.New("paymob not configured")
 	}
@@ -86,13 +87,13 @@ func (p *Paymob) Checkout(planID string, b BillingInfo) (*PaymobCheckout, error)
 
 	// 1. Auth
 	auth := &paymobAuthResp{}
-	if err := p.post("/api/auth/tokens", map[string]any{"api_key": p.apiKey}, auth, ""); err != nil {
+	if err := p.post(ctx, "/api/auth/tokens", map[string]any{"api_key": p.apiKey}, auth, ""); err != nil {
 		return nil, fmt.Errorf("paymob auth: %w", err)
 	}
 
 	// 2. Order
 	order := &paymobOrderResp{}
-	if err := p.post("/api/ecommerce/orders", map[string]any{
+	if err := p.post(ctx, "/api/ecommerce/orders", map[string]any{
 		"auth_token":      auth.Token,
 		"delivery_needed": false,
 		"amount_cents":    plan.EGP,
@@ -133,7 +134,7 @@ func (p *Paymob) Checkout(planID string, b BillingInfo) (*PaymobCheckout, error)
 	}
 	intID, _ := strconv.Atoi(p.integrationID)
 	key := &paymobKeyResp{}
-	if err := p.post("/api/acceptance/payment_keys", map[string]any{
+	if err := p.post(ctx, "/api/acceptance/payment_keys", map[string]any{
 		"auth_token":     auth.Token,
 		"amount_cents":   plan.EGP,
 		"expiration":     3600,
@@ -228,9 +229,12 @@ func keepSorted(in []string) []string {
 	return out
 }
 
-func (p *Paymob) post(path string, body any, out any, bearer string) error {
+func (p *Paymob) post(ctx context.Context, path string, body any, out any, bearer string) error {
 	buf, _ := json.Marshal(body)
-	req, _ := http.NewRequest("POST", "https://accept.paymob.com"+path, bytes.NewReader(buf))
+	req, err := http.NewRequestWithContext(ctx, "POST", "https://accept.paymob.com"+path, bytes.NewReader(buf))
+	if err != nil {
+		return err
+	}
 	req.Header.Set("content-type", "application/json")
 	if bearer != "" {
 		req.Header.Set("Authorization", "Bearer "+bearer)

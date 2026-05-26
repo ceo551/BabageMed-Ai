@@ -14,6 +14,7 @@ import (
 
 	"github.com/babagemed/backend/internal/db"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -342,8 +343,18 @@ func looksLikeEmail(s string) bool {
 	return at > 0 && dot > at+1 && dot < len(s)-1
 }
 
+// isUniqueViolation matches Postgres's unique_violation SQLSTATE rather
+// than a substring of the localised error message — the latter breaks
+// silently when the DB locale changes or pgx wraps the error.
 func isUniqueViolation(err error) bool {
-	return strings.Contains(err.Error(), "duplicate key") || strings.Contains(err.Error(), "unique constraint")
+	var pgErr *pgconn.PgError
+	if errors.As(err, &pgErr) {
+		return pgErr.Code == "23505"
+	}
+	// Belt-and-braces fallback for already-wrapped errors that escape
+	// `errors.As` (custom wrappers in callers).
+	s := err.Error()
+	return strings.Contains(s, "duplicate key") || strings.Contains(s, "unique constraint") || strings.Contains(s, "SQLSTATE 23505")
 }
 
 func isSecure(r *http.Request) bool {

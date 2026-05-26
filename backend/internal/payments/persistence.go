@@ -3,6 +3,7 @@ package payments
 import (
 	"context"
 	"encoding/json"
+	"time"
 
 	"github.com/babagemed/backend/internal/db"
 )
@@ -31,7 +32,14 @@ func (s *Store) Record(ctx context.Context, userID *string, provider, externalID
 	return err
 }
 
-// MarkPaid + bump user's plan if user is linked.
+// MarkPaid flips a payment row to "paid" and bumps the linked user's plan.
+//
+// IMPORTANT: the user's plan is derived from the persisted `plan_id` on the
+// payments row, NOT from the planID argument. The Paymob webhook is fired
+// with no planID (the upstream payload doesn't carry it), so trusting the
+// argument would downgrade every paying user to "free" via the default
+// branch of planFromPlanID(""). Looking it up RETURNING is self-healing:
+// the value was already recorded at checkout time.
 func (s *Store) MarkPaid(ctx context.Context, provider, externalID, planID string) error {
 	if s == nil || s.DB == nil {
 		return nil
@@ -40,19 +48,34 @@ func (s *Store) MarkPaid(ctx context.Context, provider, externalID, planID strin
 	if err != nil {
 		return err
 	}
-	defer tx.Rollback(ctx)
+	// Rollback uses a fresh context: the request context may already be
+	// cancelled if the webhook caller hung up, and pgx requires a live ctx
+	// to send the rollback message — otherwise the connection is dropped
+	// into the pool in a half-broken state.
+	defer func() {
+		rbCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		_ = tx.Rollback(rbCtx)
+	}()
 
 	var userID *string
+	var rowPlanID string
 	err = tx.QueryRow(ctx, `
         UPDATE payments SET status = 'paid'
         WHERE provider = $1 AND external_id = $2
-        RETURNING user_id
-    `, provider, externalID).Scan(&userID)
+        RETURNING user_id, COALESCE(plan_id, '')
+    `, provider, externalID).Scan(&userID, &rowPlanID)
 	if err != nil {
 		return err
 	}
-	if userID != nil {
-		if _, err := tx.Exec(ctx, `UPDATE users SET plan = $1 WHERE id = $2`, planFromPlanID(planID), *userID); err != nil {
+	// Fall back to the argument only if the persisted value is empty
+	// (legacy rows from before this column was populated).
+	effective := rowPlanID
+	if effective == "" {
+		effective = planID
+	}
+	if userID != nil && effective != "" {
+		if _, err := tx.Exec(ctx, `UPDATE users SET plan = $1 WHERE id = $2`, planFromPlanID(effective), *userID); err != nil {
 			return err
 		}
 	}

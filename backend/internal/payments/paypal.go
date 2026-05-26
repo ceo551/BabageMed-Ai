@@ -10,6 +10,7 @@ package payments
 
 import (
 	"bytes"
+	"context"
 	"encoding/base64"
 	"encoding/json"
 	"errors"
@@ -53,14 +54,17 @@ func (p *PayPal) Configured() bool {
 	return p.clientID != "" && p.clientSecret != ""
 }
 
-func (p *PayPal) accessToken() (string, error) {
+func (p *PayPal) accessToken(ctx context.Context) (string, error) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 	if p.token != "" && time.Now().Before(p.tExp) {
 		return p.token, nil
 	}
 	creds := base64.StdEncoding.EncodeToString([]byte(p.clientID + ":" + p.clientSecret))
-	req, _ := http.NewRequest("POST", p.base+"/v1/oauth2/token", bytes.NewBufferString("grant_type=client_credentials"))
+	req, err := http.NewRequestWithContext(ctx, "POST", p.base+"/v1/oauth2/token", bytes.NewBufferString("grant_type=client_credentials"))
+	if err != nil {
+		return "", err
+	}
 	req.Header.Set("Authorization", "Basic "+creds)
 	req.Header.Set("content-type", "application/x-www-form-urlencoded")
 	res, err := p.http.Do(req)
@@ -79,8 +83,18 @@ func (p *PayPal) accessToken() (string, error) {
 	if err := json.Unmarshal(raw, &out); err != nil {
 		return "", err
 	}
+	// Clamp: a malformed `expires_in: 0` would yield a token timestamp 60 s
+	// in the past, triggering a token refresh on every subsequent call.
+	// PayPal typically returns 32400 (9 hours); cap at [60, 86400].
+	exp := out.ExpiresIn
+	if exp < 120 {
+		exp = 120
+	}
+	if exp > 86400 {
+		exp = 86400
+	}
 	p.token = out.AccessToken
-	p.tExp = time.Now().Add(time.Duration(out.ExpiresIn-60) * time.Second)
+	p.tExp = time.Now().Add(time.Duration(exp-60) * time.Second)
 	return p.token, nil
 }
 
@@ -89,7 +103,7 @@ type PayPalCheckout struct {
 	ApproveURL string `json:"approve_url"`
 }
 
-func (p *PayPal) Checkout(planID, returnURL, cancelURL string) (*PayPalCheckout, error) {
+func (p *PayPal) Checkout(ctx context.Context, planID, returnURL, cancelURL string) (*PayPalCheckout, error) {
 	if !p.Configured() {
 		return nil, errors.New("paypal not configured")
 	}
@@ -97,7 +111,7 @@ func (p *PayPal) Checkout(planID, returnURL, cancelURL string) (*PayPalCheckout,
 	if !ok {
 		return nil, errors.New("unknown plan")
 	}
-	tok, err := p.accessToken()
+	tok, err := p.accessToken(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -110,15 +124,18 @@ func (p *PayPal) Checkout(planID, returnURL, cancelURL string) (*PayPalCheckout,
 			"amount":       map[string]string{"currency_code": "USD", "value": dollars},
 		}},
 		"application_context": map[string]any{
-			"brand_name":           "Babbage AI",
-			"landing_page":         "NO_PREFERENCE",
-			"shipping_preference":  "NO_SHIPPING",
-			"user_action":          "PAY_NOW",
-			"return_url":           returnURL,
-			"cancel_url":           cancelURL,
+			"brand_name":          "Babbage AI",
+			"landing_page":        "NO_PREFERENCE",
+			"shipping_preference": "NO_SHIPPING",
+			"user_action":         "PAY_NOW",
+			"return_url":          returnURL,
+			"cancel_url":          cancelURL,
 		},
 	})
-	req, _ := http.NewRequest("POST", p.base+"/v2/checkout/orders", bytes.NewReader(body))
+	req, err := http.NewRequestWithContext(ctx, "POST", p.base+"/v2/checkout/orders", bytes.NewReader(body))
+	if err != nil {
+		return nil, err
+	}
 	req.Header.Set("Authorization", "Bearer "+tok)
 	req.Header.Set("content-type", "application/json")
 	res, err := p.http.Do(req)
@@ -150,12 +167,15 @@ func (p *PayPal) Checkout(planID, returnURL, cancelURL string) (*PayPalCheckout,
 }
 
 // Capture finalises payment after the user approves on PayPal.
-func (p *PayPal) Capture(orderID string) (map[string]any, error) {
-	tok, err := p.accessToken()
+func (p *PayPal) Capture(ctx context.Context, orderID string) (map[string]any, error) {
+	tok, err := p.accessToken(ctx)
 	if err != nil {
 		return nil, err
 	}
-	req, _ := http.NewRequest("POST", p.base+"/v2/checkout/orders/"+orderID+"/capture", bytes.NewReader([]byte("{}")))
+	req, err := http.NewRequestWithContext(ctx, "POST", p.base+"/v2/checkout/orders/"+orderID+"/capture", bytes.NewReader([]byte("{}")))
+	if err != nil {
+		return nil, err
+	}
 	req.Header.Set("Authorization", "Bearer "+tok)
 	req.Header.Set("content-type", "application/json")
 	res, err := p.http.Do(req)
@@ -173,16 +193,20 @@ func (p *PayPal) Capture(orderID string) (map[string]any, error) {
 }
 
 // VerifyWebhook calls PayPal's signature-verification endpoint. Returns true on success.
-func (p *PayPal) VerifyWebhook(headers http.Header, body []byte) (bool, error) {
+func (p *PayPal) VerifyWebhook(ctx context.Context, headers http.Header, body []byte) (bool, error) {
 	if p.webhookID == "" {
 		return false, errors.New("PAYPAL_WEBHOOK_ID not set")
 	}
-	tok, err := p.accessToken()
+	tok, err := p.accessToken(ctx)
 	if err != nil {
 		return false, err
 	}
+	// A malformed body that fails to parse should be a 400, not a 401 —
+	// we surface a typed error so the handler can return the right code.
 	var event any
-	_ = json.Unmarshal(body, &event)
+	if err := json.Unmarshal(body, &event); err != nil {
+		return false, fmt.Errorf("bad webhook body: %w", err)
+	}
 	req, _ := json.Marshal(map[string]any{
 		"transmission_id":   headers.Get("Paypal-Transmission-Id"),
 		"transmission_time": headers.Get("Paypal-Transmission-Time"),
@@ -192,7 +216,10 @@ func (p *PayPal) VerifyWebhook(headers http.Header, body []byte) (bool, error) {
 		"webhook_id":        p.webhookID,
 		"webhook_event":     event,
 	})
-	r, _ := http.NewRequest("POST", p.base+"/v1/notifications/verify-webhook-signature", bytes.NewReader(req))
+	r, err := http.NewRequestWithContext(ctx, "POST", p.base+"/v1/notifications/verify-webhook-signature", bytes.NewReader(req))
+	if err != nil {
+		return false, err
+	}
 	r.Header.Set("Authorization", "Bearer "+tok)
 	r.Header.Set("content-type", "application/json")
 	res, err := p.http.Do(r)
@@ -204,7 +231,9 @@ func (p *PayPal) VerifyWebhook(headers http.Header, body []byte) (bool, error) {
 	if res.StatusCode >= 400 {
 		return false, fmt.Errorf("verify: %s: %s", res.Status, string(raw))
 	}
-	var out struct{ VerificationStatus string `json:"verification_status"` }
+	var out struct {
+		VerificationStatus string `json:"verification_status"`
+	}
 	_ = json.Unmarshal(raw, &out)
 	return out.VerificationStatus == "SUCCESS", nil
 }

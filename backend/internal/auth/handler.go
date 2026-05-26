@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"strings"
 
 	"github.com/go-chi/chi/v5"
 )
@@ -66,11 +67,27 @@ func (h *Handler) login(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) logout(w http.ResponseWriter, r *http.Request) {
-	if c, err := r.Cookie(CookieName); err == nil {
+	// Accept the session token from either the cookie or
+	// Authorization: Bearer <token>. Without the bearer path, native
+	// clients (mobile/desktop) that authenticate via header alone could
+	// never invalidate their session server-side — a stolen token would
+	// stay valid until expiry.
+	if c, err := r.Cookie(CookieName); err == nil && c.Value != "" {
 		_ = h.s.Logout(r.Context(), c.Value)
+	}
+	if tok := bearerToken(r); tok != "" {
+		_ = h.s.Logout(r.Context(), tok)
 	}
 	ClearCookie(w, r)
 	writeJSON(w, 200, map[string]bool{"ok": true})
+}
+
+func bearerToken(r *http.Request) string {
+	h := r.Header.Get("Authorization")
+	if !strings.HasPrefix(h, "Bearer ") {
+		return ""
+	}
+	return strings.TrimSpace(strings.TrimPrefix(h, "Bearer "))
 }
 
 func (h *Handler) me(w http.ResponseWriter, r *http.Request) {
