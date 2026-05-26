@@ -2,13 +2,13 @@ import { McpServer } from "@babagemed/mcp-base";
 import { registerTools } from "./tools.js";
 
 const server = new McpServer({
-  id:       "canva-enterprise",
-  name:     "Canva Enterprise",
-  kind:     "api",
+  id: "canva-enterprise",
+  name: "Canva Enterprise",
+  kind: "stub",
   category: "creative",
-  base:     "",
-  port:     6554,
-  version:  "0.1.0",
+  base: "",
+  port: 6554,
+  version: "0.1.0",
 });
 
 registerTools(server);

@@ -2,13 +2,13 @@ import { McpServer } from "@babagemed/mcp-base";
 import { registerTools } from "./tools.js";
 
 const server = new McpServer({
-  id:       "google-forms",
-  name:     "Google Forms",
-  kind:     "api",
+  id: "google-forms",
+  name: "Google Forms",
+  kind: "stub",
   category: "productivity",
-  base:     "",
-  port:     6538,
-  version:  "0.1.0",
+  base: "",
+  port: 6538,
+  version: "0.1.0",
 });
 
 registerTools(server);

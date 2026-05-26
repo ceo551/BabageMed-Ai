@@ -198,10 +198,17 @@ export function registerTools(server: McpServer) {
   // up accepting any article on academic.oup.com — including sibling
   // journals — as a result of this MCP. Preserve the path when present
   // so the prefix actually constrains to the relevant section.
-  const baseUrl = new URL(s.base);
-  const origin = baseUrl.pathname && baseUrl.pathname !== "/"
-    ? baseUrl.origin + baseUrl.pathname.replace(/\/+$/, "")
-    : baseUrl.origin;
+  let origin = "";
+  if (s.base) {
+    try {
+      const baseUrl = new URL(s.base);
+      origin = baseUrl.pathname && baseUrl.pathname !== "/"
+        ? baseUrl.origin + baseUrl.pathname.replace(/\/+$/, "")
+        : baseUrl.origin;
+    } catch {
+      origin = s.base; // best-effort, leave as-is for malformed entries
+    }
+  }
   return `import { z, McpServer, Scraper, cheerioLoad } from "@babagemed/mcp-base";
 
 const scraper = new Scraper({
@@ -325,5 +332,14 @@ compose.push("  babagemed:");
 compose.push("    name: babagemed");
 compose.push("    driver: bridge");
 w(join(ROOT, "docker-compose.mcps.yml"), compose.join("\n"));
+
+// Regenerate mcps-all.txt for the Helm chart + CI sharding. The previous
+// file was hand-maintained and silently drifted from the manifest.
+const allTxt = MANIFEST.servers.map((s) => s.id).join(" ");
+w(join(ROOT, "infra/helm/babagemed/mcps-all.txt"), allTxt + "\n");
+
+// Also emit mcps-index.json (the chart consumes this for templating).
+const indexJson = MANIFEST.servers.map((s) => ({ id: s.id, port: s.port, kind: s.kind, category: s.category }));
+w(join(ROOT, "infra/helm/babagemed/mcps-index.json"), JSON.stringify(indexJson, null, 2) + "\n");
 
 console.log(`generated ${written} MCP servers`);

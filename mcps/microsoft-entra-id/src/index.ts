@@ -2,13 +2,13 @@ import { McpServer } from "@babagemed/mcp-base";
 import { registerTools } from "./tools.js";
 
 const server = new McpServer({
-  id:       "microsoft-entra-id",
-  name:     "Microsoft Entra ID",
-  kind:     "api",
+  id: "microsoft-entra-id",
+  name: "Microsoft Entra ID",
+  kind: "stub",
   category: "operations",
-  base:     "",
-  port:     6592,
-  version:  "0.1.0",
+  base: "",
+  port: 6592,
+  version: "0.1.0",
 });
 
 registerTools(server);

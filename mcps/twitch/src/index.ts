@@ -2,13 +2,13 @@ import { McpServer } from "@babagemed/mcp-base";
 import { registerTools } from "./tools.js";
 
 const server = new McpServer({
-  id:       "twitch",
-  name:     "Twitch",
-  kind:     "api",
+  id: "twitch",
+  name: "Twitch",
+  kind: "stub",
   category: "creative",
-  base:     "",
-  port:     6541,
-  version:  "0.1.0",
+  base: "",
+  port: 6541,
+  version: "0.1.0",
 });
 
 registerTools(server);

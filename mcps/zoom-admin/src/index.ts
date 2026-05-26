@@ -2,13 +2,13 @@ import { McpServer } from "@babagemed/mcp-base";
 import { registerTools } from "./tools.js";
 
 const server = new McpServer({
-  id:       "zoom-admin",
-  name:     "Zoom Admin",
-  kind:     "api",
+  id: "zoom-admin",
+  name: "Zoom Admin",
+  kind: "stub",
   category: "communication",
-  base:     "",
-  port:     6568,
-  version:  "0.1.0",
+  base: "",
+  port: 6568,
+  version: "0.1.0",
 });
 
 registerTools(server);

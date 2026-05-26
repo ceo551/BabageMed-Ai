@@ -2,13 +2,13 @@ import { McpServer } from "@babagemed/mcp-base";
 import { registerTools } from "./tools.js";
 
 const server = new McpServer({
-  id:       "mixpanel",
-  name:     "Mixpanel",
-  kind:     "api",
+  id: "mixpanel",
+  name: "Mixpanel",
+  kind: "stub",
   category: "analytics",
-  base:     "",
-  port:     6677,
-  version:  "0.1.0",
+  base: "",
+  port: 6677,
+  version: "0.1.0",
 });
 
 registerTools(server);

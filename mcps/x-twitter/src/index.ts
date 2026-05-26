@@ -2,13 +2,13 @@ import { McpServer } from "@babagemed/mcp-base";
 import { registerTools } from "./tools.js";
 
 const server = new McpServer({
-  id:       "x-twitter",
-  name:     "X (Twitter)",
-  kind:     "api",
+  id: "x-twitter",
+  name: "X (Twitter)",
+  kind: "stub",
   category: "communication",
-  base:     "",
-  port:     6565,
-  version:  "0.1.0",
+  base: "",
+  port: 6565,
+  version: "0.1.0",
 });
 
 registerTools(server);

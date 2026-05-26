@@ -2,13 +2,13 @@ import { McpServer } from "@babagemed/mcp-base";
 import { registerTools } from "./tools.js";
 
 const server = new McpServer({
-  id:       "hubspot",
-  name:     "HubSpot",
-  kind:     "api",
+  id: "hubspot",
+  name: "HubSpot",
+  kind: "stub",
   category: "sales",
-  base:     "",
-  port:     6531,
-  version:  "0.1.0",
+  base: "",
+  port: 6531,
+  version: "0.1.0",
 });
 
 registerTools(server);

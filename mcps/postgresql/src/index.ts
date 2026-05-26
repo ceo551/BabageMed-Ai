@@ -2,13 +2,13 @@ import { McpServer } from "@babagemed/mcp-base";
 import { registerTools } from "./tools.js";
 
 const server = new McpServer({
-  id:       "postgresql",
-  name:     "PostgreSQL",
-  kind:     "api",
+  id: "postgresql",
+  name: "PostgreSQL",
+  kind: "stub",
   category: "data",
-  base:     "",
-  port:     6713,
-  version:  "0.1.0",
+  base: "",
+  port: 6713,
+  version: "0.1.0",
 });
 
 registerTools(server);

@@ -2,13 +2,13 @@ import { McpServer } from "@babagemed/mcp-base";
 import { registerTools } from "./tools.js";
 
 const server = new McpServer({
-  id:       "close",
-  name:     "Close",
-  kind:     "api",
+  id: "close",
+  name: "Close",
+  kind: "stub",
   category: "sales",
-  base:     "",
-  port:     6634,
-  version:  "0.1.0",
+  base: "",
+  port: 6634,
+  version: "0.1.0",
 });
 
 registerTools(server);

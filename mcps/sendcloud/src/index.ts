@@ -2,13 +2,13 @@ import { McpServer } from "@babagemed/mcp-base";
 import { registerTools } from "./tools.js";
 
 const server = new McpServer({
-  id:       "sendcloud",
-  name:     "Sendcloud",
-  kind:     "api",
+  id: "sendcloud",
+  name: "Sendcloud",
+  kind: "stub",
   category: "operations",
-  base:     "",
-  port:     6584,
-  version:  "0.1.0",
+  base: "",
+  port: 6584,
+  version: "0.1.0",
 });
 
 registerTools(server);

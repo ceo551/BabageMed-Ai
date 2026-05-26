@@ -2,13 +2,13 @@ import { McpServer } from "@babagemed/mcp-base";
 import { registerTools } from "./tools.js";
 
 const server = new McpServer({
-  id:       "typeform",
-  name:     "Typeform",
-  kind:     "api",
+  id: "typeform",
+  name: "Typeform",
+  kind: "stub",
   category: "productivity",
-  base:     "",
-  port:     6643,
-  version:  "0.1.0",
+  base: "",
+  port: 6643,
+  version: "0.1.0",
 });
 
 registerTools(server);

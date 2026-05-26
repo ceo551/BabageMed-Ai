@@ -2,13 +2,13 @@ import { McpServer } from "@babagemed/mcp-base";
 import { registerTools } from "./tools.js";
 
 const server = new McpServer({
-  id:       "figma",
-  name:     "Figma",
-  kind:     "api",
+  id: "figma",
+  name: "Figma",
+  kind: "stub",
   category: "creative",
-  base:     "",
-  port:     6553,
-  version:  "0.1.0",
+  base: "",
+  port: 6553,
+  version: "0.1.0",
 });
 
 registerTools(server);

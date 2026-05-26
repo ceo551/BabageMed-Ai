@@ -2,13 +2,13 @@ import { McpServer } from "@babagemed/mcp-base";
 import { registerTools } from "./tools.js";
 
 const server = new McpServer({
-  id:       "tidycal",
-  name:     "TidyCal",
-  kind:     "api",
+  id: "tidycal",
+  name: "TidyCal",
+  kind: "stub",
   category: "productivity",
-  base:     "",
-  port:     6672,
-  version:  "0.1.0",
+  base: "",
+  port: 6672,
+  version: "0.1.0",
 });
 
 registerTools(server);

@@ -2,13 +2,13 @@ import { McpServer } from "@babagemed/mcp-base";
 import { registerTools } from "./tools.js";
 
 const server = new McpServer({
-  id:       "atlassian",
-  name:     "Atlassian (Jira/Confluence)",
-  kind:     "api",
+  id: "atlassian",
+  name: "Atlassian (Jira/Confluence)",
+  kind: "stub",
   category: "operations",
-  base:     "",
-  port:     6580,
-  version:  "0.1.0",
+  base: "",
+  port: 6580,
+  version: "0.1.0",
 });
 
 registerTools(server);

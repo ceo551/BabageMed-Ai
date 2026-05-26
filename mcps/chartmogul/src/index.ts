@@ -2,13 +2,13 @@ import { McpServer } from "@babagemed/mcp-base";
 import { registerTools } from "./tools.js";
 
 const server = new McpServer({
-  id:       "chartmogul",
-  name:     "ChartMogul",
-  kind:     "api",
+  id: "chartmogul",
+  name: "ChartMogul",
+  kind: "stub",
   category: "analytics",
-  base:     "",
-  port:     6682,
-  version:  "0.1.0",
+  base: "",
+  port: 6682,
+  version: "0.1.0",
 });
 
 registerTools(server);

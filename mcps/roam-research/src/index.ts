@@ -2,13 +2,13 @@ import { McpServer } from "@babagemed/mcp-base";
 import { registerTools } from "./tools.js";
 
 const server = new McpServer({
-  id:       "roam-research",
-  name:     "Roam Research",
-  kind:     "api",
+  id: "roam-research",
+  name: "Roam Research",
+  kind: "stub",
   category: "productivity",
-  base:     "",
-  port:     6669,
-  version:  "0.1.0",
+  base: "",
+  port: 6669,
+  version: "0.1.0",
 });
 
 registerTools(server);

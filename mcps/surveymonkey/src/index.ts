@@ -2,13 +2,13 @@ import { McpServer } from "@babagemed/mcp-base";
 import { registerTools } from "./tools.js";
 
 const server = new McpServer({
-  id:       "surveymonkey",
-  name:     "SurveyMonkey",
-  kind:     "api",
+  id: "surveymonkey",
+  name: "SurveyMonkey",
+  kind: "stub",
   category: "productivity",
-  base:     "",
-  port:     6666,
-  version:  "0.1.0",
+  base: "",
+  port: 6666,
+  version: "0.1.0",
 });
 
 registerTools(server);

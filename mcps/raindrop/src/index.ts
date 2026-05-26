@@ -2,13 +2,13 @@ import { McpServer } from "@babagemed/mcp-base";
 import { registerTools } from "./tools.js";
 
 const server = new McpServer({
-  id:       "raindrop",
-  name:     "Raindrop.io",
-  kind:     "api",
+  id: "raindrop",
+  name: "Raindrop.io",
+  kind: "stub",
   category: "productivity",
-  base:     "",
-  port:     6653,
-  version:  "0.1.0",
+  base: "",
+  port: 6653,
+  version: "0.1.0",
 });
 
 registerTools(server);

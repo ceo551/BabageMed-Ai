@@ -2,13 +2,13 @@ import { McpServer } from "@babagemed/mcp-base";
 import { registerTools } from "./tools.js";
 
 const server = new McpServer({
-  id:       "findymail",
-  name:     "Findymail",
-  kind:     "api",
+  id: "findymail",
+  name: "Findymail",
+  kind: "stub",
   category: "sales",
-  base:     "",
-  port:     6546,
-  version:  "0.1.0",
+  base: "",
+  port: 6546,
+  version: "0.1.0",
 });
 
 registerTools(server);

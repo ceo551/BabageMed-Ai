@@ -2,13 +2,13 @@ import { McpServer } from "@babagemed/mcp-base";
 import { registerTools } from "./tools.js";
 
 const server = new McpServer({
-  id:       "strava",
-  name:     "Strava",
-  kind:     "api",
+  id: "strava",
+  name: "Strava",
+  kind: "stub",
   category: "lifestyle",
-  base:     "",
-  port:     6550,
-  version:  "0.1.0",
+  base: "",
+  port: 6550,
+  version: "0.1.0",
 });
 
 registerTools(server);

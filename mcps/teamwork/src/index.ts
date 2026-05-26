@@ -2,13 +2,13 @@ import { McpServer } from "@babagemed/mcp-base";
 import { registerTools } from "./tools.js";
 
 const server = new McpServer({
-  id:       "teamwork",
-  name:     "Teamwork",
-  kind:     "api",
+  id: "teamwork",
+  name: "Teamwork",
+  kind: "stub",
   category: "operations",
-  base:     "",
-  port:     6651,
-  version:  "0.1.0",
+  base: "",
+  port: 6651,
+  version: "0.1.0",
 });
 
 registerTools(server);

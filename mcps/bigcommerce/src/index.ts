@@ -2,13 +2,13 @@ import { McpServer } from "@babagemed/mcp-base";
 import { registerTools } from "./tools.js";
 
 const server = new McpServer({
-  id:       "bigcommerce",
-  name:     "BigCommerce",
-  kind:     "api",
+  id: "bigcommerce",
+  name: "BigCommerce",
+  kind: "stub",
   category: "operations",
-  base:     "",
-  port:     6747,
-  version:  "0.1.0",
+  base: "",
+  port: 6747,
+  version: "0.1.0",
 });
 
 registerTools(server);

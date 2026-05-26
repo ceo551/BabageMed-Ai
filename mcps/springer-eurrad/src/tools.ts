@@ -3,7 +3,7 @@ import { z, McpServer, Scraper, cheerioLoad } from "@babagemed/mcp-base";
 const scraper = new Scraper({
   base: "https://link.springer.com/journal/330",
   userAgent: process.env.SCRAPER_USER_AGENT,
-  rps: Number(process.env.SCRAPER_RATE_RPS || 1),
+  rps: Number(process.env.SCRAPER_RATE_RPS ?? 1) || 1,
   timeoutMs: Number(process.env.SCRAPER_TIMEOUT_MS || 30000),
   headless: (process.env.SCRAPER_HEADLESS ?? "true") !== "false",
   cacheTtlSec: Number(process.env.SCRAPER_CACHE_TTL_SEC || 86400),
@@ -17,7 +17,7 @@ const SEL_RESULT  = ".app-card, .c-list-group__item, .toc-item";
 const SEL_TITLE   = "h3 a, .c-card__title a";
 const SEL_LINK    = "h3 a, .c-card__title a";
 const SEL_SNIPPET = ".c-card__summary, .toc-item-text";
-const ORIGIN      = "https://link.springer.com";
+const ORIGIN      = "https://link.springer.com/journal/330";
 
 export function registerTools(server: McpServer) {
   server.tool({

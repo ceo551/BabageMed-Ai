@@ -2,13 +2,13 @@ import { McpServer } from "@babagemed/mcp-base";
 import { registerTools } from "./tools.js";
 
 const server = new McpServer({
-  id:       "acuity-scheduling",
-  name:     "Acuity Scheduling",
-  kind:     "api",
+  id: "acuity-scheduling",
+  name: "Acuity Scheduling",
+  kind: "stub",
   category: "productivity",
-  base:     "",
-  port:     6663,
-  version:  "0.1.0",
+  base: "",
+  port: 6663,
+  version: "0.1.0",
 });
 
 registerTools(server);

@@ -2,13 +2,13 @@ import { McpServer } from "@babagemed/mcp-base";
 import { registerTools } from "./tools.js";
 
 const server = new McpServer({
-  id:       "mailchimp",
-  name:     "Mailchimp",
-  kind:     "api",
+  id: "mailchimp",
+  name: "Mailchimp",
+  kind: "stub",
   category: "marketing",
-  base:     "",
-  port:     6738,
-  version:  "0.1.0",
+  base: "",
+  port: 6738,
+  version: "0.1.0",
 });
 
 registerTools(server);

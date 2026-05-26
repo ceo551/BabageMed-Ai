@@ -1,7 +1,10 @@
 # Build stage — context is repo root
+# NOTE: kept BuildKit-free (no `# syntax=` directive, no `--mount=type=cache`)
+# so this Dockerfile builds on classic Docker engines too — e.g. ACR Tasks
+# without explicit BuildKit opt-in.
 FROM node:20-bookworm-slim AS build
 WORKDIR /build
-# Shared base — gets its own layer so it caches across all 416 MCPs
+# Shared base — gets its own layer so it caches across all 540 MCPs
 COPY packages/mcp-base/package.json packages/mcp-base/tsconfig.json /build/packages/mcp-base/
 COPY packages/mcp-base/src /build/packages/mcp-base/src
 RUN \
@@ -23,5 +26,5 @@ COPY --from=build /build/packages/mcp-base /app/node_modules/@babagemed/mcp-base
 EXPOSE 6117
 USER node
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
-  CMD node -e "fetch('http://localhost:6117/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+  CMD node -e "fetch('http://localhost:6117/health').then(r=>{r.arrayBuffer().finally(()=>process.exit(r.ok?0:1))}).catch(()=>process.exit(1))"
 CMD ["node", "dist/index.js"]

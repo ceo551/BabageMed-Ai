@@ -2,13 +2,13 @@ import { McpServer } from "@babagemed/mcp-base";
 import { registerTools } from "./tools.js";
 
 const server = new McpServer({
-  id:       "microsoft-bookings",
-  name:     "Microsoft Bookings",
-  kind:     "api",
+  id: "microsoft-bookings",
+  name: "Microsoft Bookings",
+  kind: "stub",
   category: "operations",
-  base:     "",
-  port:     6586,
-  version:  "0.1.0",
+  base: "",
+  port: 6586,
+  version: "0.1.0",
 });
 
 registerTools(server);

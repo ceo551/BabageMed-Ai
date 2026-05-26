@@ -3,7 +3,7 @@ import { z, McpServer, Scraper, cheerioLoad } from "@babagemed/mcp-base";
 const scraper = new Scraper({
   base: "https://karger.com/services/open-access",
   userAgent: process.env.SCRAPER_USER_AGENT,
-  rps: Number(process.env.SCRAPER_RATE_RPS || 1),
+  rps: Number(process.env.SCRAPER_RATE_RPS ?? 1) || 1,
   timeoutMs: Number(process.env.SCRAPER_TIMEOUT_MS || 30000),
   headless: (process.env.SCRAPER_HEADLESS ?? "true") !== "false",
   cacheTtlSec: Number(process.env.SCRAPER_CACHE_TTL_SEC || 86400),
@@ -17,7 +17,7 @@ const SEL_RESULT  = ".search-result-item, .al-article-items";
 const SEL_TITLE   = "h3 a, .sri-title a";
 const SEL_LINK    = "h3 a, .sri-title a";
 const SEL_SNIPPET = ".sri-snippet";
-const ORIGIN      = "https://karger.com";
+const ORIGIN      = "https://karger.com/services/open-access";
 
 export function registerTools(server: McpServer) {
   server.tool({

@@ -2,13 +2,13 @@ import { McpServer } from "@babagemed/mcp-base";
 import { registerTools } from "./tools.js";
 
 const server = new McpServer({
-  id:       "youtube-data",
-  name:     "YouTube Data",
-  kind:     "api",
+  id: "youtube-data",
+  name: "YouTube Data",
+  kind: "stub",
   category: "creative",
-  base:     "",
-  port:     6563,
-  version:  "0.1.0",
+  base: "",
+  port: 6563,
+  version: "0.1.0",
 });
 
 registerTools(server);
