@@ -1,0 +1,82 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "default",
+  "description": "Capability set granted to the main window. Tauri 2.0 denies every command by default; we explicitly opt in here so the React layer can use the plugins wired in main.rs.",
+  "windows": ["main"],
+  "permissions": [
+    "core:default",
+    "core:event:default",
+    "core:window:default",
+    "core:webview:default",
+    "core:app:default",
+    "core:resources:default",
+    "core:menu:default",
+    "core:tray:default",
+
+    "shell:allow-open",
+    "opener:default",
+    "opener:allow-open-url",
+
+    "dialog:default",
+    "dialog:allow-open",
+    "dialog:allow-save",
+    "dialog:allow-message",
+    "dialog:allow-ask",
+
+    "fs:allow-read-text-file",
+    "fs:allow-read-file",
+    "fs:allow-write-text-file",
+    "fs:allow-write-file",
+    "fs:allow-exists",
+    "fs:scope-download-recursive",
+    "fs:scope-document-recursive",
+
+    "os:default",
+    "os:allow-platform",
+    "os:allow-version",
+    "os:allow-arch",
+    "os:allow-hostname",
+    "os:allow-locale",
+
+    "process:default",
+    "process:allow-restart",
+    "process:allow-exit",
+
+    "http:default",
+
+    "notification:default",
+    "notification:allow-notify",
+    "notification:allow-request-permission",
+
+    "clipboard-manager:allow-read-text",
+    "clipboard-manager:allow-write-text",
+    "clipboard-manager:allow-read-image",
+    "clipboard-manager:allow-write-image",
+
+    "global-shortcut:allow-register",
+    "global-shortcut:allow-unregister",
+    "global-shortcut:allow-is-registered",
+
+    "store:default",
+    "log:default",
+    "updater:default",
+    "deep-link:default",
+    "single-instance:default",
+    "window-state:default",
+    "autostart:default",
+
+    "core:webview:allow-create-webview-window",
+    "core:window:allow-set-focus",
+    "core:window:allow-show",
+    "core:window:allow-hide",
+    "core:window:allow-minimize",
+    "core:window:allow-unminimize",
+    "core:window:allow-maximize",
+    "core:window:allow-unmaximize",
+    "core:window:allow-close",
+    "core:window:allow-start-dragging",
+    "core:window:allow-set-fullscreen",
+    "core:window:allow-set-always-on-top",
+    "core:window:allow-request-user-attention"
+  ]
+}

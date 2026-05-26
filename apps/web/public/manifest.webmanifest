@@ -1,0 +1,54 @@
+{
+  "name": "Babbage AI",
+  "short_name": "Babbage",
+  "description": "Customisable AI workflows — 8 features × 540 connectors.",
+  "id": "/",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "display_override": ["window-controls-overlay", "standalone", "browser"],
+  "orientation": "any",
+  "background_color": "#0a0a0c",
+  "theme_color": "#0a0a0c",
+  "lang": "en",
+  "dir": "auto",
+  "categories": ["productivity", "business", "education", "medical"],
+  "icons": [
+    {
+      "src": "/babagemed-icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/babagemed-icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "New chat",
+      "short_name": "New chat",
+      "url": "/?new=1",
+      "description": "Start a new chat"
+    },
+    {
+      "name": "MCPs catalog",
+      "short_name": "MCPs",
+      "url": "/mcps",
+      "description": "Browse 540 connectors"
+    },
+    {
+      "name": "Settings",
+      "short_name": "Settings",
+      "url": "/settings"
+    }
+  ],
+  "edge_side_panel": { "preferred_width": 480 },
+  "launch_handler": { "client_mode": ["focus-existing", "auto"] },
+  "protocol_handlers": [
+    { "protocol": "web+babbage", "url": "/?from=%s" }
+  ]
+}

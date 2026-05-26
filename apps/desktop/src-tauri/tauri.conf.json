@@ -11,8 +11,10 @@
   },
   "app": {
     "withGlobalTauri": false,
+    "macOSPrivateApi": true,
     "windows": [
       {
+        "label":  "main",
         "title":  "Babbage AI",
         "width":  1280,
         "height": 800,
@@ -22,12 +24,38 @@
         "fullscreen": false,
         "transparent": false,
         "decorations": true,
+        "shadow": true,
+        "visible": true,
+        "focus": true,
+        "acceptFirstMouse": true,
+        "dragDropEnabled": true,
         "url": "https://babagemed.com",
-        "_comment_url": "Production builds load the hosted web app at babagemed.com so all 540 connectors + auth state survive across platforms without re-implementing them client-side."
+        "windowEffects": {
+          "effects": ["mica"]
+        }
       }
     ],
     "security": {
-      "csp": null
+      "csp": null,
+      "assetProtocol": {
+        "enable": true,
+        "scope": ["$APPDATA/*", "$APPDATA/**", "$RESOURCE/*"]
+      }
+    }
+  },
+  "plugins": {
+    "deep-link": {
+      "desktop": {
+        "schemes": ["babbage"]
+      }
+    },
+    "updater": {
+      "active": true,
+      "dialog": true,
+      "endpoints": [
+        "https://babagemed.com/api/desktop/update/{{target}}/{{arch}}/{{current_version}}"
+      ],
+      "pubkey": ""
     }
   },
   "bundle": {
@@ -35,7 +63,7 @@
     "category": "Productivity",
     "copyright": "© 2026 Babbage AI",
     "shortDescription": "Babbage AI — desktop client",
-    "longDescription": "Babbage AI desktop wrapper. Loads the Babbage web app in a native shell for Windows, macOS and Linux Ubuntu.",
+    "longDescription": "Babbage AI desktop wrapper. Loads the Babbage web app in a native shell for Windows, macOS and Linux Ubuntu, with hardware-accelerated rendering, system tray, native dialogs, secure keychain storage and global shortcuts.",
     "targets": ["msi", "nsis", "dmg", "appimage", "deb"],
     "icon": [
       "icons/32x32.png",
@@ -45,9 +73,14 @@
       "icons/icon.ico"
     ],
     "macOS": {
-      "minimumSystemVersion": "11.0"
+      "minimumSystemVersion": "11.0",
+      "exceptionDomain": "babagemed.com",
+      "entitlements": "entitlements.plist"
     },
     "windows": {
+      "webviewInstallMode": {
+        "type": "embedBootstrapper"
+      },
       "wix": {
         "language": "en-US"
       },

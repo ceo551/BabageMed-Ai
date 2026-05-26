@@ -78,10 +78,74 @@ call via `@tauri-apps/api/core` to detect it's running inside the desktop
 shell — useful for swapping web file pickers for native ones, system-tray
 behaviour, deep links etc.
 
+## Hardware introspection + perf
+
+The Rust shell now does a lot more than wrap a WebView. It exposes typed
+commands to the React layer (see `apps/web/app/lib/desktop.ts`) for:
+
+- `system_snapshot()` — CPU brand + frequency + per-core usage, RAM/swap,
+  disks, network interfaces, thermal sensors, OS/host info
+- `gpu_adapters()` — every Vulkan/Metal/DX12 adapter (requires the
+  `gpu-probe` cargo feature)
+- `battery_status()` — charge %, time-to-full/empty, cycle count
+  (requires the `battery` cargo feature)
+- `secret_set/get/delete()` — native OS keychain (Keychain on macOS,
+  Credential Manager on Windows, libsecret on Linux)
+- `apply_perf_hints(highPriority)` — bumps Windows process priority class
+- `focus_main / toggle_fullscreen / set_always_on_top / request_user_attention`
+
+Performance switches that have to be set BEFORE the WebView starts
+(GPU rasterisation, zero-copy, hardware video decode, App Nap opt-out)
+are configured in `src-tauri/src/perf.rs` and run before any plugin
+registration.
+
+### Built-in plugins
+
+`shell`, `fs`, `dialog`, `os`, `process`, `http`, `notification`,
+`clipboard-manager`, `global-shortcut`, `opener`, `store`, `log`,
+`updater`, `single-instance`, `deep-link`, `window-state`, `autostart`.
+
+### Build profiles
+
+- `npm run build` — default `release` profile (binary size optimised, ~6 MB)
+- `npx tauri build --profile release-fast` — max-perf profile (`opt-level=3`,
+  ~12 MB, faster compute-heavy paths)
+
+### Cargo features
+
+| Feature      | Default | What it adds |
+|--------------|---------|--------------|
+| `gpu-probe`  | off     | wgpu adapter enumeration (~3 MB) |
+| `battery`    | off     | Battery introspection on macOS/Linux/Windows |
+
+Enable with `npx tauri build -- --features gpu-probe,battery`.
+
+### System tray + global shortcuts
+
+The app installs a tray icon on launch (right-click for menu, left-click
+to focus the main window) and registers `Ctrl/Cmd + Shift + Space` as a
+global summon shortcut. The React app listens for `babbage:summon` /
+`babbage:new-chat` / `babbage:cli` window events.
+
+### Deep links
+
+The `babbage://` URL scheme is registered with the OS. OAuth flows can
+redirect to `babbage://oauth/callback?...` and the desktop window will
+focus + dispatch the URL to the React app via the `deep-link` plugin.
+
+### Native keychain
+
+Tokens that the web app would otherwise put in `localStorage` are mirrored
+into the OS keychain via `secret_set/get/delete`. The web app should
+preferentially read from the keychain when `isDesktop()` is true (see
+`apps/web/app/lib/desktop.ts`).
+
 ## Roadmap
 
-- [ ] Native system tray (`tauri-plugin-tray`)
-- [ ] Auto-updater (`tauri-plugin-updater`)
-- [ ] Single-instance lock so a second launch focuses the existing window
-- [ ] Deep links: `babbage://` URL scheme for OAuth callbacks
-- [ ] Native menu bar with keyboard shortcuts mirrored from the web app
+- [x] Native system tray
+- [x] Auto-updater (wired; needs signing key + endpoint)
+- [x] Single-instance lock
+- [x] Deep links: `babbage://`
+- [ ] Native menu bar with web-mirrored keyboard shortcuts
+- [ ] Push notifications (background channel)
+- [ ] Code-signing CI secrets actually filled in

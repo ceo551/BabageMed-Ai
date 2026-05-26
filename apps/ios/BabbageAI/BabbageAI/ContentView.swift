@@ -4,6 +4,8 @@
 //   - launch splash while the first navigation completes
 //   - pull-to-refresh
 //   - share sheet from a long-press on links
+//   - NativeBridge that exposes share / haptic / biometric / file picker
+//     to the React layer via window.BabbageNative
 //
 // Native screens (composer, file picker, account settings) can live as
 // SwiftUI views layered on top later; v1 is a webview wrapper so all 540
@@ -61,6 +63,21 @@ struct WebShell: UIViewRepresentable {
         // across app launches. The default WKWebView session is ephemeral.
         config.websiteDataStore = .default()
 
+        // Wire the JS↔Swift bridge.
+        let bridge = NativeBridge()
+        context.coordinator.bridge = bridge
+        let ucc = WKUserContentController()
+        ucc.addUserScript(NativeBridge.userScript)
+        ucc.addScriptMessageHandler(bridge, contentWorld: .page, name: NativeBridge.name)
+        config.userContentController = ucc
+
+        // Performance: opt into the modern WebKit JIT + GPU compositing.
+        config.preferences.javaScriptCanOpenWindowsAutomatically = false
+        config.defaultWebpagePreferences.allowsContentJavaScript = true
+        if #available(iOS 17.0, *) {
+            config.preferences.inactiveSchedulingPolicy = .none
+        }
+
         let web = WKWebView(frame: .zero, configuration: config)
         web.navigationDelegate = context.coordinator
         web.uiDelegate         = context.coordinator
@@ -76,6 +93,13 @@ struct WebShell: UIViewRepresentable {
         // to swap web file pickers for native ones later.
         web.customUserAgent = (web.value(forKey: "userAgent") as? String ?? "") + " Babbage-iOS/0.1.0"
 
+        // Resolve the host UIViewController lazily once the WKWebView is
+        // attached to a window so the bridge can present modals
+        // (share sheet, document picker) from it.
+        DispatchQueue.main.async {
+            bridge.hostController = web.window?.rootViewController
+        }
+
         web.load(URLRequest(url: homeURL))
         return web
     }
@@ -87,9 +111,15 @@ struct WebShell: UIViewRepresentable {
 
     final class Coordinator: NSObject, WKNavigationDelegate, WKUIDelegate {
         var parent: WebShell
+        var bridge: NativeBridge?
         init(_ parent: WebShell) { self.parent = parent }
 
         func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
+            // First navigation finishes — re-resolve the host controller in
+            // case the window wasn't ready when makeUIView ran.
+            if bridge?.hostController == nil {
+                bridge?.hostController = webView.window?.rootViewController
+            }
             DispatchQueue.main.async {
                 self.parent.isLoading = false
                 self.parent.canGoBack = webView.canGoBack

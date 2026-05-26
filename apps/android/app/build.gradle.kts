@@ -67,6 +67,7 @@ dependencies {
     implementation("androidx.compose.ui:ui-graphics")
     implementation("androidx.compose.ui:ui-tooling-preview")
     implementation("androidx.webkit:webkit:1.11.0")  // WebSettingsCompat for dark mode
+    implementation("androidx.biometric:biometric:1.2.0-alpha05")
 
     debugImplementation("androidx.compose.ui:ui-tooling")
 }

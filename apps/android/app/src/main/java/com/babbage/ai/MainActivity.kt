@@ -81,11 +81,22 @@ class MainActivity : ComponentActivity() {
                             )
                             setBackgroundColor(android.graphics.Color.BLACK)
                             configureSettings(this.settings)
-                            webViewClient = AppWebViewClient { loading = false }
+                            webViewClient = AppWebViewClient(
+                                onFinished = { loading = false },
+                                onStarted  = { evaluateJavascript(NativeBridge.BOOTSTRAP_JS, null) },
+                            )
                             webChromeClient = AppChromeClient()
                             // Identify ourselves so server logs + the React
                             // layer can detect the Android shell.
                             settings.userAgentString = settings.userAgentString + " Babbage-Android/0.1.0"
+
+                            // Wire the JS↔Kotlin bridge BEFORE loadUrl so
+                            // the injected globals are visible on first paint.
+                            addJavascriptInterface(
+                                NativeBridge(this@MainActivity, this),
+                                NativeBridge.NAME,
+                            )
+
                             // Load the hosted app. For local dev, point this
                             // at the emulator-facing host IP: 10.0.2.2:3000.
                             loadUrl(HOME_URL)
@@ -120,11 +131,20 @@ class MainActivity : ComponentActivity() {
     }
 
     private inner class AppWebViewClient(
-        private val onPageFinished: () -> Unit,
+        private val onFinished: () -> Unit,
+        private val onStarted: WebView.() -> Unit = {},
     ) : WebViewClient() {
+        override fun onPageStarted(view: WebView?, url: String?, favicon: android.graphics.Bitmap?) {
+            super.onPageStarted(view, url, favicon)
+            view?.onStarted()
+        }
+
         override fun onPageFinished(view: WebView?, url: String?) {
             super.onPageFinished(view, url)
-            onPageFinished()
+            // Re-inject after every navigation in case the SPA swapped
+            // documents (e.g. OAuth redirect chain ending back at the app).
+            view?.evaluateJavascript(NativeBridge.BOOTSTRAP_JS, null)
+            onFinished()
         }
 
         override fun shouldOverrideUrlLoading(

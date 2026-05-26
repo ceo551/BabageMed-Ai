@@ -2,10 +2,19 @@ import "./tokens.css";
 import "./dashboard.css";
 import { AuthProvider } from "./lib/auth-context";
 import { AppShell } from "./components/AppShell";
+import { ServiceWorker } from "./components/ServiceWorker";
 
 export const metadata = {
   title: "Babbage AI",
   description: "Babbage AI — instructions, files, skills and connectors per workflow.",
+  applicationName: "Babbage AI",
+  manifest: "/manifest.webmanifest",
+  appleWebApp: {
+    capable: true,
+    title: "Babbage AI",
+    statusBarStyle: "black-translucent" as const,
+  },
+  formatDetection: { telephone: false, address: false, email: false },
   // Point every favicon size at the brand asset shipped in /public so the
   // browser tab gets the disc mark instead of the default globe.
   icons: {
@@ -13,6 +22,14 @@ export const metadata = {
     shortcut:      "/babagemed-icon.png",
     apple:         "/babagemed-icon.png",
   },
+};
+
+export const viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover" as const,
+  themeColor: "#0a0a0c",
+  colorScheme: "dark" as const,
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -30,6 +47,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <AuthProvider>
           <AppShell>{children}</AppShell>
         </AuthProvider>
+        <ServiceWorker />
       </body>
     </html>
   );
