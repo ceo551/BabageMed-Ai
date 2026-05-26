@@ -36,8 +36,7 @@
       "base": "https://www.mayoclinic.org",
       "tools": [
         "search",
-        "disease",
-        "symptoms"
+        "fetch"
       ]
     },
     {
@@ -75,8 +74,7 @@
       "base": "https://www.rsna.org",
       "tools": [
         "search",
-        "article",
-        "case"
+        "fetch"
       ]
     },
     {
@@ -113,8 +111,7 @@
       "base": "https://radiopaedia.org",
       "tools": [
         "search",
-        "article",
-        "case"
+        "fetch"
       ]
     },
     {
@@ -126,6 +123,7 @@
       "base": "https://www.cochranelibrary.com",
       "tools": [
         "search",
+        "article",
         "review"
       ]
     },
@@ -138,7 +136,7 @@
       "base": "https://www.merckmanuals.com",
       "tools": [
         "search",
-        "topic"
+        "fetch"
       ]
     },
     {
@@ -240,7 +238,7 @@
       "base": "https://www.rxlist.com",
       "tools": [
         "search",
-        "drug"
+        "fetch"
       ]
     },
     {
@@ -252,7 +250,8 @@
       "base": "https://api.nhs.uk",
       "tools": [
         "conditions",
-        "medicines"
+        "medicines",
+        "live-well"
       ]
     },
     {
@@ -264,7 +263,7 @@
       "base": "https://www.healthline.com",
       "tools": [
         "search",
-        "article"
+        "fetch"
       ]
     },
     {
@@ -325,7 +324,7 @@
       "base": "https://www.cvphysiology.com",
       "tools": [
         "search",
-        "topic"
+        "fetch"
       ]
     },
     {
@@ -352,8 +351,7 @@
       "base": "https://litfl.com",
       "tools": [
         "search",
-        "ecg",
-        "article"
+        "fetch"
       ]
     },
     {
@@ -380,7 +378,7 @@
       "base": "https://kdigo.org",
       "tools": [
         "search",
-        "guideline"
+        "fetch"
       ]
     },
     {
@@ -392,7 +390,7 @@
       "base": "https://www.renalfellow.org",
       "tools": [
         "search",
-        "post"
+        "fetch"
       ]
     },
     {
@@ -404,7 +402,7 @@
       "base": "https://rheumatology.org",
       "tools": [
         "search",
-        "guideline"
+        "fetch"
       ]
     },
     {
@@ -428,7 +426,7 @@
       "base": "https://www.arthritis.org",
       "tools": [
         "search",
-        "topic"
+        "fetch"
       ]
     },
     {
@@ -440,7 +438,7 @@
       "base": "https://www.lupus.org",
       "tools": [
         "search",
-        "topic"
+        "fetch"
       ]
     },
     {
@@ -452,7 +450,7 @@
       "base": "https://spondylitis.org",
       "tools": [
         "search",
-        "topic"
+        "fetch"
       ]
     },
     {
@@ -464,7 +462,7 @@
       "base": "https://derangedphysiology.com",
       "tools": [
         "search",
-        "topic"
+        "fetch"
       ]
     },
     {
@@ -476,7 +474,7 @@
       "base": "https://www.thebottomline.org.uk",
       "tools": [
         "search",
-        "review"
+        "fetch"
       ]
     },
     {
@@ -488,7 +486,7 @@
       "base": "https://www.rcpsych.ac.uk",
       "tools": [
         "search",
-        "mental-health"
+        "fetch"
       ]
     },
     {
@@ -500,7 +498,7 @@
       "base": "https://www.nami.org",
       "tools": [
         "search",
-        "condition"
+        "fetch"
       ]
     },
     {
@@ -524,7 +522,7 @@
       "base": "https://rebelem.com",
       "tools": [
         "search",
-        "post"
+        "fetch"
       ]
     },
     {
@@ -536,7 +534,7 @@
       "base": "https://first10em.com",
       "tools": [
         "search",
-        "post"
+        "fetch"
       ]
     },
     {
@@ -548,7 +546,7 @@
       "base": "https://familydoctor.org",
       "tools": [
         "search",
-        "condition"
+        "fetch"
       ]
     },
     {
@@ -584,7 +582,7 @@
       "base": "https://dontforgetthebubbles.com",
       "tools": [
         "search",
-        "post"
+        "fetch"
       ]
     },
     {
@@ -596,7 +594,7 @@
       "base": "https://coreem.net",
       "tools": [
         "search",
-        "post"
+        "fetch"
       ]
     },
     {
@@ -633,7 +631,7 @@
       "base": "https://webeye.ophth.uiowa.edu",
       "tools": [
         "search",
-        "protocol"
+        "fetch"
       ]
     },
     {
@@ -645,7 +643,7 @@
       "base": "https://fpnotebook.com",
       "tools": [
         "search",
-        "topic"
+        "fetch"
       ]
     },
     {
@@ -657,7 +655,7 @@
       "base": "https://www.globalfamilydoctor.com",
       "tools": [
         "search",
-        "topic"
+        "fetch"
       ]
     },
     {
@@ -708,9 +706,8 @@
       "port": 6175,
       "base": "https://gamma.app",
       "tools": [
-        "list",
-        "generate",
-        "present"
+        "search",
+        "fetch"
       ]
     },
     {
@@ -961,7 +958,7 @@
     },
     {
       "id": "sac-ar",
-      "name": "Sociedad Argentina de Cardiología",
+      "name": "Sociedad Argentina de Cardiolog\u00eda",
       "kind": "scrape",
       "category": "cardiology",
       "port": 6212,
@@ -3854,7 +3851,7 @@
     {
       "id": "outlook",
       "name": "Outlook",
-      "kind": "api",
+      "kind": "stub",
       "category": "communication",
       "feature": "business",
       "port": 6530,
@@ -3868,7 +3865,7 @@
     {
       "id": "hubspot",
       "name": "HubSpot",
-      "kind": "api",
+      "kind": "stub",
       "category": "sales",
       "feature": "business",
       "port": 6531,
@@ -3882,7 +3879,7 @@
     {
       "id": "monday",
       "name": "Monday.com",
-      "kind": "api",
+      "kind": "stub",
       "category": "operations",
       "feature": "business",
       "port": 6532,
@@ -3896,7 +3893,7 @@
     {
       "id": "snowflake",
       "name": "Snowflake",
-      "kind": "api",
+      "kind": "stub",
       "category": "data",
       "feature": "business",
       "port": 6533,
@@ -3910,7 +3907,7 @@
     {
       "id": "stripe",
       "name": "Stripe",
-      "kind": "api",
+      "kind": "stub",
       "category": "finance",
       "feature": "financial",
       "port": 6534,
@@ -3924,7 +3921,7 @@
     {
       "id": "motherduck",
       "name": "MotherDuck",
-      "kind": "api",
+      "kind": "stub",
       "category": "data",
       "feature": "math-science",
       "port": 6535,
@@ -3938,7 +3935,7 @@
     {
       "id": "vercel",
       "name": "Vercel",
-      "kind": "api",
+      "kind": "stub",
       "category": "developer",
       "feature": "business",
       "port": 6536,
@@ -3952,7 +3949,7 @@
     {
       "id": "supabase",
       "name": "Supabase",
-      "kind": "api",
+      "kind": "stub",
       "category": "developer",
       "feature": "business",
       "port": 6537,
@@ -3966,7 +3963,7 @@
     {
       "id": "google-forms",
       "name": "Google Forms",
-      "kind": "api",
+      "kind": "stub",
       "category": "productivity",
       "feature": "education",
       "port": 6538,
@@ -3980,7 +3977,7 @@
     {
       "id": "youtube-analytics",
       "name": "YouTube Analytics",
-      "kind": "api",
+      "kind": "stub",
       "category": "creative",
       "feature": "writing",
       "port": 6539,
@@ -3994,7 +3991,7 @@
     {
       "id": "facebook-pages",
       "name": "Facebook Pages",
-      "kind": "api",
+      "kind": "stub",
       "category": "communication",
       "feature": "writing",
       "port": 6540,
@@ -4008,7 +4005,7 @@
     {
       "id": "twitch",
       "name": "Twitch",
-      "kind": "api",
+      "kind": "stub",
       "category": "creative",
       "feature": "writing",
       "port": 6541,
@@ -4022,7 +4019,7 @@
     {
       "id": "google-tasks",
       "name": "Google Tasks",
-      "kind": "api",
+      "kind": "stub",
       "category": "productivity",
       "feature": "business",
       "port": 6542,
@@ -4036,7 +4033,7 @@
     {
       "id": "google-cloud-vision",
       "name": "Google Cloud Vision",
-      "kind": "api",
+      "kind": "stub",
       "category": "ai",
       "feature": "math-science",
       "port": 6543,
@@ -4050,7 +4047,7 @@
     {
       "id": "docusign",
       "name": "Docusign",
-      "kind": "api",
+      "kind": "stub",
       "category": "operations",
       "feature": "business",
       "port": 6544,
@@ -4064,7 +4061,7 @@
     {
       "id": "google-ads",
       "name": "Google Ads",
-      "kind": "api",
+      "kind": "stub",
       "category": "marketing",
       "feature": "business",
       "port": 6545,
@@ -4078,7 +4075,7 @@
     {
       "id": "findymail",
       "name": "Findymail",
-      "kind": "api",
+      "kind": "stub",
       "category": "sales",
       "feature": "business",
       "port": 6546,
@@ -4092,7 +4089,7 @@
     {
       "id": "vimeo",
       "name": "Vimeo",
-      "kind": "api",
+      "kind": "stub",
       "category": "creative",
       "feature": "writing",
       "port": 6547,
@@ -4106,7 +4103,7 @@
     {
       "id": "google-tag-manager",
       "name": "Google Tag Manager",
-      "kind": "api",
+      "kind": "stub",
       "category": "marketing",
       "feature": "business",
       "port": 6548,
@@ -4120,7 +4117,7 @@
     {
       "id": "google-meet",
       "name": "Google Meet",
-      "kind": "api",
+      "kind": "stub",
       "category": "communication",
       "feature": "business",
       "port": 6549,
@@ -4134,7 +4131,7 @@
     {
       "id": "strava",
       "name": "Strava",
-      "kind": "api",
+      "kind": "stub",
       "category": "lifestyle",
       "feature": "healthcare",
       "port": 6550,
@@ -4148,7 +4145,7 @@
     {
       "id": "lucid",
       "name": "Lucid",
-      "kind": "api",
+      "kind": "stub",
       "category": "creative",
       "feature": "writing",
       "port": 6551,
@@ -4162,7 +4159,7 @@
     {
       "id": "biorender",
       "name": "BioRender",
-      "kind": "api",
+      "kind": "stub",
       "category": "creative",
       "feature": "math-science",
       "port": 6552,
@@ -4176,7 +4173,7 @@
     {
       "id": "figma",
       "name": "Figma",
-      "kind": "api",
+      "kind": "stub",
       "category": "creative",
       "feature": "writing",
       "port": 6553,
@@ -4190,7 +4187,7 @@
     {
       "id": "canva-enterprise",
       "name": "Canva Enterprise",
-      "kind": "api",
+      "kind": "stub",
       "category": "creative",
       "feature": "writing",
       "port": 6554,
@@ -4204,7 +4201,7 @@
     {
       "id": "docugenerate",
       "name": "DocuGenerate",
-      "kind": "api",
+      "kind": "stub",
       "category": "operations",
       "feature": "consulting",
       "port": 6555,
@@ -4218,7 +4215,7 @@
     {
       "id": "leonardo-ai",
       "name": "Leonardo AI",
-      "kind": "api",
+      "kind": "stub",
       "category": "ai",
       "feature": "writing",
       "port": 6556,
@@ -4232,7 +4229,7 @@
     {
       "id": "spotify",
       "name": "Spotify",
-      "kind": "api",
+      "kind": "stub",
       "category": "creative",
       "feature": "writing",
       "port": 6557,
@@ -4246,7 +4243,7 @@
     {
       "id": "bannerbear",
       "name": "Bannerbear",
-      "kind": "api",
+      "kind": "stub",
       "category": "creative",
       "feature": "writing",
       "port": 6558,
@@ -4260,7 +4257,7 @@
     {
       "id": "egnyte",
       "name": "Egnyte",
-      "kind": "api",
+      "kind": "stub",
       "category": "storage",
       "feature": "business",
       "port": 6559,
@@ -4274,7 +4271,7 @@
     {
       "id": "google-photos",
       "name": "Google Photos",
-      "kind": "api",
+      "kind": "stub",
       "category": "storage",
       "feature": "writing",
       "port": 6560,
@@ -4288,7 +4285,7 @@
     {
       "id": "pdf-co",
       "name": "PDF.co",
-      "kind": "api",
+      "kind": "stub",
       "category": "operations",
       "feature": "consulting",
       "port": 6561,
@@ -4302,7 +4299,7 @@
     {
       "id": "mux",
       "name": "Mux",
-      "kind": "api",
+      "kind": "stub",
       "category": "creative",
       "feature": "writing",
       "port": 6562,
@@ -4316,7 +4313,7 @@
     {
       "id": "youtube-data",
       "name": "YouTube Data",
-      "kind": "api",
+      "kind": "stub",
       "category": "creative",
       "feature": "writing",
       "port": 6563,
@@ -4330,7 +4327,7 @@
     {
       "id": "intercom",
       "name": "Intercom",
-      "kind": "api",
+      "kind": "stub",
       "category": "communication",
       "feature": "business",
       "port": 6564,
@@ -4344,7 +4341,7 @@
     {
       "id": "x-twitter",
       "name": "X (Twitter)",
-      "kind": "api",
+      "kind": "stub",
       "category": "communication",
       "feature": "writing",
       "port": 6565,
@@ -4358,7 +4355,7 @@
     {
       "id": "smstools",
       "name": "SMSTools",
-      "kind": "api",
+      "kind": "stub",
       "category": "communication",
       "feature": "business",
       "port": 6566,
@@ -4372,7 +4369,7 @@
     {
       "id": "z-api",
       "name": "Z-API (WhatsApp)",
-      "kind": "api",
+      "kind": "stub",
       "category": "communication",
       "feature": "business",
       "port": 6567,
@@ -4386,7 +4383,7 @@
     {
       "id": "zoom-admin",
       "name": "Zoom Admin",
-      "kind": "api",
+      "kind": "stub",
       "category": "communication",
       "feature": "business",
       "port": 6568,
@@ -4400,7 +4397,7 @@
     {
       "id": "help-scout",
       "name": "Help Scout",
-      "kind": "api",
+      "kind": "stub",
       "category": "communication",
       "feature": "business",
       "port": 6569,
@@ -4414,7 +4411,7 @@
     {
       "id": "missive",
       "name": "Missive",
-      "kind": "api",
+      "kind": "stub",
       "category": "communication",
       "feature": "business",
       "port": 6570,
@@ -4428,7 +4425,7 @@
     {
       "id": "sendblue",
       "name": "Sendblue",
-      "kind": "api",
+      "kind": "stub",
       "category": "communication",
       "feature": "business",
       "port": 6571,
@@ -4442,7 +4439,7 @@
     {
       "id": "zoho-mail",
       "name": "Zoho Mail",
-      "kind": "api",
+      "kind": "stub",
       "category": "communication",
       "feature": "business",
       "port": 6572,
@@ -4456,7 +4453,7 @@
     {
       "id": "postmark",
       "name": "Postmark",
-      "kind": "api",
+      "kind": "stub",
       "category": "communication",
       "feature": "business",
       "port": 6573,
@@ -4470,7 +4467,7 @@
     {
       "id": "twilio",
       "name": "Twilio",
-      "kind": "api",
+      "kind": "stub",
       "category": "communication",
       "feature": "business",
       "port": 6574,
@@ -4484,7 +4481,7 @@
     {
       "id": "zoom",
       "name": "Zoom",
-      "kind": "api",
+      "kind": "stub",
       "category": "communication",
       "feature": "business",
       "port": 6575,
@@ -4498,7 +4495,7 @@
     {
       "id": "freshdesk",
       "name": "Freshdesk",
-      "kind": "api",
+      "kind": "stub",
       "category": "communication",
       "feature": "business",
       "port": 6576,
@@ -4512,7 +4509,7 @@
     {
       "id": "mixmax",
       "name": "MixMax",
-      "kind": "api",
+      "kind": "stub",
       "category": "communication",
       "feature": "business",
       "port": 6577,
@@ -4526,7 +4523,7 @@
     {
       "id": "loops-so",
       "name": "Loops.so",
-      "kind": "api",
+      "kind": "stub",
       "category": "communication",
       "feature": "business",
       "port": 6578,
@@ -4540,7 +4537,7 @@
     {
       "id": "telegram",
       "name": "Telegram",
-      "kind": "api",
+      "kind": "stub",
       "category": "communication",
       "feature": "business",
       "port": 6579,
@@ -4554,7 +4551,7 @@
     {
       "id": "atlassian",
       "name": "Atlassian (Jira/Confluence)",
-      "kind": "api",
+      "kind": "stub",
       "category": "operations",
       "feature": "business",
       "port": 6580,
@@ -4568,7 +4565,7 @@
     {
       "id": "ticket-tailor",
       "name": "Ticket Tailor",
-      "kind": "api",
+      "kind": "stub",
       "category": "operations",
       "feature": "business",
       "port": 6581,
@@ -4582,7 +4579,7 @@
     {
       "id": "shopify",
       "name": "Shopify",
-      "kind": "api",
+      "kind": "stub",
       "category": "operations",
       "feature": "business",
       "port": 6582,
@@ -4596,7 +4593,7 @@
     {
       "id": "carta",
       "name": "Carta",
-      "kind": "api",
+      "kind": "stub",
       "category": "finance",
       "feature": "financial",
       "port": 6583,
@@ -4610,7 +4607,7 @@
     {
       "id": "sendcloud",
       "name": "Sendcloud",
-      "kind": "api",
+      "kind": "stub",
       "category": "operations",
       "feature": "business",
       "port": 6584,
@@ -4624,7 +4621,7 @@
     {
       "id": "drata",
       "name": "Drata",
-      "kind": "api",
+      "kind": "stub",
       "category": "operations",
       "feature": "consulting",
       "port": 6585,
@@ -4638,7 +4635,7 @@
     {
       "id": "microsoft-bookings",
       "name": "Microsoft Bookings",
-      "kind": "api",
+      "kind": "stub",
       "category": "operations",
       "feature": "business",
       "port": 6586,
@@ -4652,7 +4649,7 @@
     {
       "id": "brex",
       "name": "Brex",
-      "kind": "api",
+      "kind": "stub",
       "category": "finance",
       "feature": "financial",
       "port": 6587,
@@ -4666,7 +4663,7 @@
     {
       "id": "clockify",
       "name": "Clockify",
-      "kind": "api",
+      "kind": "stub",
       "category": "operations",
       "feature": "business",
       "port": 6588,
@@ -4680,7 +4677,7 @@
     {
       "id": "google-workspace-admin",
       "name": "Google Workspace Admin",
-      "kind": "api",
+      "kind": "stub",
       "category": "operations",
       "feature": "business",
       "port": 6589,
@@ -4694,7 +4691,7 @@
     {
       "id": "personio",
       "name": "Personio",
-      "kind": "api",
+      "kind": "stub",
       "category": "hr",
       "feature": "business",
       "port": 6590,
@@ -4708,7 +4705,7 @@
     {
       "id": "zoho-desk",
       "name": "Zoho Desk",
-      "kind": "api",
+      "kind": "stub",
       "category": "communication",
       "feature": "business",
       "port": 6591,
@@ -4722,7 +4719,7 @@
     {
       "id": "microsoft-entra-id",
       "name": "Microsoft Entra ID",
-      "kind": "api",
+      "kind": "stub",
       "category": "operations",
       "feature": "business",
       "port": 6592,
@@ -4736,7 +4733,7 @@
     {
       "id": "google-business-profile",
       "name": "Google Business Profile",
-      "kind": "api",
+      "kind": "stub",
       "category": "marketing",
       "feature": "business",
       "port": 6593,
@@ -4750,7 +4747,7 @@
     {
       "id": "calendly",
       "name": "Calendly",
-      "kind": "api",
+      "kind": "stub",
       "category": "productivity",
       "feature": "business",
       "port": 6594,
@@ -4764,7 +4761,7 @@
     {
       "id": "msdynamics-365-business",
       "name": "Microsoft Dynamics 365 Business",
-      "kind": "api",
+      "kind": "stub",
       "category": "operations",
       "feature": "business",
       "port": 6595,
@@ -4778,7 +4775,7 @@
     {
       "id": "rippling",
       "name": "Rippling",
-      "kind": "api",
+      "kind": "stub",
       "category": "hr",
       "feature": "business",
       "port": 6596,
@@ -4792,7 +4789,7 @@
     {
       "id": "bluesky",
       "name": "Bluesky",
-      "kind": "api",
+      "kind": "stub",
       "category": "communication",
       "feature": "writing",
       "port": 6597,
@@ -4806,7 +4803,7 @@
     {
       "id": "bamboohr",
       "name": "BambooHR",
-      "kind": "api",
+      "kind": "stub",
       "category": "hr",
       "feature": "business",
       "port": 6598,
@@ -4820,7 +4817,7 @@
     {
       "id": "toggl-track",
       "name": "Toggl Track",
-      "kind": "api",
+      "kind": "stub",
       "category": "productivity",
       "feature": "business",
       "port": 6599,
@@ -4834,7 +4831,7 @@
     {
       "id": "gong",
       "name": "Gong",
-      "kind": "api",
+      "kind": "stub",
       "category": "sales",
       "feature": "business",
       "port": 6600,
@@ -4848,7 +4845,7 @@
     {
       "id": "expensify",
       "name": "Expensify",
-      "kind": "api",
+      "kind": "stub",
       "category": "finance",
       "feature": "financial",
       "port": 6601,
@@ -4862,7 +4859,7 @@
     {
       "id": "unleashed-software",
       "name": "Unleashed Software",
-      "kind": "api",
+      "kind": "stub",
       "category": "operations",
       "feature": "business",
       "port": 6602,
@@ -4876,7 +4873,7 @@
     {
       "id": "ashby",
       "name": "Ashby",
-      "kind": "api",
+      "kind": "stub",
       "category": "hr",
       "feature": "business",
       "port": 6603,
@@ -4890,7 +4887,7 @@
     {
       "id": "cal-com",
       "name": "Cal.com",
-      "kind": "api",
+      "kind": "stub",
       "category": "productivity",
       "feature": "business",
       "port": 6604,
@@ -4904,7 +4901,7 @@
     {
       "id": "optimoroute",
       "name": "OptimoRoute",
-      "kind": "api",
+      "kind": "stub",
       "category": "operations",
       "feature": "business",
       "port": 6605,
@@ -4918,7 +4915,7 @@
     {
       "id": "connectwise-psa",
       "name": "Connectwise PSA",
-      "kind": "api",
+      "kind": "stub",
       "category": "operations",
       "feature": "consulting",
       "port": 6606,
@@ -4932,7 +4929,7 @@
     {
       "id": "drip",
       "name": "Drip",
-      "kind": "api",
+      "kind": "stub",
       "category": "marketing",
       "feature": "business",
       "port": 6607,
@@ -4946,7 +4943,7 @@
     {
       "id": "lemlist",
       "name": "lemlist",
-      "kind": "api",
+      "kind": "stub",
       "category": "sales",
       "feature": "business",
       "port": 6608,
@@ -4960,7 +4957,7 @@
     {
       "id": "mailerlite",
       "name": "MailerLite",
-      "kind": "api",
+      "kind": "stub",
       "category": "marketing",
       "feature": "business",
       "port": 6609,
@@ -4974,7 +4971,7 @@
     {
       "id": "copper",
       "name": "Copper",
-      "kind": "api",
+      "kind": "stub",
       "category": "sales",
       "feature": "business",
       "port": 6610,
@@ -4988,7 +4985,7 @@
     {
       "id": "customer-io",
       "name": "Customer.io",
-      "kind": "api",
+      "kind": "stub",
       "category": "marketing",
       "feature": "business",
       "port": 6611,
@@ -5002,7 +4999,7 @@
     {
       "id": "contactout",
       "name": "ContactOut",
-      "kind": "api",
+      "kind": "stub",
       "category": "sales",
       "feature": "business",
       "port": 6612,
@@ -5016,7 +5013,7 @@
     {
       "id": "elastic-email",
       "name": "Elastic Email",
-      "kind": "api",
+      "kind": "stub",
       "category": "marketing",
       "feature": "business",
       "port": 6613,
@@ -5030,7 +5027,7 @@
     {
       "id": "lusha",
       "name": "Lusha",
-      "kind": "api",
+      "kind": "stub",
       "category": "sales",
       "feature": "business",
       "port": 6614,
@@ -5044,7 +5041,7 @@
     {
       "id": "pipeline",
       "name": "Pipeline",
-      "kind": "api",
+      "kind": "stub",
       "category": "sales",
       "feature": "business",
       "port": 6615,
@@ -5058,7 +5055,7 @@
     {
       "id": "wealthbox",
       "name": "Wealthbox",
-      "kind": "api",
+      "kind": "stub",
       "category": "finance",
       "feature": "financial",
       "port": 6616,
@@ -5072,7 +5069,7 @@
     {
       "id": "salesforce",
       "name": "Salesforce",
-      "kind": "api",
+      "kind": "stub",
       "category": "sales",
       "feature": "business",
       "port": 6617,
@@ -5086,7 +5083,7 @@
     {
       "id": "convertkit",
       "name": "ConvertKit",
-      "kind": "api",
+      "kind": "stub",
       "category": "marketing",
       "feature": "writing",
       "port": 6618,
@@ -5100,7 +5097,7 @@
     {
       "id": "instantly",
       "name": "Instantly",
-      "kind": "api",
+      "kind": "stub",
       "category": "sales",
       "feature": "business",
       "port": 6619,
@@ -5114,7 +5111,7 @@
     {
       "id": "outreach",
       "name": "Outreach",
-      "kind": "api",
+      "kind": "stub",
       "category": "sales",
       "feature": "business",
       "port": 6620,
@@ -5128,7 +5125,7 @@
     {
       "id": "msdynamics-365-sales",
       "name": "Microsoft Dynamics 365 Sales",
-      "kind": "api",
+      "kind": "stub",
       "category": "sales",
       "feature": "business",
       "port": 6621,
@@ -5142,7 +5139,7 @@
     {
       "id": "activecampaign",
       "name": "ActiveCampaign",
-      "kind": "api",
+      "kind": "stub",
       "category": "marketing",
       "feature": "business",
       "port": 6622,
@@ -5156,7 +5153,7 @@
     {
       "id": "mailgun",
       "name": "Mailgun",
-      "kind": "api",
+      "kind": "stub",
       "category": "marketing",
       "feature": "business",
       "port": 6623,
@@ -5170,7 +5167,7 @@
     {
       "id": "aweber",
       "name": "AWeber",
-      "kind": "api",
+      "kind": "stub",
       "category": "marketing",
       "feature": "business",
       "port": 6624,
@@ -5184,7 +5181,7 @@
     {
       "id": "mastodon",
       "name": "Mastodon",
-      "kind": "api",
+      "kind": "stub",
       "category": "communication",
       "feature": "writing",
       "port": 6625,
@@ -5198,7 +5195,7 @@
     {
       "id": "attio",
       "name": "Attio",
-      "kind": "api",
+      "kind": "stub",
       "category": "sales",
       "feature": "business",
       "port": 6626,
@@ -5212,7 +5209,7 @@
     {
       "id": "sms-messages",
       "name": "SMS Messages (Lleida.net)",
-      "kind": "api",
+      "kind": "stub",
       "category": "communication",
       "feature": "business",
       "port": 6627,
@@ -5226,7 +5223,7 @@
     {
       "id": "front",
       "name": "Front",
-      "kind": "api",
+      "kind": "stub",
       "category": "communication",
       "feature": "business",
       "port": 6628,
@@ -5240,7 +5237,7 @@
     {
       "id": "wordpress-org",
       "name": "WordPress.org",
-      "kind": "api",
+      "kind": "stub",
       "category": "cms",
       "feature": "writing",
       "port": 6629,
@@ -5254,7 +5251,7 @@
     {
       "id": "freshsales",
       "name": "Freshsales",
-      "kind": "api",
+      "kind": "stub",
       "category": "sales",
       "feature": "business",
       "port": 6630,
@@ -5268,7 +5265,7 @@
     {
       "id": "zoho-crm",
       "name": "Zoho CRM",
-      "kind": "api",
+      "kind": "stub",
       "category": "sales",
       "feature": "business",
       "port": 6631,
@@ -5282,7 +5279,7 @@
     {
       "id": "brevo",
       "name": "Brevo",
-      "kind": "api",
+      "kind": "stub",
       "category": "marketing",
       "feature": "business",
       "port": 6632,
@@ -5296,7 +5293,7 @@
     {
       "id": "pipedrive",
       "name": "Pipedrive",
-      "kind": "api",
+      "kind": "stub",
       "category": "sales",
       "feature": "business",
       "port": 6633,
@@ -5310,7 +5307,7 @@
     {
       "id": "close",
       "name": "Close",
-      "kind": "api",
+      "kind": "stub",
       "category": "sales",
       "feature": "business",
       "port": 6634,
@@ -5324,7 +5321,7 @@
     {
       "id": "streak",
       "name": "Streak",
-      "kind": "api",
+      "kind": "stub",
       "category": "sales",
       "feature": "business",
       "port": 6635,
@@ -5338,7 +5335,7 @@
     {
       "id": "circleback",
       "name": "Circleback",
-      "kind": "api",
+      "kind": "stub",
       "category": "productivity",
       "feature": "business",
       "port": 6636,
@@ -5352,7 +5349,7 @@
     {
       "id": "fireflies",
       "name": "Fireflies.ai",
-      "kind": "api",
+      "kind": "stub",
       "category": "productivity",
       "feature": "business",
       "port": 6637,
@@ -5366,7 +5363,7 @@
     {
       "id": "jotform",
       "name": "Jotform",
-      "kind": "api",
+      "kind": "stub",
       "category": "productivity",
       "feature": "business",
       "port": 6638,
@@ -5380,7 +5377,7 @@
     {
       "id": "granola",
       "name": "Granola",
-      "kind": "api",
+      "kind": "stub",
       "category": "productivity",
       "feature": "business",
       "port": 6639,
@@ -5394,7 +5391,7 @@
     {
       "id": "coda",
       "name": "Coda",
-      "kind": "api",
+      "kind": "stub",
       "category": "productivity",
       "feature": "writing",
       "port": 6640,
@@ -5408,7 +5405,7 @@
     {
       "id": "taiga",
       "name": "Taiga",
-      "kind": "api",
+      "kind": "stub",
       "category": "operations",
       "feature": "business",
       "port": 6641,
@@ -5422,7 +5419,7 @@
     {
       "id": "snipe-it",
       "name": "Snipe-IT",
-      "kind": "api",
+      "kind": "stub",
       "category": "operations",
       "feature": "business",
       "port": 6642,
@@ -5436,7 +5433,7 @@
     {
       "id": "typeform",
       "name": "Typeform",
-      "kind": "api",
+      "kind": "stub",
       "category": "productivity",
       "feature": "business",
       "port": 6643,
@@ -5450,7 +5447,7 @@
     {
       "id": "highlevel-oauth",
       "name": "HighLevel (OAuth)",
-      "kind": "api",
+      "kind": "stub",
       "category": "marketing",
       "feature": "business",
       "port": 6644,
@@ -5464,7 +5461,7 @@
     {
       "id": "constant-contact",
       "name": "Constant Contact",
-      "kind": "api",
+      "kind": "stub",
       "category": "marketing",
       "feature": "business",
       "port": 6645,
@@ -5478,7 +5475,7 @@
     {
       "id": "fibery",
       "name": "Fibery",
-      "kind": "api",
+      "kind": "stub",
       "category": "productivity",
       "feature": "business",
       "port": 6646,
@@ -5492,7 +5489,7 @@
     {
       "id": "google-appsheet",
       "name": "Google AppSheet",
-      "kind": "api",
+      "kind": "stub",
       "category": "developer",
       "feature": "business",
       "port": 6647,
@@ -5506,7 +5503,7 @@
     {
       "id": "dub",
       "name": "Dub",
-      "kind": "api",
+      "kind": "stub",
       "category": "developer",
       "feature": "business",
       "port": 6648,
@@ -5520,7 +5517,7 @@
     {
       "id": "microsoft-onenote",
       "name": "Microsoft OneNote",
-      "kind": "api",
+      "kind": "stub",
       "category": "productivity",
       "feature": "education",
       "port": 6649,
@@ -5534,7 +5531,7 @@
     {
       "id": "microsoft-365-people",
       "name": "Microsoft 365 People",
-      "kind": "api",
+      "kind": "stub",
       "category": "productivity",
       "feature": "business",
       "port": 6650,
@@ -5548,7 +5545,7 @@
     {
       "id": "teamwork",
       "name": "Teamwork",
-      "kind": "api",
+      "kind": "stub",
       "category": "operations",
       "feature": "business",
       "port": 6651,
@@ -5562,7 +5559,7 @@
     {
       "id": "google-sheets",
       "name": "Google Sheets",
-      "kind": "api",
+      "kind": "stub",
       "category": "productivity",
       "feature": "business",
       "port": 6652,
@@ -5576,7 +5573,7 @@
     {
       "id": "raindrop",
       "name": "Raindrop.io",
-      "kind": "api",
+      "kind": "stub",
       "category": "productivity",
       "feature": "education",
       "port": 6653,
@@ -5590,7 +5587,7 @@
     {
       "id": "servicenow",
       "name": "ServiceNow",
-      "kind": "api",
+      "kind": "stub",
       "category": "operations",
       "feature": "business",
       "port": 6654,
@@ -5604,7 +5601,7 @@
     {
       "id": "meistertask",
       "name": "MeisterTask",
-      "kind": "api",
+      "kind": "stub",
       "category": "operations",
       "feature": "business",
       "port": 6655,
@@ -5618,7 +5615,7 @@
     {
       "id": "canvas-lms",
       "name": "Canvas LMS",
-      "kind": "api",
+      "kind": "stub",
       "category": "education",
       "feature": "education",
       "port": 6656,
@@ -5632,7 +5629,7 @@
     {
       "id": "google-docs",
       "name": "Google Docs",
-      "kind": "api",
+      "kind": "stub",
       "category": "productivity",
       "feature": "writing",
       "port": 6657,
@@ -5646,7 +5643,7 @@
     {
       "id": "dart",
       "name": "Dart",
-      "kind": "api",
+      "kind": "stub",
       "category": "operations",
       "feature": "business",
       "port": 6658,
@@ -5660,7 +5657,7 @@
     {
       "id": "podio",
       "name": "Podio",
-      "kind": "api",
+      "kind": "stub",
       "category": "operations",
       "feature": "business",
       "port": 6659,
@@ -5674,7 +5671,7 @@
     {
       "id": "microsoft-365-planner",
       "name": "Microsoft 365 Planner",
-      "kind": "api",
+      "kind": "stub",
       "category": "operations",
       "feature": "business",
       "port": 6660,
@@ -5688,7 +5685,7 @@
     {
       "id": "motion",
       "name": "Motion",
-      "kind": "api",
+      "kind": "stub",
       "category": "productivity",
       "feature": "business",
       "port": 6661,
@@ -5702,7 +5699,7 @@
     {
       "id": "microsoft-excel",
       "name": "Microsoft Excel",
-      "kind": "api",
+      "kind": "stub",
       "category": "productivity",
       "feature": "business",
       "port": 6662,
@@ -5716,7 +5713,7 @@
     {
       "id": "acuity-scheduling",
       "name": "Acuity Scheduling",
-      "kind": "api",
+      "kind": "stub",
       "category": "productivity",
       "feature": "business",
       "port": 6663,
@@ -5730,7 +5727,7 @@
     {
       "id": "wati",
       "name": "WATI",
-      "kind": "api",
+      "kind": "stub",
       "category": "marketing",
       "feature": "business",
       "port": 6664,
@@ -5744,7 +5741,7 @@
     {
       "id": "google-maps-places",
       "name": "Google Maps (Places API)",
-      "kind": "api",
+      "kind": "stub",
       "category": "developer",
       "feature": "business",
       "port": 6665,
@@ -5758,7 +5755,7 @@
     {
       "id": "surveymonkey",
       "name": "SurveyMonkey",
-      "kind": "api",
+      "kind": "stub",
       "category": "productivity",
       "feature": "education",
       "port": 6666,
@@ -5772,7 +5769,7 @@
     {
       "id": "google-slides",
       "name": "Google Slides",
-      "kind": "api",
+      "kind": "stub",
       "category": "productivity",
       "feature": "writing",
       "port": 6667,
@@ -5786,7 +5783,7 @@
     {
       "id": "freshservice",
       "name": "Freshservice",
-      "kind": "api",
+      "kind": "stub",
       "category": "operations",
       "feature": "business",
       "port": 6668,
@@ -5800,7 +5797,7 @@
     {
       "id": "roam-research",
       "name": "Roam Research",
-      "kind": "api",
+      "kind": "stub",
       "category": "productivity",
       "feature": "education",
       "port": 6669,
@@ -5814,7 +5811,7 @@
     {
       "id": "procore",
       "name": "Procore",
-      "kind": "api",
+      "kind": "stub",
       "category": "operations",
       "feature": "consulting",
       "port": 6670,
@@ -5828,7 +5825,7 @@
     {
       "id": "pipefy",
       "name": "Pipefy",
-      "kind": "api",
+      "kind": "stub",
       "category": "operations",
       "feature": "business",
       "port": 6671,
@@ -5842,7 +5839,7 @@
     {
       "id": "tidycal",
       "name": "TidyCal",
-      "kind": "api",
+      "kind": "stub",
       "category": "productivity",
       "feature": "business",
       "port": 6672,
@@ -5856,7 +5853,7 @@
     {
       "id": "basecamp",
       "name": "Basecamp",
-      "kind": "api",
+      "kind": "stub",
       "category": "operations",
       "feature": "business",
       "port": 6673,
@@ -5870,7 +5867,7 @@
     {
       "id": "zoho-projects",
       "name": "Zoho Projects",
-      "kind": "api",
+      "kind": "stub",
       "category": "operations",
       "feature": "business",
       "port": 6674,
@@ -5884,7 +5881,7 @@
     {
       "id": "google-classroom",
       "name": "Google Classroom",
-      "kind": "api",
+      "kind": "stub",
       "category": "education",
       "feature": "education",
       "port": 6675,
@@ -5898,7 +5895,7 @@
     {
       "id": "trello",
       "name": "Trello",
-      "kind": "api",
+      "kind": "stub",
       "category": "operations",
       "feature": "business",
       "port": 6676,
@@ -5912,7 +5909,7 @@
     {
       "id": "mixpanel",
       "name": "Mixpanel",
-      "kind": "api",
+      "kind": "stub",
       "category": "analytics",
       "feature": "business",
       "port": 6677,
@@ -5926,7 +5923,7 @@
     {
       "id": "airtop",
       "name": "Airtop",
-      "kind": "api",
+      "kind": "stub",
       "category": "ai",
       "feature": "business",
       "port": 6678,
@@ -5940,7 +5937,7 @@
     {
       "id": "harpa-ai",
       "name": "HARPA AI",
-      "kind": "api",
+      "kind": "stub",
       "category": "ai",
       "feature": "writing",
       "port": 6679,
@@ -5954,7 +5951,7 @@
     {
       "id": "google-cloud",
       "name": "Google Cloud",
-      "kind": "api",
+      "kind": "stub",
       "category": "developer",
       "feature": "business",
       "port": 6680,
@@ -5968,7 +5965,7 @@
     {
       "id": "finnhub",
       "name": "Finnhub",
-      "kind": "api",
+      "kind": "stub",
       "category": "finance",
       "feature": "financial",
       "port": 6681,
@@ -5982,7 +5979,7 @@
     {
       "id": "chartmogul",
       "name": "ChartMogul",
-      "kind": "api",
+      "kind": "stub",
       "category": "analytics",
       "feature": "business",
       "port": 6682,
@@ -5996,7 +5993,7 @@
     {
       "id": "google-analytics",
       "name": "Google Analytics",
-      "kind": "api",
+      "kind": "stub",
       "category": "analytics",
       "feature": "business",
       "port": 6683,
@@ -6010,7 +6007,7 @@
     {
       "id": "hex",
       "name": "Hex",
-      "kind": "api",
+      "kind": "stub",
       "category": "data",
       "feature": "math-science",
       "port": 6684,
@@ -6024,7 +6021,7 @@
     {
       "id": "metabase",
       "name": "Metabase",
-      "kind": "api",
+      "kind": "stub",
       "category": "analytics",
       "feature": "business",
       "port": 6685,
@@ -6038,7 +6035,7 @@
     {
       "id": "mboum",
       "name": "Mboum (stocks)",
-      "kind": "api",
+      "kind": "stub",
       "category": "finance",
       "feature": "financial",
       "port": 6686,
@@ -6052,7 +6049,7 @@
     {
       "id": "deepgram",
       "name": "Deepgram",
-      "kind": "api",
+      "kind": "stub",
       "category": "ai",
       "feature": "writing",
       "port": 6687,
@@ -6066,7 +6063,7 @@
     {
       "id": "airweave",
       "name": "Airweave",
-      "kind": "api",
+      "kind": "stub",
       "category": "ai",
       "feature": "business",
       "port": 6688,
@@ -6080,7 +6077,7 @@
     {
       "id": "google-search-console",
       "name": "Google Search Console",
-      "kind": "api",
+      "kind": "stub",
       "category": "marketing",
       "feature": "business",
       "port": 6689,
@@ -6094,7 +6091,7 @@
     {
       "id": "livekit",
       "name": "LiveKit",
-      "kind": "api",
+      "kind": "stub",
       "category": "developer",
       "feature": "business",
       "port": 6690,
@@ -6108,7 +6105,7 @@
     {
       "id": "axesso-amazon",
       "name": "Axesso Data Service - Amazon",
-      "kind": "api",
+      "kind": "stub",
       "category": "data",
       "feature": "business",
       "port": 6691,
@@ -6122,7 +6119,7 @@
     {
       "id": "posthog",
       "name": "PostHog",
-      "kind": "api",
+      "kind": "stub",
       "category": "analytics",
       "feature": "business",
       "port": 6692,
@@ -6136,7 +6133,7 @@
     {
       "id": "ms-power-bi",
       "name": "Microsoft Power BI",
-      "kind": "api",
+      "kind": "stub",
       "category": "analytics",
       "feature": "business",
       "port": 6693,
@@ -6150,7 +6147,7 @@
     {
       "id": "stytch",
       "name": "Stytch",
-      "kind": "api",
+      "kind": "stub",
       "category": "developer",
       "feature": "business",
       "port": 6694,
@@ -6164,7 +6161,7 @@
     {
       "id": "jam",
       "name": "Jam.dev",
-      "kind": "api",
+      "kind": "stub",
       "category": "developer",
       "feature": "business",
       "port": 6695,
@@ -6178,7 +6175,7 @@
     {
       "id": "doordash",
       "name": "DoorDash",
-      "kind": "api",
+      "kind": "stub",
       "category": "operations",
       "feature": "business",
       "port": 6696,
@@ -6192,7 +6189,7 @@
     {
       "id": "cloudinary",
       "name": "Cloudinary",
-      "kind": "api",
+      "kind": "stub",
       "category": "creative",
       "feature": "writing",
       "port": 6697,
@@ -6206,7 +6203,7 @@
     {
       "id": "sentry",
       "name": "Sentry",
-      "kind": "api",
+      "kind": "stub",
       "category": "developer",
       "feature": "business",
       "port": 6698,
@@ -6220,7 +6217,7 @@
     {
       "id": "wordpress-com",
       "name": "WordPress.com",
-      "kind": "api",
+      "kind": "stub",
       "category": "cms",
       "feature": "writing",
       "port": 6699,
@@ -6234,7 +6231,7 @@
     {
       "id": "context7",
       "name": "Context7",
-      "kind": "api",
+      "kind": "stub",
       "category": "developer",
       "feature": "business",
       "port": 6700,
@@ -6248,7 +6245,7 @@
     {
       "id": "datadog",
       "name": "Datadog",
-      "kind": "api",
+      "kind": "stub",
       "category": "developer",
       "feature": "business",
       "port": 6701,
@@ -6262,7 +6259,7 @@
     {
       "id": "linear",
       "name": "Linear",
-      "kind": "api",
+      "kind": "stub",
       "category": "developer",
       "feature": "business",
       "port": 6702,
@@ -6276,7 +6273,7 @@
     {
       "id": "wix",
       "name": "Wix",
-      "kind": "api",
+      "kind": "stub",
       "category": "cms",
       "feature": "writing",
       "port": 6703,
@@ -6290,7 +6287,7 @@
     {
       "id": "cloudflare-browser",
       "name": "Cloudflare Browser Rendering",
-      "kind": "api",
+      "kind": "stub",
       "category": "developer",
       "feature": "business",
       "port": 6704,
@@ -6304,7 +6301,7 @@
     {
       "id": "squarespace",
       "name": "Squarespace",
-      "kind": "api",
+      "kind": "stub",
       "category": "cms",
       "feature": "writing",
       "port": 6705,
@@ -6318,7 +6315,7 @@
     {
       "id": "telnyx",
       "name": "Telnyx",
-      "kind": "api",
+      "kind": "stub",
       "category": "communication",
       "feature": "business",
       "port": 6706,
@@ -6332,7 +6329,7 @@
     {
       "id": "blogger",
       "name": "Blogger",
-      "kind": "api",
+      "kind": "stub",
       "category": "cms",
       "feature": "writing",
       "port": 6707,
@@ -6346,7 +6343,7 @@
     {
       "id": "ms-sql-server",
       "name": "Microsoft SQL Server",
-      "kind": "api",
+      "kind": "stub",
       "category": "data",
       "feature": "business",
       "port": 6708,
@@ -6360,7 +6357,7 @@
     {
       "id": "webflow",
       "name": "Webflow",
-      "kind": "api",
+      "kind": "stub",
       "category": "cms",
       "feature": "writing",
       "port": 6709,
@@ -6374,7 +6371,7 @@
     {
       "id": "firecrawl",
       "name": "FireCrawl",
-      "kind": "api",
+      "kind": "stub",
       "category": "developer",
       "feature": "business",
       "port": 6710,
@@ -6388,7 +6385,7 @@
     {
       "id": "digitalocean",
       "name": "DigitalOcean",
-      "kind": "api",
+      "kind": "stub",
       "category": "developer",
       "feature": "business",
       "port": 6711,
@@ -6402,7 +6399,7 @@
     {
       "id": "cloudflare",
       "name": "Cloudflare",
-      "kind": "api",
+      "kind": "stub",
       "category": "developer",
       "feature": "business",
       "port": 6712,
@@ -6416,7 +6413,7 @@
     {
       "id": "postgresql",
       "name": "PostgreSQL",
-      "kind": "api",
+      "kind": "stub",
       "category": "data",
       "feature": "business",
       "port": 6713,
@@ -6430,7 +6427,7 @@
     {
       "id": "zerobounce",
       "name": "ZeroBounce",
-      "kind": "api",
+      "kind": "stub",
       "category": "marketing",
       "feature": "business",
       "port": 6714,
@@ -6444,7 +6441,7 @@
     {
       "id": "alpaca",
       "name": "Alpaca",
-      "kind": "api",
+      "kind": "stub",
       "category": "finance",
       "feature": "financial",
       "port": 6715,
@@ -6458,7 +6455,7 @@
     {
       "id": "sanity",
       "name": "Sanity",
-      "kind": "api",
+      "kind": "stub",
       "category": "cms",
       "feature": "writing",
       "port": 6716,
@@ -6472,7 +6469,7 @@
     {
       "id": "bitbucket",
       "name": "Bitbucket",
-      "kind": "api",
+      "kind": "stub",
       "category": "developer",
       "feature": "business",
       "port": 6717,
@@ -6486,7 +6483,7 @@
     {
       "id": "netlify",
       "name": "Netlify",
-      "kind": "api",
+      "kind": "stub",
       "category": "developer",
       "feature": "business",
       "port": 6718,
@@ -6500,7 +6497,7 @@
     {
       "id": "ms-azure-sql",
       "name": "Microsoft Azure SQL Database",
-      "kind": "api",
+      "kind": "stub",
       "category": "data",
       "feature": "business",
       "port": 6719,
@@ -6514,7 +6511,7 @@
     {
       "id": "qdrant",
       "name": "Qdrant",
-      "kind": "api",
+      "kind": "stub",
       "category": "ai",
       "feature": "math-science",
       "port": 6720,
@@ -6528,7 +6525,7 @@
     {
       "id": "replicate",
       "name": "Replicate",
-      "kind": "api",
+      "kind": "stub",
       "category": "ai",
       "feature": "math-science",
       "port": 6721,
@@ -6542,7 +6539,7 @@
     {
       "id": "aws",
       "name": "AWS",
-      "kind": "api",
+      "kind": "stub",
       "category": "developer",
       "feature": "business",
       "port": 6722,
@@ -6556,7 +6553,7 @@
     {
       "id": "fal-ai",
       "name": "fal.ai",
-      "kind": "api",
+      "kind": "stub",
       "category": "ai",
       "feature": "writing",
       "port": 6723,
@@ -6570,7 +6567,7 @@
     {
       "id": "nango",
       "name": "Nango",
-      "kind": "api",
+      "kind": "stub",
       "category": "developer",
       "feature": "business",
       "port": 6724,
@@ -6584,7 +6581,7 @@
     {
       "id": "prodpad",
       "name": "ProdPad",
-      "kind": "api",
+      "kind": "stub",
       "category": "productivity",
       "feature": "business",
       "port": 6725,
@@ -6598,7 +6595,7 @@
     {
       "id": "resend",
       "name": "Resend",
-      "kind": "api",
+      "kind": "stub",
       "category": "developer",
       "feature": "business",
       "port": 6726,
@@ -6612,7 +6609,7 @@
     {
       "id": "prisma-postgres",
       "name": "Prisma Postgres",
-      "kind": "api",
+      "kind": "stub",
       "category": "data",
       "feature": "business",
       "port": 6727,
@@ -6626,7 +6623,7 @@
     {
       "id": "clerk",
       "name": "Clerk",
-      "kind": "api",
+      "kind": "stub",
       "category": "developer",
       "feature": "business",
       "port": 6728,
@@ -6640,7 +6637,7 @@
     {
       "id": "carbon-arc",
       "name": "Carbon Arc",
-      "kind": "api",
+      "kind": "stub",
       "category": "finance",
       "feature": "financial",
       "port": 6729,
@@ -6654,7 +6651,7 @@
     {
       "id": "link-ai",
       "name": "Link (CLI)",
-      "kind": "api",
+      "kind": "stub",
       "category": "finance",
       "feature": "financial",
       "port": 6730,
@@ -6668,7 +6665,7 @@
     {
       "id": "morningstar",
       "name": "Morningstar",
-      "kind": "api",
+      "kind": "stub",
       "category": "finance",
       "feature": "financial",
       "port": 6731,
@@ -6682,7 +6679,7 @@
     {
       "id": "factset",
       "name": "FactSet",
-      "kind": "api",
+      "kind": "stub",
       "category": "finance",
       "feature": "financial",
       "port": 6732,
@@ -6696,7 +6693,7 @@
     {
       "id": "ramp",
       "name": "Ramp",
-      "kind": "api",
+      "kind": "stub",
       "category": "finance",
       "feature": "financial",
       "port": 6733,
@@ -6710,7 +6707,7 @@
     {
       "id": "plaid",
       "name": "Plaid",
-      "kind": "api",
+      "kind": "stub",
       "category": "finance",
       "feature": "financial",
       "port": 6734,
@@ -6724,7 +6721,7 @@
     {
       "id": "perplexity-finance",
       "name": "Perplexity Finance",
-      "kind": "api",
+      "kind": "stub",
       "category": "finance",
       "feature": "financial",
       "port": 6735,
@@ -6738,7 +6735,7 @@
     {
       "id": "midpage",
       "name": "Midpage",
-      "kind": "api",
+      "kind": "stub",
       "category": "research",
       "feature": "consulting",
       "port": 6736,
@@ -6752,7 +6749,7 @@
     {
       "id": "cb-insights",
       "name": "CB Insights",
-      "kind": "api",
+      "kind": "stub",
       "category": "research",
       "feature": "business",
       "port": 6737,
@@ -6766,7 +6763,7 @@
     {
       "id": "mailchimp",
       "name": "Mailchimp",
-      "kind": "api",
+      "kind": "stub",
       "category": "marketing",
       "feature": "business",
       "port": 6738,
@@ -6780,7 +6777,7 @@
     {
       "id": "eventbrite",
       "name": "Eventbrite",
-      "kind": "api",
+      "kind": "stub",
       "category": "operations",
       "feature": "business",
       "port": 6739,
@@ -6794,7 +6791,7 @@
     {
       "id": "discord-bot",
       "name": "Discord Bot",
-      "kind": "api",
+      "kind": "stub",
       "category": "communication",
       "feature": "business",
       "port": 6740,
@@ -6808,7 +6805,7 @@
     {
       "id": "bingx",
       "name": "BingX",
-      "kind": "api",
+      "kind": "stub",
       "category": "finance",
       "feature": "financial",
       "port": 6741,
@@ -6822,7 +6819,7 @@
     {
       "id": "dataforseo",
       "name": "DataForSEO",
-      "kind": "api",
+      "kind": "stub",
       "category": "marketing",
       "feature": "business",
       "port": 6742,
@@ -6836,7 +6833,7 @@
     {
       "id": "zendesk",
       "name": "Zendesk",
-      "kind": "api",
+      "kind": "stub",
       "category": "communication",
       "feature": "business",
       "port": 6743,
@@ -6850,7 +6847,7 @@
     {
       "id": "resend-mail",
       "name": "Resend Mail",
-      "kind": "api",
+      "kind": "stub",
       "category": "developer",
       "feature": "business",
       "port": 6744,
@@ -6864,7 +6861,7 @@
     {
       "id": "quickbooks",
       "name": "QuickBooks",
-      "kind": "api",
+      "kind": "stub",
       "category": "finance",
       "feature": "financial",
       "port": 6745,
@@ -6878,7 +6875,7 @@
     {
       "id": "xero-accounting",
       "name": "Xero Accounting",
-      "kind": "api",
+      "kind": "stub",
       "category": "finance",
       "feature": "financial",
       "port": 6746,
@@ -6892,7 +6889,7 @@
     {
       "id": "bigcommerce",
       "name": "BigCommerce",
-      "kind": "api",
+      "kind": "stub",
       "category": "operations",
       "feature": "business",
       "port": 6747,
@@ -6906,7 +6903,7 @@
     {
       "id": "zoho-books",
       "name": "Zoho Books",
-      "kind": "api",
+      "kind": "stub",
       "category": "finance",
       "feature": "financial",
       "port": 6748,
@@ -6920,7 +6917,7 @@
     {
       "id": "google-merchant-center",
       "name": "Google Merchant Center",
-      "kind": "api",
+      "kind": "stub",
       "category": "marketing",
       "feature": "business",
       "port": 6749,
@@ -6934,7 +6931,7 @@
     {
       "id": "google-contacts",
       "name": "Google Contacts",
-      "kind": "api",
+      "kind": "stub",
       "category": "productivity",
       "feature": "business",
       "port": 6750,
@@ -6948,7 +6945,7 @@
     {
       "id": "google-chat",
       "name": "Google Chat",
-      "kind": "api",
+      "kind": "stub",
       "category": "communication",
       "feature": "business",
       "port": 6751,
@@ -6962,7 +6959,7 @@
     {
       "id": "webscraping-ai",
       "name": "WebScraping.AI",
-      "kind": "api",
+      "kind": "stub",
       "category": "developer",
       "feature": "business",
       "port": 6752,
