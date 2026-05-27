@@ -143,6 +143,18 @@ func (s *Service) Logout(ctx context.Context, token string) error {
 	return err
 }
 
+// LogoutAll revokes every session for the given user — the "sign out
+// from all devices" affordance Settings exposes. Used when a user
+// suspects credential compromise; the next request from any other
+// device will hit the session-not-found path and force a re-login.
+func (s *Service) LogoutAll(ctx context.Context, userID string) error {
+	if userID == "" {
+		return nil
+	}
+	_, err := s.db.Pool.Exec(ctx, `DELETE FROM sessions WHERE user_id = $1`, userID)
+	return err
+}
+
 func (s *Service) Me(ctx context.Context, token string) (*User, error) {
 	if token == "" {
 		return nil, ErrUnauthorised

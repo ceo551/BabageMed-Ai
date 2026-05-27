@@ -22,6 +22,7 @@ import (
 	"github.com/babagemed/backend/internal/metrics"
 	"github.com/babagemed/backend/internal/payments"
 	"github.com/babagemed/backend/internal/features"
+	"github.com/babagemed/backend/internal/ratelimit"
 	"github.com/babagemed/backend/internal/spaces"
 	"github.com/babagemed/backend/internal/tracing"
 	"github.com/babagemed/backend/internal/updates"
@@ -170,13 +171,24 @@ func main() {
 		r.Post("/api/mcp/call/{id}/{tool}", apiH.CallTool)
 	}
 
+	// Rate-limit buckets — separate budgets so a chat spree can't lock
+	// out a login retry and vice versa. Burst is generous enough for
+	// normal humans (10 chat sends in a minute, 5 logins / signups in
+	// 5 minutes) while still throttling credential stuffing + runaway
+	// SSE fan-out from a single client.
+	chatLimiter := ratelimit.New(10, 6*time.Second) // ~10 burst, +1 every 6 s → 10/min sustained
+	authLimiter := ratelimit.New(5, time.Minute)    // ~5 burst, +1/min → defeats password spraying
+
 	// Chat — usable anonymously, but if auth is on we'll persist messages.
-	r.Post("/api/chat", apiH.Chat)
-	r.Post("/api/chat/stream", apiH.ChatStream)
+	r.With(chatLimiter.Middleware).Post("/api/chat", apiH.Chat)
+	r.With(chatLimiter.Middleware).Post("/api/chat/stream", apiH.ChatStream)
 
 	// Auth + persistence (DB-backed)
 	if authSvc != nil {
-		auth.NewHandler(authSvc).Register(r)
+		// Pass the rate limiter to the auth handler so /login and
+		// /signup are throttled at the package boundary. The rest of
+		// /api/auth/* is session-cookie-bound and not a stuffing target.
+		auth.NewHandler(authSvc).RegisterWithLimiter(r, authLimiter.Middleware)
 		admin.NewHandler(dbConn, authSvc).Register(r)
 		spaces.New(dbConn, authSvc).Register(r)
 		features.New(dbConn, authSvc).Register(r)

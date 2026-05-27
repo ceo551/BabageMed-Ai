@@ -3,9 +3,11 @@ package payments
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"time"
 
 	"github.com/babagemed/backend/internal/db"
+	"github.com/jackc/pgx/v5"
 )
 
 // Store records payment intents and updates them when webhooks confirm them.
@@ -60,11 +62,23 @@ func (s *Store) MarkPaid(ctx context.Context, provider, externalID, planID strin
 
 	var userID *string
 	var rowPlanID string
+	// Idempotent: only flip the row if it's NOT already paid. A replayed
+	// webhook (Paymob and PayPal both retry on 5xx) would otherwise
+	// re-run the plan upgrade below — harmless today because the
+	// upgrade is itself idempotent, but it stays dangerous if the plan
+	// logic ever grows side effects (credits, emails, slack pings).
 	err = tx.QueryRow(ctx, `
         UPDATE payments SET status = 'paid'
         WHERE provider = $1 AND external_id = $2
+          AND status IS DISTINCT FROM 'paid'
         RETURNING user_id, COALESCE(plan_id, '')
     `, provider, externalID).Scan(&userID, &rowPlanID)
+	if errors.Is(err, pgx.ErrNoRows) {
+		// Already paid (or row doesn't exist). Commit the empty tx and
+		// return cleanly so the webhook handler responds 200 — without
+		// a 200, the provider will keep retrying.
+		return tx.Commit(ctx)
+	}
 	if err != nil {
 		return err
 	}

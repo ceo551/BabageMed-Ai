@@ -30,6 +30,12 @@ func (h *Handler) Register(r chi.Router) {
 		r.Get("/api/admin/users", h.ListUsers)
 		r.Get("/api/admin/users/{id}", h.GetUser)
 		r.Patch("/api/admin/users/{id}", h.UpdateUser)
+		// is_admin is intentionally NOT settable via the generic PATCH
+		// route. Privilege promotion / demotion goes through a separate
+		// endpoint that also blocks self-demotion so a compromised admin
+		// account can't lock the org out of admin access.
+		r.Post("/api/admin/users/{id}/promote", h.PromoteUser)
+		r.Post("/api/admin/users/{id}/demote", h.DemoteUser)
 		r.Delete("/api/admin/users/{id}", h.DeleteUser)
 		r.Get("/api/admin/payments", h.ListPayments)
 		r.Patch("/api/admin/payments/{id}", h.UpdatePayment)
@@ -138,9 +144,14 @@ func (h *Handler) GetUser(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, 200, u)
 }
 
+// userPatch deliberately does NOT include IsAdmin. Privilege changes go
+// through PromoteUser / DemoteUser so we get audit-able dedicated
+// endpoints (rather than a generic PATCH that happens to flip the bit)
+// and so we can refuse self-demotion at the handler level. A compromised
+// admin session can no longer escalate other users by stuffing
+// `{"isAdmin": true}` into a generic edit.
 type userPatch struct {
 	Plan        *string `json:"plan"`
-	IsAdmin     *bool   `json:"isAdmin"`
 	DisplayName *string `json:"displayName"`
 }
 
@@ -151,16 +162,11 @@ func (h *Handler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, 400, "invalid json")
 		return
 	}
-	// Build dynamic SET clause from non-nil fields.
 	set := []string{}
 	args := []any{}
 	if p.Plan != nil {
 		args = append(args, *p.Plan)
 		set = append(set, "plan = $"+strconv.Itoa(len(args)))
-	}
-	if p.IsAdmin != nil {
-		args = append(args, *p.IsAdmin)
-		set = append(set, "is_admin = $"+strconv.Itoa(len(args)))
 	}
 	if p.DisplayName != nil {
 		args = append(args, *p.DisplayName)
@@ -173,6 +179,46 @@ func (h *Handler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 	args = append(args, id)
 	q := "UPDATE users SET " + join(set, ", ") + " WHERE id = $" + strconv.Itoa(len(args))
 	tag, err := h.db.Pool.Exec(r.Context(), q, args...)
+	if err != nil {
+		writeErr(w, 500, err.Error())
+		return
+	}
+	if tag.RowsAffected() == 0 {
+		writeErr(w, 404, "user not found")
+		return
+	}
+	writeJSON(w, 200, map[string]bool{"ok": true})
+}
+
+// PromoteUser flips is_admin = true on the target user. Self-promotion
+// is a no-op (the caller is already admin); the endpoint is kept for
+// symmetry with DemoteUser.
+func (h *Handler) PromoteUser(w http.ResponseWriter, r *http.Request) {
+	id := chi.URLParam(r, "id")
+	tag, err := h.db.Pool.Exec(r.Context(), `UPDATE users SET is_admin = TRUE WHERE id = $1`, id)
+	if err != nil {
+		writeErr(w, 500, err.Error())
+		return
+	}
+	if tag.RowsAffected() == 0 {
+		writeErr(w, 404, "user not found")
+		return
+	}
+	writeJSON(w, 200, map[string]bool{"ok": true})
+}
+
+// DemoteUser flips is_admin = false, refusing to demote the caller —
+// otherwise an admin could accidentally lock the org out of admin
+// access. To leave the admin role, an operator must have another
+// admin demote them.
+func (h *Handler) DemoteUser(w http.ResponseWriter, r *http.Request) {
+	id := chi.URLParam(r, "id")
+	me := auth.FromContext(r.Context())
+	if me != nil && me.ID == id {
+		writeErr(w, http.StatusBadRequest, "an admin cannot demote themselves — ask another admin")
+		return
+	}
+	tag, err := h.db.Pool.Exec(r.Context(), `UPDATE users SET is_admin = FALSE WHERE id = $1`, id)
 	if err != nil {
 		writeErr(w, 500, err.Error())
 		return

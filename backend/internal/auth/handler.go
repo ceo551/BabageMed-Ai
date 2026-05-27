@@ -14,9 +14,25 @@ type Handler struct{ s *Service }
 func NewHandler(s *Service) *Handler { return &Handler{s: s} }
 
 func (h *Handler) Register(r chi.Router) {
-	r.Post("/api/auth/signup", h.signup)
-	r.Post("/api/auth/login", h.login)
+	h.RegisterWithLimiter(r, nil)
+}
+
+// RegisterWithLimiter mounts the auth routes. When limiter is non-nil
+// it is wrapped around the credential-stuffing-prone endpoints
+// (/signup, /login) only — /logout / /me / PATCH /me are session-
+// cookie-bound and not a credential-stuffing target, so we leave them
+// at the global default. Calling with limiter=nil is equivalent to
+// Register(r) and is kept so tests stay short.
+func (h *Handler) RegisterWithLimiter(r chi.Router, limiter func(http.Handler) http.Handler) {
+	if limiter == nil {
+		r.Post("/api/auth/signup", h.signup)
+		r.Post("/api/auth/login", h.login)
+	} else {
+		r.With(limiter).Post("/api/auth/signup", h.signup)
+		r.With(limiter).Post("/api/auth/login", h.login)
+	}
 	r.Post("/api/auth/logout", h.logout)
+	r.Post("/api/auth/logout-all", h.logoutAll)
 	r.Get("/api/auth/me", h.me)
 	// User-facing Settings page endpoints. PATCH is for the General tab
 	// (preferred name, profession, instructions); /usage drives the Usage
@@ -82,6 +98,25 @@ func (h *Handler) logout(w http.ResponseWriter, r *http.Request) {
 	}
 	if tok := bearerToken(r); tok != "" {
 		_ = h.s.Logout(r.Context(), tok)
+	}
+	ClearCookie(w, r)
+	writeJSON(w, 200, map[string]bool{"ok": true})
+}
+
+// logoutAll revokes every session belonging to the authenticated user.
+// Mounted as POST /api/auth/logout-all and surfaced as a "Sign out from
+// all devices" affordance in Settings. Requires a valid session (so
+// anonymous callers get 401 — without this gate, an attacker who
+// learned a user_id could nuke their sessions remotely).
+func (h *Handler) logoutAll(w http.ResponseWriter, r *http.Request) {
+	u, err := h.s.userFromRequest(r)
+	if err != nil || u == nil {
+		writeErr(w, 401, "not authenticated")
+		return
+	}
+	if err := h.s.LogoutAll(r.Context(), u.ID); err != nil {
+		writeErr(w, 500, err.Error())
+		return
 	}
 	ClearCookie(w, r)
 	writeJSON(w, 200, map[string]bool{"ok": true})

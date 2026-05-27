@@ -48,6 +48,10 @@ export const auth = {
   login:  (email: string, password: string) =>
     api.post<{ user: User; token: string }>("/api/auth/login", { email, password }),
   logout: () => api.post<{ ok: boolean }>("/api/auth/logout"),
+  // "Sign out from all devices" — revokes every session belonging to
+  // the caller, including the current one. Settings exposes this as a
+  // credential-compromise affordance.
+  logoutAll: () => api.post<{ ok: boolean }>("/api/auth/logout-all"),
   me:     () => api.get<{ user: User }>("/api/auth/me"),
   // Settings → General: PATCH the four user-editable fields. The backend
   // returns the refreshed row so the client doesn't have to re-fetch.
