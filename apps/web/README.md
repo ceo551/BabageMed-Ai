@@ -1,8 +1,8 @@
 # Babbage AI — Web
 
 The Next.js 14 (App Router) dashboard. This is the canonical client — the
-iOS, Android, and Desktop apps load the deployed version of this app
-inside a native shell.
+Android and Desktop apps load the deployed version of this app inside a
+native shell.
 
 ## Develop
 

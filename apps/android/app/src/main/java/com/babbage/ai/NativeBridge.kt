@@ -4,8 +4,7 @@
 // https://babagemed.com can call into Android — share sheet, file picker,
 // biometric prompt, haptics, system notifications.
 //
-// Wiring is symmetric with apps/ios/.../NativeBridge.swift and the
-// `native()` helper in apps/web/app/lib/desktop.ts.
+// Mirrors the `native()` helper in apps/web/app/lib/desktop.ts.
 
 package com.babbage.ai
 

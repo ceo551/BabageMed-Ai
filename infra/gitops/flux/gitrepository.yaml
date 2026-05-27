@@ -21,5 +21,4 @@ spec:
     /apps/desktop/src-tauri/target
     /apps/android/build
     /apps/android/.gradle
-    /apps/ios/build
     /backend/bin

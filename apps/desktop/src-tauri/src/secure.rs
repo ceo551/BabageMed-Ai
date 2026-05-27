@@ -1,6 +1,6 @@
-// Native OS keychain bridge (Keychain on macOS, Credential Manager on
-// Windows, libsecret on Linux). The web app stores tokens in localStorage
-// for browser parity; on desktop we mirror them to the OS keychain so
+// Native OS credential bridge (Credential Manager on Windows, libsecret
+// on Linux). The web app stores tokens in localStorage for browser
+// parity; on desktop we mirror them to the OS credential store so
 // nothing sensitive sits in plaintext under the user's profile dir.
 //
 // Keys are namespaced under "babbage:<key>" so JS can't accidentally

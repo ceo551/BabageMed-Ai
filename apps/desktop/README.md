@@ -1,8 +1,8 @@
 # Babbage AI — desktop client
 
 Tauri 2.0 wrapper around the Babbage web app. Produces native binaries for
-Windows, macOS and Linux Ubuntu from one source tree (~6 MB stripped on
-release builds).
+Windows and Linux Ubuntu from one source tree (~6 MB stripped on release
+builds).
 
 ## Why Tauri (vs Electron)?
 
@@ -13,9 +13,9 @@ release builds).
 | Renders via | OS native WebView | Bundled Chromium |
 | Auto-updater | Built-in | Plugin |
 
-Tauri uses the OS-native WebView (WebView2 on Windows, WKWebView on macOS,
-WebKitGTK on Linux), so we ship one tiny Rust binary that loads the hosted
-Babbage web app at `https://babagemed.com`.
+Tauri uses the OS-native WebView (WebView2 on Windows, WebKitGTK on
+Linux), so we ship one tiny Rust binary that loads the hosted Babbage
+web app at `https://babagemed.com`.
 
 ## Prerequisites
 
@@ -23,7 +23,6 @@ Babbage web app at `https://babagemed.com`.
 - **Node** ≥ 20 (only for `tauri` CLI)
 - **OS toolchain:**
   - Windows: Microsoft C++ Build Tools + WebView2 runtime (preinstalled on Win 11)
-  - macOS:   Xcode Command-Line Tools (`xcode-select --install`)
   - Ubuntu:  `sudo apt install libwebkit2gtk-4.1-dev build-essential libssl-dev libayatana-appindicator3-dev librsvg2-dev`
 
 ## Develop
@@ -42,24 +41,20 @@ The Tauri window auto-reloads on Rust changes.
 ```bash
 npm run build
 # outputs land in src-tauri/target/release/bundle/
-#   ├─ msi/   Babbage AI_0.1.0_x64.msi      (Windows installer)
-#   ├─ nsis/  Babbage AI_0.1.0_x64-setup.exe
-#   ├─ dmg/   Babbage AI_0.1.0_aarch64.dmg  (macOS)
-#   ├─ macos/ Babbage AI.app
-#   ├─ deb/   babbage-ai_0.1.0_amd64.deb    (Ubuntu)
+#   ├─ msi/      Babbage AI_0.1.0_x64.msi          (Windows installer)
+#   ├─ nsis/     Babbage AI_0.1.0_x64-setup.exe
+#   ├─ deb/      babbage-ai_0.1.0_amd64.deb        (Ubuntu)
 #   └─ appimage/ Babbage AI_0.1.0_amd64.AppImage
 ```
 
 Cross-compiling is supported but each target needs its toolchain. The
-simplest CI path is one GitHub Actions runner per target OS. See the
-`.github/workflows/desktop.yml` (TBD).
+simplest CI path is one GitHub Actions runner per target OS — see
+`.github/workflows/desktop.yml`.
 
-## Code-signing & notarisation
+## Code-signing
 
 - Windows: requires a code-signing cert (EV or OV). Wire via
   `tauri.conf.json` → `bundle.windows.certificateThumbprint`.
-- macOS: requires Apple Developer ID + notarisation. Wire via
-  `APPLE_CERTIFICATE` env + `tauri-action` in CI.
 - Linux: no signing required for AppImage/.deb.
 
 ## Architecture
@@ -85,19 +80,18 @@ commands to the React layer (see `apps/web/app/lib/desktop.ts`) for:
 
 - `system_snapshot()` — CPU brand + frequency + per-core usage, RAM/swap,
   disks, network interfaces, thermal sensors, OS/host info
-- `gpu_adapters()` — every Vulkan/Metal/DX12 adapter (requires the
+- `gpu_adapters()` — every Vulkan/DX12 adapter (requires the
   `gpu-probe` cargo feature)
 - `battery_status()` — charge %, time-to-full/empty, cycle count
   (requires the `battery` cargo feature)
-- `secret_set/get/delete()` — native OS keychain (Keychain on macOS,
-  Credential Manager on Windows, libsecret on Linux)
+- `secret_set/get/delete()` — native OS credential store (Credential
+  Manager on Windows, libsecret on Linux)
 - `apply_perf_hints(highPriority)` — bumps Windows process priority class
 - `focus_main / toggle_fullscreen / set_always_on_top / request_user_attention`
 
 Performance switches that have to be set BEFORE the WebView starts
-(GPU rasterisation, zero-copy, hardware video decode, App Nap opt-out)
-are configured in `src-tauri/src/perf.rs` and run before any plugin
-registration.
+(GPU rasterisation, zero-copy, hardware video decode) are configured in
+`src-tauri/src/perf.rs` and run before any plugin registration.
 
 ### Built-in plugins
 
@@ -116,14 +110,14 @@ registration.
 | Feature      | Default | What it adds |
 |--------------|---------|--------------|
 | `gpu-probe`  | off     | wgpu adapter enumeration (~3 MB) |
-| `battery`    | off     | Battery introspection on macOS/Linux/Windows |
+| `battery`    | off     | Battery introspection on Windows/Linux |
 
 Enable with `npx tauri build -- --features gpu-probe,battery`.
 
 ### System tray + global shortcuts
 
 The app installs a tray icon on launch (right-click for menu, left-click
-to focus the main window) and registers `Ctrl/Cmd + Shift + Space` as a
+to focus the main window) and registers `Ctrl + Shift + Space` as a
 global summon shortcut. The React app listens for `babbage:summon` /
 `babbage:new-chat` / `babbage:cli` window events.
 
@@ -133,12 +127,12 @@ The `babbage://` URL scheme is registered with the OS. OAuth flows can
 redirect to `babbage://oauth/callback?...` and the desktop window will
 focus + dispatch the URL to the React app via the `deep-link` plugin.
 
-### Native keychain
+### Native credential store
 
 Tokens that the web app would otherwise put in `localStorage` are mirrored
-into the OS keychain via `secret_set/get/delete`. The web app should
-preferentially read from the keychain when `isDesktop()` is true (see
-`apps/web/app/lib/desktop.ts`).
+into the OS credential store via `secret_set/get/delete`. The web app
+should preferentially read from the store when `isDesktop()` is true
+(see `apps/web/app/lib/desktop.ts`).
 
 ## Roadmap
 

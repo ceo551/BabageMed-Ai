@@ -103,16 +103,15 @@ export const isDesktop = (): boolean => {
   return Boolean((window as unknown as { __TAURI_INTERNALS__?: unknown }).__TAURI_INTERNALS__);
 };
 
-// Detect the mobile shells by probing the actual JS bridge rather than
+// Detect the Android shell by probing the actual JS bridge rather than
 // the user-agent string — UA can be spoofed by browser devtools or
 // extensions, so any code that grants extra capability based on it
-// would be bypassable. The native shells inject window.BabbageNative
+// would be bypassable. The native shell injects window.BabbageNative
 // with a typed `platform` field that's not present in browsers.
-export const isMobileNative = (): "ios" | "android" | null => {
+export const isMobileNative = (): "android" | null => {
   if (typeof window === "undefined") return null;
   const bridge = (window as unknown as { BabbageNative?: { platform?: string } }).BabbageNative;
   if (!bridge || typeof bridge.platform !== "string") return null;
-  if (bridge.platform === "ios") return "ios";
   if (bridge.platform === "android") return "android";
   return null;
 };
@@ -136,9 +135,8 @@ export const secretSet = (key: string, value: string) =>
 export const secretGet = (key: string) => invoke<string | null>("secret_get", { key });
 export const secretDelete = (key: string) => invoke<void>("secret_delete", { key });
 
-// Native bridges for iOS/Android. Each shell injects a `BabbageNative`
-// global on the window so the React app can call into Swift/Kotlin via
-// the same API regardless of platform.
+// Native bridge for Android. The shell injects a `BabbageNative`
+// global on the window so the React app can call into Kotlin.
 type NativeBridge = {
   shareText?: (text: string) => void;
   pickFile?: (mime: string) => Promise<string | null>;

@@ -1,7 +1,7 @@
 // Babbage AI — desktop entrypoint.
 //
-// Tauri 2.0 spawns a native window (WebView2 on Windows, WKWebView on
-// macOS, WebKitGTK on Linux) pointed at the hosted Babbage web app.
+// Tauri 2.0 spawns a native window (WebView2 on Windows, WebKitGTK on
+// Linux) pointed at the hosted Babbage web app.
 // The Rust side exposes hardware introspection, secure-storage, native
 // dialogs, deep links, auto-updates, global shortcuts and a system tray
 // so the desktop client is more than a glorified browser.
@@ -19,6 +19,8 @@ mod tray;
 mod window_ops;
 
 use tauri::Manager;
+// MacosLauncher is required by tauri_plugin_autostart::init's signature
+// even on non-macOS platforms (the value is ignored on Windows/Linux).
 use tauri_plugin_autostart::MacosLauncher;
 use tauri_plugin_global_shortcut::{Code, GlobalShortcutExt, Modifiers, Shortcut, ShortcutState};
 use tauri_plugin_log::{Target, TargetKind};
@@ -81,13 +83,12 @@ fn main() {
         .plugin(tauri_plugin_global_shortcut::Builder::new()
             .with_handler(|app, shortcut, event| {
                 if event.state() != ShortcutState::Pressed { return; }
-                // Cmd/Ctrl+Shift+Space → focus the app from anywhere on
-                // the OS, mimicking Spotlight/Alfred. We dispatch a
-                // browser event so the web app can pop its command
-                // palette in response.
+                // Ctrl+Shift+Space → focus the app from anywhere on the
+                // OS, mimicking Spotlight/Alfred. We dispatch a browser
+                // event so the web app can pop its command palette in
+                // response.
                 let summon: Shortcut = Shortcut::new(Some(Modifiers::CONTROL | Modifiers::SHIFT), Code::Space);
-                let summon_mac: Shortcut = Shortcut::new(Some(Modifiers::SUPER | Modifiers::SHIFT), Code::Space);
-                if shortcut == &summon || shortcut == &summon_mac {
+                if shortcut == &summon {
                     if let Some(w) = app.get_webview_window("main") {
                         let _ = w.unminimize();
                         let _ = w.show();
@@ -121,12 +122,8 @@ fn main() {
             // (another app already owns it) is logged but doesn't abort
             // startup — the desktop client still works without it.
             let summon = Shortcut::new(Some(Modifiers::CONTROL | Modifiers::SHIFT), Code::Space);
-            let summon_mac = Shortcut::new(Some(Modifiers::SUPER | Modifiers::SHIFT), Code::Space);
             if let Err(e) = app.global_shortcut().register(summon) {
                 log::warn!("failed to register Ctrl+Shift+Space: {e}");
-            }
-            if let Err(e) = app.global_shortcut().register(summon_mac) {
-                log::warn!("failed to register Cmd+Shift+Space: {e}");
             }
 
             // Build the tray AFTER plugins are wired so it can read the

@@ -57,7 +57,7 @@ type PlatformAsset struct {
 }
 
 // Manifest is the canonical release record published by CI. We keep the
-// platforms map keyed by `{target}-{arch}` (e.g. "darwin-aarch64") and
+// platforms map keyed by `{target}-{arch}` (e.g. "linux-x86_64") and
 // accept a small set of well-known aliases at lookup time so old desktop
 // builds that send slightly different target names still match.
 type Manifest struct {
@@ -232,10 +232,12 @@ func (s *Service) load(ctx context.Context) ([]byte, error) {
 }
 
 // lookupAsset resolves a platform key tolerantly. Tauri 2.0 sends targets
-// like "darwin" / "linux" / "windows" and archs like "aarch64" / "x86_64",
-// but CI workflows tend to publish keys like "darwin-aarch64" or the
-// rust-target triple "x86_64-pc-windows-msvc". We try several shapes so
-// the manifest author can pick whichever style they prefer.
+// like "linux" / "windows" and archs like "x86_64", but CI workflows
+// tend to publish keys like "linux-x86_64" or the rust-target triple
+// "x86_64-pc-windows-msvc". We try several shapes so the manifest
+// author can pick whichever style they prefer. macOS targets are
+// deliberately not handled — the desktop client does not ship for
+// macOS.
 func lookupAsset(mf *Manifest, target, arch string) (PlatformAsset, bool) {
 	keys := []string{
 		target + "-" + arch,
@@ -246,8 +248,6 @@ func lookupAsset(mf *Manifest, target, arch string) (PlatformAsset, bool) {
 	switch target {
 	case "windows", "windows-msvc":
 		keys = append(keys, arch+"-pc-windows-msvc", "windows-"+arch)
-	case "darwin", "macos":
-		keys = append(keys, arch+"-apple-darwin", "macos-"+arch, "darwin-"+arch)
 	case "linux":
 		keys = append(keys, arch+"-unknown-linux-gnu", "linux-"+arch)
 	}

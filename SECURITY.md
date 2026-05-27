@@ -11,7 +11,7 @@ Please include:
 
 - A description of the vulnerability
 - Steps to reproduce
-- Affected versions / components (web / desktop / iOS / Android / MCPs / backend)
+- Affected versions / components (web / desktop / Android / MCPs / backend)
 - Your assessment of impact
 
 We aim to acknowledge reports within 3 business days and to ship a fix
@@ -27,7 +27,6 @@ security fixes.
 | Backend (Go)     | `main` |
 | Web (Next.js)    | `main` |
 | Desktop (Tauri)  | latest `desktop-v*` tag |
-| iOS              | latest TestFlight / App Store build |
 | Android          | latest Play Store / internal track |
 | MCPs             | `main` |
 

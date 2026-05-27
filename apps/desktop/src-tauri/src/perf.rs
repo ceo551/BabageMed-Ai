@@ -1,8 +1,8 @@
 // Pre-init performance/hardware-acceleration switches. Several of these
 // MUST be set as env vars before Tauri spawns its WebView — once the
-// WebView2/WKWebView/WebKitGTK process is running they are read-only.
-// We set safe defaults but a power user can override any of them via
-// the OS environment.
+// WebView2/WebKitGTK process is running they are read-only. We set
+// safe defaults but a power user can override any of them via the OS
+// environment.
 
 use std::env;
 
@@ -20,10 +20,10 @@ pub fn install_pre_init_env() {
     // when an Nvidia/AMD GPU is present. WebView2 honours the same
     // chromium switches Chrome uses, comma-separated.
     #[cfg(target_os = "windows")]
-    // --ignore-gpu-blocklist previously listed: Chromium maintains that
-    // blocklist for specific driver bugs that cause data corruption or
-    // crashes; overriding it can produce wrong-pixel reads from one site
-    // into another. We accept the cost of slightly worse perf on
+    // --ignore-gpu-blocklist deliberately left out: Chromium maintains
+    // that blocklist for specific driver bugs that cause data corruption
+    // or crashes; overriding it can produce wrong-pixel reads from one
+    // site into another. We accept the cost of slightly worse perf on
     // blocklisted drivers (fallback to software composite) for the
     // security guarantee.
     ensure(
@@ -53,13 +53,6 @@ pub fn install_pre_init_env() {
         // in the WebView use the GPU instead of CPU.
         ensure("GST_VAAPI_ALL_DRIVERS", "1");
     }
-
-    // ── macOS / WKWebView ──────────────────────────────────────────────
-    // WKWebView uses Metal automatically; no env vars needed. We opt out
-    // of App Nap so background MCP polling continues to run when the
-    // window is occluded (the user expects realtime updates).
-    #[cfg(target_os = "macos")]
-    ensure("NSAppSleepDisabled", "YES");
 
     // ── Generic ────────────────────────────────────────────────────────
     // Tokio's blocking pool defaults to 512 threads; cap at 4x logical

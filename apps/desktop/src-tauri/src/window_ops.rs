@@ -72,7 +72,7 @@ pub fn toggle_fullscreen(win: WebviewWindow) -> Result<(), String> {
 /// Apply OS-level GPU/scheduling hints. Most of these have to be set
 /// BEFORE the WebView is created (see `perf::install_pre_init_env`).
 /// This command is kept so the JS layer can re-trigger less invasive
-/// runtime-tunable hints (Windows process priority, macOS app nap opt-out)
+/// runtime-tunable hints (Windows process priority class)
 /// after the user toggles a setting.
 #[tauri::command]
 pub fn apply_perf_hints(app: tauri::AppHandle, high_priority: bool) -> Result<(), String> {

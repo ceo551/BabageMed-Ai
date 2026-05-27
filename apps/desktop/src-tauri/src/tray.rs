@@ -1,6 +1,5 @@
-// System tray icon + menu. Survives window close on Windows/Linux (mac
-// keeps the app alive via the dock anyway). Right-click → menu, left-click
-// → focus the main window.
+// System tray icon + menu. Survives window close on Windows/Linux —
+// right-click → menu, left-click → focus the main window.
 
 use tauri::{
     image::Image,
@@ -27,7 +26,7 @@ pub fn install(app: &AppHandle) -> tauri::Result<()> {
 
     TrayIconBuilder::with_id("babbage-tray")
         .icon(icon)
-        .icon_as_template(true) // template = monochrome on mac menu bar
+        .icon_as_template(false)
         .tooltip("Babbage AI")
         .menu(&menu)
         .show_menu_on_left_click(false)

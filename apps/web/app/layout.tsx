@@ -9,18 +9,12 @@ export const metadata = {
   description: "Babbage AI — instructions, files, skills and connectors per workflow.",
   applicationName: "Babbage AI",
   manifest: "/manifest.webmanifest",
-  appleWebApp: {
-    capable: true,
-    title: "Babbage AI",
-    statusBarStyle: "black-translucent" as const,
-  },
   formatDetection: { telephone: false, address: false, email: false },
   // Point every favicon size at the brand asset shipped in /public so the
   // browser tab gets the disc mark instead of the default globe.
   icons: {
-    icon:          "/babagemed-icon.png",
-    shortcut:      "/babagemed-icon.png",
-    apple:         "/babagemed-icon.png",
+    icon:     "/babagemed-icon.png",
+    shortcut: "/babagemed-icon.png",
   },
 };
 
