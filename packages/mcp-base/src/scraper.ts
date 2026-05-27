@@ -59,9 +59,12 @@ const FORBIDDEN_HOST_PATTERNS: RegExp[] = [
   /^172\.(1[6-9]|2[0-9]|3[0-1])\./, // 172.16.0.0/12 RFC1918
   /^169\.254\./,            // 169.254.0.0/16 link-local (AWS / GCP metadata)
   /^100\.(6[4-9]|[7-9]\d|1[01]\d|12[0-7])\./, // 100.64.0.0/10 CGNAT
-  /^fc00:/i, /^fd[0-9a-f]{2}:/i, // IPv6 ULA
-  /^fe80:/i,                // IPv6 link-local
-  /^::1$/,                  // IPv6 loopback
+  // IPv6 literals — new URL() preserves the surrounding brackets in
+  // .hostname, e.g. "[::1]" / "[fe80::1]". The patterns below accept
+  // both bracketed and unbracketed forms.
+  /^\[?fc00:/i, /^\[?fd[0-9a-f]{2}:/i, // IPv6 ULA
+  /^\[?fe80:/i,                        // IPv6 link-local
+  /^\[?::1\]?$/,                       // IPv6 loopback
   /\.internal$/i,           // GCP internal
   /\.local$/i,              // mDNS
   /\.cluster\.local$/i,     // Kubernetes

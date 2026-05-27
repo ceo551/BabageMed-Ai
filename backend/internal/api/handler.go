@@ -65,7 +65,11 @@ func (h *Handler) ListTools(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) CallTool(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
 	tool := chi.URLParam(r, "tool")
-	body, _ := io.ReadAll(r.Body)
+	// Cap the JSON args body at 4 MiB. The previous io.ReadAll(r.Body)
+	// would buffer the entire payload into memory, so an authenticated
+	// client could OOM the backend by streaming a huge body to
+	// /api/mcp/call/{id}/{tool}.
+	body, _ := io.ReadAll(io.LimitReader(r.Body, 4<<20))
 	var args any
 	if len(body) > 0 {
 		if err := json.Unmarshal(body, &args); err != nil {

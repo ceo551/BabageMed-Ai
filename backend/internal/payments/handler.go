@@ -1,6 +1,7 @@
 package payments
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"io"
@@ -8,6 +9,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/babagemed/backend/internal/auth"
 	"github.com/go-chi/chi/v5"
@@ -209,7 +211,13 @@ func (h *Handler) PayPalWebhook(w http.ResponseWriter, r *http.Request) {
 	// Cap body so a malicious request can't OOM the process. PayPal webhook
 	// events are typically <2 KB; 1 MiB is generously above any real payload.
 	body, _ := io.ReadAll(io.LimitReader(r.Body, 1<<20))
-	ok, err := h.pp.VerifyWebhook(r.Context(), r.Header, body)
+	// Use a fresh ctx with a generous timeout for the verifier so a
+	// client disconnect doesn't make us false-negative the signature.
+	// PayPal retries 401s for ~3 days, so a transient ctx cancellation
+	// here would otherwise trigger days of retry storms.
+	verifyCtx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	defer cancel()
+	ok, err := h.pp.VerifyWebhook(verifyCtx, r.Header, body)
 	if err != nil {
 		// A bad-body error (failed JSON parse) is the caller's fault →
 		// 400, not 401, so the upstream PayPal retry logic doesn't loop
@@ -218,7 +226,11 @@ func (h *Handler) PayPalWebhook(w http.ResponseWriter, r *http.Request) {
 			writeJSON(w, 400, map[string]string{"error": err.Error()})
 			return
 		}
-		writeJSON(w, 401, map[string]string{"error": err.Error()})
+		// Verifier UNREACHABLE (network, expired client token, PayPal
+		// outage) — return 503 so PayPal's retry loop applies back-
+		// pressure instead of treating it as a hard signature failure
+		// (which would burn through their ~25-attempt budget in hours).
+		writeJSON(w, 503, map[string]string{"error": "verifier unavailable"})
 		return
 	}
 	if !ok {

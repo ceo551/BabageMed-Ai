@@ -43,9 +43,11 @@ type Client struct {
 	// Vertex AI access tokens are valid for ~1h; cache + refresh through the
 	// google.FindDefaultCredentials TokenSource (which itself handles the
 	// federated-token → impersonation dance).
-	gcpTSOnce sync.Once
-	gcpTS     oauth2.TokenSource
-	gcpTSErr  error
+	// gcpTS is cached for the lifetime of the process once acquired.
+	// Failures are NOT memoised so a brief ADC outage at startup doesn't
+	// poison every later request.
+	gcpTSMu sync.RWMutex
+	gcpTS   oauth2.TokenSource
 }
 
 func NewClient(cfg Config) *Client {
@@ -67,15 +69,29 @@ func NewClient(cfg Config) *Client {
 // External-account credentials in particular need a stable context because
 // every Token() call triggers fresh STS + impersonation HTTPs.
 func (c *Client) vertexTokenSource() (oauth2.TokenSource, error) {
-	c.gcpTSOnce.Do(func() {
-		creds, err := google.FindDefaultCredentials(context.Background(), "https://www.googleapis.com/auth/cloud-platform")
-		if err != nil {
-			c.gcpTSErr = fmt.Errorf("ADC: %w", err)
-			return
-		}
-		c.gcpTS = creds.TokenSource
-	})
-	return c.gcpTS, c.gcpTSErr
+	// Fast path: a successful TokenSource is cached for the pod's life.
+	c.gcpTSMu.RLock()
+	ts := c.gcpTS
+	c.gcpTSMu.RUnlock()
+	if ts != nil {
+		return ts, nil
+	}
+	// Slow path: re-attempt on every call when there's no cached source.
+	// The previous sync.Once design memoised the FAILURE too, so a brief
+	// ADC outage at process start poisoned every subsequent Vertex call
+	// for the rest of the pod's life (only fixed by a restart). We now
+	// only memo on success.
+	c.gcpTSMu.Lock()
+	defer c.gcpTSMu.Unlock()
+	if c.gcpTS != nil {
+		return c.gcpTS, nil
+	}
+	creds, err := google.FindDefaultCredentials(context.Background(), "https://www.googleapis.com/auth/cloud-platform")
+	if err != nil {
+		return nil, fmt.Errorf("ADC: %w", err)
+	}
+	c.gcpTS = creds.TokenSource
+	return c.gcpTS, nil
 }
 
 type Message struct {
@@ -220,7 +236,7 @@ func (c *Client) callAnthropic(ctx context.Context, req CompletionRequest) (*Com
 	defer res.Body.Close()
 	raw, _ := io.ReadAll(res.Body)
 	if res.StatusCode >= 400 {
-		return nil, fmt.Errorf("anthropic: %s: %s", res.Status, string(raw))
+		return nil, fmt.Errorf("anthropic: %s: %s", res.Status, truncBody(raw))
 	}
 	var out struct {
 		Content []struct{ Text string } `json:"content"`
@@ -278,7 +294,7 @@ func (c *Client) callVertexAnthropic(ctx context.Context, req CompletionRequest)
 	defer res.Body.Close()
 	raw, _ := io.ReadAll(res.Body)
 	if res.StatusCode >= 400 {
-		return nil, fmt.Errorf("vertex anthropic: %s: %s", res.Status, string(raw))
+		return nil, fmt.Errorf("vertex anthropic: %s: %s", res.Status, truncBody(raw))
 	}
 	var out struct {
 		Content []struct{ Text string } `json:"content"`
@@ -352,7 +368,7 @@ func (c *Client) callGoogle(ctx context.Context, req CompletionRequest) (*Comple
 	defer res.Body.Close()
 	raw, _ := io.ReadAll(res.Body)
 	if res.StatusCode >= 400 {
-		return nil, fmt.Errorf("google: %s: %s", res.Status, string(raw))
+		return nil, fmt.Errorf("google: %s: %s", res.Status, truncBody(raw))
 	}
 	var out struct {
 		Candidates []struct {
@@ -427,7 +443,7 @@ func (c *Client) streamAnthropic(ctx context.Context, req CompletionRequest, onD
 	defer res.Body.Close()
 	if res.StatusCode >= 400 {
 		raw, _ := io.ReadAll(res.Body)
-		return nil, fmt.Errorf("anthropic stream: %s: %s", res.Status, string(raw))
+		return nil, fmt.Errorf("anthropic stream: %s: %s", res.Status, truncBody(raw))
 	}
 
 	var full strings.Builder
@@ -522,7 +538,7 @@ func (c *Client) streamVertexAnthropic(ctx context.Context, req CompletionReques
 	defer res.Body.Close()
 	if res.StatusCode >= 400 {
 		raw, _ := io.ReadAll(res.Body)
-		return nil, fmt.Errorf("vertex anthropic stream: %s: %s", res.Status, string(raw))
+		return nil, fmt.Errorf("vertex anthropic stream: %s: %s", res.Status, truncBody(raw))
 	}
 
 	var full strings.Builder
@@ -618,7 +634,7 @@ func (c *Client) streamGoogle(ctx context.Context, req CompletionRequest, onDelt
 	defer res.Body.Close()
 	if res.StatusCode >= 400 {
 		raw, _ := io.ReadAll(res.Body)
-		return nil, fmt.Errorf("google stream: %s: %s", res.Status, string(raw))
+		return nil, fmt.Errorf("google stream: %s: %s", res.Status, truncBody(raw))
 	}
 
 	var full strings.Builder
@@ -677,7 +693,7 @@ func (c *Client) streamOpenAI(ctx context.Context, req CompletionRequest, onDelt
 	defer res.Body.Close()
 	if res.StatusCode >= 400 {
 		raw, _ := io.ReadAll(res.Body)
-		return nil, fmt.Errorf("openai stream: %s: %s", res.Status, string(raw))
+		return nil, fmt.Errorf("openai stream: %s: %s", res.Status, truncBody(raw))
 	}
 
 	var full strings.Builder
@@ -733,7 +749,7 @@ func (c *Client) callOpenAI(ctx context.Context, req CompletionRequest) (*Comple
 	defer res.Body.Close()
 	raw, _ := io.ReadAll(res.Body)
 	if res.StatusCode >= 400 {
-		return nil, fmt.Errorf("openai: %s: %s", res.Status, string(raw))
+		return nil, fmt.Errorf("openai: %s: %s", res.Status, truncBody(raw))
 	}
 	var out struct {
 		Choices []struct {

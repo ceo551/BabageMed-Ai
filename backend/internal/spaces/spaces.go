@@ -460,6 +460,11 @@ func (s *Service) handleListFiles(w http.ResponseWriter, r *http.Request) {
 func (s *Service) handleUpload(w http.ResponseWriter, r *http.Request) {
 	u := auth.FromContext(r.Context())
 	spaceID := chi.URLParam(r, "id")
+	// Wrap r.Body BEFORE ParseMultipartForm so a 100 GB multipart upload
+	// can't spill the per-file overflow to disk. ParseMultipartForm's
+	// own arg only caps RAM — files above that go to a temp file
+	// without a global ceiling.
+	r.Body = http.MaxBytesReader(w, r.Body, maxUploadBytes+(1<<20))
 	if err := r.ParseMultipartForm(maxUploadBytes + 1<<20); err != nil {
 		http.Error(w, "bad form: "+err.Error(), http.StatusBadRequest)
 		return

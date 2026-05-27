@@ -232,6 +232,9 @@ func (s *Service) handlePatch(w http.ResponseWriter, r *http.Request) {
 func (s *Service) handleUpload(w http.ResponseWriter, r *http.Request) {
 	slug := chi.URLParam(r, "slug")
 	if !validSlugs[slug] { http.Error(w, "unknown feature", http.StatusNotFound); return }
+	// MaxBytesReader caps the total body, including the temp-disk spill
+	// path that ParseMultipartForm's `maxMemory` arg doesn't constrain.
+	r.Body = http.MaxBytesReader(w, r.Body, maxUploadBytes+(1<<20))
 	if err := r.ParseMultipartForm(maxUploadBytes); err != nil {
 		http.Error(w, "upload too large", http.StatusRequestEntityTooLarge)
 		return
