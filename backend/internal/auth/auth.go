@@ -105,7 +105,11 @@ func (s *Service) Signup(ctx context.Context, email, password, displayName strin
 	return &u, token, nil
 }
 
-func (s *Service) Login(ctx context.Context, email, password, ua, ip string) (*User, string, error) {
+// Login authenticates a user. priorToken, when non-empty, is the
+// session cookie value the caller arrived with — Login invalidates it
+// on success so a pre-planted cookie can't ride into the authenticated
+// session (session fixation defence).
+func (s *Service) Login(ctx context.Context, email, password, priorToken, ua, ip string) (*User, string, error) {
 	email = strings.ToLower(strings.TrimSpace(email))
 	var u User
 	var hash string
@@ -126,6 +130,17 @@ func (s *Service) Login(ctx context.Context, email, password, ua, ip string) (*U
 	}
 	if err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(password)); err != nil {
 		return nil, "", ErrInvalidCreds
+	}
+	// Session rotation: nuke any existing session that came in on the
+	// request (the pre-login cookie, if any) before minting a fresh
+	// one. Closes the classic session-fixation hole — an attacker who
+	// plants a cookie on the victim's browser before login can no
+	// longer ride into the authenticated session, because the token
+	// they pre-set is invalidated the moment Login() returns success.
+	// `priorToken` is empty for the common case (anonymous browser
+	// hitting /login), so this is a no-op then.
+	if priorToken != "" {
+		_ = s.Logout(ctx, priorToken)
 	}
 	token, err := s.createSession(ctx, u.ID, ua, ip)
 	if err != nil {

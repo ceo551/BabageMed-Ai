@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/babagemed/backend/internal/audit"
 	"github.com/babagemed/backend/internal/auth"
 	"github.com/babagemed/backend/internal/db"
 	"github.com/go-chi/chi/v5"
@@ -14,12 +15,13 @@ import (
 )
 
 type Handler struct {
-	db   *db.DB
-	auth *auth.Service
+	db    *db.DB
+	auth  *auth.Service
+	audit *audit.Service
 }
 
 func NewHandler(d *db.DB, a *auth.Service) *Handler {
-	return &Handler{db: d, auth: a}
+	return &Handler{db: d, auth: a, audit: audit.New(d)}
 }
 
 func (h *Handler) Register(r chi.Router) {
@@ -187,6 +189,7 @@ func (h *Handler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, 404, "user not found")
 		return
 	}
+	h.audit.Record(r.Context(), r, actorID(r), id, "admin.user.update", auditPatchDetails(p))
 	writeJSON(w, 200, map[string]bool{"ok": true})
 }
 
@@ -204,6 +207,7 @@ func (h *Handler) PromoteUser(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, 404, "user not found")
 		return
 	}
+	h.audit.Record(r.Context(), r, actorID(r), id, "admin.user.promote", nil)
 	writeJSON(w, 200, map[string]bool{"ok": true})
 }
 
@@ -227,7 +231,35 @@ func (h *Handler) DemoteUser(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, 404, "user not found")
 		return
 	}
+	h.audit.Record(r.Context(), r, actorID(r), id, "admin.user.demote", nil)
 	writeJSON(w, 200, map[string]bool{"ok": true})
+}
+
+// actorID returns the ID of the admin making the request — empty if
+// the auth context is somehow missing (defensive; requireAdmin should
+// have already gated this).
+func actorID(r *http.Request) string {
+	if u := auth.FromContext(r.Context()); u != nil {
+		return u.ID
+	}
+	return ""
+}
+
+// auditPatchDetails captures only the fields that were actually
+// modified so the audit row reads as a diff rather than a snapshot of
+// the whole struct.
+func auditPatchDetails(p userPatch) map[string]any {
+	out := map[string]any{}
+	if p.Plan != nil {
+		out["plan"] = *p.Plan
+	}
+	if p.DisplayName != nil {
+		out["displayName"] = *p.DisplayName
+	}
+	if len(out) == 0 {
+		return nil
+	}
+	return out
 }
 
 func (h *Handler) DeleteUser(w http.ResponseWriter, r *http.Request) {
@@ -243,9 +275,15 @@ func (h *Handler) DeleteUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if tag.RowsAffected() == 0 {
+		// target_id intentionally omitted on the not-found path — there
+		// is no surviving row to reference, but we still log the
+		// attempted delete so a brute-force scan of UUIDs leaves a
+		// trail.
+		h.audit.Record(r.Context(), r, actorID(r), "", "admin.user.delete.miss", map[string]any{"id": id})
 		writeErr(w, 404, "user not found")
 		return
 	}
+	h.audit.Record(r.Context(), r, actorID(r), id, "admin.user.delete", nil)
 	writeJSON(w, 200, map[string]bool{"ok": true})
 }
 
@@ -322,6 +360,7 @@ func (h *Handler) UpdatePayment(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, 404, "payment not found")
 		return
 	}
+	h.audit.Record(r.Context(), r, actorID(r), id, "admin.payment.update", map[string]any{"status": *p.Status})
 	writeJSON(w, 200, map[string]bool{"ok": true})
 }
 
@@ -372,6 +411,7 @@ func (h *Handler) RevokeSession(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, 404, "session not found")
 		return
 	}
+	h.audit.Record(r.Context(), r, actorID(r), id, "admin.session.revoke", nil)
 	writeJSON(w, 200, map[string]bool{"ok": true})
 }
 

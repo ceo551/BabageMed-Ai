@@ -77,7 +77,15 @@ func (h *Handler) login(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, 400, "invalid json")
 		return
 	}
-	u, token, err := h.s.Login(r.Context(), b.Email, b.Password, r.UserAgent(), r.RemoteAddr)
+	// Pass through any session cookie the request already carries so
+	// Login() can invalidate it before minting a new one (session
+	// fixation defence). For the common anonymous-browser case the
+	// cookie is missing and Login no-ops the rotation.
+	var prior string
+	if c, err := r.Cookie(CookieName); err == nil {
+		prior = c.Value
+	}
+	u, token, err := h.s.Login(r.Context(), b.Email, b.Password, prior, r.UserAgent(), r.RemoteAddr)
 	if err != nil {
 		statusFor(err, w)
 		return
