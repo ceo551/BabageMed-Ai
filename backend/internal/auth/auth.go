@@ -43,14 +43,18 @@ var dummyBcryptHash = func() string {
 
 type User struct {
 	ID            string    `json:"id"`
-	Email         string    `json:"email"`
-	DisplayName   string    `json:"displayName"`
-	PreferredName string    `json:"preferredName"`
-	Profession    string    `json:"profession"`
-	Instructions  string    `json:"instructions"`
-	Plan          string    `json:"plan"`
-	IsAdmin       bool      `json:"isAdmin"`
-	CreatedAt     time.Time `json:"createdAt"`
+	Email          string     `json:"email"`
+	DisplayName    string     `json:"displayName"`
+	PreferredName  string     `json:"preferredName"`
+	Profession     string     `json:"profession"`
+	Instructions   string     `json:"instructions"`
+	Plan           string     `json:"plan"`
+	IsAdmin        bool       `json:"isAdmin"`
+	// EmailVerifiedAt is the timestamp at which the user proved control
+	// of their email address. NULL pre-verification so the frontend can
+	// render a "verify your email" banner.
+	EmailVerifiedAt *time.Time `json:"emailVerifiedAt,omitempty"`
+	CreatedAt      time.Time  `json:"createdAt"`
 }
 
 type ctxKey struct{ name string }
@@ -90,8 +94,8 @@ func (s *Service) Signup(ctx context.Context, email, password, displayName strin
 	err = s.db.Pool.QueryRow(ctx, `
         INSERT INTO users (email, password_hash, display_name)
         VALUES ($1, $2, NULLIF($3, ''))
-        RETURNING id, email, COALESCE(display_name, ''), preferred_name, profession, instructions, plan, is_admin, created_at
-    `, email, string(hash), displayName).Scan(&u.ID, &u.Email, &u.DisplayName, &u.PreferredName, &u.Profession, &u.Instructions, &u.Plan, &u.IsAdmin, &u.CreatedAt)
+        RETURNING id, email, COALESCE(display_name, ''), preferred_name, profession, instructions, plan, is_admin, email_verified_at, created_at
+    `, email, string(hash), displayName).Scan(&u.ID, &u.Email, &u.DisplayName, &u.PreferredName, &u.Profession, &u.Instructions, &u.Plan, &u.IsAdmin, &u.EmailVerifiedAt, &u.CreatedAt)
 	if err != nil {
 		if isUniqueViolation(err) {
 			return nil, "", ErrAlreadyExists
@@ -114,9 +118,9 @@ func (s *Service) Login(ctx context.Context, email, password, priorToken, ua, ip
 	var u User
 	var hash string
 	err := s.db.Pool.QueryRow(ctx, `
-        SELECT id, email, COALESCE(display_name, ''), preferred_name, profession, instructions, plan, is_admin, created_at, password_hash
+        SELECT id, email, COALESCE(display_name, ''), preferred_name, profession, instructions, plan, is_admin, email_verified_at, created_at, password_hash
         FROM users WHERE email = $1
-    `, email).Scan(&u.ID, &u.Email, &u.DisplayName, &u.PreferredName, &u.Profession, &u.Instructions, &u.Plan, &u.IsAdmin, &u.CreatedAt, &hash)
+    `, email).Scan(&u.ID, &u.Email, &u.DisplayName, &u.PreferredName, &u.Profession, &u.Instructions, &u.Plan, &u.IsAdmin, &u.EmailVerifiedAt, &u.CreatedAt, &hash)
 	// Email-enumeration defence: when the email lookup misses, we still
 	// run bcrypt against a dummy hash so the response time matches the
 	// "wrong password" path. Without this, a measurable timing gap
@@ -178,10 +182,10 @@ func (s *Service) Me(ctx context.Context, token string) (*User, error) {
 	var u User
 	var exp time.Time
 	err := s.db.Pool.QueryRow(ctx, `
-        SELECT u.id, u.email, COALESCE(u.display_name, ''), u.preferred_name, u.profession, u.instructions, u.plan, u.is_admin, u.created_at, s.expires_at
+        SELECT u.id, u.email, COALESCE(u.display_name, ''), u.preferred_name, u.profession, u.instructions, u.plan, u.is_admin, u.email_verified_at, u.created_at, s.expires_at
         FROM sessions s JOIN users u ON u.id = s.user_id
         WHERE s.token_hash = $1
-    `, h).Scan(&u.ID, &u.Email, &u.DisplayName, &u.PreferredName, &u.Profession, &u.Instructions, &u.Plan, &u.IsAdmin, &u.CreatedAt, &exp)
+    `, h).Scan(&u.ID, &u.Email, &u.DisplayName, &u.PreferredName, &u.Profession, &u.Instructions, &u.Plan, &u.IsAdmin, &u.EmailVerifiedAt, &u.CreatedAt, &exp)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, ErrUnauthorised
@@ -200,9 +204,9 @@ func (s *Service) Me(ctx context.Context, token string) (*User, error) {
 func (s *Service) GetUser(ctx context.Context, id string) (*User, error) {
 	var u User
 	err := s.db.Pool.QueryRow(ctx, `
-        SELECT id, email, COALESCE(display_name, ''), preferred_name, profession, instructions, plan, is_admin, created_at
+        SELECT id, email, COALESCE(display_name, ''), preferred_name, profession, instructions, plan, is_admin, email_verified_at, created_at
         FROM users WHERE id = $1
-    `, id).Scan(&u.ID, &u.Email, &u.DisplayName, &u.PreferredName, &u.Profession, &u.Instructions, &u.Plan, &u.IsAdmin, &u.CreatedAt)
+    `, id).Scan(&u.ID, &u.Email, &u.DisplayName, &u.PreferredName, &u.Profession, &u.Instructions, &u.Plan, &u.IsAdmin, &u.EmailVerifiedAt, &u.CreatedAt)
 	if err != nil {
 		return nil, err
 	}

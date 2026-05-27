@@ -34,6 +34,10 @@ export type User = {
   instructions: string;
   plan: "free" | "pro" | "max" | string;
   isAdmin: boolean;
+  // ISO timestamp when the user clicked their verification link;
+  // undefined → unverified. Used to render the "verify your email"
+  // banner in Settings.
+  emailVerifiedAt?: string | null;
   createdAt: string;
 };
 
@@ -44,14 +48,29 @@ export type UsageReport = { plan: string; window: string; items: UsageItem[] };
 
 export const auth = {
   signup: (email: string, password: string, displayName?: string) =>
-    api.post<{ user: User; token: string }>("/api/auth/signup", { email, password, displayName }),
+    // Token is delivered via HttpOnly cookie set on the response,
+    // never echoed in the body — see backend auth/handler.go.
+    api.post<{ user: User }>("/api/auth/signup", { email, password, displayName }),
   login:  (email: string, password: string) =>
-    api.post<{ user: User; token: string }>("/api/auth/login", { email, password }),
+    api.post<{ user: User }>("/api/auth/login", { email, password }),
   logout: () => api.post<{ ok: boolean }>("/api/auth/logout"),
   // "Sign out from all devices" — revokes every session belonging to
   // the caller, including the current one. Settings exposes this as a
   // credential-compromise affordance.
   logoutAll: () => api.post<{ ok: boolean }>("/api/auth/logout-all"),
+  // Password reset — request always returns 200, even when the email
+  // isn't registered, so the response code can't be used to enumerate
+  // accounts. The user always sees the same "we sent a link" toast.
+  forgotPassword: (email: string) =>
+    api.post<{ ok: boolean }>("/api/auth/forgot-password", { email }),
+  resetPassword: (email: string, token: string, newPassword: string) =>
+    api.post<{ ok: boolean }>("/api/auth/reset-password", { email, token, newPassword }),
+  // Email verification — sender is the authenticated session; the
+  // verify call is anonymous (the link in the email IS the cred).
+  resendVerifyEmail: () =>
+    api.post<{ ok: boolean }>("/api/auth/resend-verify"),
+  verifyEmail: (uid: string, token: string) =>
+    api.post<{ ok: boolean }>("/api/auth/verify-email", { uid, token }),
   me:     () => api.get<{ user: User }>("/api/auth/me"),
   // Settings → General: PATCH the four user-editable fields. The backend
   // returns the refreshed row so the client doesn't have to re-fetch.

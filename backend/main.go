@@ -12,8 +12,10 @@ import (
 
 	"github.com/babagemed/backend/internal/admin"
 	"github.com/babagemed/backend/internal/api"
+	"github.com/babagemed/backend/internal/audit"
 	"github.com/babagemed/backend/internal/auth"
 	"github.com/babagemed/backend/internal/cache"
+	"github.com/babagemed/backend/internal/email"
 	"github.com/babagemed/backend/internal/chats"
 	"github.com/babagemed/backend/internal/connectors"
 	"github.com/babagemed/backend/internal/db"
@@ -189,6 +191,14 @@ func main() {
 		// /signup are throttled at the package boundary. The rest of
 		// /api/auth/* is session-cookie-bound and not a stuffing target.
 		auth.NewHandler(authSvc).RegisterWithLimiter(r, authLimiter.Middleware)
+		// Password reset + email verification — both rate-limited (the
+		// /forgot endpoint is an obvious enumeration + SMTP-spam target).
+		emailSender := email.NewFromEnv()
+		auditSvc := audit.New(dbConn)
+		r.Group(func(pr chi.Router) {
+			pr.Use(authLimiter.Middleware)
+			auth.NewResetHandler(authSvc, emailSender, auditSvc).Register(pr)
+		})
 		admin.NewHandler(dbConn, authSvc).Register(r)
 		spaces.New(dbConn, authSvc).Register(r)
 		features.New(dbConn, authSvc).Register(r)

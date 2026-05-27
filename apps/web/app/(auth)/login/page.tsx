@@ -45,6 +45,9 @@ export default function LoginPage() {
           <input id="password" type="password" required minLength={8} value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="current-password" />
         </div>
         <button className="auth-btn" type="submit" disabled={busy}>{busy ? "…" : "Sign in"}</button>
+        <p className="auth-foot" style={{ marginBottom: 6 }}>
+          <Link href="/forgot-password">Forgot password?</Link>
+        </p>
         <p className="auth-foot">No account yet? <Link href="/signup">Create one</Link></p>
       </form>
     </div>
