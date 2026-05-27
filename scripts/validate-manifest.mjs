@@ -29,6 +29,11 @@ function fail(msg) {
 
 // --- 1. JSON Schema (lightweight in-house — full ajv would add a dep)
 const VALID_KINDS = new Set(["api", "scrape", "hybrid", "stub"]);
+const VALID_FEATURES = new Set([
+  "healthcare", "education", "writing", "translation",
+  "data-analysis", "business", "financial", "consulting",
+  "image-video", "advertisements",
+]);
 const ID_RE = /^[a-z0-9][a-z0-9-]{0,63}$/;
 const TOOL_RE = /^[a-z][a-z0-9_-]*$/;
 for (const s of servers) {
@@ -38,6 +43,8 @@ for (const s of servers) {
   if (typeof s.port !== "number" || s.port < 6101 || s.port > 6999) fail(`${s.id}: bad port ${s.port}`);
   if (!Array.isArray(s.tools) || s.tools.length === 0) fail(`${s.id}: tools[] must be non-empty array`);
   if (s.tools && s.tools.some((t) => !TOOL_RE.test(t))) fail(`${s.id}: tool name doesn't match ${TOOL_RE}`);
+  if (!s.feature) fail(`${s.id}: missing feature (one of: ${[...VALID_FEATURES].join(", ")})`);
+  else if (!VALID_FEATURES.has(s.feature)) fail(`${s.id}: bad feature ${JSON.stringify(s.feature)}`);
 }
 
 // --- 2. Unique ports + ids

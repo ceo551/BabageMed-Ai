@@ -26,6 +26,12 @@ type Chat struct {
 	Title     string    `json:"title"`
 	Model     string    `json:"model"`
 	Mode      string    `json:"mode"`
+	// Feature is the slug of the feature page the chat was opened from
+	// ("healthcare", "writing", …) — empty string means a "general" chat
+	// started from the dashboard root. The list endpoint partitions on
+	// this so the general History sidebar row and each feature page's
+	// sub-sidebar see disjoint sets.
+	Feature   string    `json:"feature,omitempty"`
 	CreatedAt time.Time `json:"createdAt"`
 	UpdatedAt time.Time `json:"updatedAt"`
 }
@@ -66,14 +72,46 @@ func (s *Service) Register(r chi.Router) {
 
 // ─── List + create ────────────────────────────────────────────────────────
 
+// handleList returns the user's chats. A ?feature=<slug> filter narrows
+// to chats started inside that feature page; ?feature=general (or
+// the alias "" via ?feature=) returns chats with NULL feature_slug,
+// i.e. those started from the dashboard root.
 func (s *Service) handleList(w http.ResponseWriter, r *http.Request) {
 	u := auth.FromContext(r.Context())
-	rows, err := s.db.Pool.Query(r.Context(), `
-		SELECT id, COALESCE(title, ''), COALESCE(model, ''), COALESCE(mode, ''), created_at, updated_at
-		FROM chats WHERE user_id = $1
-		ORDER BY updated_at DESC
-		LIMIT 200
-	`, u.ID)
+	feature := r.URL.Query().Get("feature")
+
+	// Three modes:
+	//   feature missing entirely → list ALL chats (legacy path, kept
+	//     for the admin/debug views that want everything).
+	//   feature=general → just NULL slugs.
+	//   feature=<slug> → that slug only.
+	var (
+		rows pgx.Rows
+		err  error
+	)
+	switch feature {
+	case "":
+		rows, err = s.db.Pool.Query(r.Context(), `
+			SELECT id, COALESCE(title, ''), COALESCE(model, ''), COALESCE(mode, ''),
+			       COALESCE(feature_slug, ''), created_at, updated_at
+			FROM chats WHERE user_id = $1
+			ORDER BY updated_at DESC LIMIT 200
+		`, u.ID)
+	case "general":
+		rows, err = s.db.Pool.Query(r.Context(), `
+			SELECT id, COALESCE(title, ''), COALESCE(model, ''), COALESCE(mode, ''),
+			       COALESCE(feature_slug, ''), created_at, updated_at
+			FROM chats WHERE user_id = $1 AND feature_slug IS NULL
+			ORDER BY updated_at DESC LIMIT 200
+		`, u.ID)
+	default:
+		rows, err = s.db.Pool.Query(r.Context(), `
+			SELECT id, COALESCE(title, ''), COALESCE(model, ''), COALESCE(mode, ''),
+			       COALESCE(feature_slug, ''), created_at, updated_at
+			FROM chats WHERE user_id = $1 AND feature_slug = $2
+			ORDER BY updated_at DESC LIMIT 200
+		`, u.ID, feature)
+	}
 	if err != nil {
 		http.Error(w, err.Error(), 500)
 		return
@@ -82,7 +120,7 @@ func (s *Service) handleList(w http.ResponseWriter, r *http.Request) {
 	out := []Chat{}
 	for rows.Next() {
 		var c Chat
-		if err := rows.Scan(&c.ID, &c.Title, &c.Model, &c.Mode, &c.CreatedAt, &c.UpdatedAt); err != nil {
+		if err := rows.Scan(&c.ID, &c.Title, &c.Model, &c.Mode, &c.Feature, &c.CreatedAt, &c.UpdatedAt); err != nil {
 			http.Error(w, err.Error(), 500)
 			return
 		}
@@ -93,11 +131,7 @@ func (s *Service) handleList(w http.ResponseWriter, r *http.Request) {
 
 func (s *Service) handleCreate(w http.ResponseWriter, r *http.Request) {
 	u := auth.FromContext(r.Context())
-	var body struct{ Title, Model, Mode string }
-	// Don't swallow decode errors — an unparseable body usually means a
-	// client bug and silently creating an empty-titled chat hides it.
-	// An empty body is fine (typed as the zero value) so we only fail
-	// when the body is non-empty AND malformed.
+	var body struct{ Title, Model, Mode, Feature string }
 	if r.ContentLength != 0 {
 		if err := json.NewDecoder(io.LimitReader(r.Body, 1<<20)).Decode(&body); err != nil {
 			http.Error(w, "invalid json", http.StatusBadRequest)
@@ -105,18 +139,39 @@ func (s *Service) handleCreate(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	body.Title = trimTitle(body.Title)
+	// Feature whitelist mirrors backend/internal/features. Anything else
+	// is treated as "no feature" (general chat). We don't 400 because
+	// older clients may send empty strings or absent fields.
+	if !validFeatureSlug(body.Feature) {
+		body.Feature = ""
+	}
 
 	var c Chat
 	err := s.db.Pool.QueryRow(r.Context(), `
-		INSERT INTO chats (user_id, title, model, mode)
-		VALUES ($1, NULLIF($2, ''), NULLIF($3, ''), NULLIF($4, ''))
-		RETURNING id, COALESCE(title, ''), COALESCE(model, ''), COALESCE(mode, ''), created_at, updated_at
-	`, u.ID, body.Title, body.Model, body.Mode).Scan(&c.ID, &c.Title, &c.Model, &c.Mode, &c.CreatedAt, &c.UpdatedAt)
+		INSERT INTO chats (user_id, title, model, mode, feature_slug)
+		VALUES ($1, NULLIF($2, ''), NULLIF($3, ''), NULLIF($4, ''), NULLIF($5, ''))
+		RETURNING id, COALESCE(title, ''), COALESCE(model, ''), COALESCE(mode, ''),
+		          COALESCE(feature_slug, ''), created_at, updated_at
+	`, u.ID, body.Title, body.Model, body.Mode, body.Feature).
+		Scan(&c.ID, &c.Title, &c.Model, &c.Mode, &c.Feature, &c.CreatedAt, &c.UpdatedAt)
 	if err != nil {
 		http.Error(w, err.Error(), 500)
 		return
 	}
 	writeJSON(w, c)
+}
+
+// validFeatureSlug keeps this package self-contained (no import cycle on
+// internal/features). Keep in sync with that package's validSlugs and
+// with apps/web/app/i18n.ts FEATURES_*.
+func validFeatureSlug(s string) bool {
+	switch s {
+	case "healthcare", "education", "writing", "translation",
+		"data-analysis", "business", "financial", "consulting",
+		"image-video", "advertisements":
+		return true
+	}
+	return false
 }
 
 // ─── Get + update + delete ────────────────────────────────────────────────
@@ -125,9 +180,10 @@ func (s *Service) handleGet(w http.ResponseWriter, r *http.Request) {
 	u := auth.FromContext(r.Context())
 	var c Chat
 	err := s.db.Pool.QueryRow(r.Context(), `
-		SELECT id, COALESCE(title, ''), COALESCE(model, ''), COALESCE(mode, ''), created_at, updated_at
+		SELECT id, COALESCE(title, ''), COALESCE(model, ''), COALESCE(mode, ''),
+		       COALESCE(feature_slug, ''), created_at, updated_at
 		FROM chats WHERE id = $1 AND user_id = $2
-	`, chi.URLParam(r, "id"), u.ID).Scan(&c.ID, &c.Title, &c.Model, &c.Mode, &c.CreatedAt, &c.UpdatedAt)
+	`, chi.URLParam(r, "id"), u.ID).Scan(&c.ID, &c.Title, &c.Model, &c.Mode, &c.Feature, &c.CreatedAt, &c.UpdatedAt)
 	if errors.Is(err, pgx.ErrNoRows) {
 		http.Error(w, "not found", 404)
 		return

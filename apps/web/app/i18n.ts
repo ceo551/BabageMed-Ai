@@ -4,9 +4,12 @@ export type FeatureMeta = {
   slug: string;
   label: string;
   emoji: string;
-  // Tailwind-ish swatch color used in the sidebar dot and the feature page
-  // hero. Map: cyan | purple | yellow | green | pink | orange | blue | red.
-  color: "cyan" | "purple" | "yellow" | "green" | "pink" | "orange" | "blue" | "red";
+  // Swatch colour used in the sidebar dot + feature-page hero. Added two
+  // values (teal, amber) with the move to 10 features.
+  color: "cyan" | "purple" | "yellow" | "green" | "pink" | "orange" | "blue" | "red" | "teal" | "amber";
+  // text → composer shows the chat LLMs (Opus / GPT / Gemini / GLM / …).
+  // visual → composer shows the image + video model groups instead.
+  modality: "text" | "visual";
 };
 
 export type LocaleStrings = {
@@ -36,28 +39,40 @@ export type LocaleStrings = {
   toolList: ReadonlyArray<{ id: string; t: string; c: string; st: string }>;
 };
 
-// The 8 sidebar feature categories — single source of truth. Slug is used in
-// /features/<slug> URLs and as the persisted database id.
+// The 10 sidebar feature categories — single source of truth. Slug is
+// used in /features/<slug> URLs and as the persisted database id. Order
+// here is the order rendered in the sidebar.
+//
+// Two MODALITIES exist:
+//   - text:   8 features that compose against TEXT_MODELS (chat).
+//   - visual: 2 features (image-video, advertisements) that compose
+//             against IMAGE_MODELS + VIDEO_MODELS.
+// `modality` is what apps/web/app/lib/models.ts maps from a slug to
+// the right model list.
 const FEATURES_EN: ReadonlyArray<FeatureMeta> = [
-  { slug: "healthcare",   label: "Healthcare & life sciences",      emoji: "🩺", color: "cyan"   },
-  { slug: "writing",      label: "Writing & content creation",      emoji: "✍️", color: "purple" },
-  { slug: "translation",  label: "Translation & languages",         emoji: "🌐", color: "blue"   },
-  { slug: "business",     label: "Business",                         emoji: "💼", color: "yellow" },
-  { slug: "financial",    label: "Financial",                        emoji: "💹", color: "green"  },
-  { slug: "consulting",   label: "Consulting & Professional Services", emoji: "🤝", color: "orange" },
-  { slug: "math-science", label: "Mathematics & Science",            emoji: "🧪", color: "pink"   },
-  { slug: "education",    label: "Education",                        emoji: "🎓", color: "red"    },
+  { slug: "healthcare",     label: "Healthcare & Life sciences",          emoji: "🩺", color: "cyan",   modality: "text"   },
+  { slug: "education",      label: "Education & Academic & Research",     emoji: "🎓", color: "red",    modality: "text"   },
+  { slug: "writing",        label: "Writing & Content creation",          emoji: "✍️", color: "purple", modality: "text"   },
+  { slug: "translation",    label: "Translation & Languages",             emoji: "🌐", color: "blue",   modality: "text"   },
+  { slug: "data-analysis",  label: "Data Analysis",                       emoji: "📊", color: "teal",   modality: "text"   },
+  { slug: "business",       label: "Business",                            emoji: "💼", color: "yellow", modality: "text"   },
+  { slug: "financial",      label: "Financial Services",                  emoji: "💹", color: "green",  modality: "text"   },
+  { slug: "consulting",     label: "Consulting & Professional Services",  emoji: "🤝", color: "orange", modality: "text"   },
+  { slug: "image-video",    label: "Image & Video",                       emoji: "🎬", color: "pink",   modality: "visual" },
+  { slug: "advertisements", label: "Advertisements",                      emoji: "📣", color: "amber",  modality: "visual" },
 ];
 
 const FEATURES_AR: ReadonlyArray<FeatureMeta> = [
-  { slug: "healthcare",   label: "الصحة وعلوم الحياة",                emoji: "🩺", color: "cyan"   },
-  { slug: "writing",      label: "الكتابة وإنتاج المحتوى",            emoji: "✍️", color: "purple" },
-  { slug: "translation",  label: "الترجمة واللغات",                   emoji: "🌐", color: "blue"   },
-  { slug: "business",     label: "الأعمال",                            emoji: "💼", color: "yellow" },
-  { slug: "financial",    label: "المالية",                            emoji: "💹", color: "green"  },
-  { slug: "consulting",   label: "الاستشارات والخدمات المهنية",        emoji: "🤝", color: "orange" },
-  { slug: "math-science", label: "الرياضيات والعلوم",                 emoji: "🧪", color: "pink"   },
-  { slug: "education",    label: "التعليم",                            emoji: "🎓", color: "red"    },
+  { slug: "healthcare",     label: "الصحة وعلوم الحياة",                   emoji: "🩺", color: "cyan",   modality: "text"   },
+  { slug: "education",      label: "التعليم والبحث الأكاديمي",              emoji: "🎓", color: "red",    modality: "text"   },
+  { slug: "writing",        label: "الكتابة وإنتاج المحتوى",               emoji: "✍️", color: "purple", modality: "text"   },
+  { slug: "translation",    label: "الترجمة واللغات",                      emoji: "🌐", color: "blue",   modality: "text"   },
+  { slug: "data-analysis",  label: "تحليل البيانات",                       emoji: "📊", color: "teal",   modality: "text"   },
+  { slug: "business",       label: "الأعمال",                              emoji: "💼", color: "yellow", modality: "text"   },
+  { slug: "financial",      label: "الخدمات المالية",                      emoji: "💹", color: "green",  modality: "text"   },
+  { slug: "consulting",     label: "الاستشارات والخدمات المهنية",          emoji: "🤝", color: "orange", modality: "text"   },
+  { slug: "image-video",    label: "الصور والفيديو",                       emoji: "🎬", color: "pink",   modality: "visual" },
+  { slug: "advertisements", label: "الإعلانات",                            emoji: "📣", color: "amber",  modality: "visual" },
 ];
 
 export const STR: Record<Locale, LocaleStrings> = {
@@ -182,32 +197,11 @@ export const STR: Record<Locale, LocaleStrings> = {
 };
 
 // `brand` drives which SVG mark the model picker renders next to each row —
-// Anthropic's coral asterisk for Claude, Google's gradient sparkle for
-// Gemini. (See I.anthropicMark / I.geminiMark in icons.tsx.) Adding a new
-// vendor here just means adding another brand + the matching icon.
-export const MODELS = [
-  {
-    id: "opus-4.7",
-    name: "Claude Opus 4.7",
-    brand: "anthropic",
-    swatch: "o",
-    pills: { en: ["FRONTIER", "REASONING"], ar: ["متقدّم", "استدلال"] },
-    short: "Opus 4.7",
-  },
-  {
-    id: "opus-4.6",
-    name: "Claude Opus 4.6",
-    brand: "anthropic",
-    swatch: "o",
-    pills: { en: ["BALANCED", "FAST"], ar: ["متوازن", "سريع"] },
-    short: "Opus 4.6",
-  },
-  {
-    id: "gemini-3.1",
-    name: "Gemini 3.1 Pro",
-    brand: "google",
-    swatch: "g",
-    pills: { en: ["LONG CTX", "IMAGING"], ar: ["سياق طويل", "تصوير"] },
-    short: "Gemini 3.1 Pro",
-  },
-] as const;
+// Backwards-compat export. The full per-modality registry now lives in
+// apps/web/app/lib/models.ts (TEXT_MODELS / IMAGE_MODELS / VIDEO_MODELS).
+// Callers that need to know which models to render should use
+// modelsForFeature(feature) from that module instead. This re-export
+// stays so the settings/page.tsx "default model" picker and any other
+// consumer of a flat list keeps compiling. Visual-only models are not
+// included here because they're not picked from the text composer.
+export { TEXT_MODELS as MODELS } from "./lib/models";

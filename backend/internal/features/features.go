@@ -33,15 +33,23 @@ const maxUploadBytes = 10 * 1024 * 1024 // 10 MB per file
 
 // validSlugs is the single source of truth for which feature ids the API
 // accepts. Anything else 404s. Keep aligned with frontend i18n FEATURES_*.
+// 10 fixed feature ids that the API accepts. Anything else 404s. Order
+// here is informational only — the sidebar / catalog UI controls
+// display order via apps/web/app/i18n.ts FEATURES_EN / FEATURES_AR.
+//
+// Keep aligned with: apps/web/app/i18n.ts + scripts/mcps.manifest.json
+// `feature` field on each MCP entry.
 var validSlugs = map[string]bool{
-	"healthcare":   true,
-	"writing":      true,
-	"translation":  true,
-	"business":     true,
-	"financial":    true,
-	"consulting":   true,
-	"math-science": true,
-	"education":    true,
+	"healthcare":     true,
+	"education":      true,
+	"writing":        true,
+	"translation":    true,
+	"data-analysis":  true,
+	"business":       true,
+	"financial":      true,
+	"consulting":     true,
+	"image-video":    true,
+	"advertisements": true,
 }
 
 type Feature struct {
