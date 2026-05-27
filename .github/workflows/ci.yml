@@ -61,10 +61,14 @@ jobs:
         run: |
           cd packages/mcp-base
           npx tsc -p tsconfig.json
-      - name: type-check
+      - name: type-check (apps/web)
         run: |
-          cd frontend
+          cd apps/web
           npx tsc --noEmit
+      - name: unit tests (apps/web)
+        run: |
+          cd apps/web
+          npm test
 
   mcp-base:
     name: mcp-base
@@ -81,8 +85,12 @@ jobs:
         run: |
           cd packages/mcp-base
           npx tsc -p tsconfig.json --noEmit
+      - name: unit tests
+        run: |
+          cd packages/mcp-base
+          npm test
 
-  # ─── Sweep type-check across all 416 MCPs (sharded for parallelism) ───
+  # ─── Sweep type-check across all 539 MCPs (sharded for parallelism) ───
   mcps-typecheck:
     name: MCP typecheck (shard ${{ matrix.shard }}/8)
     runs-on: ubuntu-latest
