@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"strings"
 	"sync"
@@ -14,6 +15,7 @@ import (
 	"github.com/babagemed/backend/internal/cache"
 	"github.com/babagemed/backend/internal/llm"
 	"github.com/babagemed/backend/internal/mcp"
+	"github.com/babagemed/backend/internal/metrics"
 	"github.com/go-chi/chi/v5"
 	"golang.org/x/sync/errgroup"
 )
@@ -247,6 +249,14 @@ func (h *Handler) gather(ctx context.Context, req chatRequest) ([]map[string]any
 				// so the model can say "Cleveland Clinic returned an error"
 				// instead of silently hallucinating an answer that looks
 				// like it came from there.
+				//
+				// Also bump a metric so an operator can see "FDA MCP has been
+				// failing for 30 min" without scrolling chat logs. Previously
+				// the failure was completely silent at the systemic level —
+				// the model just saw an {error:...} citation and the operator
+				// never noticed.
+				metrics.MCPProxyCalls.WithLabelValues(id, "search", "error").Inc()
+				log.Printf("mcp gather error: id=%s err=%v", id, err)
 				mu.Lock()
 				results[i] = result{
 					idx:    i,

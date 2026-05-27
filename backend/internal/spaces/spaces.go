@@ -141,6 +141,14 @@ func (s *Service) List(ctx context.Context, userID string) ([]Space, error) {
 	return out, rows.Err()
 }
 
+// Get returns the space row owned by `userID`. Returns pgx.ErrNoRows
+// when no row matches — callers can `errors.Is(err, pgx.ErrNoRows)` to
+// distinguish "not found / not yours" from a real DB error.
+//
+// Previously this returned (nil, nil) for the missing-row case, which
+// forced every caller into a nil-check pattern that's easy to forget
+// in a refactor; the writeJSON helper also maps ErrNoRows to 404, so
+// surfacing it is strictly better.
 func (s *Service) Get(ctx context.Context, userID, spaceID string) (*Space, error) {
 	var sp Space
 	err := s.db.Pool.QueryRow(ctx, `
@@ -152,10 +160,10 @@ func (s *Service) Get(ctx context.Context, userID, spaceID string) (*Space, erro
 		&sp.ID, &sp.Name, &sp.Description, &sp.Icon, &sp.Instructions,
 		&sp.CreatedAt, &sp.UpdatedAt, &sp.FileCount,
 	)
-	if errors.Is(err, pgx.ErrNoRows) {
-		return nil, nil
+	if err != nil {
+		return nil, err
 	}
-	return &sp, err
+	return &sp, nil
 }
 
 // UpdateInput is the PATCH body — every field optional so callers send only
@@ -260,12 +268,11 @@ func (s *Service) ListFiles(ctx context.Context, userID, spaceID string) ([]File
 
 func (s *Service) UploadFile(ctx context.Context, userID, spaceID, name, mime string, body []byte) (*File, error) {
 	// Confirm the space belongs to this user before storing anything.
-	sp, err := s.Get(ctx, userID, spaceID)
-	if err != nil {
+	// Ownership gate: Get returns pgx.ErrNoRows when the space doesn't
+	// exist OR isn't owned by this user; the writeJSON helper maps
+	// that to 404 so the caller never sees an IDOR fingerprint.
+	if _, err := s.Get(ctx, userID, spaceID); err != nil {
 		return nil, err
-	}
-	if sp == nil {
-		return nil, errors.New("space not found")
 	}
 	if len(body) == 0 {
 		return nil, errors.New("empty file")
@@ -354,12 +361,11 @@ func (s *Service) Context(ctx context.Context, userID, spaceID, q string) ([]Chu
 		return nil, nil
 	}
 	// Ownership gate.
-	sp, err := s.Get(ctx, userID, spaceID)
-	if err != nil {
+	// Ownership gate: Get returns pgx.ErrNoRows when the space doesn't
+	// exist OR isn't owned by this user; the writeJSON helper maps
+	// that to 404 so the caller never sees an IDOR fingerprint.
+	if _, err := s.Get(ctx, userID, spaceID); err != nil {
 		return nil, err
-	}
-	if sp == nil {
-		return nil, errors.New("space not found")
 	}
 	// plainto_tsquery is tolerant of free-form input (no need to escape).
 	rows, err := s.db.Pool.Query(ctx, `
@@ -424,10 +430,6 @@ func (s *Service) handleCreate(w http.ResponseWriter, r *http.Request) {
 func (s *Service) handleGet(w http.ResponseWriter, r *http.Request) {
 	u := auth.FromContext(r.Context())
 	sp, err := s.Get(r.Context(), u.ID, chi.URLParam(r, "id"))
-	if err == nil && sp == nil {
-		http.Error(w, "not found", http.StatusNotFound)
-		return
-	}
 	writeJSON(w, sp, err)
 }
 

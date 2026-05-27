@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { ConnectorIcon } from "./ConnectorIcon";
+import { safeUrlTransform } from "../lib/url-transform";
 
 // Citation as returned by the backend's /api/chat[/stream] handler. The
 // `source` field is the MCP id (e.g. "pubmed", "fda"); `result` is whatever
@@ -35,14 +36,9 @@ export function AssistantMessage({
           // Allow only http(s):, mailto:, and relative URLs. Defence in depth
           // against a future regression where the backend forwards user-
           // controlled markdown — javascript:, data:, and chrome-extension:
-          // URLs are stripped (rendered as plain text).
-          urlTransform={(url) => {
-            if (!url) return url;
-            const u = url.trim();
-            if (u.startsWith("#") || u.startsWith("/")) return u;
-            if (/^https?:/i.test(u) || /^mailto:/i.test(u)) return u;
-            return ""; // ReactMarkdown drops the href.
-          }}
+          // URLs are stripped (rendered as plain text). Tested by
+          // apps/web/app/lib/url-transform.test.ts.
+          urlTransform={safeUrlTransform}
           components={{
             a: ({ href, children }) => (
               <a href={href} target="_blank" rel="noopener noreferrer">{children}</a>

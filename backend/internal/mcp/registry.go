@@ -44,6 +44,13 @@ type Registry struct {
 	all     []Server
 	client  *http.Client
 	hostFor func(s Server) string
+
+	// Health() cache — 5 s TTL stops a load balancer hammering the
+	// anonymous /health endpoint from fanning out 540 outbound probes
+	// per request.
+	healthMu      sync.RWMutex
+	healthCached  map[string]string
+	healthExpires time.Time
 }
 
 func NewRegistry(path string) (*Registry, error) {
@@ -190,48 +197,76 @@ func prometheusTimer(id, tool string) func() {
 }
 
 // Health pings the /health endpoint of every MCP and reports status.
-// A semaphore caps concurrency at 32 so a 416-MCP fleet doesn't open hundreds
-// of simultaneous outbound connections (which previously stressed the http
-// transport's idle-conn pool and tripped DNS rate limits during /health).
+//
+// CACHED for 5 s because /health is anonymously reachable on the backend
+// — a load balancer hammering it would otherwise spawn 540 goroutines
+// + 540 outbound HTTP requests per call, which is a trivial DoS vector.
+//
+// Concurrency is capped via a worker pool (not a per-MCP goroutine with
+// a semaphore) so the spawn cost itself is bounded. With 32 workers
+// pulling from a 540-item queue the total wall time stays similar to
+// the previous "fan out and wait" approach.
 func (r *Registry) Health(ctx context.Context) map[string]string {
-	out := map[string]string{}
-	var mu sync.Mutex
-	var wg sync.WaitGroup
-	sem := make(chan struct{}, 32)
-	for _, s := range r.Servers() {
-		wg.Add(1)
-		go func(s Server) {
-			defer wg.Done()
-			select {
-			case sem <- struct{}{}:
-				defer func() { <-sem }()
-			case <-ctx.Done():
-				mu.Lock()
-				out[s.ID] = "down"
-				mu.Unlock()
-				return
-			}
-			// Health checks are cheap and we have 540 of them — a per-call
-			// 3s ceiling keeps a single stuck MCP from holding a goroutine
-			// open for the full 60s of the shared client timeout.
-			hctx, cancel := context.WithTimeout(ctx, 3*time.Second)
-			req, _ := http.NewRequestWithContext(hctx, http.MethodGet, r.hostFor(s)+"/health", nil)
-			res, err := r.client.Do(req)
-			status := "down"
-			if err == nil {
-				if res.StatusCode == 200 {
-					status = "up"
-				} else {
-					status = fmt.Sprintf("err-%d", res.StatusCode)
-				}
-				res.Body.Close()
-			}
-			cancel()
-			mu.Lock()
-			out[s.ID] = status
-			mu.Unlock()
-		}(s)
+	// Fast path: serve cached results inside the TTL window.
+	r.healthMu.RLock()
+	if r.healthCached != nil && time.Now().Before(r.healthExpires) {
+		copyOut := make(map[string]string, len(r.healthCached))
+		for k, v := range r.healthCached {
+			copyOut[k] = v
+		}
+		r.healthMu.RUnlock()
+		return copyOut
 	}
+	r.healthMu.RUnlock()
+
+	servers := r.Servers()
+	out := make(map[string]string, len(servers))
+	var mu sync.Mutex
+	const workers = 32
+	queue := make(chan Server, len(servers))
+	var wg sync.WaitGroup
+	for i := 0; i < workers; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for s := range queue {
+				if ctx.Err() != nil {
+					mu.Lock()
+					out[s.ID] = "down"
+					mu.Unlock()
+					continue
+				}
+				// 3s ceiling per call keeps a single stuck MCP from
+				// holding a worker goroutine for the full 60s of the
+				// shared client timeout.
+				hctx, cancel := context.WithTimeout(ctx, 3*time.Second)
+				req, _ := http.NewRequestWithContext(hctx, http.MethodGet, r.hostFor(s)+"/health", nil)
+				res, err := r.client.Do(req)
+				status := "down"
+				if err == nil {
+					if res.StatusCode == 200 {
+						status = "up"
+					} else {
+						status = fmt.Sprintf("err-%d", res.StatusCode)
+					}
+					res.Body.Close()
+				}
+				cancel()
+				mu.Lock()
+				out[s.ID] = status
+				mu.Unlock()
+			}
+		}()
+	}
+	for _, s := range servers {
+		queue <- s
+	}
+	close(queue)
 	wg.Wait()
+
+	r.healthMu.Lock()
+	r.healthCached = out
+	r.healthExpires = time.Now().Add(5 * time.Second)
+	r.healthMu.Unlock()
 	return out
 }
