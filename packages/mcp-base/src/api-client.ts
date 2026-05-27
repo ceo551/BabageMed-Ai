@@ -116,11 +116,16 @@ export class ApiClient {
   }
 }
 
-// Tiny non-crypto hash — only used to fold the bearer token into the
-// cache key without storing it in plaintext. djb2 is fine for that.
+// Truncated SHA-256 of the bearer token — folded into the cache key
+// so two different bearers never share a response.
+//
+// djb2 (the previous implementation) gave 32 bits of entropy, which
+// has a ~50 % collision probability at ~77 000 distinct tokens
+// (birthday-paradox). At this scale that's safe today, but cross-
+// tenant token rotation would land us in the collision zone fast.
+// 16 hex chars of SHA-256 = 64 bits, which is collision-safe to
+// ~4 billion tokens.
+import { createHash } from "node:crypto";
 function simpleHash(s: string): string {
-  let h = 5381;
-  for (let i = 0; i < s.length; i++) h = (h * 33) ^ s.charCodeAt(i);
-  // unsigned 32-bit hex
-  return (h >>> 0).toString(16);
+  return createHash("sha256").update(s).digest("hex").slice(0, 16);
 }

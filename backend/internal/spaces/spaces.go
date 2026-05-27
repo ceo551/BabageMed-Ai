@@ -636,7 +636,17 @@ func chunk(text string) []string {
 			split = chunkChars
 		}
 		out = append(out, strings.TrimSpace(text[pos:pos+split]))
-		pos += split - chunkOverlap
+		// Guarantee forward progress: if the chosen split equals (or is
+		// less than) chunkOverlap, pos won't advance and the loop spins
+		// forever. The math above currently can't produce this, but a
+		// future tweak to chunkOverlap or split's lower bound would —
+		// and a silent infinite loop with allocations is much worse to
+		// debug than a slightly-imperfect chunk boundary.
+		step := split - chunkOverlap
+		if step <= 0 {
+			step = chunkChars / 2
+		}
+		pos += step
 		if pos < 0 {
 			pos = 0
 		}
