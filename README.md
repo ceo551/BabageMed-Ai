@@ -2,7 +2,7 @@
 
 Customisable AI workflows — Next.js dashboard + Go backend + 539 Dockerized
 TypeScript MCP servers + native shells for **Android and Desktop
-(Windows, Linux Ubuntu)**.
+(Windows)**.
 
 The product surfaces 8 fixed feature categories — Healthcare & life
 sciences · Writing & content creation · Translation & languages · Business
@@ -16,7 +16,7 @@ its own instructions, files, skills, and connector picks.
 ├─ apps/
 │   ├─ web/        Next.js 14 dashboard (the canonical client; everything
 │   │              else loads this URL inside a native shell)
-│   ├─ desktop/    Tauri 2.0 wrapper → .exe / .AppImage / .deb
+│   ├─ desktop/    Tauri 2.0 wrapper → .msi / .exe  (Windows)
 │   └─ android/    Compose + WebView shell (Android 7.0+, API 24)
 ├─ backend/        Go 1.23 + chi — auth, chat orchestrator, MCP router
 ├─ mcps/           539 Dockerized TypeScript MCP servers

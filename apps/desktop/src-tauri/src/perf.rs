@@ -1,8 +1,7 @@
 // Pre-init performance/hardware-acceleration switches. Several of these
 // MUST be set as env vars before Tauri spawns its WebView — once the
-// WebView2/WebKitGTK process is running they are read-only. We set
-// safe defaults but a power user can override any of them via the OS
-// environment.
+// WebView2 process is running they are read-only. We set safe defaults
+// but a power user can override any of them via the OS environment.
 
 use std::env;
 
@@ -36,23 +35,6 @@ pub fn install_pre_init_env() {
             "--use-angle=d3d11"
         ),
     );
-
-    // ── Linux / WebKitGTK ──────────────────────────────────────────────
-    // WebKitGTK reads these to enable GPU compositing on systems where
-    // glx/egl is available. Without these the WebView falls back to
-    // software rendering on many distros (Ubuntu 22.04 default).
-    #[cfg(target_os = "linux")]
-    {
-        ensure("WEBKIT_FORCE_COMPOSITING_MODE", "1");
-        ensure("WEBKIT_DISABLE_DMABUF_RENDERER", "0");
-        ensure("WEBKIT_DISABLE_COMPOSITING_MODE", "0");
-        // WGL fallback on hybrid GPU laptops (Optimus). Most users on
-        // Wayland want NVIDIA's egl-wayland path.
-        ensure("__GLX_VENDOR_LIBRARY_NAME", "");
-        // GStreamer hardware decode (vaapi). Helps video <video> playback
-        // in the WebView use the GPU instead of CPU.
-        ensure("GST_VAAPI_ALL_DRIVERS", "1");
-    }
 
     // ── Generic ────────────────────────────────────────────────────────
     // Tokio's blocking pool defaults to 512 threads; cap at 4x logical

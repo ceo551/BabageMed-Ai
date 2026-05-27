@@ -130,10 +130,10 @@ func main() {
 	// (browsers reject the response), so we read an explicit allow-list
 	// from CORS_ALLOWED_ORIGINS (comma-separated). PUBLIC_BASE_URL is
 	// always allowed because that's where the canonical web client lives.
-	// The Tauri desktop shell sends Origin "tauri://localhost" on Linux
-	// and "http://tauri.localhost" on Windows — both are added by
-	// default so signed-in users on desktop still work without operators
-	// having to remember to add them.
+	// The Tauri desktop shell on Windows sends Origin
+	// "http://tauri.localhost", so it's allow-listed by default — that
+	// way signed-in users on the desktop client work out of the box
+	// without operators having to remember to add it.
 	allowedOrigins := buildAllowedOrigins(
 		os.Getenv("CORS_ALLOWED_ORIGINS"),
 		os.Getenv("PUBLIC_BASE_URL"),
@@ -255,8 +255,8 @@ func buildAllowedOrigins(csv, publicBase string) []string {
 		add(o)
 	}
 	add(publicBase)
-	// Tauri desktop shells.
-	add("tauri://localhost")
+	// Tauri desktop shell on Windows uses the http://tauri.localhost
+	// custom scheme; allow-list it by default.
 	add("http://tauri.localhost")
 	// Local dev — Next.js dev server + the desktop dev WebView.
 	if publicBase == "" {

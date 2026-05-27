@@ -1,7 +1,7 @@
 // Babbage AI — desktop entrypoint.
 //
-// Tauri 2.0 spawns a native window (WebView2 on Windows, WebKitGTK on
-// Linux) pointed at the hosted Babbage web app.
+// Tauri 2.0 spawns a native window (WebView2 on Windows) pointed at the
+// hosted Babbage web app.
 // The Rust side exposes hardware introspection, secure-storage, native
 // dialogs, deep links, auto-updates, global shortcuts and a system tray
 // so the desktop client is more than a glorified browser.
@@ -20,7 +20,7 @@ mod window_ops;
 
 use tauri::Manager;
 // MacosLauncher is required by tauri_plugin_autostart::init's signature
-// even on non-macOS platforms (the value is ignored on Windows/Linux).
+// even on Windows (the value is ignored at runtime there).
 use tauri_plugin_autostart::MacosLauncher;
 use tauri_plugin_global_shortcut::{Code, GlobalShortcutExt, Modifiers, Shortcut, ShortcutState};
 use tauri_plugin_log::{Target, TargetKind};
@@ -39,7 +39,7 @@ fn main() {
                 let _ = w.set_focus();
             }
             // Forward CLI args (and deep-link URLs delivered as argv on
-            // Windows/Linux) to the web app so it can route to the right
+            // Windows) to the web app so it can route to the right
             // screen — but ONLY for our own babbage:// scheme, not the
             // full argv. Any process can launch the desktop binary with
             // arbitrary flags; we don't want a launcher shortcut or a

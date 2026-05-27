@@ -1,4 +1,4 @@
-// System tray icon + menu. Survives window close on Windows/Linux —
+// System tray icon + menu. Survives window close on Windows —
 // right-click → menu, left-click → focus the main window.
 
 use tauri::{

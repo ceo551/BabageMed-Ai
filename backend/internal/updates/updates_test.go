@@ -34,7 +34,7 @@ func TestHandler_NoManifestReturns204(t *testing.T) {
 	svc := New(Config{})
 	r := chi.NewRouter()
 	svc.Register(r)
-	req := httptest.NewRequest("GET", "/api/desktop/update/linux/x86_64/0.1.0", nil)
+	req := httptest.NewRequest("GET", "/api/desktop/update/windows/x86_64/0.1.0", nil)
 	w := httptest.NewRecorder()
 	r.ServeHTTP(w, req)
 	if w.Code != http.StatusNoContent {
@@ -48,14 +48,14 @@ func TestHandler_NewerVersionReturnsJSON(t *testing.T) {
 		PubDate: "2026-05-25T00:00:00Z",
 		Notes:   "rev",
 		Platforms: map[string]PlatformAsset{
-			"linux-x86_64": {URL: "https://example.com/m1.app.tar.gz", Signature: "sig1"},
+			"windows-x86_64": {URL: "https://example.com/m1.app.tar.gz", Signature: "sig1"},
 		},
 	}
 	raw, _ := json.Marshal(manifest)
 	svc := New(Config{Inline: string(raw)})
 	r := chi.NewRouter()
 	svc.Register(r)
-	req := httptest.NewRequest("GET", "/api/desktop/update/linux/x86_64/0.1.0", nil)
+	req := httptest.NewRequest("GET", "/api/desktop/update/windows/x86_64/0.1.0", nil)
 	w := httptest.NewRecorder()
 	r.ServeHTTP(w, req)
 	if w.Code != http.StatusOK {
@@ -77,14 +77,14 @@ func TestHandler_UpToDateReturns204(t *testing.T) {
 	manifest := Manifest{
 		Version: "0.1.0",
 		Platforms: map[string]PlatformAsset{
-			"linux-x86_64": {URL: "x", Signature: "y"},
+			"windows-x86_64": {URL: "x", Signature: "y"},
 		},
 	}
 	raw, _ := json.Marshal(manifest)
 	svc := New(Config{Inline: string(raw)})
 	r := chi.NewRouter()
 	svc.Register(r)
-	req := httptest.NewRequest("GET", "/api/desktop/update/linux/x86_64/0.1.0", nil)
+	req := httptest.NewRequest("GET", "/api/desktop/update/windows/x86_64/0.1.0", nil)
 	w := httptest.NewRecorder()
 	r.ServeHTTP(w, req)
 	if w.Code != http.StatusNoContent {
@@ -100,7 +100,7 @@ func TestHandler_RemoteManifestCached(t *testing.T) {
 		_, _ = w.Write([]byte(`{
 			"version": "0.5.0",
 			"pub_date": "2026-05-25T00:00:00Z",
-			"platforms": {"linux-x86_64": {"url": "https://x", "signature": "s"}}
+			"platforms": {"windows-x86_64": {"url": "https://x", "signature": "s"}}
 		}`))
 	}))
 	defer srv.Close()
@@ -109,7 +109,7 @@ func TestHandler_RemoteManifestCached(t *testing.T) {
 	r := chi.NewRouter()
 	svc.Register(r)
 	for i := 0; i < 3; i++ {
-		req := httptest.NewRequest("GET", "/api/desktop/update/linux/x86_64/0.1.0", nil)
+		req := httptest.NewRequest("GET", "/api/desktop/update/windows/x86_64/0.1.0", nil)
 		w := httptest.NewRecorder()
 		r.ServeHTTP(w, req)
 		if w.Code != http.StatusOK {

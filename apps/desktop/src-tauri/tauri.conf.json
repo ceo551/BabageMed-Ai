@@ -62,8 +62,8 @@
     "category": "Productivity",
     "copyright": "© 2026 Babbage AI",
     "shortDescription": "Babbage AI — desktop client",
-    "longDescription": "Babbage AI desktop wrapper. Loads the Babbage web app in a native shell for Windows and Linux Ubuntu, with hardware-accelerated rendering, system tray, native dialogs, secure credential storage and global shortcuts.",
-    "targets": ["msi", "nsis", "appimage", "deb"],
+    "longDescription": "Babbage AI desktop wrapper. Loads the Babbage web app in a native shell for Windows, with hardware-accelerated rendering, system tray, native dialogs, secure credential storage and global shortcuts.",
+    "targets": ["msi", "nsis"],
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",
@@ -80,11 +80,6 @@
       "nsis": {
         "displayLanguageSelector": false,
         "languages": ["English", "Arabic"]
-      }
-    },
-    "linux": {
-      "deb": {
-        "depends": ["libwebkit2gtk-4.1-0", "libgtk-3-0", "libayatana-appindicator3-1"]
       }
     }
   }

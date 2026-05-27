@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.1.0",
   "type": "module",
-  "description": "Babbage AI desktop client (Tauri 2.0 — Windows / Linux Ubuntu).",
+  "description": "Babbage AI desktop client (Tauri 2.0 — Windows).",
   "scripts": {
     "dev":      "tauri dev",
     "build":    "tauri build",

@@ -40,7 +40,7 @@ log          = "0.4"
 # Hardware / system introspection
 sysinfo      = { version = "0.32", default-features = false, features = ["system", "disk", "network", "component"] }
 num_cpus     = "1.16"
-keyring      = { version = "3.6", default-features = false, features = ["windows-native", "linux-native-sync-persistent"] }
+keyring      = { version = "3.6", default-features = false, features = ["windows-native"] }
 wgpu         = { version = "22", default-features = false, optional = true }
 battery      = { version = "0.7", optional = true }
 
