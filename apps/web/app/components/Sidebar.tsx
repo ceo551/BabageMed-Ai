@@ -70,22 +70,28 @@ export function Sidebar() {
           <span className="kbd">⌘ K</span>
         </button>
 
-        {/* Features — fixed 8-category nav. Replaces the legacy "Spaces" link
-            with one explicit row per feature so the active item is visible
-            at a glance and there's no extra dropdown to discover. */}
+        {/* Features — fixed 10-category nav. Order matches the mockup:
+            10 feature rows → Connectors row → general History.
+            Per-feature chat history lives on each feature's sub-sidebar,
+            not here. */}
         <FeaturesSection
           label={s.featuresHeader}
           items={s.features}
           activeSlug={featureSlugFromPath(pathname)}
         />
 
-        <HistorySection label={s.recent} />
-
-        <Link href="/mcps" className="sb-row" style={{ textDecoration: "none" }}>
+        <Link
+          href="/mcps"
+          className="sb-row"
+          data-active={pathname === "/mcps"}
+          style={{ textDecoration: "none" }}
+        >
           {I.connectors}
           <span className="lbl">{s.connectors}</span>
           <span className="trail-chev">{I.chevR}</span>
         </Link>
+
+        <HistorySection label={s.recent} feature="general" />
       </div>
 
       <div className="sb-foot">
@@ -175,7 +181,7 @@ function FeaturesSection({
 // that transcript. The list refetches whenever the URL changes (a new
 // chat send pushes ?c=<NEW_ID> which triggers the refetch), and the
 // currently-loaded chat is highlighted via data-active.
-function HistorySection({ label }: { label: string }) {
+function HistorySection({ label, feature }: { label: string; feature?: string }) {
   const router = useRouter();
   const pathname = usePathname();
   const { user } = useAuth();
@@ -199,12 +205,12 @@ function HistorySection({ label }: { label: string }) {
     if (!user) { setItems([]); return; }
     let cancelled = false;
     setLoading(true);
-    chatsApi.list()
+    chatsApi.list(feature)
       .then((list) => { if (!cancelled) setItems(list); })
       .catch(() => { if (!cancelled) setItems([]); })
       .finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
-  }, [user, pathname]);
+  }, [user, pathname, feature]);
 
   async function removeChat(id: string, e: React.MouseEvent) {
     e.stopPropagation();

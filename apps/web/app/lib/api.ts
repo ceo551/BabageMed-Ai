@@ -73,12 +73,16 @@ export const auth = {
 export type McpServer = {
   id: string;
   name: string;
-  kind: "api" | "scrape" | "hybrid";
+  kind: "api" | "scrape" | "hybrid" | "stub";
   category: string;
   port: number;
   base: string;
   iconUrl?: string;
   siteUrl?: string;
+  // Which sidebar feature this server is most relevant to. One of the 10
+  // feature slugs — see apps/web/app/i18n.ts FEATURES_EN. Optional only so
+  // older cached responses still type-check during the rollout.
+  feature?: string;
 };
 
 // ── Connectors (user's installed MCPs) ──
@@ -158,11 +162,17 @@ export type AdminSession = {
 };
 
 // ── Chats (persisted conversations) ──
+//
+// `feature` is "" for main-dashboard chats and a feature slug
+// ("healthcare" / "writing" / …) for chats started from a feature page.
+// The sidebar filters by feature so each feature has its own history; the
+// general History row uses ?feature=general (NULL / empty backend-side).
 export type Chat = {
   id: string;
   title: string;
   model: string;
   mode: string;
+  feature?: string;
   createdAt: string;
   updatedAt: string;
 };
@@ -176,9 +186,16 @@ export type ChatMessageRow = {
   createdAt: string;
 };
 export const chats = {
-  list:        () => api.get<Chat[]>("/api/chats"),
-  create:      (title: string, model: string, mode: string) =>
-    api.post<Chat>("/api/chats", { title, model, mode }),
+  // `feature` filters chats by ownership:
+  //   undefined          → every chat the user has (admin/debug only)
+  //   "general"          → only main-dashboard chats (feature_slug IS NULL)
+  //   <slug>             → only chats started from /features/<slug>
+  list:        (feature?: string) => {
+    const qs = feature ? `?feature=${encodeURIComponent(feature)}` : "";
+    return api.get<Chat[]>(`/api/chats${qs}`);
+  },
+  create:      (title: string, model: string, mode: string, feature?: string) =>
+    api.post<Chat>("/api/chats", { title, model, mode, feature }),
   get:         (id: string) => api.get<Chat>(`/api/chats/${encodeURIComponent(id)}`),
   messages:    (id: string) => api.get<ChatMessageRow[]>(`/api/chats/${encodeURIComponent(id)}/messages`),
   append:      (id: string, body: { role: string; content: string; citations?: unknown; meta?: unknown }) =>

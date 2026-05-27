@@ -1,31 +1,46 @@
 "use client";
 
 import { notFound, useParams } from "next/navigation";
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { useUI } from "../../lib/ui-context";
 import { useAuth } from "../../lib/auth-context";
 import { features as featuresApi, mcps as mcpsApi, type Feature, type FeatureFile, type McpServer } from "../../lib/api";
 import { ConnectorIcon } from "../../components/ConnectorIcon";
 import { I } from "../../icons";
+import { FeatureChat } from "./FeatureChat";
+import { FeatureSubSidebar } from "./FeatureSubSidebar";
 import "./feature.css";
 
-// Per-feature workspace page — mirrors the second mockup the user shipped:
-//   ┌─────────────┐ ┌──────────────────────┐ ┌──────────────────────┐
-//   │  (sidebar)  │ │ Composer + recents   │ │ Instructions │ Files │
-//   │             │ │                      │ │ Skills │ Connectors  │
-//   └─────────────┘ └──────────────────────┘ └──────────────────────┘
+// Per-feature workspace page — three-column layout:
 //
-// Composer + recents live in the dashboard component; this page renders the
-// rightmost rail: four stacked cards for Instructions / Files / Skills /
-// Connectors. Each card is independently editable and autosaves to the
-// backend's feature row (slug = category id).
+//   ┌─────────────────┬──────────────────────────┬──────────────────┐
+//   │ sub-sidebar     │ composer + transcript    │ right rail       │
+//   │ • feature name  │ • central prompt box     │ • Instructions   │
+//   │ • New chat      │ • per-feature chat       │ • Files          │
+//   │ • this feature's│   history scoped to slug │ • Skills         │
+//   │   chat history  │                          │ • Connectors     │
+//   └─────────────────┴──────────────────────────┴──────────────────┘
+//
+// The right rail keeps the original "configure this feature" cards. The
+// sub-sidebar is visually flush with the global Sidebar so the UI reads
+// like a single nav surface — "main sidebar holds the catalog of
+// features; per-feature sidebar holds that feature's chats and tools".
 export default function FeaturePage() {
+  return (
+    <Suspense fallback={<div className="feat-shell"><p className="lead">Loading…</p></div>}>
+      <FeaturePageInner />
+    </Suspense>
+  );
+}
+
+function FeaturePageInner() {
   const { slug } = useParams<{ slug: string }>();
   const { s, locale } = useUI();
   const { user, loading: authLoading } = useAuth();
   const meta = s.features.find((f) => f.slug === slug);
+
+  // Unknown slug — surface a 404 instead of rendering a broken shell.
   if (!meta && !authLoading) {
-    // Unknown slug — punt to dashboard rather than throwing a wall of error.
     if (typeof window !== "undefined") notFound();
     return null;
   }
@@ -34,8 +49,6 @@ export default function FeaturePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Fetch (or lazily create) the feature row for this slug. The backend will
-  // upsert on the first GET so the client never has to handle a 404 here.
   useEffect(() => {
     if (authLoading) return;
     if (!user || !meta) return;
@@ -53,31 +66,26 @@ export default function FeaturePage() {
     return (
       <div className="feat-shell">
         <h1>{meta?.label}</h1>
-        <p className="lead">Sign in to customise this feature's instructions, files, skills and connectors.</p>
+        <p className="lead">
+          {locale === "ar"
+            ? "سجّل الدخول لاستخدام هذه الميزة، وإدارة التعليمات والملفات والمهارات الخاصة بها."
+            : "Sign in to use this feature and customise its instructions, files, skills and connectors."}
+        </p>
       </div>
     );
   }
   if (!meta) return null;
 
   return (
-    <div className="feat-shell" data-color={meta.color}>
-      <header className="feat-hero">
-        <span className="feat-emoji" aria-hidden="true">{meta.emoji}</span>
-        <div className="feat-hero-text">
-          <h1>{meta.label}</h1>
-          <p className="lead">
-            {locale === "ar"
-              ? "اضبط التعليمات، أضف ملفات، اختر المهارات، وقم بربط الموصّلات الخاصة بهذه الميزة."
-              : "Tune the instructions, upload files, pick skills, and connect MCP servers for this workflow."}
-          </p>
-        </div>
-      </header>
+    <div className="feat-shell feat-shell-3col" data-color={meta.color}>
+      <FeatureSubSidebar meta={meta} />
 
-      {error && (
-        <div className="feat-err">{error}</div>
-      )}
+      <section className="feat-main">
+        {error && <div className="feat-err">{error}</div>}
+        <FeatureChat meta={meta} feature={feature} />
+      </section>
 
-      <div className="feat-grid">
+      <aside className="feat-rail" aria-label={locale === "ar" ? "خصائص الميزة" : "Feature settings"}>
         <InstructionsCard
           loading={loading}
           value={feature?.instructions || ""}
@@ -115,14 +123,12 @@ export default function FeaturePage() {
             setFeature(updated);
           }}
         />
-      </div>
+      </aside>
     </div>
   );
 }
 
 // ─── Instructions card ────────────────────────────────────────────────────
-// Textarea with a debounced autosave. The pencil-icon header matches the
-// sketch the user provided.
 function InstructionsCard({
   loading,
   value,
@@ -136,11 +142,7 @@ function InstructionsCard({
   const [draft, setDraft] = useState(value);
   const [status, setStatus] = useState<"idle" | "saving" | "saved">("idle");
   const tRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  // Keep the textarea in sync if the backend value changes (e.g. first fetch)
   useEffect(() => { setDraft(value); }, [value]);
-  // Cancel the in-flight debounce on unmount — otherwise the timeout
-  // fires after the component is gone and calls onSave → setFeature on
-  // a dead component (React warning + wasted PATCH).
   useEffect(() => () => { if (tRef.current) clearTimeout(tRef.current); }, []);
 
   function onInput(v: string) {
@@ -168,7 +170,7 @@ function InstructionsCard({
             placeholder={s.instructionsDesc}
             value={draft}
             onChange={(e) => onInput(e.target.value)}
-            rows={6}
+            rows={5}
           />
           <div className="feat-card-foot">
             <span className="feat-save-status">
@@ -254,7 +256,6 @@ function FilesCard({
 }
 
 // ─── Skills card ─────────────────────────────────────────────────────────
-// Catalog comes from the static SKILL_CATALOG below. Toggle = select/deselect.
 function SkillsCard({
   loading,
   selected,
@@ -265,10 +266,6 @@ function SkillsCard({
   onChange: (s: string[]) => Promise<void>;
 }) {
   const { s } = useUI();
-  // Local optimistic state — two rapid toggles previously raced because
-  // both clicks computed `next` from the same `selected` prop snapshot
-  // and the later PATCH overwrote the earlier one. Now the source of
-  // truth lives here and onChange is awaited.
   const [local, setLocal] = React.useState<string[]>(selected);
   React.useEffect(() => { setLocal(selected); }, [selected]);
   const set = React.useMemo(() => new Set(local), [local]);
@@ -279,7 +276,6 @@ function SkillsCard({
       const next = new Set(cur);
       if (next.has(id)) next.delete(id); else next.add(id);
       const arr = Array.from(next);
-      // Serialize PATCHes — chain on the last one so order is preserved.
       pendingRef.current = pendingRef.current.then(() => onChange(arr).catch(() => {}));
       return arr;
     });
@@ -314,11 +310,6 @@ function SkillsCard({
 }
 
 // ─── Connectors card ─────────────────────────────────────────────────────
-// Reads the full MCP catalog (~540 servers), filters by:
-//   - search text box (case-insensitive substring match on name + id)
-//   - the feature's preferred slug (servers tagged with feature===slug land
-//     at the top so users see the most-relevant connectors first)
-// Multi-select toggles persist immediately via featuresApi.update.
 function ConnectorsCard({
   loading,
   selected,
@@ -334,8 +325,6 @@ function ConnectorsCard({
   const [catalog, setCatalog] = useState<McpServer[]>([]);
   const [loadingCat, setLoadingCat] = useState(true);
   const [q, setQ] = useState("");
-  // Same local-optimistic + serialized-PATCH pattern as the skills picker —
-  // see comment above.
   const [local, setLocal] = useState<string[]>(selected);
   useEffect(() => { setLocal(selected); }, [selected]);
   const set = useMemo(() => new Set(local), [local]);
@@ -360,9 +349,6 @@ function ConnectorsCard({
     });
   }
 
-  // Filter + rank: matching servers first, then alphabetical by name. Servers
-  // tagged with `feature === featureSlug` get a free 1000-point boost so the
-  // most-relevant connectors land at the top of the list before any search.
   const query = q.trim().toLowerCase();
   const filtered = catalog
     .filter((m) => {
@@ -372,7 +358,7 @@ function ConnectorsCard({
     .map((m) => ({
       m,
       score:
-        ((m as any).feature === featureSlug ? 1000 : 0) +
+        (m.feature === featureSlug ? 1000 : 0) +
         (set.has(m.id) ? 500 : 0),
     }))
     .sort((a, b) => (b.score - a.score) || a.m.name.localeCompare(b.m.name));

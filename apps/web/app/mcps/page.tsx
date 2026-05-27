@@ -9,6 +9,7 @@ import {
   type Connector,
 } from "../lib/api";
 import { useAuth } from "../lib/auth-context";
+import { useUI } from "../lib/ui-context";
 import { ConnectorIcon } from "../components/ConnectorIcon";
 import "./mcps.css";
 
@@ -25,17 +26,19 @@ const PAGE_SIZE = 60;
 
 export default function ConnectorsBrowsePage() {
   const { user } = useAuth();
+  const { s } = useUI();
   const [all, setAll] = useState<McpServer[]>([]);
   const [mine, setMine] = useState<Record<string, Connector>>({});
   const [error, setError] = useState<string | null>(null);
   const [q, setQ] = useState("");
   const [kind, setKind] = useState<"all" | "api" | "scrape" | "hybrid">("all");
   const [category, setCategory] = useState<string>("all");
+  const [feature, setFeature] = useState<string>("all");
   const [busy, setBusy] = useState<string | null>(null);
   const [shown, setShown] = useState<number>(PAGE_SIZE);
   // Reset pagination whenever the filter changes so the user always sees the
   // top of the result set after typing.
-  useEffect(() => { setShown(PAGE_SIZE); }, [q, kind, category]);
+  useEffect(() => { setShown(PAGE_SIZE); }, [q, kind, category, feature]);
 
   useEffect(() => {
     mcps.list()
@@ -60,17 +63,18 @@ export default function ConnectorsBrowsePage() {
 
   const filtered = useMemo(() => {
     const needle = q.trim().toLowerCase();
-    return all.filter((s) => {
-      if (kind !== "all" && s.kind !== kind) return false;
-      if (category !== "all" && s.category !== category) return false;
+    return all.filter((srv) => {
+      if (kind !== "all" && srv.kind !== kind) return false;
+      if (category !== "all" && srv.category !== category) return false;
+      if (feature !== "all" && srv.feature !== feature) return false;
       if (!needle) return true;
       return (
-        s.id.toLowerCase().includes(needle) ||
-        s.name.toLowerCase().includes(needle) ||
-        s.base.toLowerCase().includes(needle)
+        srv.id.toLowerCase().includes(needle) ||
+        srv.name.toLowerCase().includes(needle) ||
+        srv.base.toLowerCase().includes(needle)
       );
     });
-  }, [all, q, kind, category]);
+  }, [all, q, kind, category, feature]);
 
   async function toggle(s: McpServer) {
     if (!user) {
@@ -115,6 +119,12 @@ export default function ConnectorsBrowsePage() {
           value={q}
           onChange={(e) => setQ(e.target.value)}
         />
+        <select value={feature} onChange={(e) => setFeature(e.target.value)}>
+          <option value="all">All features</option>
+          {s.features.map((f) => (
+            <option key={f.slug} value={f.slug}>{f.emoji} {f.label}</option>
+          ))}
+        </select>
         <select value={kind} onChange={(e) => setKind(e.target.value as any)}>
           <option value="all">All kinds</option>
           <option value="api">API</option>
