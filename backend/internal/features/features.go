@@ -23,7 +23,6 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
-	"unicode/utf8"
 
 	"github.com/babagemed/backend/internal/auth"
 	"github.com/babagemed/backend/internal/db"
@@ -186,19 +185,11 @@ func (s *Service) addFile(ctx context.Context, userID, slug, name, mime string, 
 	mime = sanitiseUploadMime(mime)
 	sum := md5.Sum(body)
 	hexSum := hex.EncodeToString(sum[:])
-	// Crude text extraction — for binary types we just store the raw bytes,
-	// for known-text types we capture an approximate UTF-8 text body so the
-	// chat layer can ground answers against it. Real PDF extraction is a
-	// follow-up; for now keep the upload path lossless.
-	var textBody string
-	if strings.HasPrefix(mime, "text/") || strings.HasSuffix(name, ".md") || strings.HasSuffix(name, ".txt") || strings.HasSuffix(name, ".csv") {
-		textBody = string(body)
-		// Coerce invalid UTF-8 so text_body doesn't break a later FTS
-		// index or the JSON encoder when the file is served back.
-		if !utf8.ValidString(textBody) {
-			textBody = strings.ToValidUTF8(textBody, "�")
-		}
-	}
+	// Text extraction: text/* and known text suffixes are read verbatim;
+	// application/pdf goes through extractFeaturePDFText (ledongthuc/pdf,
+	// pure Go). Anything else stores the raw bytes only — chat
+	// grounding then falls back to filename-only search for that file.
+	textBody := extractFeatureText(mime, name, body)
 	_, err := s.db.Pool.Exec(ctx, `
 		INSERT INTO feature_files (user_id, slug, name, mime, size_bytes, md5, content, text_body)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)

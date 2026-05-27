@@ -573,11 +573,16 @@ func httpStatusFromErr(err error) int {
 // ─── Text utilities ────────────────────────────────────────────────────────
 
 // extractText returns plain text from `body` for supported MIMEs, or "" if the
-// content isn't safely decodable as text. PDFs/Office docs need a dedicated
-// parser (out of scope for this iteration) — they stay searchable by filename
-// only.
+// content isn't safely decodable as text. PDFs go through extractPDFText
+// (ledongthuc/pdf, pure Go, no OCR). Office docs / scanned PDFs that
+// the basic extractor can't read fall back to filename-only search.
 func extractText(mime, name string, body []byte) string {
 	mime = strings.ToLower(mime)
+	// PDF: dedicated parser. Detected by MIME OR the magic "%PDF-" header
+	// (browsers occasionally mis-label as application/octet-stream).
+	if mime == "application/pdf" || strings.HasSuffix(strings.ToLower(name), ".pdf") || isPDFHeader(body) {
+		return extractPDFText(body)
+	}
 	switch {
 	case strings.HasPrefix(mime, "text/"),
 		mime == "application/json",
