@@ -130,8 +130,8 @@ func main() {
 	// (browsers reject the response), so we read an explicit allow-list
 	// from CORS_ALLOWED_ORIGINS (comma-separated). PUBLIC_BASE_URL is
 	// always allowed because that's where the canonical web client lives.
-	// The Tauri desktop shell sends Origin "tauri://localhost" on macOS/
-	// Linux and "http://tauri.localhost" on Windows — both are added by
+	// The Tauri desktop shell sends Origin "tauri://localhost" on Linux
+	// and "http://tauri.localhost" on Windows — both are added by
 	// default so signed-in users on desktop still work without operators
 	// having to remember to add them.
 	allowedOrigins := buildAllowedOrigins(

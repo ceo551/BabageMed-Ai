@@ -311,9 +311,21 @@ function Composer({
         targetSpaceId = created.id;
         session.setActiveSpaceId(created.id);
       }
-      // Upload in parallel; tolerate per-file failures so a single bad
-      // PDF doesn't abort the whole batch.
-      await Promise.allSettled(files.map((f) => spacesApi.upload(targetSpaceId!, f)));
+      // Upload in parallel with a concurrency cap; tolerate per-file
+      // failures so a single bad PDF doesn't abort the whole batch.
+      // Without the cap a user dragging 1000 files would fan out 1000
+      // simultaneous 10 MB uploads (10 GB in flight) and OOM the
+      // browser before the backend's per-file limit even kicks in.
+      const concurrency = 4;
+      const queue = files.slice();
+      const workers = Array.from({ length: Math.min(concurrency, queue.length) }, async () => {
+        while (queue.length) {
+          const f = queue.shift();
+          if (!f) break;
+          try { await spacesApi.upload(targetSpaceId!, f); } catch { /* per-file tolerant */ }
+        }
+      });
+      await Promise.all(workers);
     } catch (err: any) {
       // Surface the failure in the transcript so the user knows the
       // attach didn't take. (We don't have a dedicated toast yet.)
