@@ -6,6 +6,7 @@
 // reaches the rewrite destination. A route handler runs per request and
 // reads the env var fresh.
 import { NextRequest, NextResponse } from "next/server";
+import { sameOrigin } from "../../../lib/csrf";
 
 const BACKEND_URL = process.env.BACKEND_URL || "http://localhost:8080";
 
@@ -25,22 +26,16 @@ const ALLOWED_PREFIXES = ["api/"];
 // Mutating methods carry the session cookie automatically, so we enforce
 // a same-origin Origin/Referer check as a lightweight CSRF defence — a
 // belt-and-braces complement to the SameSite cookie attribute.
+// The check itself lives in apps/web/app/lib/csrf.ts so it can be unit-
+// tested against the matrix of (origin, referer, host) combinations.
 const SAFE_METHODS = new Set(["GET", "HEAD", "OPTIONS"]);
 
-function sameOrigin(req: NextRequest): boolean {
-  const origin = req.headers.get("origin");
-  const referer = req.headers.get("referer");
-  const host = req.headers.get("host");
-  if (!host) return false;
-  if (origin) {
-    return origin === `http://${host}` || origin === `https://${host}`;
-  }
-  if (referer) {
-    try { return new URL(referer).host === host; } catch { return false; }
-  }
-  // Mutating browser requests always carry Origin or Referer. Missing
-  // both is suspicious — reject.
-  return false;
+function isCrossSite(req: NextRequest): boolean {
+  return !sameOrigin({
+    origin: req.headers.get("origin"),
+    referer: req.headers.get("referer"),
+    host: req.headers.get("host"),
+  });
 }
 
 async function proxy(
@@ -53,7 +48,7 @@ async function proxy(
   if (!ALLOWED_PREFIXES.some((p) => joined.startsWith(p))) {
     return NextResponse.json({ error: "not_proxied" }, { status: 404 });
   }
-  if (!SAFE_METHODS.has(req.method) && !sameOrigin(req)) {
+  if (!SAFE_METHODS.has(req.method) && isCrossSite(req)) {
     return NextResponse.json({ error: "csrf_check_failed" }, { status: 403 });
   }
 
