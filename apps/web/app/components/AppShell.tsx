@@ -1,8 +1,10 @@
 "use client";
 
 import React from "react";
+import { usePathname } from "next/navigation";
 import { UIProvider, useUI } from "../lib/ui-context";
 import { Sidebar } from "./Sidebar";
+import { ErrorBoundary } from "./ErrorBoundary";
 
 // AppShell — single shared chrome wrapper for every "logged-in" page. Owns
 // the .shell grid (sidebar | main), mounts the persistent Sidebar, and
@@ -23,10 +25,15 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
 function Frame({ children }: { children: React.ReactNode }) {
   const { collapsed } = useUI();
+  // Pass pathname as the boundary reset key so a successful navigation
+  // away from a crashed route clears the fallback automatically.
+  const pathname = usePathname() || "";
   return (
     <div className="shell" data-collapsed={collapsed}>
       <Sidebar />
-      <main className="main app-main">{children}</main>
+      <main className="main app-main">
+        <ErrorBoundary resetKey={pathname}>{children}</ErrorBoundary>
+      </main>
     </div>
   );
 }

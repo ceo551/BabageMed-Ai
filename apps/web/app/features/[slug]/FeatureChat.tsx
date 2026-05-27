@@ -123,14 +123,23 @@ export function FeatureChat({
     transcriptEndRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
   }, [messages]);
 
-  // Close model popover on outside click.
+  // Close model popover on outside click OR Escape — keyboard parity
+  // with the click-outside behaviour so a user who tab-opened the picker
+  // can also tab-close it without reaching for the mouse.
   useEffect(() => {
     if (!modelOpen) return;
     function onDoc(e: MouseEvent) {
       if (!composerRef.current?.contains(e.target as Node)) setModelOpen(false);
     }
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") setModelOpen(false);
+    }
     document.addEventListener("mousedown", onDoc);
-    return () => document.removeEventListener("mousedown", onDoc);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onDoc);
+      document.removeEventListener("keydown", onKey);
+    };
   }, [modelOpen]);
 
   const group = modelsForFeature(meta);
@@ -309,11 +318,7 @@ export function FeatureChat({
           <div className="feat-chat-empty">
             <span className="feat-chat-empty-emoji" aria-hidden="true">{meta.emoji}</span>
             <h2>{meta.label}</h2>
-            <p>
-              {locale === "ar"
-                ? "ابدأ محادثة جديدة فى هذه الميزة. التعليمات والملفات والمهارات والموصّلات الخاصة بها ستُستخدم تلقائيًا."
-                : "Start a new chat in this feature. Its instructions, files, skills and connectors are applied automatically."}
-            </p>
+            <p>{s.featureChatEmpty}</p>
           </div>
         )}
       </div>
@@ -373,7 +378,7 @@ export function FeatureChat({
                   </>
                 ) : (
                   <>
-                    <div className="pop-header">{locale === "ar" ? "صور" : "Image"}</div>
+                    <div className="pop-header">{s.imageGroup}</div>
                     {group.image.map((m) => (
                       <button
                         key={m.id}
@@ -393,7 +398,7 @@ export function FeatureChat({
                       </button>
                     ))}
                     <div className="popover-sep" />
-                    <div className="pop-header">{locale === "ar" ? "فيديو" : "Video"}</div>
+                    <div className="pop-header">{s.videoGroup}</div>
                     {group.video.map((m) => (
                       <button
                         key={m.id}

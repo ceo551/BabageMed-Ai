@@ -35,6 +35,14 @@ export type LocaleStrings = {
   epic: string; pubmed: string; kdigo: string;
   modelHeader: string; modeHeader: string;
   modes: ReadonlyArray<{ id: string; label: string; color: string }>;
+  // ── feature workspace strings ────────────────────────────────────────────
+  workspace: string;
+  signInToKeepHistory: string;
+  noChatsYet: string;
+  loadingChats: string;
+  featureChatEmpty: string;
+  imageGroup: string;
+  videoGroup: string;
 };
 
 // The 10 sidebar feature categories — single source of truth. Slug is
@@ -130,6 +138,13 @@ export const STR: Record<Locale, LocaleStrings> = {
       { id: "deep",    label: "Deep reasoning",  color: "purple" },
       { id: "cited",   label: "Cite mode",       color: "yellow" },
     ],
+    workspace: "Workspace",
+    signInToKeepHistory: "Sign in to keep history.",
+    noChatsYet: "No chats yet",
+    loadingChats: "Loading…",
+    featureChatEmpty: "Start a new chat in this feature. Its instructions, files, skills and connectors are applied automatically.",
+    imageGroup: "Image",
+    videoGroup: "Video",
   },
   ar: {
     dir: "rtl",
@@ -187,6 +202,13 @@ export const STR: Record<Locale, LocaleStrings> = {
       { id: "deep",    label: "استدلال عميق",       color: "purple" },
       { id: "cited",   label: "وضع الاستشهاد",      color: "yellow" },
     ],
+    workspace: "مساحة عمل",
+    signInToKeepHistory: "سجّل الدخول لحفظ السجل.",
+    noChatsYet: "لا توجد محادثات بعد",
+    loadingChats: "جارٍ التحميل…",
+    featureChatEmpty: "ابدأ محادثة جديدة فى هذه الميزة. التعليمات والملفات والمهارات والموصّلات الخاصة بها ستُستخدم تلقائيًا.",
+    imageGroup: "صور",
+    videoGroup: "فيديو",
   },
 };
 

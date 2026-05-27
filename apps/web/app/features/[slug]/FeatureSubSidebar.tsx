@@ -18,7 +18,7 @@ export function FeatureSubSidebar({ meta }: { meta: FeatureMeta }) {
   const pathname = usePathname();
   const params = useSearchParams();
   const { user } = useAuth();
-  const { s, locale } = useUI();
+  const { s } = useUI();
   const activeChatId = params?.get("c") || "";
 
   const [items, setItems] = useState<Chat[]>([]);
@@ -67,7 +67,7 @@ export function FeatureSubSidebar({ meta }: { meta: FeatureMeta }) {
         <span className="feat-subsb-emoji" aria-hidden="true">{meta.emoji}</span>
         <div className="feat-subsb-title">
           <span className="t">{meta.label}</span>
-          <span className="sub">{locale === "ar" ? "مساحة عمل خاصة" : "Workspace"}</span>
+          <span className="sub">{s.workspace}</span>
         </div>
       </header>
 
@@ -78,11 +78,11 @@ export function FeatureSubSidebar({ meta }: { meta: FeatureMeta }) {
 
       <div className="feat-subsb-section-label">{s.recent}</div>
       {!user ? (
-        <div className="feat-subsb-empty">{locale === "ar" ? "سجّل الدخول لحفظ السجل." : "Sign in to keep history."}</div>
+        <div className="feat-subsb-empty">{s.signInToKeepHistory}</div>
       ) : loading && items.length === 0 ? (
-        <div className="feat-subsb-empty">Loading…</div>
+        <div className="feat-subsb-empty">{s.loadingChats}</div>
       ) : items.length === 0 ? (
-        <div className="feat-subsb-empty">{locale === "ar" ? "لا توجد محادثات بعد" : "No chats yet"}</div>
+        <div className="feat-subsb-empty">{s.noChatsYet}</div>
       ) : (
         <ul className="feat-subsb-list">
           {items.slice(0, 50).map((c) => (
@@ -98,8 +98,16 @@ export function FeatureSubSidebar({ meta }: { meta: FeatureMeta }) {
                 <span
                   className="feat-subsb-item-del"
                   role="button"
+                  tabIndex={0}
                   aria-label="Delete chat"
                   onClick={(e) => removeChat(c.id, e)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      removeChat(c.id, e as unknown as React.MouseEvent);
+                    }
+                  }}
                   title="Delete chat"
                 >×</span>
               </button>

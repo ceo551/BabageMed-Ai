@@ -163,6 +163,10 @@ function FeaturesSection({
               data-active={f.slug === activeSlug}
               data-color={f.color}
               title={f.label}
+              // aria-label so collapsed-mode (icons only) stays
+              // announceable for screen readers; the visible label is
+              // hidden via display:none in that mode.
+              aria-label={f.label}
             >
               <span className="sb-feature-emoji" aria-hidden="true">{f.emoji}</span>
               <span className="sb-feature-label">{f.label}</span>
@@ -270,8 +274,18 @@ function HistorySection({ label, feature }: { label: string; feature?: string })
                 <span
                   className="sb-history-del"
                   role="button"
+                  tabIndex={0}
                   aria-label="Delete chat"
                   onClick={(e) => removeChat(c.id, e)}
+                  onKeyDown={(e) => {
+                    // Enter / Space activates the delete affordance so
+                    // keyboard-only users have parity with mouse-hover.
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      removeChat(c.id, e as unknown as React.MouseEvent);
+                    }
+                  }}
                   title="Delete chat"
                 >×</span>
               </button>

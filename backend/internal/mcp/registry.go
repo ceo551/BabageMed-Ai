@@ -154,6 +154,11 @@ func (r *Registry) ListTools(ctx context.Context, id string) (any, error) {
 	return out, nil
 }
 
+// Max bytes we will read from an MCP server's response body. A misbehaving
+// (or compromised) MCP could otherwise return a multi-GB stream and OOM
+// the backend. 4 MiB easily covers any reasonable search/fetch payload.
+const maxMcpResponseBytes = 4 << 20
+
 func (r *Registry) Call(ctx context.Context, id, tool string, args any) (any, error) {
 	s, ok := r.Get(id)
 	if !ok {
@@ -172,14 +177,18 @@ func (r *Registry) Call(ctx context.Context, id, tool string, args any) (any, er
 		return nil, err
 	}
 	defer res.Body.Close()
+	// Cap the response body to keep one bad MCP from spilling unbounded
+	// memory. LimitReader (not MaxBytesReader) is used because this isn't
+	// an http.ResponseWriter context.
+	limited := io.LimitReader(res.Body, maxMcpResponseBytes+1)
 	if res.StatusCode >= 400 {
-		b, _ := io.ReadAll(res.Body)
+		b, _ := io.ReadAll(limited)
 		timer()
 		metrics.MCPProxyCalls.WithLabelValues(id, tool, fmt.Sprintf("http_%d", res.StatusCode)).Inc()
 		return nil, fmt.Errorf("call %s/%s failed: %s: %s", id, tool, res.Status, string(b))
 	}
 	var out any
-	if err := json.NewDecoder(res.Body).Decode(&out); err != nil {
+	if err := json.NewDecoder(limited).Decode(&out); err != nil {
 		timer()
 		metrics.MCPProxyCalls.WithLabelValues(id, tool, "decode_error").Inc()
 		return nil, err

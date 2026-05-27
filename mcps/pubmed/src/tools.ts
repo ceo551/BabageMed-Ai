@@ -9,10 +9,16 @@ const api = new ApiClient({
 
 const KEY = process.env.NCBI_API_KEY;
 const TOOL = process.env.NCBI_TOOL || "BabageMedAI";
-const EMAIL = process.env.NCBI_EMAIL || "ceo@babagemed.com";
+// NCBI's terms ask for a contact email on every E-utilities call so they
+// can reach the operator if a script misbehaves. We require it via env
+// rather than baking a personal/corporate address into source — burning
+// one to git made it leak into every cached PubMed request, including
+// other operators' deployments forked from this repo.
+const EMAIL = process.env.NCBI_EMAIL || "";
 
 function baseQuery() {
-  const q: Record<string, string> = { tool: TOOL, email: EMAIL, db: "pubmed", retmode: "json" };
+  const q: Record<string, string> = { tool: TOOL, db: "pubmed", retmode: "json" };
+  if (EMAIL) q.email = EMAIL;
   if (KEY) q.api_key = KEY;
   return q;
 }

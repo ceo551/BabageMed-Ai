@@ -359,8 +359,19 @@ function Composer({
         setModelOpen(false);
       }
     }
+    // Escape closes both popovers — keyboard parity with click-outside.
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") {
+        setAddOpen(false);
+        setModelOpen(false);
+      }
+    }
     document.addEventListener("mousedown", onDoc);
-    return () => document.removeEventListener("mousedown", onDoc);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onDoc);
+      document.removeEventListener("keydown", onKey);
+    };
   }, []);
 
   useEffect(() => {

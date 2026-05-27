@@ -77,6 +77,22 @@ func (h *Handler) ListPlans(w http.ResponseWriter, _ *http.Request) {
 	writeJSON(w, 200, map[string]any{"plans": ListPlans()})
 }
 
+// isAllowedReturn checks that a PayPal return/cancel URL stays on our
+// own origin so the checkout flow can't be turned into an open redirect
+// (PayPal happily 302s wherever we tell it to). Empty publicBase means
+// the env var isn't set — we treat every URL as disallowed to force the
+// caller into the safe default branch.
+func isAllowedReturn(raw, publicBase string) bool {
+	if publicBase == "" || raw == "" {
+		return false
+	}
+	// strings.HasPrefix is intentional: PUBLIC_BASE_URL is "https://app.babagemed.com"
+	// (no trailing slash, trimmed above) and we require the URL to start
+	// with that origin + "/" so "https://app.babagemed.com.evil.com/x"
+	// can't match.
+	return strings.HasPrefix(raw, publicBase+"/")
+}
+
 func (h *Handler) Providers(w http.ResponseWriter, _ *http.Request) {
 	writeJSON(w, 200, map[string]any{
 		"paymob": h.pm.Configured(),
@@ -166,11 +182,17 @@ func (h *Handler) PayPalCheckout(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "invalid json", 400)
 		return
 	}
-	if b.ReturnURL == "" {
-		b.ReturnURL = os.Getenv("PUBLIC_BASE_URL") + "/billing/return"
+	// Return / cancel URLs MUST live under our own origin. Without this,
+	// an attacker can craft a checkout link with return_url pointing at a
+	// phishing page; after PayPal redirects, the user thinks they're back
+	// on Babbage but they're not. Anchored prefix-check on PUBLIC_BASE_URL
+	// — anything else is rejected (and the server-side default is used).
+	publicBase := strings.TrimRight(os.Getenv("PUBLIC_BASE_URL"), "/")
+	if b.ReturnURL == "" || !isAllowedReturn(b.ReturnURL, publicBase) {
+		b.ReturnURL = publicBase + "/billing/return"
 	}
-	if b.CancelURL == "" {
-		b.CancelURL = os.Getenv("PUBLIC_BASE_URL") + "/billing/cancel"
+	if b.CancelURL == "" || !isAllowedReturn(b.CancelURL, publicBase) {
+		b.CancelURL = publicBase + "/billing/cancel"
 	}
 	out, err := h.pp.Checkout(r.Context(), b.PlanID, b.ReturnURL, b.CancelURL)
 	if err != nil {

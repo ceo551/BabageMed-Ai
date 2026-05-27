@@ -491,8 +491,11 @@
   opacity: 0;
   transition: opacity .12s, background .12s, color .12s;
 }
-.feat-subsb-item:hover .feat-subsb-item-del { opacity: 1; }
+.feat-subsb-item:hover .feat-subsb-item-del,
+.feat-subsb-item:focus-within .feat-subsb-item-del,
+.feat-subsb-item-del:focus-visible { opacity: 1; }
 .feat-subsb-item-del:hover { background: var(--purple-soft); color: var(--purple); }
+.feat-subsb-item-del:focus-visible { outline: 2px solid var(--purple); outline-offset: 2px; }
 
 /* ── Main chat column ─────────────────────────────────────────────────── */
 .feat-main {
