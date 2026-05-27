@@ -11,7 +11,7 @@ import { Suspense, useEffect, useMemo, useState } from "react";
 import { auth as authApi, type ProfilePatch, type UsageReport, type User } from "../lib/api";
 import { useAuth } from "../lib/auth-context";
 import { usePrefs } from "../lib/store";
-import { MODELS } from "../i18n";
+import { findModelById } from "../lib/models";
 import "./settings.css";
 
 type Tab = "general" | "usage";
@@ -228,7 +228,10 @@ function UsageTab() {
   const planLimits: Record<string, number> = { free: 50, pro: 1000, max: 10000 };
 
   function labelFor(modelId: string): string {
-    const m = MODELS.find((x) => x.id === modelId);
+    // Usage rows can reference any text / image / video model id, so
+    // findModelById searches all three lists. Unknown id → raw id (may
+    // appear briefly after a model is renamed; better than blanking).
+    const m = findModelById(modelId);
     return m ? m.name : modelId;
   }
 

@@ -35,8 +35,6 @@ export type LocaleStrings = {
   epic: string; pubmed: string; kdigo: string;
   modelHeader: string; modeHeader: string;
   modes: ReadonlyArray<{ id: string; label: string; color: string }>;
-  recents: ReadonlyArray<{ id: number; t: string; w: string; c: string }>;
-  toolList: ReadonlyArray<{ id: string; t: string; c: string; st: string }>;
 };
 
 // The 10 sidebar feature categories — single source of truth. Slug is
@@ -132,8 +130,6 @@ export const STR: Record<Locale, LocaleStrings> = {
       { id: "deep",    label: "Deep reasoning",  color: "purple" },
       { id: "cited",   label: "Cite mode",       color: "yellow" },
     ],
-    recents: [],
-    toolList: [],
   },
   ar: {
     dir: "rtl",
@@ -191,8 +187,6 @@ export const STR: Record<Locale, LocaleStrings> = {
       { id: "deep",    label: "استدلال عميق",       color: "purple" },
       { id: "cited",   label: "وضع الاستشهاد",      color: "yellow" },
     ],
-    recents: [],
-    toolList: [],
   },
 };
 

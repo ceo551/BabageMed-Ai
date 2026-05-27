@@ -320,8 +320,33 @@
   overflow: hidden;
 }
 @media (max-width: 1180px) {
+  /* Narrow viewport: drop the right rail into a collapsible drawer that
+   * pins to the right edge. Users keep access to Instructions / Files /
+   * Skills / Connectors instead of losing them entirely. The drawer is
+   * opened by .feat-rail-fab below. */
   .feat-shell-3col { grid-template-columns: var(--subsb-w) minmax(0, 1fr); }
-  .feat-shell-3col .feat-rail { display: none; }
+  .feat-shell-3col .feat-rail {
+    position: fixed;
+    top: 0; right: 0; bottom: 0;
+    width: min(360px, 92vw);
+    background: var(--panel);
+    border-inline-start: 1px solid var(--border);
+    z-index: 40;
+    box-shadow: -8px 0 24px rgba(0,0,0,.18);
+    transform: translateX(100%);
+    transition: transform .22s ease;
+  }
+  .feat-shell-3col[data-rail-open="true"] .feat-rail { transform: translateX(0); }
+  .feat-rail-fab { display: inline-flex; }
+  [dir="rtl"] .feat-shell-3col .feat-rail {
+    right: auto;
+    left: 0;
+    border-inline-start: 0;
+    border-inline-end: 1px solid var(--border);
+    transform: translateX(-100%);
+    box-shadow: 8px 0 24px rgba(0,0,0,.18);
+  }
+  [dir="rtl"] .feat-shell-3col[data-rail-open="true"] .feat-rail { transform: translateX(0); }
 }
 @media (max-width: 820px) {
   .feat-shell-3col {
@@ -329,7 +354,32 @@
     height: auto;
     overflow: visible;
   }
+  /* Sub-sidebar on mobile compacts to a strip above the chat. */
+  .feat-subsb { height: auto; max-height: 240px; }
 }
+
+/* Floating "open settings" FAB shown only on narrow widths. Pinned to
+ * the bottom-right above the composer so it doesn't overlap the chat. */
+.feat-rail-fab {
+  display: none;
+  position: absolute;
+  bottom: 88px;
+  inset-inline-end: 18px;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  border: 1px solid var(--hue-line);
+  background: var(--hue-bg);
+  color: var(--hue-ink);
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 30;
+  box-shadow: 0 4px 12px rgba(0,0,0,.12);
+  transition: transform .12s;
+}
+.feat-rail-fab:hover { transform: translateY(-1px); }
+.feat-rail-fab .ico { width: 20px; height: 20px; }
 
 /* ── Sub-sidebar ──────────────────────────────────────────────────────── */
 .feat-subsb {
@@ -513,6 +563,20 @@
   margin: 0 auto;
 }
 
+/* Backdrop shown beneath the right rail drawer on narrow screens.
+ * Clicking it closes the drawer via the data-rail-open toggle. */
+.feat-rail-backdrop {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.42);
+  z-index: 35;
+}
+.feat-shell-3col[data-rail-open="true"] .feat-rail-backdrop { display: block; }
+@media (min-width: 1181px) {
+  .feat-rail-backdrop { display: none !important; }
+}
+
 /* ── Right rail (feature cards) ───────────────────────────────────────── */
 .feat-rail {
   display: flex;
@@ -529,12 +593,14 @@
 
 /* ── Feature-page composer ────────────────────────────────────────────── */
 .feat-composer {
-  position: relative;
+  position: sticky;
+  bottom: 0;
   width: 100%;
   max-width: 760px;
   margin: 0 auto;
   padding: 12px 24px 18px;
   background: linear-gradient(180deg, transparent 0%, var(--bg) 30%);
+  z-index: 10;
 }
 .feat-composer textarea {
   width: 100%;

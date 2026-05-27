@@ -17,6 +17,7 @@ import (
 
 	"github.com/babagemed/backend/internal/auth"
 	"github.com/babagemed/backend/internal/db"
+	"github.com/babagemed/backend/internal/features"
 	"github.com/go-chi/chi/v5"
 	"github.com/jackc/pgx/v5"
 )
@@ -126,6 +127,10 @@ func (s *Service) handleList(w http.ResponseWriter, r *http.Request) {
 		}
 		out = append(out, c)
 	}
+	if err := rows.Err(); err != nil {
+		http.Error(w, err.Error(), 500)
+		return
+	}
 	writeJSON(w, out)
 }
 
@@ -161,17 +166,11 @@ func (s *Service) handleCreate(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, c)
 }
 
-// validFeatureSlug keeps this package self-contained (no import cycle on
-// internal/features). Keep in sync with that package's validSlugs and
-// with apps/web/app/i18n.ts FEATURES_*.
+// validFeatureSlug defers to internal/features so the chats package
+// and the features package share one source of truth (see
+// internal/features/slugs.go).
 func validFeatureSlug(s string) bool {
-	switch s {
-	case "healthcare", "education", "writing", "translation",
-		"data-analysis", "business", "financial", "consulting",
-		"image-video", "advertisements":
-		return true
-	}
-	return false
+	return features.IsValidSlug(s)
 }
 
 // ─── Get + update + delete ────────────────────────────────────────────────
@@ -198,7 +197,7 @@ func (s *Service) handleGet(w http.ResponseWriter, r *http.Request) {
 func (s *Service) handleUpdate(w http.ResponseWriter, r *http.Request) {
 	u := auth.FromContext(r.Context())
 	var patch struct{ Title, Model, Mode *string }
-	if err := json.NewDecoder(r.Body).Decode(&patch); err != nil {
+	if err := json.NewDecoder(io.LimitReader(r.Body, 1<<20)).Decode(&patch); err != nil {
 		http.Error(w, "bad json", 400)
 		return
 	}
@@ -214,9 +213,10 @@ func (s *Service) handleUpdate(w http.ResponseWriter, r *http.Request) {
 		    mode       = COALESCE($5, mode),
 		    updated_at = now()
 		WHERE id = $1 AND user_id = $2
-		RETURNING id, COALESCE(title, ''), COALESCE(model, ''), COALESCE(mode, ''), created_at, updated_at
+		RETURNING id, COALESCE(title, ''), COALESCE(model, ''), COALESCE(mode, ''),
+		          COALESCE(feature_slug, ''), created_at, updated_at
 	`, chi.URLParam(r, "id"), u.ID, patch.Title, patch.Model, patch.Mode).
-		Scan(&c.ID, &c.Title, &c.Model, &c.Mode, &c.CreatedAt, &c.UpdatedAt)
+		Scan(&c.ID, &c.Title, &c.Model, &c.Mode, &c.Feature, &c.CreatedAt, &c.UpdatedAt)
 	if errors.Is(err, pgx.ErrNoRows) {
 		http.Error(w, "not found", 404)
 		return
@@ -267,6 +267,10 @@ func (s *Service) handleListMessages(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		out = append(out, m)
+	}
+	if err := rows.Err(); err != nil {
+		http.Error(w, err.Error(), 500)
+		return
 	}
 	writeJSON(w, out)
 }

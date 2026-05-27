@@ -39,15 +39,16 @@ function FeaturePageInner() {
   const { user, loading: authLoading } = useAuth();
   const meta = s.features.find((f) => f.slug === slug);
 
-  // Unknown slug — surface a 404 instead of rendering a broken shell.
-  if (!meta && !authLoading) {
-    if (typeof window !== "undefined") notFound();
-    return null;
-  }
-
+  // All useState / useEffect calls run unconditionally before any early
+  // returns — bailing out before them would violate the Rules of Hooks
+  // (the next render would see a different number of hooks called).
   const [feature, setFeature] = useState<Feature | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  // Right-rail drawer open state — only used at <1180px where the rail
+  // is a slide-in panel. Above that breakpoint CSS overrides keep it
+  // permanently visible regardless of this flag.
+  const [railOpen, setRailOpen] = useState(false);
 
   useEffect(() => {
     if (authLoading) return;
@@ -61,11 +62,19 @@ function FeaturePageInner() {
     return () => { cancelled = true; };
   }, [authLoading, user, meta?.slug]);
 
+  // Effect-based 404 (after the hook order above is stable). Putting
+  // this in an effect also stops the server side from triggering
+  // notFound() during static prerender — only the client navigates.
+  useEffect(() => {
+    if (!authLoading && !meta) notFound();
+  }, [authLoading, meta]);
+
   if (authLoading) return <div className="feat-shell"><p className="lead">Loading…</p></div>;
+  if (!meta) return null;
   if (!user) {
     return (
       <div className="feat-shell">
-        <h1>{meta?.label}</h1>
+        <h1>{meta.label}</h1>
         <p className="lead">
           {locale === "ar"
             ? "سجّل الدخول لاستخدام هذه الميزة، وإدارة التعليمات والملفات والمهارات الخاصة بها."
@@ -74,16 +83,38 @@ function FeaturePageInner() {
       </div>
     );
   }
-  if (!meta) return null;
 
   return (
-    <div className="feat-shell feat-shell-3col" data-color={meta.color}>
+    <div
+      className="feat-shell feat-shell-3col"
+      data-color={meta.color}
+      data-rail-open={railOpen}
+    >
       <FeatureSubSidebar meta={meta} />
 
       <section className="feat-main">
         {error && <div className="feat-err">{error}</div>}
         <FeatureChat meta={meta} feature={feature} />
+        {/* Floating settings button — visible only at <1180px via CSS
+            (display:none above that). Tapping toggles the right rail
+            drawer for instructions/files/skills/connectors access on
+            narrow viewports. */}
+        <button
+          type="button"
+          className="feat-rail-fab"
+          onClick={() => setRailOpen((v) => !v)}
+          aria-label={locale === "ar" ? "خصائص الميزة" : "Feature settings"}
+          aria-expanded={railOpen}
+        >
+          {I.gear}
+        </button>
       </section>
+
+      <div
+        className="feat-rail-backdrop"
+        onClick={() => setRailOpen(false)}
+        aria-hidden="true"
+      />
 
       <aside className="feat-rail" aria-label={locale === "ar" ? "خصائص الميزة" : "Feature settings"}>
         <InstructionsCard

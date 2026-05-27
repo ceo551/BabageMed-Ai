@@ -312,10 +312,12 @@ export const spaces = {
 };
 
 // ── Features ─────────────────────────────────────────────────────────────
-// Per-feature workspace (Healthcare, Writing, Translation, …). The backend
-// upserts on first GET so the frontend never has to handle a 404 for one of
-// the 8 fixed slugs. Each feature stores instructions, skills, connectors,
-// and a flat file list (PDFs/text uploaded for grounding).
+// Per-feature workspace (Healthcare, Education, Writing, Translation, Data
+// Analysis, Business, Financial, Consulting, Image & Video, Advertisements).
+// The backend upserts on first GET so the frontend never has to handle a
+// 404 for one of the 10 fixed slugs. Each feature stores instructions,
+// skills, connectors, and a flat file list (PDFs/text uploaded for
+// grounding).
 export type FeatureFile = {
   id: string;
   name: string;

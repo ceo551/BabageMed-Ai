@@ -100,10 +100,22 @@ type chatRequest struct {
 	// Optional name of the space the chunks come from — purely for the
 	// system-prompt header so the model knows what corpus it's reading.
 	SpaceName string `json:"spaceName,omitempty"`
+	// Per-feature workspace context. Set by the feature-page composer
+	// (apps/web/app/features/[slug]/FeatureChat.tsx). When present, the
+	// feature's custom instructions are appended to the system prompt
+	// so the assistant grounds answers in that workflow's tuning.
+	Feature             string `json:"feature,omitempty"`
+	FeatureInstructions string `json:"featureInstructions,omitempty"`
 }
+
+// Cap chat request bodies at 1 MB — generous for a transcript + a
+// small space-context slice, but tight enough that a malicious client
+// can't OOM the backend by streaming 1 GB into the JSON decoder.
+const maxChatBodyBytes = 1 << 20
 
 func (h *Handler) Chat(w http.ResponseWriter, r *http.Request) {
 	var req chatRequest
+	r.Body = http.MaxBytesReader(w, r.Body, maxChatBodyBytes)
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		writeJSON(w, 400, map[string]string{"error": "invalid json"})
 		return
@@ -118,8 +130,19 @@ func (h *Handler) Chat(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) ChatStream(w http.ResponseWriter, r *http.Request) {
 	var req chatRequest
+	r.Body = http.MaxBytesReader(w, r.Body, maxChatBodyBytes)
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		writeJSON(w, 400, map[string]string{"error": "invalid json"})
+		return
+	}
+	// Image / video model ids belong to the visual modality (Image &
+	// Video / Advertisements features) and aren't supported by the text
+	// streaming endpoint. Surface a clear error instead of silently
+	// falling back to a text model the user didn't pick.
+	if isVisualModel(req.Model) {
+		w.Header().Set("Content-Type", "text/event-stream")
+		fmt.Fprintf(w, "event: error\ndata: %s\n\n",
+			`{"error":"image/video models are not yet supported on the chat endpoint; pick a text model"}`)
 		return
 	}
 	w.Header().Set("Content-Type", "text/event-stream")
@@ -162,7 +185,7 @@ func (h *Handler) ChatStream(w http.ResponseWriter, r *http.Request) {
 	// Real provider streaming: forward each text delta as a 'delta' SSE event
 	// so the frontend types in tokens as they arrive instead of waiting on a
 	// single 'content' chunk at the end.
-	system := buildSystem(req.Mode, req.Locale, citations, req.UseMcps, req.SpaceContext, req.SpaceName)
+	system := buildSystem(req.Mode, req.Locale, citations, req.UseMcps, req.SpaceContext, req.SpaceName, req.Feature, req.FeatureInstructions)
 	if req.Model == "" {
 		req.Model = "opus-4.7"
 	}
@@ -290,7 +313,7 @@ func (h *Handler) gather(ctx context.Context, req chatRequest) ([]map[string]any
 }
 
 func (h *Handler) complete(ctx context.Context, req chatRequest, citations []map[string]any) (*llm.CompletionResponse, error) {
-	system := buildSystem(req.Mode, req.Locale, citations, req.UseMcps, req.SpaceContext, req.SpaceName)
+	system := buildSystem(req.Mode, req.Locale, citations, req.UseMcps, req.SpaceContext, req.SpaceName, req.Feature, req.FeatureInstructions)
 	if req.Model == "" {
 		req.Model = "opus-4.7"
 	}
@@ -305,9 +328,36 @@ func (h *Handler) complete(ctx context.Context, req chatRequest, citations []map
 	})
 }
 
-func buildSystem(mode, locale string, citations []map[string]any, useMcps []string, spaceCtx []map[string]any, spaceName string) string {
+// isVisualModel reports whether the given model id belongs to the
+// image / video (visual) modality (see apps/web/app/lib/models.ts).
+// Kept as a small explicit list rather than a prefix match so a future
+// "gpt-image-3" or "sora-3" auto-rejects until the backend learns to
+// route it, but a new "gpt-5.6" text model doesn't false-positive.
+func isVisualModel(id string) bool {
+	switch id {
+	case "gpt-image-2", "qwen-image-2.0",
+		"sora-2", "kling-o3", "kling-3.0", "grok-imagine",
+		"veo-3.1", "seedance-2.0", "happy-horse-1.0":
+		return true
+	}
+	return false
+}
+
+func buildSystem(mode, locale string, citations []map[string]any, useMcps []string, spaceCtx []map[string]any, spaceName, feature, featureInstructions string) string {
 	var b strings.Builder
 	b.WriteString("You are Babbage AI — a careful, source-aware assistant. State uncertainty plainly and never invent facts. If retrieved sources don't cover the question, say so explicitly.\n")
+	// Feature workspace context. When the user is chatting from a feature
+	// page (e.g. /features/healthcare), their custom instructions for that
+	// workflow are appended here so every turn in that feature inherits
+	// them without the user having to retype the framing each time.
+	if feature != "" {
+		fmt.Fprintf(&b, "\nThe user is working in the \"%s\" feature workspace.\n", feature)
+	}
+	if strings.TrimSpace(featureInstructions) != "" {
+		b.WriteString("\nThe user has set these custom instructions for this feature — follow them on every turn unless the user explicitly overrides:\n")
+		b.WriteString(strings.TrimSpace(featureInstructions))
+		b.WriteString("\n")
+	}
 	now := time.Now().UTC()
 	fmt.Fprintf(&b, "Today is %s (UTC). Trust this date over anything in your training data; never invent a different year.\n",
 		now.Format("Monday, January 2, 2006"))

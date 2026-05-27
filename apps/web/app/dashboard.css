@@ -66,7 +66,7 @@ a { color: inherit; text-decoration: none; }
 .shell[data-collapsed="true"] .sb-row { justify-content: center; padding-inline: 0; }
 .shell[data-collapsed="true"] .sb-new { justify-content: center; padding-inline: 0; }
 
-/* Collapsed sidebar — keep the 8 feature emojis visible but hide the long
+/* Collapsed sidebar — keep the 10 feature emojis visible but hide the long
  * labels and the section header. Centered so each row reads as a single
  * column of icons matching the Claude/Perplexity collapsed pattern. */
 .shell[data-collapsed="true"] .sb-feature-label,

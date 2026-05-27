@@ -35,6 +35,10 @@ for (const [id, name, base, category] of sites.sites) {
     port: port++,
     base,
     tools: ["search", "fetch"],
+    // This script appends medical / life-sciences sources — assign the
+    // healthcare feature so validate-manifest.mjs accepts new rows
+    // without a manual second pass.
+    feature: "healthcare",
   });
   added++;
 }

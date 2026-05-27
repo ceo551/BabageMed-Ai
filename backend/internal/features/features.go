@@ -31,26 +31,16 @@ import (
 
 const maxUploadBytes = 10 * 1024 * 1024 // 10 MB per file
 
-// validSlugs is the single source of truth for which feature ids the API
-// accepts. Anything else 404s. Keep aligned with frontend i18n FEATURES_*.
-// 10 fixed feature ids that the API accepts. Anything else 404s. Order
-// here is informational only — the sidebar / catalog UI controls
-// display order via apps/web/app/i18n.ts FEATURES_EN / FEATURES_AR.
-//
-// Keep aligned with: apps/web/app/i18n.ts + scripts/mcps.manifest.json
-// `feature` field on each MCP entry.
-var validSlugs = map[string]bool{
-	"healthcare":     true,
-	"education":      true,
-	"writing":        true,
-	"translation":    true,
-	"data-analysis":  true,
-	"business":       true,
-	"financial":      true,
-	"consulting":     true,
-	"image-video":    true,
-	"advertisements": true,
-}
+// validSlugs is derived from the canonical ValidSlugs list (slugs.go)
+// so this package, the chats package, and any future caller share one
+// source of truth. Built once at init() so handlers stay branch-free.
+var validSlugs = func() map[string]bool {
+	m := make(map[string]bool, len(ValidSlugs))
+	for _, s := range ValidSlugs {
+		m[s] = true
+	}
+	return m
+}()
 
 type Feature struct {
 	Slug         string    `json:"slug"`
@@ -137,6 +127,12 @@ func (s *Service) get(ctx context.Context, userID, slug string) (*Feature, error
 			return nil, err
 		}
 		f.Files = append(f.Files, fi)
+	}
+	// pgx requires rows.Err() after the iterator returns false to catch
+	// connection drops mid-result-set — without it, partial reads return
+	// as a successful empty list.
+	if err := rows.Err(); err != nil {
+		return nil, err
 	}
 	return f, nil
 }
@@ -228,7 +224,10 @@ func (s *Service) handlePatch(w http.ResponseWriter, r *http.Request) {
 	slug := chi.URLParam(r, "slug")
 	if !validSlugs[slug] { http.Error(w, "unknown feature", http.StatusNotFound); return }
 	var in UpdatePatch
-	if err := json.NewDecoder(r.Body).Decode(&in); err != nil {
+	// Cap patch body at 256 KB. Custom instructions + a long list of
+	// connector ids + skills shouldn't come close. Without the cap a
+	// runaway client could spool unbounded into the JSON decoder.
+	if err := json.NewDecoder(io.LimitReader(r.Body, 256<<10)).Decode(&in); err != nil {
 		http.Error(w, "bad json", http.StatusBadRequest)
 		return
 	}

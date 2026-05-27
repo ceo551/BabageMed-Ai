@@ -428,7 +428,10 @@ function Composer({
       let activeChatId = chatId;
       if (!activeChatId) {
         try {
-          const created = await chatsApi.create(text, model, "bedside");
+          // Empty feature → dashboard "general" chat. Backend stores
+          // feature_slug as NULL, which the sidebar's general History row
+          // filters on (?feature=general).
+          const created = await chatsApi.create(text, model, "bedside", "");
           activeChatId = created.id;
           setChatId(created.id);
           // Stamp the URL so a reload restores this conversation. Push to
