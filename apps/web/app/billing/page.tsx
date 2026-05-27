@@ -61,6 +61,7 @@ export default function BillingPage() {
     try {
       const r = await fetch("/api/backend/api/payments/paymob/checkout", {
         method: "POST",
+        credentials: "include",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ plan_id: planID, billing: {} }),
       });
@@ -80,6 +81,7 @@ export default function BillingPage() {
     try {
       const r = await fetch("/api/backend/api/payments/paypal/checkout", {
         method: "POST",
+        credentials: "include",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
           plan_id: planID,

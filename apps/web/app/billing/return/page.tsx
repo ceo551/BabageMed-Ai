@@ -25,6 +25,11 @@ function Inner() {
     captured.current = true;
     fetch("/api/backend/api/payments/paypal/capture", {
       method: "POST",
+      // Session cookie required so the backend can link the captured
+      // payment to the calling user. Without credentials:"include",
+      // PayPal's cross-origin return URL strips the cookie and the
+      // backend has no idea who just paid.
+      credentials: "include",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ order_id: orderID }),
     })

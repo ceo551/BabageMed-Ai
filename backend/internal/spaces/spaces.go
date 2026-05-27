@@ -16,8 +16,10 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"path/filepath"
 	"strings"
 	"time"
+	"unicode/utf8"
 
 	"github.com/babagemed/backend/internal/auth"
 	"github.com/babagemed/backend/internal/db"
@@ -280,6 +282,15 @@ func (s *Service) UploadFile(ctx context.Context, userID, spaceID, name, mime st
 	if len(body) > maxUploadBytes {
 		return nil, fmt.Errorf("file too large (max %d bytes)", maxUploadBytes)
 	}
+	// Strip any path components from the supplied filename so a user
+	// can't store "../../etc/passwd" — even though we never write to
+	// disk, the name surfaces in UI / future download endpoints and
+	// would let a malicious filename hijack a download dialog.
+	name = sanitiseFilename(name)
+	if name == "" {
+		return nil, errors.New("invalid filename")
+	}
+	mime = sanitiseMime(mime)
 
 	sum := md5.Sum(body)
 	digest := hex.EncodeToString(sum[:])
@@ -317,6 +328,13 @@ func (s *Service) UploadFile(ctx context.Context, userID, spaceID, name, mime st
 		chunks := chunk(rawText)
 		f.ChunkCount = len(chunks)
 		for i, c := range chunks {
+			// to_tsvector('simple', $1) fails noisily on invalid UTF-8.
+			// Coerce here so a misdetected binary file (extractText
+			// picks up a .csv that's actually UTF-16) doesn't poison
+			// the whole transaction.
+			if !utf8.ValidString(c) {
+				c = strings.ToValidUTF8(c, "�")
+			}
 			_, err := tx.Exec(ctx, `
                 INSERT INTO space_chunks (file_id, space_id, idx, content)
                 VALUES ($1, $2, $3, $4)
@@ -652,4 +670,62 @@ func chunk(text string) []string {
 		}
 	}
 	return out
+}
+
+// sanitiseFilename strips any path components from a user-supplied
+// filename and clamps its length. Even though we don't write to disk
+// (files live in bytea), the name is surfaced in UI and future
+// download endpoints — a malicious "../../etc/passwd" would otherwise
+// flow through to the Content-Disposition header on the download path
+// and could trick a download dialog.
+func sanitiseFilename(name string) string {
+	name = strings.TrimSpace(name)
+	// filepath.Base drops any directory traversal; ReplaceAll removes the
+	// NUL bytes Windows would otherwise smuggle in via NTFS ADS.
+	name = filepath.Base(name)
+	name = strings.ReplaceAll(name, "\x00", "")
+	// Drop ASCII control bytes and anything that would let a malicious
+	// filename render as a script tag when shown in HTML.
+	var b strings.Builder
+	for _, r := range name {
+		if r < 0x20 || r == 0x7f || r == '<' || r == '>' {
+			continue
+		}
+		b.WriteRune(r)
+	}
+	out := b.String()
+	if len(out) > 200 {
+		out = out[:200]
+	}
+	// "" or "." or ".." are not valid filenames in any context.
+	if out == "" || out == "." || out == ".." {
+		return ""
+	}
+	return out
+}
+
+// sanitiseMime keeps only the type/subtype portion of a Content-Type
+// header. Parameters (charset, boundary) are dropped because we never
+// actually need them server-side and they widen the surface area for
+// header smuggling when the value is later echoed back.
+func sanitiseMime(mime string) string {
+	mime = strings.TrimSpace(mime)
+	if i := strings.IndexByte(mime, ';'); i >= 0 {
+		mime = strings.TrimSpace(mime[:i])
+	}
+	// Allow only RFC 6838 type/subtype characters.
+	for _, r := range mime {
+		if r >= 'a' && r <= 'z' || r >= 'A' && r <= 'Z' || r >= '0' && r <= '9' ||
+			r == '/' || r == '+' || r == '-' || r == '.' {
+			continue
+		}
+		return "application/octet-stream"
+	}
+	if mime == "" {
+		return "application/octet-stream"
+	}
+	if len(mime) > 100 {
+		return "application/octet-stream"
+	}
+	return mime
 }

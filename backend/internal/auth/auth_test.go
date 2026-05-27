@@ -7,6 +7,19 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 )
 
+// Login() runs bcrypt against a dummy hash when the email lookup
+// misses, so attackers can't enumerate registered emails via timing.
+// This test confirms the dummy hash exists and is well-formed at
+// process startup — full timing-parity testing is integration-level.
+func TestDummyBcryptHashInitialised(t *testing.T) {
+	if dummyBcryptHash == "" {
+		t.Fatal("dummyBcryptHash must be set at init() so the no-user login path can defang the timing oracle")
+	}
+	if len(dummyBcryptHash) < 50 {
+		t.Errorf("dummyBcryptHash looks malformed (len=%d)", len(dummyBcryptHash))
+	}
+}
+
 func TestLooksLikeEmail(t *testing.T) {
 	cases := []struct {
 		in   string

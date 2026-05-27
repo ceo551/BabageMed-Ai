@@ -448,7 +448,11 @@ func (c *Client) streamAnthropic(ctx context.Context, req CompletionRequest, onD
 
 	var full strings.Builder
 	sc := bufio.NewScanner(res.Body)
-	sc.Buffer(make([]byte, 0, 64*1024), 16*1024*1024) // 16 MiB — long thinking blocks easily exceed the default 64 KB
+	// 1 MiB max per SSE line. SSE frames are line-oriented; even a long
+	// thinking block arrives as many small lines, not one giant one. The
+	// previous 16 MiB cap made a misbehaving provider's no-newline stream
+	// a backend-OOM vector multiplied by concurrency.
+	sc.Buffer(make([]byte, 0, 64*1024), 1<<20)
 	for sc.Scan() {
 		line := sc.Text()
 		if !strings.HasPrefix(line, "data: ") {
@@ -543,7 +547,11 @@ func (c *Client) streamVertexAnthropic(ctx context.Context, req CompletionReques
 
 	var full strings.Builder
 	sc := bufio.NewScanner(res.Body)
-	sc.Buffer(make([]byte, 0, 64*1024), 16*1024*1024) // 16 MiB — long thinking blocks easily exceed the default 64 KB
+	// 1 MiB max per SSE line. SSE frames are line-oriented; even a long
+	// thinking block arrives as many small lines, not one giant one. The
+	// previous 16 MiB cap made a misbehaving provider's no-newline stream
+	// a backend-OOM vector multiplied by concurrency.
+	sc.Buffer(make([]byte, 0, 64*1024), 1<<20)
 	for sc.Scan() {
 		line := sc.Text()
 		if !strings.HasPrefix(line, "data: ") {
@@ -639,7 +647,8 @@ func (c *Client) streamGoogle(ctx context.Context, req CompletionRequest, onDelt
 
 	var full strings.Builder
 	sc := bufio.NewScanner(res.Body)
-	sc.Buffer(make([]byte, 0, 64*1024), 16*1024*1024)
+	// 1 MiB SSE line cap (see other providers in this file).
+	sc.Buffer(make([]byte, 0, 64*1024), 1<<20)
 	for sc.Scan() {
 		line := sc.Text()
 		if !strings.HasPrefix(line, "data: ") {
@@ -698,7 +707,11 @@ func (c *Client) streamOpenAI(ctx context.Context, req CompletionRequest, onDelt
 
 	var full strings.Builder
 	sc := bufio.NewScanner(res.Body)
-	sc.Buffer(make([]byte, 0, 64*1024), 16*1024*1024) // 16 MiB — long thinking blocks easily exceed the default 64 KB
+	// 1 MiB max per SSE line. SSE frames are line-oriented; even a long
+	// thinking block arrives as many small lines, not one giant one. The
+	// previous 16 MiB cap made a misbehaving provider's no-newline stream
+	// a backend-OOM vector multiplied by concurrency.
+	sc.Buffer(make([]byte, 0, 64*1024), 1<<20)
 	for sc.Scan() {
 		line := sc.Text()
 		if !strings.HasPrefix(line, "data: ") {

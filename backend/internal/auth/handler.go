@@ -43,7 +43,11 @@ func (h *Handler) signup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	SetCookie(w, r, token)
-	writeJSON(w, 201, map[string]any{"user": u, "token": token})
+	// Token deliberately omitted from the JSON body — the HttpOnly cookie
+	// already carries the session, and echoing the raw token leaks into
+	// HAR exports, server access logs, and any client-side error reporter
+	// (Sentry, LogRocket, etc).
+	writeJSON(w, 201, map[string]any{"user": u})
 }
 
 type loginReq struct {
@@ -63,7 +67,8 @@ func (h *Handler) login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	SetCookie(w, r, token)
-	writeJSON(w, 200, map[string]any{"user": u, "token": token})
+	// See signup() for why the token is omitted from the body.
+	writeJSON(w, 200, map[string]any{"user": u})
 }
 
 func (h *Handler) logout(w http.ResponseWriter, r *http.Request) {

@@ -121,6 +121,7 @@ func (h *Handler) Chat(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, 400, map[string]string{"error": "invalid json"})
 		return
 	}
+	sanitiseChatRequest(&req)
 	res, err := h.run(r.Context(), req)
 	if err != nil {
 		writeJSON(w, 502, map[string]string{"error": err.Error()})
@@ -136,6 +137,7 @@ func (h *Handler) ChatStream(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, 400, map[string]string{"error": "invalid json"})
 		return
 	}
+	sanitiseChatRequest(&req)
 	// Image / video model ids belong to the visual modality (Image &
 	// Video / Advertisements features) and aren't supported by the text
 	// streaming endpoint. Surface a clear error instead of silently
@@ -347,6 +349,83 @@ func (h *Handler) complete(ctx context.Context, req chatRequest, citations []map
 		Messages: req.Messages,
 		System:   system,
 	})
+}
+
+// sanitiseChatRequest defangs the user-controlled fields that get
+// concatenated into the system prompt. Without this:
+//   - a message with role:"system" would let the user inject a
+//     mid-conversation directive that overrides our instructions.
+//   - a malformed mode/locale would still slip into the prompt builder
+//     and risk surprising the model with unknown tokens.
+//   - feature / spaceName get interpolated inside double-quoted
+//     headers; an embedded `"` (or newline) would close the quote and
+//     inject a directive that looks like part of our prompt.
+func sanitiseChatRequest(req *chatRequest) {
+	// Drop any frontend-supplied "system" turns — the system prompt is
+	// ours to build. Tools / function results are also not allowed; we
+	// keep only the two roles we expect to see.
+	msgs := req.Messages[:0]
+	for _, m := range req.Messages {
+		if m.Role == "user" || m.Role == "assistant" {
+			msgs = append(msgs, m)
+		}
+	}
+	req.Messages = msgs
+
+	// Mode / locale whitelist. Unknown values silently downgrade to the
+	// safe defaults rather than 400ing — that keeps an older client
+	// that adds a new mode value from breaking when it talks to a not-
+	// yet-upgraded backend.
+	switch req.Mode {
+	case "deep", "cited", "bedside":
+	default:
+		req.Mode = ""
+	}
+	if req.Locale != "en" && req.Locale != "ar" {
+		req.Locale = "en"
+	}
+
+	// Strip control bytes + literal `"` from fields that get
+	// concatenated inside double-quoted prompt headers. Newlines aren't
+	// allowed either — they'd let the user insert a fake "USER:" or
+	// "SYSTEM:" header on a new line.
+	req.Feature = sanitisePromptField(req.Feature, 64)
+	req.SpaceName = sanitisePromptField(req.SpaceName, 120)
+	// featureInstructions can legitimately contain newlines (it's a
+	// multi-line textarea), so we don't strip them — but we still drop
+	// control bytes other than \n / \t.
+	req.FeatureInstructions = stripPromptControlChars(req.FeatureInstructions)
+}
+
+// sanitisePromptField keeps only printable characters (no quotes, no
+// newlines, no control bytes) and caps length. Used for short fields
+// that appear inside double-quoted prompt headers.
+func sanitisePromptField(s string, maxLen int) string {
+	var b strings.Builder
+	for _, r := range s {
+		if r == '"' || r == '\n' || r == '\r' || r == '\t' || r < 0x20 {
+			continue
+		}
+		b.WriteRune(r)
+		if b.Len() >= maxLen {
+			break
+		}
+	}
+	return b.String()
+}
+
+// stripPromptControlChars drops ASCII control bytes except \n and \t so
+// a multi-line textarea (feature instructions) can still come through
+// intact without letting a NUL/ESC poison downstream log sinks.
+func stripPromptControlChars(s string) string {
+	var b strings.Builder
+	b.Grow(len(s))
+	for _, r := range s {
+		if r == '\n' || r == '\t' || r == '\r' || r >= 0x20 {
+			b.WriteRune(r)
+		}
+	}
+	return b.String()
 }
 
 // isVisualModel reports whether the given model id belongs to the

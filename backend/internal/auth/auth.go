@@ -25,6 +25,22 @@ const (
 	tokenByteSize = 32
 )
 
+// dummyBcryptHash is a constant bcrypt hash we run the user's submitted
+// password against when the email lookup misses. Without it, "user not
+// found" returns instantly while "wrong password" burns ~100ms in
+// bcrypt — a measurable timing oracle for email enumeration. Hash is
+// of an opaque string the attacker can't precompute against.
+//
+// Re-generated at process startup so a hash leak via core dump doesn't
+// let an attacker pre-image a useful password.
+var dummyBcryptHash = func() string {
+	// 32-byte random secret → bcrypt at the same cost as live hashes.
+	var buf [32]byte
+	_, _ = rand.Read(buf[:])
+	h, _ := bcrypt.GenerateFromPassword(buf[:], BcryptCost)
+	return string(h)
+}()
+
 type User struct {
 	ID            string    `json:"id"`
 	Email         string    `json:"email"`
@@ -97,8 +113,13 @@ func (s *Service) Login(ctx context.Context, email, password, ua, ip string) (*U
         SELECT id, email, COALESCE(display_name, ''), preferred_name, profession, instructions, plan, is_admin, created_at, password_hash
         FROM users WHERE email = $1
     `, email).Scan(&u.ID, &u.Email, &u.DisplayName, &u.PreferredName, &u.Profession, &u.Instructions, &u.Plan, &u.IsAdmin, &u.CreatedAt, &hash)
+	// Email-enumeration defence: when the email lookup misses, we still
+	// run bcrypt against a dummy hash so the response time matches the
+	// "wrong password" path. Without this, a measurable timing gap
+	// (~100ms) leaks whether an email is registered.
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
+			_ = bcrypt.CompareHashAndPassword([]byte(dummyBcryptHash), []byte(password))
 			return nil, "", ErrInvalidCreds
 		}
 		return nil, "", err

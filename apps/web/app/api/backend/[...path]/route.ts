@@ -11,11 +11,15 @@ import { sameOrigin } from "../../../lib/csrf";
 const BACKEND_URL = process.env.BACKEND_URL || "http://localhost:8080";
 
 // Don't forward these — they confuse the upstream, are auto-set by fetch,
-// or would let a client spoof their own IP / proxy chain.
+// would let a client spoof their own IP / proxy chain, or would let a
+// client smuggle a bearer token aimed at a different scope. Auth lives
+// in the session cookie; an Authorization header from the browser is
+// always either accidental or hostile.
 const STRIP_REQ_HEADERS = new Set([
   "host", "content-length", "connection",
   "x-forwarded-for", "x-forwarded-host", "x-forwarded-proto", "x-forwarded-port",
   "forwarded", "x-real-ip",
+  "authorization",
 ]);
 const STRIP_RES_HEADERS = new Set(["content-encoding", "content-length", "transfer-encoding", "connection"]);
 
@@ -59,10 +63,16 @@ async function proxy(
     if (!STRIP_REQ_HEADERS.has(k.toLowerCase())) forwardHeaders.set(k, v);
   });
 
-  const init: RequestInit & { duplex?: "half" } = {
+  // 10-minute hard ceiling so a hung backend can't pin a Node worker
+  // forever. SSE streams (chat) legitimately run several minutes; a
+  // shorter cap would kill them mid-response. Real per-request limits
+  // are enforced in the Go layer via http.MaxBytesReader + context
+  // timeouts; this is purely a last-resort circuit breaker.
+  const init: RequestInit & { duplex?: "half"; signal?: AbortSignal } = {
     method: req.method,
     headers: forwardHeaders,
     redirect: "manual",
+    signal: AbortSignal.timeout(10 * 60 * 1000),
   };
   if (req.method !== "GET" && req.method !== "HEAD") {
     init.body = await req.arrayBuffer();

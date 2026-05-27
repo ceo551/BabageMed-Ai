@@ -20,8 +20,10 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"path/filepath"
 	"strings"
 	"time"
+	"unicode/utf8"
 
 	"github.com/babagemed/backend/internal/auth"
 	"github.com/babagemed/backend/internal/db"
@@ -173,6 +175,15 @@ func (s *Service) addFile(ctx context.Context, userID, slug, name, mime string, 
 	if err := s.upsertRow(ctx, userID, slug); err != nil {
 		return nil, err
 	}
+	// Sanitise filename + mime before they hit the DB — see spaces
+	// package for the same pattern. Without this, a malicious upload
+	// could store "../../etc/passwd" or a Content-Type that smuggles
+	// charset params we'd echo back unsafely.
+	name = sanitiseUploadFilename(name)
+	if name == "" {
+		return nil, errors.New("invalid filename")
+	}
+	mime = sanitiseUploadMime(mime)
 	sum := md5.Sum(body)
 	hexSum := hex.EncodeToString(sum[:])
 	// Crude text extraction — for binary types we just store the raw bytes,
@@ -182,6 +193,11 @@ func (s *Service) addFile(ctx context.Context, userID, slug, name, mime string, 
 	var textBody string
 	if strings.HasPrefix(mime, "text/") || strings.HasSuffix(name, ".md") || strings.HasSuffix(name, ".txt") || strings.HasSuffix(name, ".csv") {
 		textBody = string(body)
+		// Coerce invalid UTF-8 so text_body doesn't break a later FTS
+		// index or the JSON encoder when the file is served back.
+		if !utf8.ValidString(textBody) {
+			textBody = strings.ToValidUTF8(textBody, "�")
+		}
 	}
 	_, err := s.db.Pool.Exec(ctx, `
 		INSERT INTO feature_files (user_id, slug, name, mime, size_bytes, md5, content, text_body)
@@ -310,3 +326,46 @@ func writeJSON(w http.ResponseWriter, v any, err error) {
 
 // silence unused-import warning when build tags exclude the rest
 var _ = errors.New
+
+// sanitiseUploadFilename mirrors spaces.sanitiseFilename — same threat
+// model, same rules. Kept here to avoid a cross-package dependency
+// just for two small helpers (and so an audit can confirm both
+// packages enforce the same invariants by reading them side-by-side).
+func sanitiseUploadFilename(name string) string {
+	name = strings.TrimSpace(name)
+	name = filepath.Base(name)
+	name = strings.ReplaceAll(name, "\x00", "")
+	var b strings.Builder
+	for _, r := range name {
+		if r < 0x20 || r == 0x7f || r == '<' || r == '>' {
+			continue
+		}
+		b.WriteRune(r)
+	}
+	out := b.String()
+	if len(out) > 200 {
+		out = out[:200]
+	}
+	if out == "" || out == "." || out == ".." {
+		return ""
+	}
+	return out
+}
+
+func sanitiseUploadMime(mime string) string {
+	mime = strings.TrimSpace(mime)
+	if i := strings.IndexByte(mime, ';'); i >= 0 {
+		mime = strings.TrimSpace(mime[:i])
+	}
+	for _, r := range mime {
+		if r >= 'a' && r <= 'z' || r >= 'A' && r <= 'Z' || r >= '0' && r <= '9' ||
+			r == '/' || r == '+' || r == '-' || r == '.' {
+			continue
+		}
+		return "application/octet-stream"
+	}
+	if mime == "" || len(mime) > 100 {
+		return "application/octet-stream"
+	}
+	return mime
+}
