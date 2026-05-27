@@ -1,7 +1,11 @@
 // Tiny fetch wrapper around the backend. Always sends cookies for session auth.
 const BASE = "/api/backend";
 
-export type ApiError = { error: string; status: number };
+// ApiError carries the standard {error, status} pair AND any extra
+// fields the backend included in its error body (e.g. mfaRequired).
+// Caller-side, login() leans on the `mfaRequired` flag to decide
+// whether to show the second-factor prompt vs a hard failure.
+export type ApiError = { error: string; status: number; [key: string]: unknown };
 
 async function call<T>(path: string, init: RequestInit = {}): Promise<T> {
   const res = await fetch(BASE + path, {
@@ -13,7 +17,15 @@ async function call<T>(path: string, init: RequestInit = {}): Promise<T> {
   let body: any = null;
   try { body = text ? JSON.parse(text) : null; } catch { body = text; }
   if (!res.ok) {
-    const err: ApiError = { error: (body && body.error) || text || res.statusText, status: res.status };
+    // Spread the response body so non-error fields (mfaRequired,
+    // retryAfter, etc.) survive into catch handlers. The previous
+    // version dropped them — login's MFA branch would never see
+    // the flag and would render a generic "Login failed" toast.
+    const err: ApiError = {
+      ...(body && typeof body === "object" ? body : {}),
+      error: (body && body.error) || text || res.statusText,
+      status: res.status,
+    };
     throw err;
   }
   return body as T;
@@ -53,6 +65,20 @@ export const auth = {
     api.post<{ user: User }>("/api/auth/signup", { email, password, displayName }),
   login:  (email: string, password: string) =>
     api.post<{ user: User }>("/api/auth/login", { email, password }),
+  // Second-leg login: same endpoint, with the TOTP / backup code added.
+  // Returns the same { user } shape; the backend sets the session
+  // cookie only after BOTH password + mfaCode validate.
+  loginWithMFA: (email: string, password: string, mfaCode: string) =>
+    api.post<{ user: User }>("/api/auth/login", { email, password, mfaCode }),
+  // MFA management — all require an active session.
+  mfaStatus: () =>
+    api.get<{ enabled: boolean; enabledAt?: string; backupCodesLeft: number }>("/api/auth/mfa/status"),
+  mfaEnrollStart: () =>
+    api.post<{ uri: string; secret: string }>("/api/auth/mfa/enroll/start"),
+  mfaEnrollConfirm: (code: string) =>
+    api.post<{ backupCodes: string[] }>("/api/auth/mfa/enroll/confirm", { code }),
+  mfaDisable: (code: string) =>
+    api.post<{ ok: boolean }>("/api/auth/mfa/disable", { code }),
   logout: () => api.post<{ ok: boolean }>("/api/auth/logout"),
   // "Sign out from all devices" — revokes every session belonging to
   // the caller, including the current one. Settings exposes this as a

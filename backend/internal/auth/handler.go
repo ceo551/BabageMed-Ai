@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"net/http"
@@ -9,7 +10,10 @@ import (
 	"github.com/go-chi/chi/v5"
 )
 
-type Handler struct{ s *Service }
+type Handler struct {
+	s   *Service
+	mfa MFAGate // optional; nil when MFA isn't configured
+}
 
 func NewHandler(s *Service) *Handler { return &Handler{s: s} }
 
@@ -69,7 +73,27 @@ func (h *Handler) signup(w http.ResponseWriter, r *http.Request) {
 type loginReq struct {
 	Email    string `json:"email"`
 	Password string `json:"password"`
+	// Optional second-factor code, supplied on the SECOND login POST
+	// after the first one returned {mfaRequired: true}. Format is
+	// either "######" (6-digit TOTP) or "XXXX-XXXX" (one of the
+	// pre-generated backup codes).
+	MFACode string `json:"mfaCode,omitempty"`
 }
+
+// MFAGate is the surface the handler needs from the mfa package — kept
+// as an interface so the auth package doesn't import mfa (avoids a
+// circular-import risk if mfa later wants to read auth.FromContext).
+// Wired in main.go via SetMFAGate; when nil (e.g. MFA_ENCRYPTION_KEY
+// not configured), login skips the second-factor check entirely.
+type MFAGate interface {
+	IsEnabled(ctx context.Context, userID string) (bool, error)
+	Validate(ctx context.Context, userID, code string) error
+}
+
+// SetMFAGate plugs in the optional MFA layer. Safe to call once at
+// startup before Register; subsequent logins read the field through
+// the handler's mfa pointer.
+func (h *Handler) SetMFAGate(g MFAGate) { h.mfa = g }
 
 func (h *Handler) login(w http.ResponseWriter, r *http.Request) {
 	var b loginReq
@@ -77,15 +101,50 @@ func (h *Handler) login(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, 400, "invalid json")
 		return
 	}
-	// Pass through any session cookie the request already carries so
-	// Login() can invalidate it before minting a new one (session
-	// fixation defence). For the common anonymous-browser case the
-	// cookie is missing and Login no-ops the rotation.
+	// Step 1: password check ONLY. No session yet — if MFA is enabled
+	// we'd otherwise mint a session before the second factor and a
+	// compromised password would be enough.
+	u, err := h.s.CheckPassword(r.Context(), b.Email, b.Password)
+	if err != nil {
+		statusFor(err, w)
+		return
+	}
+	// Step 2: MFA gate. If enabled and no code: respond 401 with
+	// mfaRequired so the frontend can re-prompt. If enabled with a
+	// code: validate; bad code is collapsed back to ErrInvalidCreds
+	// so the response surface is identical to "wrong password" from
+	// an attacker's view.
+	if h.mfa != nil {
+		enabled, err := h.mfa.IsEnabled(r.Context(), u.ID)
+		if err != nil {
+			writeErr(w, 500, err.Error())
+			return
+		}
+		if enabled {
+			if b.MFACode == "" {
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(http.StatusUnauthorized)
+				_ = json.NewEncoder(w).Encode(map[string]any{"mfaRequired": true})
+				return
+			}
+			if err := h.mfa.Validate(r.Context(), u.ID, b.MFACode); err != nil {
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(http.StatusUnauthorized)
+				_ = json.NewEncoder(w).Encode(map[string]any{
+					"mfaRequired": true,
+					"error":       "invalid second-factor code",
+				})
+				return
+			}
+		}
+	}
+	// Step 3: mint the session. Same session-rotation guarantee as
+	// before — any prior cookie on the request is invalidated.
 	var prior string
 	if c, err := r.Cookie(CookieName); err == nil {
 		prior = c.Value
 	}
-	u, token, err := h.s.Login(r.Context(), b.Email, b.Password, prior, r.UserAgent(), r.RemoteAddr)
+	token, err := h.s.MintSession(r.Context(), u.ID, prior, r.UserAgent(), r.RemoteAddr)
 	if err != nil {
 		statusFor(err, w)
 		return

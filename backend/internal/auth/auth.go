@@ -109,11 +109,11 @@ func (s *Service) Signup(ctx context.Context, email, password, displayName strin
 	return &u, token, nil
 }
 
-// Login authenticates a user. priorToken, when non-empty, is the
-// session cookie value the caller arrived with — Login invalidates it
-// on success so a pre-planted cookie can't ride into the authenticated
-// session (session fixation defence).
-func (s *Service) Login(ctx context.Context, email, password, priorToken, ua, ip string) (*User, string, error) {
+// CheckPassword runs only the password-verification step of Login. It
+// performs the email-enumeration timing defence (bcrypt against a dummy
+// hash on lookup miss) but does NOT mint a session. Callers use this
+// when an additional gate (MFA) sits between password and session.
+func (s *Service) CheckPassword(ctx context.Context, email, password string) (*User, error) {
 	email = strings.ToLower(strings.TrimSpace(email))
 	var u User
 	var hash string
@@ -121,36 +121,45 @@ func (s *Service) Login(ctx context.Context, email, password, priorToken, ua, ip
         SELECT id, email, COALESCE(display_name, ''), preferred_name, profession, instructions, plan, is_admin, email_verified_at, created_at, password_hash
         FROM users WHERE email = $1
     `, email).Scan(&u.ID, &u.Email, &u.DisplayName, &u.PreferredName, &u.Profession, &u.Instructions, &u.Plan, &u.IsAdmin, &u.EmailVerifiedAt, &u.CreatedAt, &hash)
-	// Email-enumeration defence: when the email lookup misses, we still
-	// run bcrypt against a dummy hash so the response time matches the
-	// "wrong password" path. Without this, a measurable timing gap
-	// (~100ms) leaks whether an email is registered.
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			_ = bcrypt.CompareHashAndPassword([]byte(dummyBcryptHash), []byte(password))
-			return nil, "", ErrInvalidCreds
+			return nil, ErrInvalidCreds
 		}
-		return nil, "", err
+		return nil, err
 	}
 	if err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(password)); err != nil {
-		return nil, "", ErrInvalidCreds
+		return nil, ErrInvalidCreds
 	}
-	// Session rotation: nuke any existing session that came in on the
-	// request (the pre-login cookie, if any) before minting a fresh
-	// one. Closes the classic session-fixation hole — an attacker who
-	// plants a cookie on the victim's browser before login can no
-	// longer ride into the authenticated session, because the token
-	// they pre-set is invalidated the moment Login() returns success.
-	// `priorToken` is empty for the common case (anonymous browser
-	// hitting /login), so this is a no-op then.
+	return &u, nil
+}
+
+// MintSession is the second half of Login — kept exported so the
+// handler can mint the session AFTER the MFA gate has been cleared.
+// Rotates any prior session cookie the request arrived with.
+func (s *Service) MintSession(ctx context.Context, userID, priorToken, ua, ip string) (string, error) {
 	if priorToken != "" {
 		_ = s.Logout(ctx, priorToken)
 	}
-	token, err := s.createSession(ctx, u.ID, ua, ip)
+	return s.createSession(ctx, userID, ua, ip)
+}
+
+// Login authenticates a user (password only). Kept for callers that
+// don't need the MFA gate; the HTTP handler uses CheckPassword +
+// MintSession instead so it can interleave the second-factor check.
+// priorToken, when non-empty, is the session cookie value the caller
+// arrived with — Login invalidates it on success (session fixation
+// defence).
+func (s *Service) Login(ctx context.Context, email, password, priorToken, ua, ip string) (*User, string, error) {
+	u, err := s.CheckPassword(ctx, email, password)
 	if err != nil {
 		return nil, "", err
 	}
-	return &u, token, nil
+	token, err := s.MintSession(ctx, u.ID, priorToken, ua, ip)
+	if err != nil {
+		return nil, "", err
+	}
+	return u, token, nil
 }
 
 func (s *Service) Logout(ctx context.Context, token string) error {

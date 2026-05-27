@@ -24,6 +24,7 @@ import (
 	"github.com/babagemed/backend/internal/metrics"
 	"github.com/babagemed/backend/internal/payments"
 	"github.com/babagemed/backend/internal/features"
+	"github.com/babagemed/backend/internal/mfa"
 	"github.com/babagemed/backend/internal/ratelimit"
 	"github.com/babagemed/backend/internal/spaces"
 	"github.com/babagemed/backend/internal/tracing"
@@ -187,17 +188,34 @@ func main() {
 
 	// Auth + persistence (DB-backed)
 	if authSvc != nil {
-		// Pass the rate limiter to the auth handler so /login and
-		// /signup are throttled at the package boundary. The rest of
-		// /api/auth/* is session-cookie-bound and not a stuffing target.
-		auth.NewHandler(authSvc).RegisterWithLimiter(r, authLimiter.Middleware)
-		// Password reset + email verification — both rate-limited (the
-		// /forgot endpoint is an obvious enumeration + SMTP-spam target).
+		// MFA service: nil-tolerant. New() returns a no-op-but-valid
+		// service when MFA_ENCRYPTION_KEY isn't set — endpoints then
+		// 503 with "mfa not configured" rather than silently storing
+		// plaintext secrets, and Login() skips the second-factor gate
+		// entirely (treats every user as MFA-disabled).
+		mfaSvc, mfaErr := mfa.New(dbConn, "Babbage AI")
+		if mfaErr != nil {
+			log.Fatalf("mfa init: %v", mfaErr)
+		}
 		emailSender := email.NewFromEnv()
 		auditSvc := audit.New(dbConn)
+
+		authHandler := auth.NewHandler(authSvc)
+		authHandler.SetMFAGate(mfaSvc)
+		authHandler.RegisterWithLimiter(r, authLimiter.Middleware)
+
+		// Password reset + email verification — both rate-limited (the
+		// /forgot endpoint is an obvious enumeration + SMTP-spam target).
 		r.Group(func(pr chi.Router) {
 			pr.Use(authLimiter.Middleware)
 			auth.NewResetHandler(authSvc, emailSender, auditSvc).Register(pr)
+		})
+		// MFA enrollment / disable endpoints — all behind auth.Required
+		// (handler enforces). Rate-limited so a stolen session can't
+		// brute-force a 6-digit confirmation code.
+		r.Group(func(pr chi.Router) {
+			pr.Use(authLimiter.Middleware)
+			mfa.NewHandler(mfaSvc, authSvc, auditSvc).Register(pr)
 		})
 		admin.NewHandler(dbConn, authSvc).Register(r)
 		spaces.New(dbConn, authSvc).Register(r)

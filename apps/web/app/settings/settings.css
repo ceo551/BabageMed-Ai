@@ -192,3 +192,50 @@
   border: 1px dashed var(--border);
   border-radius: 12px;
 }
+
+/* ── Buttons + field wrappers used by the Security tab ──────────────────
+ * Earlier tabs (General, Usage) lay out content with .settings-row +
+ * .settings-save. The Security tab uses smaller in-line controls so it
+ * has its own compact field + button styles. Same accent colors, same
+ * border radii — visually consistent without duplicating the row layout. */
+.settings-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 10px;
+  max-width: 360px;
+}
+.settings-field label {
+  font-size: 12px;
+  color: var(--muted);
+}
+.settings-field input {
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--ink);
+  font: inherit;
+  font-size: 14px;
+  outline: none;
+  transition: border-color .12s;
+}
+.settings-field input:focus { border-color: var(--cyan-line); }
+
+.settings-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: 8px;
+  border: 1px solid var(--cyan-line);
+  background: var(--cyan-soft);
+  color: var(--cyan);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: filter .12s, opacity .12s;
+}
+.settings-btn:hover { filter: brightness(1.05); }
+.settings-btn[disabled] { opacity: .5; cursor: not-allowed; }
