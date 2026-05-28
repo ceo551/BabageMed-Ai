@@ -414,7 +414,12 @@ func (s *Service) Context(ctx context.Context, userID, spaceID, q string) ([]Chu
 
 // ─── HTTP layer ────────────────────────────────────────────────────────────
 
-func (s *Service) Register(r chi.Router) {
+// Register wires the spaces routes. uploadLimit is an optional
+// per-IP throttle around the multipart upload endpoint — pass nil to
+// skip (the in-process default in main.go is 10-burst / 12/min sustained).
+// File ingest does PDF parse + text chunking per call, so a script
+// looping uploads at 100/s can starve CPU without it.
+func (s *Service) Register(r chi.Router, uploadLimit func(http.Handler) http.Handler) {
 	r.Route("/api/spaces", func(r chi.Router) {
 		r.Use(s.auth.Required)
 		r.Get("/", s.handleList)
@@ -423,7 +428,11 @@ func (s *Service) Register(r chi.Router) {
 		r.Patch("/{id}", s.handleUpdate)
 		r.Delete("/{id}", s.handleDelete)
 		r.Get("/{id}/files", s.handleListFiles)
-		r.Post("/{id}/files", s.handleUpload)
+		if uploadLimit != nil {
+			r.With(uploadLimit).Post("/{id}/files", s.handleUpload)
+		} else {
+			r.Post("/{id}/files", s.handleUpload)
+		}
 		r.Delete("/{id}/files/{fileID}", s.handleDeleteFile)
 		r.Get("/{id}/context", s.handleContext)
 	})

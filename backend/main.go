@@ -200,23 +200,6 @@ func main() {
 	r.Get("/readyz", apiH.Ready)
 	r.Method("GET", "/metrics", metrics.Handler())
 
-	// MCP browse — anonymous-readable. The /call endpoint, however, runs
-	// real upstream queries (paid APIs, scrape jobs) so we gate it behind
-	// auth when the DB is configured. When auth is disabled (DEV mode
-	// without DATABASE_URL) the endpoint stays open so local development
-	// is unaffected.
-	r.Get("/api/mcp/servers", apiH.ListServers)
-	r.Get("/api/mcp/servers/{id}", apiH.GetServer)
-	r.Get("/api/mcp/servers/{id}/tools", apiH.ListTools)
-	if authSvc != nil {
-		r.Group(func(pr chi.Router) {
-			pr.Use(authSvc.Required)
-			pr.Post("/api/mcp/call/{id}/{tool}", apiH.CallTool)
-		})
-	} else {
-		r.Post("/api/mcp/call/{id}/{tool}", apiH.CallTool)
-	}
-
 	// Rate-limit buckets — separate budgets so a chat spree can't lock
 	// out a login retry and vice versa. Burst is generous enough for
 	// normal humans (10 chat sends in a minute, 5 logins / signups in
@@ -229,6 +212,36 @@ func main() {
 	// gave the attacker a free 5-code burst at the 6-digit TOTP space
 	// before throttling kicked in.
 	mfaLimiter := ratelimit.New(3, 30*time.Second) // 3 burst, +1 every 30 s → 2/min sustained
+	// Tools bucket — /api/mcp/call fans out to paid upstream APIs
+	// (FDA, PubMed, OpenAI image gen, …). Without a cap, a single
+	// authenticated user can drain the org's API budget in a loop.
+	// 20-burst absorbs a "load the connector dropdown" UI moment;
+	// +1 every 3s = 20/min sustained, well above human use but tight
+	// enough to flag a runaway script.
+	toolsLimiter := ratelimit.New(20, 3*time.Second)
+	// Uploads bucket — file ingest does PDF parsing + text chunking
+	// per call. A single client looping 100 uploads/sec can starve
+	// CPU. 10-burst tolerates a multi-file drop; +1/5s sustains 12/min.
+	uploadLimiter := ratelimit.New(10, 5*time.Second)
+
+	// MCP browse — anonymous-readable. The /call endpoint, however, runs
+	// real upstream queries (paid APIs, scrape jobs) so we gate it behind
+	// auth when the DB is configured AND throttle it via toolsLimiter so
+	// a single user can't drain the upstream budget. When auth is
+	// disabled (DEV mode without DATABASE_URL) the endpoint stays open
+	// but still rate-limited.
+	r.Get("/api/mcp/servers", apiH.ListServers)
+	r.Get("/api/mcp/servers/{id}", apiH.GetServer)
+	r.Get("/api/mcp/servers/{id}/tools", apiH.ListTools)
+	if authSvc != nil {
+		r.Group(func(pr chi.Router) {
+			pr.Use(authSvc.Required)
+			pr.Use(toolsLimiter.Middleware)
+			pr.Post("/api/mcp/call/{id}/{tool}", apiH.CallTool)
+		})
+	} else {
+		r.With(toolsLimiter.Middleware).Post("/api/mcp/call/{id}/{tool}", apiH.CallTool)
+	}
 
 	// Chat — usable anonymously, but if auth is on we'll persist messages.
 	r.With(chatLimiter.Middleware).Post("/api/chat", apiH.Chat)
@@ -267,8 +280,8 @@ func main() {
 			mfa.NewHandler(mfaSvc, authSvc, auditSvc).Register(pr)
 		})
 		admin.NewHandler(dbConn, authSvc).Register(r)
-		spaces.New(dbConn, authSvc).Register(r)
-		features.New(dbConn, authSvc).Register(r)
+		spaces.New(dbConn, authSvc).Register(r, uploadLimiter.Middleware)
+		features.New(dbConn, authSvc).Register(r, uploadLimiter.Middleware)
 		connectors.New(dbConn, authSvc, registry).Register(r)
 		chats.New(dbConn, authSvc).Register(r)
 	}

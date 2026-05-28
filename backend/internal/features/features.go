@@ -74,12 +74,20 @@ type Service struct {
 
 func New(d *db.DB, a *auth.Service) *Service { return &Service{db: d, auth: a} }
 
-func (s *Service) Register(r chi.Router) {
+// Register wires the per-feature routes. uploadLimit is an optional
+// per-IP throttle around the multipart upload endpoint — same
+// rationale as spaces.Register: PDF parse + chunking per call is
+// CPU-heavy and a script can spam it. Pass nil to skip.
+func (s *Service) Register(r chi.Router, uploadLimit func(http.Handler) http.Handler) {
 	r.Route("/api/features", func(r chi.Router) {
 		r.Use(s.auth.Required)
 		r.Get("/{slug}", s.handleGet)
 		r.Patch("/{slug}", s.handlePatch)
-		r.Post("/{slug}/files", s.handleUpload)
+		if uploadLimit != nil {
+			r.With(uploadLimit).Post("/{slug}/files", s.handleUpload)
+		} else {
+			r.Post("/{slug}/files", s.handleUpload)
+		}
 		r.Delete("/{slug}/files/{fileID}", s.handleDeleteFile)
 	})
 }

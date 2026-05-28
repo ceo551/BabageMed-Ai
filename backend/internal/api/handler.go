@@ -387,6 +387,16 @@ func (h *Handler) complete(ctx context.Context, req chatRequest, citations []map
 //   - feature / spaceName get interpolated inside double-quoted
 //     headers; an embedded `"` (or newline) would close the quote and
 //     inject a directive that looks like part of our prompt.
+// Hard limits applied during sanitisation. Anything past these gets
+// silently truncated so a misbehaving (or malicious) client can't push
+// the backend / upstream LLM past the body cap one item at a time.
+const (
+	maxChatMessages       = 100
+	maxUseMcps            = 32  // we only mount ~22 MCPs in default preset
+	maxSpaceContextChunks = 50  // /context returns 8 by default; allow ~6× headroom
+	maxFeatureInstrLen    = 8 << 10
+)
+
 func sanitiseChatRequest(req *chatRequest) {
 	// Drop any frontend-supplied "system" turns — the system prompt is
 	// ours to build. Tools / function results are also not allowed; we
@@ -396,6 +406,12 @@ func sanitiseChatRequest(req *chatRequest) {
 		if m.Role == "user" || m.Role == "assistant" {
 			msgs = append(msgs, m)
 		}
+	}
+	// Cap the transcript length. The 1 MiB body limit already caps
+	// total bytes, but a client could still send 10,000 single-char
+	// turns and OOM the upstream LLM token counter. Newest turns win.
+	if len(msgs) > maxChatMessages {
+		msgs = msgs[len(msgs)-maxChatMessages:]
 	}
 	req.Messages = msgs
 
@@ -412,6 +428,29 @@ func sanitiseChatRequest(req *chatRequest) {
 		req.Locale = "en"
 	}
 
+	// Cap fan-out lists. A client passing useMcps=[same-id]*1000 used
+	// to make h.gather spin up 1000 goroutines fanning the same query
+	// at one MCP. Dedup + cap before reaching the gather path.
+	if len(req.UseMcps) > 0 {
+		seen := make(map[string]bool, len(req.UseMcps))
+		dedup := req.UseMcps[:0]
+		for _, id := range req.UseMcps {
+			id = strings.TrimSpace(id)
+			if id == "" || seen[id] {
+				continue
+			}
+			seen[id] = true
+			dedup = append(dedup, id)
+			if len(dedup) >= maxUseMcps {
+				break
+			}
+		}
+		req.UseMcps = dedup
+	}
+	if len(req.SpaceContext) > maxSpaceContextChunks {
+		req.SpaceContext = req.SpaceContext[:maxSpaceContextChunks]
+	}
+
 	// Strip control bytes + literal `"` from fields that get
 	// concatenated inside double-quoted prompt headers. Newlines aren't
 	// allowed either — they'd let the user insert a fake "USER:" or
@@ -420,8 +459,13 @@ func sanitiseChatRequest(req *chatRequest) {
 	req.SpaceName = sanitisePromptField(req.SpaceName, 120)
 	// featureInstructions can legitimately contain newlines (it's a
 	// multi-line textarea), so we don't strip them — but we still drop
-	// control bytes other than \n / \t.
+	// control bytes other than \n / \t and cap length so a malicious
+	// client can't smuggle a 1 MB prompt-injection blob into the
+	// system message.
 	req.FeatureInstructions = stripPromptControlChars(req.FeatureInstructions)
+	if len(req.FeatureInstructions) > maxFeatureInstrLen {
+		req.FeatureInstructions = req.FeatureInstructions[:maxFeatureInstrLen]
+	}
 }
 
 // sanitisePromptField keeps only printable characters (no quotes, no
