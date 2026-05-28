@@ -187,7 +187,7 @@ export function Sidebar({
             setTheme={setTheme}
             effectiveTheme={effectiveTheme}
             s={s}
-            onSignOut={async () => { await signOut(); router.push("/"); }}
+            onSignOut={async () => { await signOut(); router.replace("/login"); }}
           />
         ) : (
           <div style={{ display: "flex", gap: 6 }}>

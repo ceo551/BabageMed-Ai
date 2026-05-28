@@ -221,9 +221,30 @@ func (c *Client) Complete(ctx context.Context, req CompletionRequest) (*Completi
 	case strings.HasPrefix(req.Model, "gpt"):
 		provider = "openai"
 		out, err = c.callOpenAI(ctx, req)
+	case strings.HasPrefix(req.Model, "glm"),
+		strings.HasPrefix(req.Model, "kimi"),
+		strings.HasPrefix(req.Model, "qwen"),
+		strings.HasPrefix(req.Model, "deepseek"),
+		strings.HasPrefix(req.Model, "grok"):
+		// Mirror CompleteStream: roadmap models advertised in the picker
+		// but not yet wired to a provider client fail with an explicit,
+		// honest error rather than silently being answered by Claude (the
+		// old default branch routed every unknown id to Anthropic, so a
+		// user picking "GLM" got a Claude answer labelled GLM).
+		provider = req.Model
+		err = fmt.Errorf("model %q is on the roadmap but not yet supported by this backend", req.Model)
+		out = nil
 	default:
-		provider = "anthropic"
-		out, err = c.callAnthropic(ctx, req)
+		// Empty id → opus default (matches resolveAnthropicModel); any
+		// other unrecognized id fails closed instead of mis-routing.
+		if req.Model == "" {
+			provider = "anthropic"
+			out, err = c.callAnthropic(ctx, req)
+		} else {
+			provider = "unknown"
+			err = fmt.Errorf("unrecognized model %q", req.Model)
+			out = nil
+		}
 	}
 	model := req.Model
 	if out != nil && out.Model != "" {
@@ -407,7 +428,9 @@ func (c *Client) callGoogle(ctx context.Context, req CompletionRequest) (*Comple
 			} `json:"content"`
 		} `json:"candidates"`
 	}
-	_ = json.Unmarshal(raw, &out)
+	if err := json.Unmarshal(raw, &out); err != nil {
+		return nil, fmt.Errorf("google: decode response: %w", err)
+	}
 	text := ""
 	if len(out.Candidates) > 0 {
 		for _, p := range out.Candidates[0].Content.Parts {
@@ -446,6 +469,26 @@ func resolveAnthropicModel(id string) string {
 		return id
 	}
 	return "claude-opus-4-7"
+}
+
+// openAIModelMap translates UI picker ids to real OpenAI API model names.
+// The composer advertises "gpt-5.5" (a product label); the OpenAI API
+// rejects that as an unknown model and 400s. Anthropic and Gemini both
+// have this translation layer (anthropicModelMap / mapGeminiModel); OpenAI
+// was missing one, so every GPT chat failed. Fully-qualified ids pass
+// through unchanged so a freshly-released model needs no redeploy.
+var openAIModelMap = map[string]string{
+	"gpt-5.5": "gpt-4o",
+}
+
+func mapOpenAIModel(id string) string {
+	if m, ok := openAIModelMap[id]; ok {
+		return m
+	}
+	if id == "" {
+		return "gpt-4o"
+	}
+	return id
 }
 
 // streamAnthropic POSTs with stream:true and parses the SSE response. The
@@ -755,7 +798,7 @@ func (c *Client) streamOpenAI(ctx context.Context, req CompletionRequest, onDelt
 		msgs = append(msgs, Message{Role: "system", Content: req.System})
 	}
 	msgs = append(msgs, req.Messages...)
-	body, _ := json.Marshal(map[string]any{"model": req.Model, "messages": msgs, "stream": true})
+	body, _ := json.Marshal(map[string]any{"model": mapOpenAIModel(req.Model), "messages": msgs, "stream": true})
 	r, _ := http.NewRequestWithContext(ctx, "POST", "https://api.openai.com/v1/chat/completions", bytes.NewReader(body))
 	r.Header.Set("Authorization", "Bearer "+c.cfg.OpenAIKey)
 	r.Header.Set("content-type", "application/json")
@@ -815,7 +858,7 @@ func (c *Client) callOpenAI(ctx context.Context, req CompletionRequest) (*Comple
 		msgs = append(msgs, Message{Role: "system", Content: req.System})
 	}
 	msgs = append(msgs, req.Messages...)
-	body, _ := json.Marshal(map[string]any{"model": req.Model, "messages": msgs})
+	body, _ := json.Marshal(map[string]any{"model": mapOpenAIModel(req.Model), "messages": msgs})
 	r, _ := http.NewRequestWithContext(ctx, "POST", "https://api.openai.com/v1/chat/completions", bytes.NewReader(body))
 	r.Header.Set("Authorization", "Bearer "+c.cfg.OpenAIKey)
 	r.Header.Set("content-type", "application/json")
@@ -833,7 +876,9 @@ func (c *Client) callOpenAI(ctx context.Context, req CompletionRequest) (*Comple
 			Message Message `json:"message"`
 		} `json:"choices"`
 	}
-	_ = json.Unmarshal(raw, &out)
+	if err := json.Unmarshal(raw, &out); err != nil {
+		return nil, fmt.Errorf("openai: decode response: %w", err)
+	}
 	text := ""
 	if len(out.Choices) > 0 {
 		text = out.Choices[0].Message.Content

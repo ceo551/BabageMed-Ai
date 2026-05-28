@@ -15,6 +15,8 @@ import (
 	"sync"
 	"time"
 
+	"golang.org/x/sync/singleflight"
+
 	"github.com/babagemed/backend/internal/metrics"
 	"github.com/babagemed/backend/internal/tracing"
 )
@@ -32,8 +34,14 @@ type Server struct {
 	// The field has always been present in mcps.manifest.json — it just
 	// wasn't being unmarshalled here, so /api/mcps/list silently dropped it.
 	Feature  string `json:"feature,omitempty"`
-	Port     int    `json:"port"`
-	Base     string `json:"base"`
+	// Tools the MCP server declares (from mcps.manifest.json). The chat
+	// gather path is search-centric — it calls the "search" tool with a
+	// {query} — so it uses this list to skip connectors that don't expose
+	// a "search" tool (calendars, social, etc.) instead of calling a tool
+	// that doesn't exist and emitting a useless error-citation every turn.
+	Tools    []string `json:"tools,omitempty"`
+	Port     int      `json:"port"`
+	Base     string   `json:"base"`
 	// IconURL points to the official-site favicon. Computed once at registry
 	// load time from Base via Google's S2 favicon endpoint — no network call.
 	IconURL string `json:"iconUrl,omitempty"`
@@ -60,6 +68,10 @@ type Registry struct {
 	healthMu      sync.RWMutex
 	healthCached  map[string]string
 	healthExpires time.Time
+	// Collapses concurrent recomputes during the cold/expiry window into a
+	// single fan-out — without it N simultaneous /health hits each spawn a
+	// full 262-MCP probe storm (32×N outbound conns).
+	healthSF singleflight.Group
 }
 
 // dnsLabelRE matches the subset of MCP ids we'll accept as DNS labels.
@@ -257,6 +269,46 @@ func (r *Registry) Health(ctx context.Context) map[string]string {
 	}
 	r.healthMu.RUnlock()
 
+	// Cache miss/expired: collapse the herd. Without singleflight, N
+	// concurrent /health hits during the cold window each spawn a full
+	// 262-MCP fan-out (32×N outbound connections) — the exact GKE
+	// LB-probe stampede the cache is meant to prevent. The leader does one
+	// fan-out; everyone else shares its result.
+	v, _, _ := r.healthSF.Do("health", func() (any, error) {
+		// A leader may have populated the cache while we were queued.
+		r.healthMu.RLock()
+		if r.healthCached != nil && time.Now().Before(r.healthExpires) {
+			cached := r.healthCached
+			r.healthMu.RUnlock()
+			return cached, nil
+		}
+		r.healthMu.RUnlock()
+
+		out := r.computeHealth(ctx)
+		// Don't cache a result derived from a cancelled context (the worker
+		// loop marks remaining MCPs "down" on cancel; caching that would
+		// poison the 5 s window so every subsequent pull shows all-down).
+		if ctx.Err() == nil {
+			r.healthMu.Lock()
+			r.healthCached = out
+			r.healthExpires = time.Now().Add(5 * time.Second)
+			r.healthMu.Unlock()
+		}
+		return out, nil
+	})
+	shared, _ := v.(map[string]string)
+	// Defensive copy so callers can't mutate the shared/cached map.
+	copyOut := make(map[string]string, len(shared))
+	for k, val := range shared {
+		copyOut[k] = val
+	}
+	return copyOut
+}
+
+// computeHealth performs the actual 262-MCP /health fan-out via a bounded
+// worker pool. Callers go through Health(), which adds caching + a
+// singleflight guard around this.
+func (r *Registry) computeHealth(ctx context.Context) map[string]string {
 	servers := r.Servers()
 	out := make(map[string]string, len(servers))
 	var mu sync.Mutex
@@ -302,17 +354,7 @@ func (r *Registry) Health(ctx context.Context) map[string]string {
 	close(queue)
 	wg.Wait()
 
-	// Don't cache a result derived from a cancelled context. The worker
-	// loop marks every remaining MCP "down" on ctx cancel; without this
-	// guard a single client disconnect on /health poisons the 5 s
-	// cache so every subsequent dashboard pull serves all-down. When
-	// ctx is cancelled we still return the partial map (caller may
-	// want to render what came through) but skip the cache write.
-	if ctx.Err() == nil {
-		r.healthMu.Lock()
-		r.healthCached = out
-		r.healthExpires = time.Now().Add(5 * time.Second)
-		r.healthMu.Unlock()
-	}
+	// Caching (and the cancelled-ctx guard) is handled by Health() around
+	// this call — computeHealth just returns the freshly-probed map.
 	return out
 }

@@ -217,7 +217,7 @@ func (s *Service) handleUpdate(w http.ResponseWriter, r *http.Request) {
 		    model      = COALESCE($4, model),
 		    mode       = COALESCE($5, mode),
 		    updated_at = now()
-		WHERE id = $1 AND user_id = $2
+		WHERE id = $1 AND user_id = $2 AND deleted_at IS NULL
 		RETURNING id, COALESCE(title, ''), COALESCE(model, ''), COALESCE(mode, ''),
 		          COALESCE(feature_slug, ''), created_at, updated_at
 	`, chi.URLParam(r, "id"), u.ID, patch.Title, patch.Model, patch.Mode).

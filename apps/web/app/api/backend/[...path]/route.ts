@@ -20,6 +20,17 @@ const STRIP_REQ_HEADERS = new Set([
   "x-forwarded-for", "x-forwarded-host", "x-forwarded-proto", "x-forwarded-port",
   "forwarded", "x-real-ip",
   "authorization",
+  // Strip Origin/Referer BEFORE forwarding. This proxy already enforces
+  // same-origin itself (isCrossSite() below) for every state-changing
+  // method, so it is the CSRF trust boundary — and in k8s the backend is
+  // a ClusterIP only reachable through this proxy (NetworkPolicy blocks
+  // everything else). Forwarding the browser's public-ingress Origin made
+  // the backend's own originCSRFGuard 403 every write unless ops set
+  // CORS_ALLOWED_ORIGINS/PUBLIC_BASE_URL to the exact (often IP-only,
+  // unknown-until-deploy) ingress origin. With the headers stripped the
+  // backend sees no Origin and falls through to session auth — secure,
+  // and no fragile per-deploy origin config required.
+  "origin", "referer",
 ]);
 const STRIP_RES_HEADERS = new Set(["content-encoding", "content-length", "transfer-encoding", "connection"]);
 

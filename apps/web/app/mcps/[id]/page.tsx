@@ -15,6 +15,20 @@ import { ConnectorIcon } from "../../components/ConnectorIcon";
 import { Modal } from "../../components/Modal";
 import "../mcps.css";
 
+// new URL(server.siteUrl) throws synchronously during render if siteUrl is
+// relative or malformed (the value is backend-controlled and only checked
+// for truthiness), which crashes the whole page into the ErrorBoundary.
+// safeHostname try/catches and falls back to the raw string so a bad
+// siteUrl degrades to plain text instead of a blank crash card.
+function safeHostname(u: string | undefined | null): string {
+  if (!u) return "";
+  try {
+    return new URL(u).hostname;
+  } catch {
+    return u;
+  }
+}
+
 // Connector detail page — Claude-style one-click connect.
 //
 // For scrape-kind MCPs we hit POST /api/connectors/{id} and we're done.
@@ -140,7 +154,7 @@ export default function McpDetailPage() {
             <span className="port">port {server.port}</span>
             {server.siteUrl && (
               <a className="site" href={server.siteUrl} target="_blank" rel="noopener noreferrer">
-                {new URL(server.siteUrl).hostname} ↗
+                {safeHostname(server.siteUrl)} ↗
               </a>
             )}
           </div>
@@ -172,7 +186,7 @@ export default function McpDetailPage() {
             // api-kind: route through the OAuth-ish key dialog so we can
             // store credentials, not just toggle the row on.
             <button className="primary-btn" onClick={beginApiConnect} disabled={busy}>
-              {busy ? "Connecting…" : `Sign in with ${server.siteUrl ? new URL(server.siteUrl).hostname : "provider"}`}
+              {busy ? "Connecting…" : `Sign in with ${server.siteUrl ? safeHostname(server.siteUrl) : "provider"}`}
             </button>
           ) : (
             <button className="primary-btn" onClick={() => connect()} disabled={busy}>
@@ -209,7 +223,7 @@ export default function McpDetailPage() {
         width={520}
       >
         <p style={{ color: "var(--muted)", fontSize: 13, lineHeight: 1.6, marginTop: 0 }}>
-          We just opened {server.siteUrl ? <a href={server.siteUrl} target="_blank" rel="noopener noreferrer" style={{ color: "var(--cyan)" }}>{new URL(server.siteUrl).hostname}</a> : "the provider site"} in a new tab.
+          We just opened {server.siteUrl ? <a href={server.siteUrl} target="_blank" rel="noopener noreferrer" style={{ color: "var(--cyan)" }}>{safeHostname(server.siteUrl)}</a> : "the provider site"} in a new tab.
           Sign in there and copy your API key / personal access token, then paste it below — we'll attach it to chat requests routed through this connector.
         </p>
         <label className="field-label" htmlFor="ak">API key / token <span className="optional">(optional)</span></label>

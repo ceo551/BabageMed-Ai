@@ -476,7 +476,11 @@ function Composer({
       }
 
       const body = JSON.stringify({
-        model, mode: mode || "bedside", locale,
+        // Send the VALIDATED model id (currentModel falls back to MODELS[0]
+        // when the persisted `model` is stale/unknown), so the request body
+        // always matches the pill the user sees instead of a corrupt
+        // localStorage value the picker silently coerced for display only.
+        model: currentModel.id, mode: mode || "bedside", locale,
         messages: [
           ...messages.filter((m) => m.role === "user" || m.role === "assistant").map((m) => ({
             role: m.role,

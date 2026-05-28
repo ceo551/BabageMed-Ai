@@ -9,6 +9,14 @@
 -- CHECK accepts NULL (general chats from the dashboard) plus any of the
 -- 10 canonical slugs from backend/internal/features/slugs.go.
 
+-- Drop-then-add so a re-run (e.g. schema_migrations reset / restore from a
+-- pre-008 snapshot against a DB that already has the constraint) is
+-- idempotent instead of failing with "constraint already exists" and
+-- fataling Migrate → CrashLoop. Every other migration uses an
+-- IF NOT EXISTS / CREATE OR REPLACE / DROP IF EXISTS guard; 008 was the
+-- lone exception.
+ALTER TABLE chats DROP CONSTRAINT IF EXISTS chats_feature_slug_valid;
+
 ALTER TABLE chats
   ADD CONSTRAINT chats_feature_slug_valid CHECK (
     feature_slug IS NULL OR feature_slug IN (

@@ -112,6 +112,34 @@ nginx.ingress.kubernetes.io/configuration-snippet: |
 {{- end -}}
 {{- end -}}
 
+{{/* Single source of truth for the generated Redis password.
+
+     secret.yaml (babagemed-env) and secret-mcp.yaml (babagemed-env-mcp) BOTH
+     need REDIS_PASSWORD: the redis server starts with --requirepass that
+     value and the backend reads it from -env, while all 262 MCPs read it
+     from -mcp. Previously each template independently `lookup`-ed the env
+     Secret and, on a FRESH install (neither Secret exists yet), fell through
+     to its own `randAlphaNum 32` — producing TWO DIFFERENT passwords, so
+     every MCP's Redis AUTH failed.
+
+     This helper makes both render the SAME value:
+       1. reuse the existing babagemed-env value on upgrade (lookup), else
+       2. generate once and cache it on the shared render context (.Values)
+          so the second template invocation in the same `helm` pass reads
+          the cached value instead of generating a fresh one. */}}
+{{- define "babagemed.redisPassword" -}}
+{{- $name := .Values.mcps.envFromSecret | default "babagemed-env" -}}
+{{- $existing := lookup "v1" "Secret" .Release.Namespace $name -}}
+{{- if and $existing (index $existing.data "REDIS_PASSWORD") -}}
+{{- index $existing.data "REDIS_PASSWORD" | b64dec -}}
+{{- else -}}
+{{- if not (hasKey .Values "__redisPasswordCache") -}}
+{{- $_ := set .Values "__redisPasswordCache" (randAlphaNum 32) -}}
+{{- end -}}
+{{- index .Values "__redisPasswordCache" -}}
+{{- end -}}
+{{- end -}}
+
 {{/* Resolve the MCP list. preset=custom uses mcps.enabled directly. */}}
 {{- define "babagemed.mcpList" -}}
 {{- if eq .Values.mcps.preset "all" -}}

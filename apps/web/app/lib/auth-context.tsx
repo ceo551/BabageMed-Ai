@@ -1,6 +1,7 @@
 "use client";
 
 import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { auth, setOn401Handler, type User } from "./api";
 // Static imports for the local state stores. The previous version used
 // dynamic import("./store") inside signOut — that produces a separate
@@ -26,6 +27,7 @@ const Ctx = createContext<AuthState>({
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const router = useRouter();
   // In-flight refresh singleton — two concurrent refresh() calls (e.g.
   // tab focus + storage event firing simultaneously) used to both hit
   // /auth/me and could race so the second setUser stomped the first.
@@ -103,9 +105,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     setOn401Handler(() => {
       setUser(null);
+      // A mid-session 401 means the cookie expired/was revoked. Clearing
+      // the user (above) flips the sidebar chip, but the page kept
+      // silently 401ing because nothing navigated. Bounce to /login —
+      // guarded so we never loop on the auth pages themselves. We do NOT
+      // add a blanket "redirect when user===null" route guard: the
+      // dashboard is intentionally usable signed-out, and on401 only
+      // fires for real authenticated-call 401s (the /api/auth/* probe
+      // paths are excluded at the api.ts call site), so anonymous
+      // visitors are never force-routed here.
+      if (typeof window !== "undefined") {
+        const p = window.location.pathname;
+        const onAuthPage = /^\/(login|signup|forgot-password|reset-password|verify-email)/.test(p);
+        if (!onAuthPage) router.replace("/login");
+      }
     });
     return () => setOn401Handler(null);
-  }, []);
+  }, [router]);
 
   // Periodic re-check so a session that expires on the server side
   // (e.g. operator revoked the session row from /admin) drops the

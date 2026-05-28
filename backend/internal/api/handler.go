@@ -160,25 +160,30 @@ func (h *Handler) ChatStream(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	sanitiseChatRequest(&req)
+	// SSE response headers are set up-front — BEFORE the visual-model
+	// rejection below — so even that early-exit error is a well-formed
+	// event stream the browser's EventSource parses (correct content-type
+	// + X-Accel-Buffering so ingress-nginx doesn't buffer it). Previously
+	// the visual branch set only Content-Type, never flushed, and emitted
+	// no terminating frame, so under nginx the browser often saw nothing.
+	w.Header().Set("Content-Type", "text/event-stream")
+	w.Header().Set("Cache-Control", "no-cache")
+	w.Header().Set("Connection", "keep-alive")
+	w.Header().Set("X-Accel-Buffering", "no")
+	flush, _ := w.(http.Flusher)
 	// Image / video model ids belong to the visual modality (Image &
 	// Video / Advertisements features) and aren't supported by the text
 	// streaming endpoint. Surface a clear error instead of silently
 	// falling back to a text model the user didn't pick.
 	if isVisualModel(req.Model) {
-		w.Header().Set("Content-Type", "text/event-stream")
 		fmt.Fprintf(w, "event: error\ndata: %s\n\n",
 			`{"error":"image/video models are not yet supported on the chat endpoint; pick a text model"}`)
+		fmt.Fprint(w, "event: done\ndata: {}\n\n")
+		if flush != nil {
+			flush.Flush()
+		}
 		return
 	}
-	w.Header().Set("Content-Type", "text/event-stream")
-	w.Header().Set("Cache-Control", "no-cache")
-	w.Header().Set("Connection", "keep-alive")
-	// Tells nginx (ingress-nginx) and any other reverse proxy in the chain
-	// not to buffer this response. Without it the LLM tokens collect at the
-	// nginx proxy_buffer and the browser sees the whole answer at once
-	// instead of the typewriter-streaming effect.
-	w.Header().Set("X-Accel-Buffering", "no")
-	flush, _ := w.(http.Flusher)
 	ctx := r.Context()
 	// send returns false once the client has gone away (context cancelled or
 	// the writer errored). Earlier this function ignored both signals, so a
@@ -295,6 +300,15 @@ func (h *Handler) gather(ctx context.Context, req chatRequest) ([]map[string]any
 	for i, id := range req.UseMcps {
 		i, id := i, id
 		g.Go(func() error {
+			// gather is search-centric: it calls the MCP's "search" tool
+			// with {query}. Connectors that don't declare a "search" tool
+			// (calendars, social, code hosts, …) can't answer this shape,
+			// so skip them quietly — leaving results[i].value nil drops
+			// them from the citation list below — instead of calling a
+			// non-existent tool and surfacing an error-citation every turn.
+			if srv, ok := h.reg.Get(id); ok && !mcpSupportsSearch(srv) {
+				return nil
+			}
 			cacheKey := "mcp:search:" + userKey + ":" + id + ":" + last
 			var cached any
 			if h.cache != nil && h.cache.GetJSON(gctx, cacheKey, &cached) {
@@ -360,6 +374,21 @@ func (h *Handler) gather(ctx context.Context, req chatRequest) ([]map[string]any
 		out = append(out, map[string]any{"source": r.source, "result": r.value})
 	}
 	return out, nil
+}
+
+// mcpSupportsSearch reports whether the connector declares a "search" tool
+// (the only shape the chat gather path knows how to call). Connectors with
+// an unknown/empty tool set fall through (true) to preserve prior behaviour.
+func mcpSupportsSearch(s mcp.Server) bool {
+	if len(s.Tools) == 0 {
+		return true
+	}
+	for _, t := range s.Tools {
+		if t == "search" {
+			return true
+		}
+	}
+	return false
 }
 
 func (h *Handler) complete(ctx context.Context, req chatRequest, citations []map[string]any) (*llm.CompletionResponse, error) {

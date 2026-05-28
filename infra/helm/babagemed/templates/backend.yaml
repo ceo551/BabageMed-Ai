@@ -129,6 +129,13 @@ spec:
           env:
             - name: PORT
               value: "8080"
+            # Cap the pgx pool per pod. Default in code is 50; with multiple
+            # backend replicas (and HPA) that overruns Postgres'
+            # max_connections and CrashLoops on "too many connections".
+            # 20/pod × a handful of replicas stays well under the 200 the
+            # postgres StatefulSet is configured for.
+            - name: DB_MAX_CONNS
+              value: {{ .Values.backend.dbMaxConns | default 20 | quote }}
             - name: MCP_HOST_OVERRIDE
               value: {{ .Values.backend.mcpHostOverride | quote }}
             - name: OTEL_SERVICE_NAME

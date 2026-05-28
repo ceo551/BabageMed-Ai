@@ -258,26 +258,28 @@ func (s *Service) Validate(ctx context.Context, userID, code string) error {
 		if !ok {
 			return ErrMFACodeInvalid
 		}
-		// Replay protection: reject if this counter (or any prior one
-		// inside the drift window) has already been accepted. ±1 step
-		// from current means matchedCounter ≤ lastCounter implies the
-		// code was previously consumed inside its 30s+drift window.
+		// Replay protection — fast pre-check: if this counter is already
+		// at-or-below the last consumed one, it's a replay inside the
+		// 30s+drift window.
 		if int64(matchedCounter) <= lastCounter {
 			return ErrMFACodeInvalid
 		}
-		// Persist the consumed counter inside the same transactional
-		// window the rest of the auth flow uses. Best-effort logged on
-		// error: the user already passed the TOTP, refusing the login
-		// because the bookkeeping write failed is worse than allowing
-		// one extra replay window.
-		if _, err := s.db.Pool.Exec(ctx,
+		// The conditional UPDATE is the AUTHORITATIVE replay guard and is
+		// atomic at the row level. Two concurrent logins with the same
+		// code both pass the pre-check above (both read lastCounter=0),
+		// but only ONE can satisfy `WHERE counter < $1` — the loser
+		// affects 0 rows. Treating 0 rows as a replay closes the race the
+		// previous read-then-write (with a swallowed error) left open. A
+		// genuine DB error fails the validate closed rather than silently
+		// allowing a possibly-replayed code.
+		tag, err := s.db.Pool.Exec(ctx,
 			`UPDATE users SET totp_last_counter = $1 WHERE id = $2 AND COALESCE(totp_last_counter, 0) < $1`,
-			int64(matchedCounter), userID); err != nil {
-			// Don't fail the validate just because the counter write
-			// failed — log so ops sees the degraded state.
-			// (Logging is intentionally lightweight here; callers may
-			// add their own audit/log layer.)
-			_ = err
+			int64(matchedCounter), userID)
+		if err != nil {
+			return err
+		}
+		if tag.RowsAffected() == 0 {
+			return ErrMFACodeInvalid
 		}
 		return nil
 	}

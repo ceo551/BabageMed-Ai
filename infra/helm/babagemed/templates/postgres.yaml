@@ -51,6 +51,14 @@ spec:
       containers:
         - name: postgres
           image: {{ .Values.postgres.image }}
+          # Raise max_connections above the stock 100. The backend pool
+          # defaults to DB_MAX_CONNS per pod × backend replicas (+ HPA),
+          # which can exceed 100 and cause "sorry, too many connections"
+          # CrashLoops under the 262-MCP fan-out load. 200 leaves comfortable
+          # headroom for 2–10 backend replicas at DB_MAX_CONNS=20 each plus
+          # superuser/admin slots. (postgres-alpine's entrypoint prepends
+          # "postgres" when the first arg starts with "-".)
+          args: ["-c", "max_connections={{ .Values.postgres.maxConnections | default 200 }}"]
           securityContext:
             allowPrivilegeEscalation: false
             capabilities: { drop: [ALL] }
