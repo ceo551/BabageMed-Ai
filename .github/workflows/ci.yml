@@ -20,8 +20,8 @@ jobs:
     name: Backend (Go)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
+      - uses: actions/checkout@v6
+      - uses: actions/setup-go@v6
         with:
           go-version: "1.23"
           cache-dependency-path: backend/go.sum
@@ -50,8 +50,8 @@ jobs:
     name: Frontend (Next.js)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
         with:
           node-version: "20"
           cache: "npm"
@@ -82,8 +82,8 @@ jobs:
     name: mcp-base
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
         with:
           node-version: "20"
           cache: "npm"
@@ -108,8 +108,8 @@ jobs:
       matrix:
         shard: [1, 2, 3, 4, 5, 6, 7, 8]
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
         with:
           node-version: "20"
           cache: "npm"
@@ -153,8 +153,8 @@ jobs:
     name: Helm chart lint + template
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: azure/setup-helm@v4
+      - uses: actions/checkout@v6
+      - uses: azure/setup-helm@v5
         with:
           version: v3.16.3
       - name: helm lint
@@ -176,8 +176,8 @@ jobs:
     name: Generators idempotent?
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
         with: { node-version: "20" }
       - name: validate manifest
         run: node scripts/validate-manifest.mjs

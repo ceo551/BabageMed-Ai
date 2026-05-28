@@ -34,7 +34,7 @@ jobs:
       sha:  ${{ steps.tag.outputs.sha }}
       mcps_matrix: ${{ steps.matrix.outputs.json }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - id: tag
         run: |
           short=$(git rev-parse --short HEAD)
@@ -75,16 +75,16 @@ jobs:
       matrix:
         target: [backend, frontend]
     steps:
-      - uses: actions/checkout@v4
-      - uses: docker/setup-buildx-action@v3
+      - uses: actions/checkout@v6
+      - uses: docker/setup-buildx-action@v4
       - name: Log in to registry
-        uses: docker/login-action@v3
+        uses: docker/login-action@v4
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
       - name: Build & push
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           context: ${{ matrix.target == 'frontend' && './apps/web' || '.' }}
           file: ${{ matrix.target == 'frontend' && './apps/web/Dockerfile' || './backend/Dockerfile' }}
@@ -107,10 +107,10 @@ jobs:
       matrix:
         include: ${{ fromJson(needs.meta.outputs.mcps_matrix) }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: docker/setup-buildx-action@v3
+      - uses: actions/checkout@v6
+      - uses: docker/setup-buildx-action@v4
       - name: Log in to registry
-        uses: docker/login-action@v3
+        uses: docker/login-action@v4
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
@@ -144,7 +144,7 @@ jobs:
     needs: [meta, build-core, build-mcps]
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           token: ${{ secrets.GITOPS_TOKEN || secrets.GITHUB_TOKEN }}
       - name: Update infra/helm/babagemed/values-images.yaml
