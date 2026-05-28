@@ -138,9 +138,46 @@ func (s *Service) get(ctx context.Context, userID, slug string) (*Feature, error
 	return f, nil
 }
 
+// Bounds on user-controlled arrays so a single PATCH can't push a
+// megabyte of text through the JSON column and into every system prompt
+// generated for this feature thereafter.
+const (
+	maxInstructionsLen = 8 * 1024 // 8 KB
+	maxSkillsItems     = 50
+	maxConnectorsItems = 100
+	maxSkillItemLen    = 128
+	maxConnectorIDLen  = 128
+)
+
 func (s *Service) patch(ctx context.Context, userID, slug string, p UpdatePatch) (*Feature, error) {
 	if err := s.upsertRow(ctx, userID, slug); err != nil {
 		return nil, err
+	}
+	// Validate user-controlled arrays before they hit the DB — these flow
+	// straight into the LLM system prompt builder, so unbounded input is
+	// both a storage cost and an LLM context-blowup risk.
+	if p.Instructions != nil && len(*p.Instructions) > maxInstructionsLen {
+		return nil, fmt.Errorf("instructions too long (max %d bytes)", maxInstructionsLen)
+	}
+	if p.Skills != nil {
+		if len(*p.Skills) > maxSkillsItems {
+			return nil, fmt.Errorf("too many skills (max %d)", maxSkillsItems)
+		}
+		for _, sk := range *p.Skills {
+			if len(sk) > maxSkillItemLen {
+				return nil, fmt.Errorf("skill name too long (max %d bytes)", maxSkillItemLen)
+			}
+		}
+	}
+	if p.Connectors != nil {
+		if len(*p.Connectors) > maxConnectorsItems {
+			return nil, fmt.Errorf("too many connectors (max %d)", maxConnectorsItems)
+		}
+		for _, c := range *p.Connectors {
+			if len(c) > maxConnectorIDLen {
+				return nil, fmt.Errorf("connector id too long (max %d bytes)", maxConnectorIDLen)
+			}
+		}
 	}
 	// Build dynamic SET clauses for only the fields the client sent.
 	sets := []string{"updated_at = now()"}

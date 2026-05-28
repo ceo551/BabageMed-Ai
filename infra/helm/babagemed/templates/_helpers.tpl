@@ -83,7 +83,15 @@ nginx.ingress.kubernetes.io/proxy-send-timeout: "300"
 {{- if eq .Values.mcps.preset "all" -}}
 {{ .Files.Get "mcps-all.txt" }}
 {{- else if eq .Values.mcps.preset "default" -}}
-pubmed icd10 mayoclinic who cdc rsna nci npi clinicaltrials chembl medrxiv biorxiv dailymed medlineplus rxlist nhs healthline nejm bmj pubchem endotext ncbi fda kdigo frontiers ourworldindata cms cochrane wikem eyewiki orthoinfo orthobullets statpearls emcrit geekymedics openanesthesia gold gina dermnet librepathology nice
+{{/*
+  Default preset — the marquee subset that's safe to deploy on a small
+  cluster. Every id MUST exist in scripts/mcps.manifest.json (and
+  therefore in mcps-index.json) or the chart silently skips it. The
+  previous default list referenced 25+ deleted IDs and rendered only a
+  handful of Deployments. Keep this list small and authoritative; for
+  the full catalog use preset=all.
+*/}}
+pubmed mayoclinic who cdc nci clinicaltrials medlineplus cochrane fda ncbi nejm bmj jamanetwork frontiers gmail gcalendar gdrive github slack notion linkedin huggingface
 {{- else -}}
 {{ join " " .Values.mcps.enabled }}
 {{- end -}}

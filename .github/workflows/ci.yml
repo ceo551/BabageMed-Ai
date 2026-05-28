@@ -117,7 +117,11 @@ jobs:
           mkdir -p /tmp/sweep
           # Round-robin shard across the MCP id list so each shard touches a
           # mix of small/heavy packages instead of contiguous slices.
-          ids=$(ls -d mcps/*/ | xargs -n1 basename | grep -v '^_shared$' | awk -v s="${{ matrix.shard }}" 'NR % 8 + 1 == s')
+          # awk operator precedence: `%` and `+` bind left-to-right at the same level,
+          # so `NR % 8 + 1` was being read as `NR % (8 + 1)` (mod 9 buckets across
+          # 8 shards). Parenthesize the modulus so the round-robin actually spans
+          # exactly 8 shards.
+          ids=$(ls -d mcps/*/ | xargs -n1 basename | grep -v '^_shared$' | awk -v s="${{ matrix.shard }}" '((NR - 1) % 8) + 1 == s')
           echo "shard ${{ matrix.shard }} → $(echo "$ids" | wc -w) packages"
           fail=0
           for id in $ids; do

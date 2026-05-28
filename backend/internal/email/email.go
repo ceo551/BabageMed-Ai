@@ -48,10 +48,18 @@ type Sender interface {
 // as the fallback driver when SMTP env vars aren't set so a deploy
 // without email config doesn't crash, it just loses the messages
 // (with a noisy log line so an operator notices).
+//
+// Body is intentionally NOT logged — password-reset emails carry valid
+// tokens, MFA emails carry codes, both would leak to stdout / Promtail
+// / Cloud Logging. Set EMAIL_DEBUG_BODY=1 for local debugging only.
 type ConsoleSender struct{}
 
 func (ConsoleSender) Send(_ context.Context, m Message) error {
-	log.Printf("email/console: To=%q Subject=%q\nBody:\n%s", m.To, m.Subject, m.Body)
+	if os.Getenv("EMAIL_DEBUG_BODY") == "1" {
+		log.Printf("email/console: To=%q Subject=%q\nBody:\n%s", m.To, m.Subject, m.Body)
+		return nil
+	}
+	log.Printf("email/console: To=%q Subject=%q (body suppressed — set EMAIL_DEBUG_BODY=1 to log)", m.To, m.Subject)
 	return nil
 }
 

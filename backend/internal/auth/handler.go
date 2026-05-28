@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"log"
 	"net/http"
 	"strings"
 
@@ -271,7 +272,12 @@ func (h *Handler) usage(w http.ResponseWriter, r *http.Request) {
 func statusFor(err error, w http.ResponseWriter) {
 	switch {
 	case errors.Is(err, ErrAlreadyExists):
-		writeErr(w, 409, err.Error())
+		// Return a generic invalid-creds error to prevent account
+		// enumeration via the signup endpoint. The caller still gets a
+		// 4xx so the UI can show "check your credentials"; an attacker
+		// can't tell whether the email is registered or just bad input.
+		// (See reset/forgot which uses the same opacity pattern.)
+		writeErr(w, 400, "invalid signup request")
 	case errors.Is(err, ErrInvalidCreds):
 		writeErr(w, 401, err.Error())
 	case errors.Is(err, ErrWeakPassword), errors.Is(err, ErrInvalidEmail):
@@ -279,7 +285,11 @@ func statusFor(err error, w http.ResponseWriter) {
 	case errors.Is(err, ErrUnauthorised), errors.Is(err, ErrSessionExpired):
 		writeErr(w, 401, err.Error())
 	default:
-		writeErr(w, 500, err.Error())
+		// Don't leak err.Error() to the client — could expose pgx /
+		// SQLSTATE / internal paths. Server-log full detail, return
+		// opaque message.
+		log.Printf("auth: 500 %v", err)
+		writeErr(w, 500, "internal error")
 	}
 }
 

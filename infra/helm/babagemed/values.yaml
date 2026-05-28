@@ -41,9 +41,15 @@ frontend:
 backend:
   enabled: true
   replicas: 2
+  # Sized for the 262-MCP fan-out workload — the backend gathers from all
+  # selected MCPs in parallel per chat turn (8 concurrent goroutines per
+  # request, ~64 KB per HTTP response buffer). 256Mi requests OOM-killed
+  # the pod under modest load; 512Mi gives headroom for the streaming
+  # Anthropic response + Redis cache + MCP buffers without padding the
+  # cluster floor unnecessarily.
   resources:
-    requests: { cpu: 200m, memory: 256Mi }
-    limits:   { cpu: 2000m, memory: 1Gi }
+    requests: { cpu: 500m, memory: 512Mi }
+    limits:   { cpu: 2000m, memory: 2Gi }
   service:
     type: ClusterIP
     port: 8080
@@ -74,9 +80,14 @@ postgres:
     # storageClass: empty → cluster default (works on GKE/AKS/EKS).
     # Override with: gp3 (EKS), standard-rwo (GKE), managed-premium (AKS), etc.
     storageClass: ""
+  # Sized for production-style chat history workload. 512Mi was undersized
+  # for the working set; bumping shared_buffers + work_mem requires more
+  # memory headroom. For real prod, use postgres.internal=false and point
+  # externalUrl at Cloud SQL / RDS / managed Postgres — the in-cluster
+  # StatefulSet is a SPOF (single replica, no failover, no PITR).
   resources:
-    requests: { cpu: 200m, memory: 512Mi }
-    limits:   { cpu: 1000m, memory: 2Gi }
+    requests: { cpu: 500m, memory: 1Gi }
+    limits:   { cpu: 2000m, memory: 4Gi }
   # When internal=false, set externalUrl to the full DSN.
   externalUrl: ""   # e.g. postgres://user:pass@10.0.0.5:5432/babagemed?sslmode=require
 

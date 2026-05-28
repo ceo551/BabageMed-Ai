@@ -4,6 +4,7 @@ import (
 	"context"
 	"log"
 	"net/http"
+	"net/url"
 	"os"
 	"os/signal"
 	"strings"
@@ -150,11 +151,25 @@ func main() {
 		AllowCredentials: true,
 		MaxAge:           300,
 	}))
+	// Origin/Referer CSRF defence for state-changing methods. CORS only
+	// stops *browsers* from reading the response — it does not stop the
+	// request from arriving, and SameSite=Lax cookies still ride along on
+	// top-level POST/PUT/PATCH/DELETE from a malicious origin (esp. the
+	// multipart upload endpoint). Reject any non-safe method whose Origin
+	// (preferred) or Referer (fallback for Safari quirks) does not match
+	// the same allow-list CORS uses. Safe methods (GET/HEAD/OPTIONS) bypass.
+	r.Use(originCSRFGuard(allowedOrigins))
 	if authSvc != nil {
 		r.Use(authSvc.Optional)
 	}
 
+	// /health stays the rich dashboard endpoint (fans out to MCPs);
+	// /livez + /readyz are the cheap probes Kubernetes should target so
+	// one sick MCP can't restart the whole backend pod (see
+	// templates/backend.yaml liveness/readiness probes).
 	r.Get("/health", apiH.Health)
+	r.Get("/livez", apiH.Live)
+	r.Get("/readyz", apiH.Ready)
 	r.Method("GET", "/metrics", metrics.Handler())
 
 	// MCP browse — anonymous-readable. The /call endpoint, however, runs
@@ -278,6 +293,51 @@ func main() {
 }
 
 // buildAllowedOrigins assembles the CORS allow-list from env. Empty
+// originCSRFGuard wraps state-changing requests with a same-origin
+// check. CORS allow-lists the origin for *reading*; this middleware
+// rejects writes whose Origin (or Referer fallback) is not in the
+// same allow-list. Belt-and-braces alongside SameSite cookies.
+func originCSRFGuard(allowed []string) func(http.Handler) http.Handler {
+	allowedSet := map[string]bool{}
+	for _, o := range allowed {
+		allowedSet[strings.TrimRight(o, "/")] = true
+	}
+	originOf := func(rawURL string) string {
+		if rawURL == "" {
+			return ""
+		}
+		u, err := url.Parse(rawURL)
+		if err != nil || u.Host == "" {
+			return ""
+		}
+		return strings.TrimRight(u.Scheme+"://"+u.Host, "/")
+	}
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			switch r.Method {
+			case http.MethodGet, http.MethodHead, http.MethodOptions:
+				next.ServeHTTP(w, r)
+				return
+			}
+			origin := r.Header.Get("Origin")
+			if origin == "" {
+				origin = originOf(r.Header.Get("Referer"))
+			} else {
+				origin = strings.TrimRight(origin, "/")
+			}
+			// Same-origin in-app navigation (server-to-server, server-side
+			// rendered POST) can lack both headers — only enforce when at
+			// least one is set; if neither is set we fall through to the
+			// auth middleware which still requires a valid session.
+			if origin != "" && !allowedSet[origin] {
+				http.Error(w, "origin not allowed", http.StatusForbidden)
+				return
+			}
+			next.ServeHTTP(w, r)
+		})
+	}
+}
+
 // PUBLIC_BASE_URL is OK during local dev — we fall back to a sensible
 // set of localhost origins so `npm run dev` works out of the box.
 func buildAllowedOrigins(csv, publicBase string) []string {

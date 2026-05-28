@@ -1,6 +1,6 @@
 # Babbage AI
 
-Customisable AI workflows — Next.js dashboard + Go backend + 539 Dockerized
+Customisable AI workflows — Next.js dashboard + Go backend + 262 Dockerized
 TypeScript MCP servers + native shells for **Android and Desktop
 (Windows)**.
 
@@ -19,7 +19,7 @@ its own instructions, files, skills, and connector picks.
 │   ├─ desktop/    Tauri 2.0 wrapper → .msi / .exe  (Windows)
 │   └─ android/    Compose + WebView shell (Android 7.0+, API 24)
 ├─ backend/        Go 1.23 + chi — auth, chat orchestrator, MCP router
-├─ mcps/           539 Dockerized TypeScript MCP servers
+├─ mcps/           262 Dockerized TypeScript MCP servers
 ├─ packages/
 │   └─ mcp-base/   Shared TypeScript lib (ApiClient, Scraper, McpServer)
 ├─ infra/
@@ -34,14 +34,14 @@ its own instructions, files, skills, and connector picks.
 | | One web frontend reused | Three native UIs |
 |---|---|---|
 | Bug fixes | Ship once, all platforms get it | Fix three times |
-| Connectors | One picker, 539 servers | Re-implement per platform |
+| Connectors | One picker, 262 servers | Re-implement per platform |
 | Auth | One session model | Sync three token caches |
 | Deploy cadence | Push to web → everywhere updates | Re-submit to 2 app stores per release |
 
 v1 of every platform is a WebView shell over `https://babagemed.com`.
 Native screens (file pickers, dictation, share intents, system tray) layer
 in incrementally where they pay off — but the chat, the 8 features, and
-the 539 connectors are written **once**, in `apps/web/`.
+the 262 connectors are written **once**, in `apps/web/`.
 
 ## Quick start
 
@@ -71,7 +71,7 @@ adb shell am start -n com.babbage.ai.debug/com.babbage.ai.MainActivity
 
 Or open `apps/android/` in Android Studio Iguana+.
 
-## The 539 MCPs
+## The 262 MCPs
 
 Each MCP is one Dockerized TypeScript service exposing:
 - **stdio** — standard MCP JSON-RPC (any MCP-capable client connects directly)
@@ -92,14 +92,14 @@ REGISTRY=ghcr.io/your-org TAG=v0.1.0 ./infra/k8s/build-and-push.sh
 ```
 
 Or via the per-shard GitHub Actions workflow in
-`.github/workflows/build-images.yml` (splits the 539 images across 16
+`.github/workflows/build-images.yml` (splits the 262 images across 16
 parallel runners, ~12 min total cold build).
 
 ## Deploy
 
 The Helm chart in `infra/helm/babagemed/` deploys the whole stack to any
 Kubernetes cluster. See the chart's `values.yaml` for the full surface
-and `infra/helm/babagemed/values-aks-test.yaml` for a known-working AKS
+and `infra/helm/babagemed/values-gke-test.yaml` for a known-working GKE Autopilot
 overlay.
 
 GitOps overlays in `infra/gitops/` keep ArgoCD or Flux in sync with the

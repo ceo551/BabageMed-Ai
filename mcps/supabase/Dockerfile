@@ -8,7 +8,7 @@ WORKDIR /build
 COPY packages/mcp-base/package.json packages/mcp-base/tsconfig.json /build/packages/mcp-base/
 COPY packages/mcp-base/src /build/packages/mcp-base/src
 RUN \
-    cd /build/packages/mcp-base && npm install --no-audit --no-fund && npx tsc -p tsconfig.json
+    cd /build/packages/mcp-base && npm install --no-audit --no-fund --ignore-scripts && npx tsc -p tsconfig.json
 # This MCP — placed at /build/mcps/supabase/ so file:../../packages/mcp-base resolves
 WORKDIR /build/mcps/supabase
 COPY mcps/supabase/package.json mcps/supabase/tsconfig.json ./
@@ -16,7 +16,7 @@ COPY mcps/supabase/src ./src
 # Shared helpers (e.g. Google OAuth) — pulled in by gmail/gcal/gdrive
 COPY mcps/_shared /build/mcps/_shared
 RUN \
-    npm install --no-audit --no-fund && npx tsc -p tsconfig.json
+    npm install --no-audit --no-fund --ignore-scripts && npx tsc -p tsconfig.json
 
 FROM node:20-bookworm-slim
 WORKDIR /app

@@ -49,12 +49,12 @@
       }
     },
     "updater": {
-      "active": true,
+      "active": false,
       "dialog": true,
       "endpoints": [
         "https://babagemed.com/api/desktop/update/{{target}}/{{arch}}/{{current_version}}"
       ],
-      "pubkey": ""
+      "pubkey": "REPLACE_ME_WITH_TAURI_SIGNER_GENERATE_OUTPUT_BEFORE_ENABLING"
     }
   },
   "bundle": {

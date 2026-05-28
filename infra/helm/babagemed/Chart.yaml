@@ -6,13 +6,14 @@ version: 0.1.0
 appVersion: "0.1.0"
 icon: https://babagemed.com/icon.png
 sources:
-  - https://github.com/ceo551/babagemed-ai
+  - https://github.com/ceo551/Babbage-Ai
 maintainers:
-  - name: BabageMed
+  - name: Babbage
     email: ceo@babagemed.com
 keywords:
-  - medical
   - ai
+  - llm
   - mcp
+  - connectors
   - nextjs
   - golang
