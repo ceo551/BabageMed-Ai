@@ -169,20 +169,20 @@ func (s *Service) patch(ctx context.Context, userID, slug string, p UpdatePatch)
 		return nil, fmt.Errorf("instructions too long (max %d bytes)", maxInstructionsLen)
 	}
 	if p.Skills != nil {
-		if len(*p.Skills) > maxSkillsItems {
+		if len(p.Skills) > maxSkillsItems {
 			return nil, fmt.Errorf("too many skills (max %d)", maxSkillsItems)
 		}
-		for _, sk := range *p.Skills {
+		for _, sk := range p.Skills {
 			if len(sk) > maxSkillItemLen {
 				return nil, fmt.Errorf("skill name too long (max %d bytes)", maxSkillItemLen)
 			}
 		}
 	}
 	if p.Connectors != nil {
-		if len(*p.Connectors) > maxConnectorsItems {
+		if len(p.Connectors) > maxConnectorsItems {
 			return nil, fmt.Errorf("too many connectors (max %d)", maxConnectorsItems)
 		}
-		for _, c := range *p.Connectors {
+		for _, c := range p.Connectors {
 			if len(c) > maxConnectorIDLen {
 				return nil, fmt.Errorf("connector id too long (max %d bytes)", maxConnectorIDLen)
 			}

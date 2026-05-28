@@ -166,10 +166,10 @@ func (r *Registry) ListTools(ctx context.Context, id string) (any, error) {
 		return nil, fmt.Errorf("tools list failed: %s", res.Status)
 	}
 	// Same body cap for the success path — protects against an MCP
-	// returning a 50 GB tools list. maxResponseBytes (4 MiB) matches
+	// returning a 50 GB tools list. maxMcpResponseBytes (4 MiB) matches
 	// the Call() path's existing limit.
 	var out any
-	if err := json.NewDecoder(io.LimitReader(res.Body, maxResponseBytes)).Decode(&out); err != nil {
+	if err := json.NewDecoder(io.LimitReader(res.Body, maxMcpResponseBytes)).Decode(&out); err != nil {
 		return nil, err
 	}
 	return out, nil
