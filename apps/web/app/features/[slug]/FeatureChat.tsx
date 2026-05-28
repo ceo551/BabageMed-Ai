@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { I, featureIcon } from "../../icons";
 import { useUI } from "../../lib/ui-context";
+import { usePrefs } from "../../lib/store";
 import { chats as chatsApi, features as featuresApi, type Feature as FeatureRow } from "../../lib/api";
 import { AssistantMessage, type Citation } from "../../components/AssistantMessage";
 import type { FeatureMeta } from "../../i18n";
@@ -60,6 +61,8 @@ export function FeatureChat({
   const [value, setValue] = useState("");
   const [sending, setSending] = useState(false);
   const [model, setModel] = useState<string>(() => defaultModelId(meta));
+  // mode comes from the global prefs store so it persists across pages.
+  const { mode } = usePrefs();
   const [modelOpen, setModelOpen] = useState(false);
   const [uploading, setUploading] = useState(false);
   // Composer (+) popover — Add file / Add skill / Add connector.
@@ -182,7 +185,7 @@ export function FeatureChat({
       let activeChatId = chatId;
       if (!activeChatId) {
         try {
-          const created = await chatsApi.create(text, model, "bedside", meta.slug);
+          const created = await chatsApi.create(text, model, mode || "bedside", meta.slug);
           activeChatId = created.id;
           setChatId(created.id);
           if (typeof window !== "undefined") {
@@ -212,7 +215,7 @@ export function FeatureChat({
 
       const body = JSON.stringify({
         model,
-        mode: "bedside",
+        mode: mode || "bedside",
         locale,
         feature: meta.slug,
         featureInstructions: feature?.instructions || "",
@@ -253,7 +256,10 @@ export function FeatureChat({
       while (true) {
         const { done, value: chunk } = await reader.read();
         if (done) break;
-        buffer += decoder.decode(chunk, { stream: true });
+        // Normalise CRLF → LF (see page.tsx for the rationale — some
+        // proxies emit \r\n between SSE frames and \r in data breaks
+        // JSON.parse downstream).
+        buffer += decoder.decode(chunk, { stream: true }).replace(/\r\n/g, "\n");
 
         let idx: number;
         while ((idx = buffer.indexOf("\n\n")) !== -1) {
@@ -263,8 +269,12 @@ export function FeatureChat({
           let event = "message";
           let data = "";
           for (const line of frame.split("\n")) {
-            if (line.startsWith("event: ")) event = line.slice(7).trim();
-            else if (line.startsWith("data: ")) data += (data ? "\n" : "") + line.slice(6);
+            // Accept `data: foo` AND `data:foo` per SSE spec.
+            if (line.startsWith("event:")) {
+              event = line.slice(line[6] === " " ? 7 : 6).trim();
+            } else if (line.startsWith("data:")) {
+              data += (data ? "\n" : "") + line.slice(line[5] === " " ? 6 : 5);
+            }
           }
           if (!data) continue;
 
@@ -309,11 +319,18 @@ export function FeatureChat({
         // The new chat already had ?c=<id> stamped above; the sub-sidebar
         // is keyed off pathname so it will refetch on the next navigation.
       }
-    } catch (e: any) {
-      setMessages((cur) =>
-        cur.filter((m) => m.id !== loadingId)
-          .concat({ id: `a-${newId()}`, role: "assistant", content: "Error: " + (e?.message || String(e)) })
-      );
+    } catch (e: unknown) {
+      const err = e as { name?: string; message?: string };
+      if (err?.name === "AbortError") {
+        // Intentional abort (chat switch / unmount) — just drop the
+        // loading row, don't render a confusing "Error: aborted" bubble.
+        setMessages((cur) => cur.filter((m) => m.id !== loadingId));
+      } else {
+        setMessages((cur) =>
+          cur.filter((m) => m.id !== loadingId)
+            .concat({ id: `a-${newId()}`, role: "assistant", content: "Error: " + (err?.message || String(e)) })
+        );
+      }
     } finally {
       setSending(false);
       streamAbortRef.current = null;

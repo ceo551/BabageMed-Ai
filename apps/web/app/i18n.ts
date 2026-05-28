@@ -272,7 +272,7 @@ export const STR: Record<Locale, LocaleStrings> = {
     chatTitle: "عنوان المحادثة",
     untitledChat: "محادثة بلا عنوان",
     addSkill: "إضافة مهارة",
-    skillExample: "مثال: استشهد بالمصادر، استخدم نقاطًا، اردد بالعربية",
+    skillExample: "مثال: استشهد بالمصادر، استخدم نقاطًا، رد بالعربية",
     saveInstructions: "حفظ التعليمات",
     remove: "إزالة",
     resizeSidebar: "تغيير حجم الشريط الجانبى",
@@ -283,8 +283,8 @@ export const STR: Record<Locale, LocaleStrings> = {
     collapseRail: "طى الشريط",
     expandRail: "توسعة الشريط",
     voiceComingSoon: "الصوت (قريبًا)",
-    toggleNavigation: "تبديل الملاحة",
-    featureSettings: "خصائص الميزة",
+    toggleNavigation: "إظهار/إخفاء التنقّل",
+    featureSettings: "إعدادات الميزة",
   },
 };
 

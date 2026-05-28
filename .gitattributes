@@ -1,0 +1,25 @@
+# Force LF line endings on commit so Windows users with autocrlf=true
+# don't churn the diff. Matches .editorconfig + Dockerfile expectations
+# (the Docker build runs `sh` scripts that break on CRLF).
+* text=auto eol=lf
+*.sh text eol=lf
+*.go text eol=lf
+*.ts text eol=lf
+*.tsx text eol=lf
+*.json text eol=lf
+*.yaml text eol=lf
+*.yml text eol=lf
+*.md text eol=lf
+*.css text eol=lf
+
+# Binary files — explicit so .gitattributes doesn't try to normalise them.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.ico binary
+*.webp binary
+*.woff binary
+*.woff2 binary
+*.ttf binary
+*.otf binary
+*.pdf binary

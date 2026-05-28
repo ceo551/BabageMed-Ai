@@ -38,8 +38,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // so the next signed-in user doesn't inherit the previous user's
     // drafts / preferences / active connectors.
     let serverOk = true;
-    try { await auth.logout(); } catch { serverOk = false; }
+    // Set user=null BEFORE the network call so the UI flips immediately;
+    // any component watching `user` won't see a race where they read the
+    // previous user between logout()'s resolve and our setUser(null).
     setUser(null);
+    try { await auth.logout(); } catch { serverOk = false; }
     if (typeof window !== "undefined") {
       try {
         // Wipe app-namespaced keys but leave generic browser data alone.
@@ -51,6 +54,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
         sessionStorage.clear();
       } catch { /* private-mode storage quotas */ }
+      // Wipe the in-memory module-level singletons too — localStorage
+      // alone leaves the prev user's draft, active connectors, sidebar
+      // widths in memory, and they'd leak to user B on next signin.
+      try {
+        const { prefs, session } = await import("./store");
+        prefs.reset();
+        session.resetForNewChat();
+        session.clearDraft();
+      } catch { /* tolerated */ }
     }
     if (!serverOk) {
       // Surface failure so the user can retry. Throwing here lets the

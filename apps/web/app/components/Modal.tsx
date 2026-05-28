@@ -82,17 +82,28 @@ export function Modal({ open, onClose, title, width = 540, children }: ModalProp
 
   if (!open) return null;
 
+  // Stable id for aria-labelledby — screen readers announce the dialog
+  // with its title text instead of just "dialog". When `title` is a non-
+  // string ReactNode we fall back to aria-label="dialog" (no good way to
+  // serialise arbitrary JSX into an accessible name).
+  const titleId = "modal-title-" + Math.random().toString(36).slice(2, 9);
+  const labelProps = title
+    ? (typeof title === "string"
+        ? { "aria-label": title }
+        : { "aria-labelledby": titleId })
+    : { "aria-label": "Dialog" };
   return (
     <div
       className="modal-backdrop"
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
       role="dialog"
       aria-modal="true"
+      {...labelProps}
     >
       <div ref={cardRef} className="modal-card" style={{ width }} tabIndex={-1}>
         {title && (
           <div className="modal-header">
-            <div className="modal-title">{title}</div>
+            <div className="modal-title" id={titleId}>{title}</div>
             <button
               type="button"
               className="modal-close"

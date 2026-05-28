@@ -26,7 +26,10 @@ import (
 // dump never yields a usable token.
 
 const (
-	resetTokenTTL   = 60 * time.Minute  // long enough for a user to read the email + click
+	// OWASP guidance is ≤15 min — long enough for a user to read the email
+	// and click, short enough that an intercepted email + a busy day
+	// doesn't leave the token live for hours.
+	resetTokenTTL   = 15 * time.Minute
 	verifyTokenTTL  = 24 * time.Hour    // verification is more leisurely than reset
 	resetTokenBytes = 32
 )

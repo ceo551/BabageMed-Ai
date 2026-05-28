@@ -6,12 +6,24 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
+	"os"
 	"sort"
+	"strconv"
 	"time"
 
 	"github.com/babagemed/backend/internal/tracing"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
+
+// envInt reads an env var as int, falling back to def on missing / invalid.
+func envInt(key string, def int) int {
+	if v := os.Getenv(key); v != "" {
+		if n, err := strconv.Atoi(v); err == nil && n > 0 {
+			return n
+		}
+	}
+	return def
+}
 
 //go:embed migrations/*.sql
 var migrationsFS embed.FS
@@ -28,8 +40,19 @@ func Open(ctx context.Context, dsn string) (*DB, error) {
 	if err != nil {
 		return nil, fmt.Errorf("parse dsn: %w", err)
 	}
-	cfg.MaxConns = 16
+	// Pool sized for a chat-streaming backend doing background context
+	// retrieval per request. 16 was undersized — under modest concurrent
+	// SSE load the pool saturates because every query acquires its own
+	// conn. Make these env-overridable so a real prod can tune without a
+	// rebuild.
+	cfg.MaxConns = int32(envInt("DB_MAX_CONNS", 50))
+	cfg.MinConns = int32(envInt("DB_MIN_CONNS", 4))
 	cfg.MaxConnIdleTime = 5 * time.Minute
+	// MaxConnLifetime forces periodic re-creation so conns can't outlive
+	// PgBouncer/Postgres restarts as half-dead handles. Without it, a
+	// transparent failover leaves the pool full of broken sockets that
+	// only fail at next query.
+	cfg.MaxConnLifetime = time.Hour
 	cfg.HealthCheckPeriod = 30 * time.Second
 	cfg.ConnConfig.ConnectTimeout = 10 * time.Second
 	if tracing.Enabled() {

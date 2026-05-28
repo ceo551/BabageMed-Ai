@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter, usePathname } from "next/navigation";
+import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import React, { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { I, featureIcon } from "../icons";
@@ -245,15 +245,15 @@ function HistorySection({ label, feature }: { label: string; feature?: string })
   const [renameDraft, setRenameDraft] = useState("");
   const [savingRename, setSavingRename] = useState(false);
 
-  // Read the current chat id from the URL search part. usePathname() doesn't
-  // include the query string, but it does fire on full URL changes so we
-  // re-derive activeChatId from window.location each render once mounted.
-  const [activeChatId, setActiveChatId] = useState<string>("");
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    const u = new URL(window.location.href);
-    setActiveChatId(u.searchParams.get("c") || "");
-  }, [pathname]);
+  // Read the current chat id from the URL search params. Using the
+  // useSearchParams() hook (instead of window.location) means we also
+  // pick up history.replaceState() updates — the chat-stream code stamps
+  // ?c=<id> via replaceState so the URL never re-renders the route,
+  // but the param hook still observes the change. Closes the bug where
+  // a fresh chat created from the home composer never highlighted the
+  // active row in the sidebar history list.
+  const searchParams = useSearchParams();
+  const activeChatId = searchParams?.get("c") || "";
 
   // Refetch on mount and whenever the URL pathname changes (so creating a
   // new chat or switching tabs surfaces the latest titles). Skip the call

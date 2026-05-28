@@ -64,39 +64,76 @@ function clampN(v: number, lo: number, hi: number) { return Math.max(lo, Math.mi
 
 const PREFS_KEY = "babagemed:prefs";
 
+// Validate each field after parse so a corrupt or tampered localStorage
+// entry can't push `sidebarWidth: "oops"` into clamp() math. Anything
+// that fails its type guard falls back to the default for that key only,
+// not a wholesale reset of the user's saved prefs.
 function readPrefs(): Prefs {
   if (typeof window === "undefined") return PREFS_DEFAULT;
   try {
     const raw = window.localStorage.getItem(PREFS_KEY);
     if (!raw) return PREFS_DEFAULT;
     const parsed = JSON.parse(raw) as Partial<Prefs>;
-    return { ...PREFS_DEFAULT, ...parsed };
+    const out: Prefs = { ...PREFS_DEFAULT };
+    if (typeof parsed.model === "string") out.model = parsed.model;
+    if (typeof parsed.mode === "string") out.mode = parsed.mode;
+    if (typeof parsed.sidebarCollapsed === "boolean") out.sidebarCollapsed = parsed.sidebarCollapsed;
+    if (typeof parsed.subSidebarCollapsed === "boolean") out.subSidebarCollapsed = parsed.subSidebarCollapsed;
+    if (typeof parsed.railCollapsed === "boolean") out.railCollapsed = parsed.railCollapsed;
+    if (typeof parsed.sidebarWidth === "number" && Number.isFinite(parsed.sidebarWidth)) {
+      out.sidebarWidth = clampN(parsed.sidebarWidth, SIDEBAR_MIN, SIDEBAR_MAX);
+    }
+    if (typeof parsed.subSidebarWidth === "number" && Number.isFinite(parsed.subSidebarWidth)) {
+      out.subSidebarWidth = clampN(parsed.subSidebarWidth, SUBSIDEBAR_MIN, SUBSIDEBAR_MAX);
+    }
+    if (typeof parsed.railWidth === "number" && Number.isFinite(parsed.railWidth)) {
+      out.railWidth = clampN(parsed.railWidth, RAIL_MIN, RAIL_MAX);
+    }
+    return out;
   } catch {
     return PREFS_DEFAULT;
   }
 }
 
 function createPrefsStore() {
-  let state: Prefs = PREFS_DEFAULT;
-  let hydrated = false;
+  // Hydrate eagerly on the client so the very first `get()` returns the
+  // saved state — avoids a server-snapshot↔client-snapshot mismatch
+  // warning + the forced double-render that came with lazy-hydration.
+  let state: Prefs = (typeof window !== "undefined") ? readPrefs() : PREFS_DEFAULT;
   const listeners = new Set<() => void>();
 
-  function hydrate() {
-    if (hydrated || typeof window === "undefined") return;
-    state = readPrefs();
-    hydrated = true;
+  // Multi-tab sync: when another tab writes our key, re-read and notify.
+  // Without this, tab A's `prefs.set()` is invisible to tab B until
+  // reload, and tab B's next `prefs.set()` clobbers A's value because
+  // it writes its stale in-memory snapshot. Wraps in `typeof window`
+  // guard so SSR doesn't crash on `addEventListener`.
+  if (typeof window !== "undefined") {
+    window.addEventListener("storage", (e) => {
+      if (e.key !== PREFS_KEY) return;
+      state = readPrefs();
+      listeners.forEach((l) => l());
+    });
   }
 
   function get(): Prefs {
-    hydrate();
     return state;
   }
 
   function set(patch: Partial<Prefs>) {
-    hydrate();
     state = { ...state, ...patch };
     if (typeof window !== "undefined") {
       try { window.localStorage.setItem(PREFS_KEY, JSON.stringify(state)); } catch {}
+    }
+    listeners.forEach((l) => l());
+  }
+
+  // Reset to defaults — used by signOut so a logged-out user doesn't
+  // inherit the previous user's draft text / connector picks / sidebar
+  // sizes on the same tab.
+  function reset() {
+    state = { ...PREFS_DEFAULT };
+    if (typeof window !== "undefined") {
+      try { window.localStorage.removeItem(PREFS_KEY); } catch {}
     }
     listeners.forEach((l) => l());
   }
@@ -110,7 +147,7 @@ function createPrefsStore() {
   // First client render will rehydrate via hydrate() and re-notify.
   function getServerSnapshot(): Prefs { return PREFS_DEFAULT; }
 
-  return { get, set, subscribe, getServerSnapshot };
+  return { get, set, reset, subscribe, getServerSnapshot };
 }
 
 const prefsStore = createPrefsStore();
@@ -131,6 +168,7 @@ export const prefs = {
   setRailCollapsed: (v: boolean) => prefsStore.set({ railCollapsed: v }),
   toggleRail: () => prefsStore.set({ railCollapsed: !prefsStore.get().railCollapsed }),
   setRailWidth: (v: number) => prefsStore.set({ railWidth: clampN(v, RAIL_MIN, RAIL_MAX) }),
+  reset: () => prefsStore.reset(),
 };
 
 export const PREFS_BOUNDS = {

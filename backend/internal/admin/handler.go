@@ -1,6 +1,7 @@
 package admin
 
 import (
+	"log"
 	"context"
 	"encoding/json"
 	"errors"
@@ -458,3 +459,8 @@ func join(parts []string, sep string) string {
 
 // silence unused-context warning if helper grows
 var _ = context.Background
+
+func internalServerError(w http.ResponseWriter, err error) {
+	log.Printf("admin: 500 %v", err)
+	http.Error(w, "internal error", http.StatusInternalServerError)
+}

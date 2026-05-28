@@ -248,8 +248,8 @@ function Composer({
     const next = typeof updater === "function" ? updater(activeConnectorIds) : updater;
     session.setActiveConnectorIds(next);
   };
-  void mode; // mode currently hardcoded to "bedside" in send() — keep the
-             // store read so the chip will be wired when mode picker lands.
+  // `mode` comes from the persisted prefs store (Fast / Deep / Cited).
+  // Backend reads it via the chat request body — see send() below.
 
   const [addOpen, setAddOpen] = useState(false);
   const [modelOpen, setModelOpen] = useState(false);
@@ -449,7 +449,7 @@ function Composer({
           // Empty feature → dashboard "general" chat. Backend stores
           // feature_slug as NULL, which the sidebar's general History row
           // filters on (?feature=general).
-          const created = await chatsApi.create(text, model, "bedside", "");
+          const created = await chatsApi.create(text, model, mode || "bedside", "");
           activeChatId = created.id;
           setChatId(created.id);
           // Stamp the URL so a reload restores this conversation. Push to
@@ -468,7 +468,7 @@ function Composer({
       }
 
       const body = JSON.stringify({
-        model, mode: "bedside", locale,
+        model, mode: mode || "bedside", locale,
         messages: [
           ...messages.filter((m) => m.role === "user" || m.role === "assistant").map((m) => ({
             role: m.role,
@@ -518,7 +518,11 @@ function Composer({
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
-        buffer += decoder.decode(value, { stream: true });
+        // Normalise CRLF → LF on append — many proxies (nginx variants,
+        // Azure Front Door, some CDNs) emit "\r\n\r\n" between SSE
+        // frames; splitting on "\n\n" alone would leave a stray "\r"
+        // that breaks JSON.parse on the data line.
+        buffer += decoder.decode(value, { stream: true }).replace(/\r\n/g, "\n");
 
         // Parse SSE frames separated by blank lines.
         let idx: number;
@@ -529,13 +533,13 @@ function Composer({
           let event = "message";
           let data = "";
           for (const line of frame.split("\n")) {
-            if (line.startsWith("event: ")) event = line.slice(7).trim();
-            else if (line.startsWith("data: ")) {
-              // Per SSE spec, multi-line data fields are joined by '\n'.
-              // The previous concatenation dropped the separator, mangling
-              // any delta that contained a literal newline (which JSON-
-              // encoded text deltas regularly do).
-              data += (data ? "\n" : "") + line.slice(6);
+            // Per SSE spec: "event:" / "data:" with an optional single space
+            // after the colon. Accept both `data: foo` and `data:foo`.
+            if (line.startsWith("event:")) {
+              event = line.slice(line[6] === " " ? 7 : 6).trim();
+            } else if (line.startsWith("data:")) {
+              // Multi-line data fields are joined by '\n' per spec.
+              data += (data ? "\n" : "") + line.slice(line[5] === " " ? 6 : 5);
             }
           }
           if (!data) continue;
@@ -607,12 +611,22 @@ function Composer({
           citations: citationsForTurn ?? [],
         }).catch(() => {});
       }
-    } catch (e: any) {
-      setMessages((cur) =>
-        cur
-          .filter((m) => m.id !== loadingId)
-          .concat({ id: `a-${newId()}`, role: "assistant", content: "Error: " + e.message })
-      );
+    } catch (e: unknown) {
+      // Don't render an "Error: The user aborted a request" bubble when
+      // the user simply switched chats / unmounted — the AbortController
+      // above did its job; the stream is already orphaned to the new
+      // chat's transcript and the old one shouldn't show anything.
+      const err = e as { name?: string; message?: string };
+      if (err?.name !== "AbortError") {
+        setMessages((cur) =>
+          cur
+            .filter((m) => m.id !== loadingId)
+            .concat({ id: `a-${newId()}`, role: "assistant", content: "Error: " + (err?.message || "unknown") })
+        );
+      } else {
+        // Just drop the loading row — the stream was aborted intentionally.
+        setMessages((cur) => cur.filter((m) => m.id !== loadingId));
+      }
     } finally {
       setSending(false);
       streamAbortRef.current = null;

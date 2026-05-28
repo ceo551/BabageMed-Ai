@@ -1,0 +1,50 @@
+# Dependabot configuration — keeps npm / Go / Docker / GitHub Actions
+# dependencies fresh without manual sweeps. Grouping reduces PR noise.
+version: 2
+updates:
+  # Root workspace npm (apps/web + mcps/* + packages/mcp-base).
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    groups:
+      next-and-react:
+        patterns:
+          - "next"
+          - "react"
+          - "react-dom"
+          - "@types/react*"
+      types:
+        patterns:
+          - "@types/*"
+      dev-tooling:
+        patterns:
+          - "typescript"
+          - "tsx"
+          - "eslint*"
+          - "prettier*"
+
+  # Backend Go modules.
+  - package-ecosystem: "gomod"
+    directory: "/backend"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+
+  # GitHub Actions versions.
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+
+  # Docker base image digest pinning. Workflows can opt-in by setting the
+  # FROM line to use a tag — Dependabot will then propose digest bumps.
+  - package-ecosystem: "docker"
+    directory: "/backend"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "docker"
+    directory: "/apps/web"
+    schedule:
+      interval: "weekly"

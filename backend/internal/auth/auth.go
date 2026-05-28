@@ -355,7 +355,13 @@ func SetCookie(w http.ResponseWriter, r *http.Request, token string) {
 		Path:     "/",
 		HttpOnly: true,
 		Secure:   isSecure(r),
-		SameSite: http.SameSiteLaxMode,
+		// SameSite=Strict — combined with the Origin/Referer check
+		// middleware in main.go, this blocks the multipart-upload CSRF
+		// path. If a future feature needs top-level cross-site GETs
+		// (OAuth redirect, magic-link landing) to carry the cookie,
+		// flip *that* response cookie to Lax explicitly rather than
+		// loosening the default.
+		SameSite: http.SameSiteStrictMode,
 		Expires:  time.Now().Add(SessionTTL),
 		MaxAge:   int(SessionTTL.Seconds()),
 	})
@@ -368,7 +374,13 @@ func ClearCookie(w http.ResponseWriter, r *http.Request) {
 		Path:     "/",
 		HttpOnly: true,
 		Secure:   isSecure(r),
-		SameSite: http.SameSiteLaxMode,
+		// SameSite=Strict — combined with the Origin/Referer check
+		// middleware in main.go, this blocks the multipart-upload CSRF
+		// path. If a future feature needs top-level cross-site GETs
+		// (OAuth redirect, magic-link landing) to carry the cookie,
+		// flip *that* response cookie to Lax explicitly rather than
+		// loosening the default.
+		SameSite: http.SameSiteStrictMode,
 		MaxAge:   -1,
 	})
 }

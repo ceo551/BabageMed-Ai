@@ -7,6 +7,7 @@
 package chats
 
 import (
+	"log"
 	"context"
 	"encoding/json"
 	"errors"
@@ -114,7 +115,7 @@ func (s *Service) handleList(w http.ResponseWriter, r *http.Request) {
 		`, u.ID, feature)
 	}
 	if err != nil {
-		http.Error(w, err.Error(), 500)
+		internalServerError(w, err)
 		return
 	}
 	defer rows.Close()
@@ -122,13 +123,13 @@ func (s *Service) handleList(w http.ResponseWriter, r *http.Request) {
 	for rows.Next() {
 		var c Chat
 		if err := rows.Scan(&c.ID, &c.Title, &c.Model, &c.Mode, &c.Feature, &c.CreatedAt, &c.UpdatedAt); err != nil {
-			http.Error(w, err.Error(), 500)
+			internalServerError(w, err)
 			return
 		}
 		out = append(out, c)
 	}
 	if err := rows.Err(); err != nil {
-		http.Error(w, err.Error(), 500)
+		internalServerError(w, err)
 		return
 	}
 	writeJSON(w, out)
@@ -160,7 +161,7 @@ func (s *Service) handleCreate(w http.ResponseWriter, r *http.Request) {
 	`, u.ID, body.Title, body.Model, body.Mode, body.Feature).
 		Scan(&c.ID, &c.Title, &c.Model, &c.Mode, &c.Feature, &c.CreatedAt, &c.UpdatedAt)
 	if err != nil {
-		http.Error(w, err.Error(), 500)
+		internalServerError(w, err)
 		return
 	}
 	writeJSON(w, c)
@@ -188,7 +189,7 @@ func (s *Service) handleGet(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err != nil {
-		http.Error(w, err.Error(), 500)
+		internalServerError(w, err)
 		return
 	}
 	writeJSON(w, c)
@@ -222,7 +223,7 @@ func (s *Service) handleUpdate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err != nil {
-		http.Error(w, err.Error(), 500)
+		internalServerError(w, err)
 		return
 	}
 	writeJSON(w, c)
@@ -232,7 +233,7 @@ func (s *Service) handleDelete(w http.ResponseWriter, r *http.Request) {
 	u := auth.FromContext(r.Context())
 	tag, err := s.db.Pool.Exec(r.Context(), `DELETE FROM chats WHERE id = $1 AND user_id = $2`, chi.URLParam(r, "id"), u.ID)
 	if err != nil {
-		http.Error(w, err.Error(), 500)
+		internalServerError(w, err)
 		return
 	}
 	if tag.RowsAffected() == 0 {
@@ -255,7 +256,7 @@ func (s *Service) handleListMessages(w http.ResponseWriter, r *http.Request) {
 		ORDER BY m.created_at ASC, m.id ASC
 	`, chi.URLParam(r, "id"), u.ID)
 	if err != nil {
-		http.Error(w, err.Error(), 500)
+		internalServerError(w, err)
 		return
 	}
 	defer rows.Close()
@@ -263,13 +264,13 @@ func (s *Service) handleListMessages(w http.ResponseWriter, r *http.Request) {
 	for rows.Next() {
 		var m Message
 		if err := rows.Scan(&m.ID, &m.ChatID, &m.Role, &m.Content, &m.Citations, &m.Meta, &m.CreatedAt); err != nil {
-			http.Error(w, err.Error(), 500)
+			internalServerError(w, err)
 			return
 		}
 		out = append(out, m)
 	}
 	if err := rows.Err(); err != nil {
-		http.Error(w, err.Error(), 500)
+		internalServerError(w, err)
 		return
 	}
 	writeJSON(w, out)
@@ -309,7 +310,7 @@ func (s *Service) handleAppendMessage(w http.ResponseWriter, r *http.Request) {
 	if err := s.db.Pool.QueryRow(r.Context(),
 		`SELECT EXISTS(SELECT 1 FROM chats WHERE id = $1 AND user_id = $2)`,
 		chatID, u.ID).Scan(&owns); err != nil {
-		http.Error(w, err.Error(), 500)
+		internalServerError(w, err)
 		return
 	}
 	if !owns {
@@ -325,7 +326,7 @@ func (s *Service) handleAppendMessage(w http.ResponseWriter, r *http.Request) {
 	`, chatID, body.Role, body.Content, body.Citations, body.Meta).
 		Scan(&m.ID, &m.ChatID, &m.Role, &m.Content, &m.Citations, &m.Meta, &m.CreatedAt)
 	if err != nil {
-		http.Error(w, err.Error(), 500)
+		internalServerError(w, err)
 		return
 	}
 	// Bump the chat's updated_at so it sorts to the top of the sidebar list.
@@ -353,3 +354,11 @@ func writeJSON(w http.ResponseWriter, v any) {
 }
 
 var _ = context.Background // ensure import isn't dropped if the helpers shrink
+
+// internalServerError logs the full error server-side and returns an opaque
+// "internal error" body — keeps pgx / SQLSTATE / file paths from bleeding
+// into client-visible responses (info-disclosure on every 500 site).
+func internalServerError(w http.ResponseWriter, err error) {
+	log.Printf("chats: 500 %v", err)
+	http.Error(w, "internal error", http.StatusInternalServerError)
+}
