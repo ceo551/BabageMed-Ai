@@ -693,9 +693,7 @@ function Composer({
         )}
 
         {addOpen && (
-          <div className="popover" role="menu" style={{ maxHeight: 460, overflowY: "auto" }}>
-            <div className="pop-header">{s.addConnector}</div>
-
+          <div className="popover" role="menu">
             <button
               type="button"
               className="popover-row"
@@ -708,49 +706,18 @@ function Composer({
                 <span className="ttl">{uploading ? "Uploading…" : s.addFile}</span>
               </span>
             </button>
-
-            {/* Legacy "Spaces" picker removed — files now live inside each
-                feature page (/features/<slug>). The composer's add-file
-                button still works (it uploads into the default scratch space
-                or whichever feature the user lands on next). */}
-
-            <div className="popover-sep" />
-            <div className="pop-header">{s.connectors}</div>
-            {userConnectors.length === 0 ? (
-              <Link href="/mcps" className="popover-row" style={{ textDecoration: "none" }}>
-                {I.link}
-                <span className="col">
-                  <span className="ttl">{s.addConnector}</span>
-                  <span className="desc">{s.addConnectorDesc}</span>
-                </span>
-              </Link>
-            ) : (
-              <>
-                {userConnectors.map((c) => {
-                  const on = activeConnectorIds.includes(c.mcpId);
-                  return (
-                    <button
-                      key={c.mcpId}
-                      type="button"
-                      className="popover-row"
-                      data-active={on}
-                      onClick={() => toggleConnector(c.mcpId)}
-                    >
-                      <ConnectorIcon id={c.mcpId} name={c.name} iconUrl={c.iconUrl} size={22} />
-                      <span className="col">
-                        <span className="ttl">{c.name}</span>
-                        <span className="desc">{c.category}</span>
-                      </span>
-                      {on && <span className="check" style={{ color: "var(--cyan)" }}>{I.check}</span>}
-                    </button>
-                  );
-                })}
-                <Link href="/mcps" className="popover-row" style={{ textDecoration: "none", borderTop: "1px solid var(--border)" }}>
-                  {I.plus}
-                  <span className="col"><span className="ttl">{s.addConnector}</span></span>
-                </Link>
-              </>
-            )}
+            <Link
+              href="/mcps"
+              className="popover-row"
+              style={{ textDecoration: "none" }}
+              onClick={() => setAddOpen(false)}
+            >
+              {I.link}
+              <span className="col">
+                <span className="ttl">{s.addConnector}</span>
+                <span className="desc">{s.addConnectorDesc}</span>
+              </span>
+            </Link>
           </div>
         )}
 

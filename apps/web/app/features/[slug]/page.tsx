@@ -134,7 +134,7 @@ function FeaturePageInner() {
 
       <section className="feat-main">
         {error && <div className="feat-err">{error}</div>}
-        <FeatureChat meta={meta} feature={feature} />
+        <FeatureChat meta={meta} feature={feature} onFeatureUpdate={setFeature} />
       </section>
     </div>
   );

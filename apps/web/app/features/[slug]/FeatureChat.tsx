@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
+import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { I, featureIcon } from "../../icons";
 import { useUI } from "../../lib/ui-context";
@@ -39,11 +40,15 @@ function newId(): string {
 export function FeatureChat({
   meta,
   feature,
+  onFeatureUpdate,
 }: {
   meta: FeatureMeta;
   // Backend feature row — instructions / connector ids / file metadata
   // used to ground the LLM. Null until the first fetch lands.
   feature: FeatureRow | null;
+  // Sync handler — called whenever the composer (+) menu uploads a file
+  // or adds a skill, so the sub-sidebar panels see the change immediately.
+  onFeatureUpdate?: (f: FeatureRow) => void;
 }) {
   const params = useSearchParams();
   const { s, locale } = useUI();
@@ -57,6 +62,8 @@ export function FeatureChat({
   const [model, setModel] = useState<string>(() => defaultModelId(meta));
   const [modelOpen, setModelOpen] = useState(false);
   const [uploading, setUploading] = useState(false);
+  // Composer (+) popover — Add file / Add skill / Add connector.
+  const [addOpen, setAddOpen] = useState(false);
 
   const liveLoadRef = useRef<string>("");
   const streamAbortRef = useRef<AbortController | null>(null);
@@ -64,6 +71,7 @@ export function FeatureChat({
   const composerRef = useRef<HTMLDivElement>(null);
   const transcriptEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const skillInputRef = useRef<HTMLInputElement>(null);
 
   // Reset model when feature changes (e.g. visual ↔ text would otherwise
   // keep a stale id that doesn't exist in the new picker).
@@ -125,16 +133,19 @@ export function FeatureChat({
     transcriptEndRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
   }, [messages]);
 
-  // Close model popover on outside click OR Escape — keyboard parity
+  // Close model OR add popover on outside click / Escape — keyboard parity
   // with the click-outside behaviour so a user who tab-opened the picker
   // can also tab-close it without reaching for the mouse.
   useEffect(() => {
-    if (!modelOpen) return;
+    if (!modelOpen && !addOpen) return;
     function onDoc(e: MouseEvent) {
-      if (!composerRef.current?.contains(e.target as Node)) setModelOpen(false);
+      if (!composerRef.current?.contains(e.target as Node)) {
+        setModelOpen(false);
+        setAddOpen(false);
+      }
     }
     function onKey(e: KeyboardEvent) {
-      if (e.key === "Escape") setModelOpen(false);
+      if (e.key === "Escape") { setModelOpen(false); setAddOpen(false); }
     }
     document.addEventListener("mousedown", onDoc);
     document.addEventListener("keydown", onKey);
@@ -142,7 +153,7 @@ export function FeatureChat({
       document.removeEventListener("mousedown", onDoc);
       document.removeEventListener("keydown", onKey);
     };
-  }, [modelOpen]);
+  }, [modelOpen, addOpen]);
 
   const group = modelsForFeature(meta);
   const allModels = group.kind === "text"
@@ -336,11 +347,38 @@ export function FeatureChat({
             const fl = e.target.files;
             if (!fl || fl.length === 0) return;
             setUploading(true);
-            try { await featuresApi.upload(meta.slug, fl); }
+            try {
+              const upd = await featuresApi.upload(meta.slug, fl);
+              onFeatureUpdate?.(upd);
+            }
             catch { /* tolerated — user can retry from the rail */ }
             finally {
               setUploading(false);
               if (fileInputRef.current) fileInputRef.current.value = "";
+            }
+          }}
+        />
+        <input
+          ref={skillInputRef}
+          type="file"
+          multiple
+          hidden
+          accept=".md,.txt,.json,.yaml,.yml,.prompt"
+          onChange={async (e) => {
+            const fl = e.target.files;
+            if (!fl || fl.length === 0) return;
+            setUploading(true);
+            try {
+              const names = Array.from(fl).map((f) => f.name);
+              const cur = feature?.skills || [];
+              const merged = Array.from(new Set([...cur, ...names]));
+              const upd = await featuresApi.update(meta.slug, { skills: merged });
+              onFeatureUpdate?.(upd);
+            }
+            catch { /* tolerated */ }
+            finally {
+              setUploading(false);
+              if (skillInputRef.current) skillInputRef.current.value = "";
             }
           }}
         />
@@ -362,13 +400,54 @@ export function FeatureChat({
             <button
               type="button"
               className="add-btn"
-              aria-label={s.addFile}
-              title={s.addFile}
+              data-open={addOpen}
+              aria-label={s.addConnector}
+              title={s.addConnector}
               disabled={uploading}
-              onClick={(e) => { e.preventDefault(); fileInputRef.current?.click(); }}
+              onClick={(e) => { e.preventDefault(); setAddOpen((v) => !v); setModelOpen(false); }}
             >
               {I.plus}
             </button>
+            {addOpen && (
+              <div className="popover" role="menu">
+                <button
+                  type="button"
+                  className="popover-row"
+                  onClick={() => { setAddOpen(false); fileInputRef.current?.click(); }}
+                  disabled={uploading}
+                  style={{ width: "100%", textAlign: "start", border: 0, background: "transparent", cursor: uploading ? "progress" : "pointer" }}
+                >
+                  {I.folder}
+                  <span className="col">
+                    <span className="ttl">{uploading ? s.saving : s.addFile}</span>
+                  </span>
+                </button>
+                <button
+                  type="button"
+                  className="popover-row"
+                  onClick={() => { setAddOpen(false); skillInputRef.current?.click(); }}
+                  disabled={uploading}
+                  style={{ width: "100%", textAlign: "start", border: 0, background: "transparent", cursor: uploading ? "progress" : "pointer" }}
+                >
+                  {I.skills}
+                  <span className="col">
+                    <span className="ttl">{s.addSkill}</span>
+                  </span>
+                </button>
+                <Link
+                  href="/mcps"
+                  className="popover-row"
+                  style={{ textDecoration: "none" }}
+                  onClick={() => setAddOpen(false)}
+                >
+                  {I.link}
+                  <span className="col">
+                    <span className="ttl">{s.addConnector}</span>
+                    <span className="desc">{s.addConnectorDesc}</span>
+                  </span>
+                </Link>
+              </div>
+            )}
             <span className="spacer" />
           {/* Model picker — text features show one list of 8 chat LLMs;
               visual features (image & video, advertisements) show two

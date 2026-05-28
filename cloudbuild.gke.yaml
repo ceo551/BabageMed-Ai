@@ -7,7 +7,7 @@ options:
 substitutions:
   _REGION: us-central1
   _REPO: babbage
-  _TAG: v14
+  _TAG: v15
 
 images:
   - "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/backend:${_TAG}"
