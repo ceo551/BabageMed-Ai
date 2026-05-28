@@ -1,7 +1,12 @@
 timeout: 7200s
 options:
-  machineType: E2_HIGHCPU_8
-  diskSizeGb: 200
+  # E2_HIGHCPU_32 (32 vCPU / 32 GB). The 264 image builds below are
+  # split into 6 parallel lanes via waitFor chaining (each step waits for
+  # the one 6 positions earlier), so at most 6 docker builds run at once.
+  # The previous E2_HIGHCPU_8 with every step waitFor:["-"] tried to start
+  # all 264 builds simultaneously and OOM-killed the daemon on 8 GB.
+  machineType: E2_HIGHCPU_32
+  diskSizeGb: 300
   logging: CLOUD_LOGGING_ONLY
 
 substitutions:
@@ -309,1290 +314,1290 @@ steps:
 
   - id: mcp-cdc
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["backend"]
     args: [build, -f, mcps/cdc/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-cdc:${_TAG}", .]
 
   - id: mcp-nci
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["frontend"]
     args: [build, -f, mcps/nci/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-nci:${_TAG}", .]
 
   - id: mcp-cochrane
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-pubmed"]
     args: [build, -f, mcps/cochrane/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-cochrane:${_TAG}", .]
 
   - id: mcp-clinicaltrials
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-icd10"]
     args: [build, -f, mcps/clinicaltrials/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-clinicaltrials:${_TAG}", .]
 
   - id: mcp-medrxiv
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-mayoclinic"]
     args: [build, -f, mcps/medrxiv/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-medrxiv:${_TAG}", .]
 
   - id: mcp-biorxiv
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-who"]
     args: [build, -f, mcps/biorxiv/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-biorxiv:${_TAG}", .]
 
   - id: mcp-medlineplus
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-cdc"]
     args: [build, -f, mcps/medlineplus/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-medlineplus:${_TAG}", .]
 
   - id: mcp-nejm
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-nci"]
     args: [build, -f, mcps/nejm/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-nejm:${_TAG}", .]
 
   - id: mcp-bmj
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-cochrane"]
     args: [build, -f, mcps/bmj/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-bmj:${_TAG}", .]
 
   - id: mcp-ncbi
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-clinicaltrials"]
     args: [build, -f, mcps/ncbi/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-ncbi:${_TAG}", .]
 
   - id: mcp-fda
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-medrxiv"]
     args: [build, -f, mcps/fda/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-fda:${_TAG}", .]
 
   - id: mcp-frontiers
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-biorxiv"]
     args: [build, -f, mcps/frontiers/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-frontiers:${_TAG}", .]
 
   - id: mcp-notion
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-medlineplus"]
     args: [build, -f, mcps/notion/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-notion:${_TAG}", .]
 
   - id: mcp-slack
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-nejm"]
     args: [build, -f, mcps/slack/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-slack:${_TAG}", .]
 
   - id: mcp-kaggle
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-bmj"]
     args: [build, -f, mcps/kaggle/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-kaggle:${_TAG}", .]
 
   - id: mcp-gamma
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-ncbi"]
     args: [build, -f, mcps/gamma/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-gamma:${_TAG}", .]
 
   - id: mcp-linkedin
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-fda"]
     args: [build, -f, mcps/linkedin/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-linkedin:${_TAG}", .]
 
   - id: mcp-chrome
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-frontiers"]
     args: [build, -f, mcps/chrome/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-chrome:${_TAG}", .]
 
   - id: mcp-gmail
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-notion"]
     args: [build, -f, mcps/gmail/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-gmail:${_TAG}", .]
 
   - id: mcp-gcalendar
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-slack"]
     args: [build, -f, mcps/gcalendar/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-gcalendar:${_TAG}", .]
 
   - id: mcp-github
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-kaggle"]
     args: [build, -f, mcps/github/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-github:${_TAG}", .]
 
   - id: mcp-huggingface
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-gamma"]
     args: [build, -f, mcps/huggingface/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-huggingface:${_TAG}", .]
 
   - id: mcp-gdrive
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-linkedin"]
     args: [build, -f, mcps/gdrive/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-gdrive:${_TAG}", .]
 
   - id: mcp-hostinger
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-chrome"]
     args: [build, -f, mcps/hostinger/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-hostinger:${_TAG}", .]
 
   - id: mcp-godaddy
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-gmail"]
     args: [build, -f, mcps/godaddy/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-godaddy:${_TAG}", .]
 
   - id: mcp-ms365
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-gcalendar"]
     args: [build, -f, mcps/ms365/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-ms365:${_TAG}", .]
 
   - id: mcp-jamanetworkopen
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-github"]
     args: [build, -f, mcps/jamanetworkopen/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-jamanetworkopen:${_TAG}", .]
 
   - id: mcp-jamanetwork
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-huggingface"]
     args: [build, -f, mcps/jamanetwork/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-jamanetwork:${_TAG}", .]
 
   - id: mcp-cureus
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-gdrive"]
     args: [build, -f, mcps/cureus/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-cureus:${_TAG}", .]
 
   - id: mcp-f1000
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-hostinger"]
     args: [build, -f, mcps/f1000/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-f1000:${_TAG}", .]
 
   - id: mcp-wiley-bb
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-godaddy"]
     args: [build, -f, mcps/wiley-bb/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-wiley-bb:${_TAG}", .]
 
   - id: mcp-karger-oa
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-ms365"]
     args: [build, -f, mcps/karger-oa/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-karger-oa:${_TAG}", .]
 
   - id: mcp-dovepress
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-jamanetworkopen"]
     args: [build, -f, mcps/dovepress/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-dovepress:${_TAG}", .]
 
   - id: mcp-phcfm
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-jamanetwork"]
     args: [build, -f, mcps/phcfm/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-phcfm:${_TAG}", .]
 
   - id: mcp-jkma
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-cureus"]
     args: [build, -f, mcps/jkma/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-jkma:${_TAG}", .]
 
   - id: mcp-ramb
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-f1000"]
     args: [build, -f, mcps/ramb/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-ramb:${_TAG}", .]
 
   - id: mcp-outlook
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-wiley-bb"]
     args: [build, -f, mcps/outlook/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-outlook:${_TAG}", .]
 
   - id: mcp-hubspot
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-karger-oa"]
     args: [build, -f, mcps/hubspot/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-hubspot:${_TAG}", .]
 
   - id: mcp-monday
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-dovepress"]
     args: [build, -f, mcps/monday/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-monday:${_TAG}", .]
 
   - id: mcp-snowflake
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-phcfm"]
     args: [build, -f, mcps/snowflake/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-snowflake:${_TAG}", .]
 
   - id: mcp-stripe
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-jkma"]
     args: [build, -f, mcps/stripe/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-stripe:${_TAG}", .]
 
   - id: mcp-motherduck
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-ramb"]
     args: [build, -f, mcps/motherduck/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-motherduck:${_TAG}", .]
 
   - id: mcp-vercel
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-outlook"]
     args: [build, -f, mcps/vercel/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-vercel:${_TAG}", .]
 
   - id: mcp-supabase
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-hubspot"]
     args: [build, -f, mcps/supabase/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-supabase:${_TAG}", .]
 
   - id: mcp-google-forms
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-monday"]
     args: [build, -f, mcps/google-forms/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-google-forms:${_TAG}", .]
 
   - id: mcp-youtube-analytics
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-snowflake"]
     args: [build, -f, mcps/youtube-analytics/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-youtube-analytics:${_TAG}", .]
 
   - id: mcp-facebook-pages
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-stripe"]
     args: [build, -f, mcps/facebook-pages/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-facebook-pages:${_TAG}", .]
 
   - id: mcp-twitch
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-motherduck"]
     args: [build, -f, mcps/twitch/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-twitch:${_TAG}", .]
 
   - id: mcp-google-tasks
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-vercel"]
     args: [build, -f, mcps/google-tasks/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-google-tasks:${_TAG}", .]
 
   - id: mcp-google-cloud-vision
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-supabase"]
     args: [build, -f, mcps/google-cloud-vision/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-google-cloud-vision:${_TAG}", .]
 
   - id: mcp-docusign
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-google-forms"]
     args: [build, -f, mcps/docusign/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-docusign:${_TAG}", .]
 
   - id: mcp-google-ads
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-youtube-analytics"]
     args: [build, -f, mcps/google-ads/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-google-ads:${_TAG}", .]
 
   - id: mcp-findymail
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-facebook-pages"]
     args: [build, -f, mcps/findymail/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-findymail:${_TAG}", .]
 
   - id: mcp-vimeo
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-twitch"]
     args: [build, -f, mcps/vimeo/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-vimeo:${_TAG}", .]
 
   - id: mcp-google-tag-manager
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-google-tasks"]
     args: [build, -f, mcps/google-tag-manager/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-google-tag-manager:${_TAG}", .]
 
   - id: mcp-google-meet
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-google-cloud-vision"]
     args: [build, -f, mcps/google-meet/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-google-meet:${_TAG}", .]
 
   - id: mcp-lucid
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-docusign"]
     args: [build, -f, mcps/lucid/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-lucid:${_TAG}", .]
 
   - id: mcp-biorender
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-google-ads"]
     args: [build, -f, mcps/biorender/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-biorender:${_TAG}", .]
 
   - id: mcp-figma
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-findymail"]
     args: [build, -f, mcps/figma/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-figma:${_TAG}", .]
 
   - id: mcp-canva-enterprise
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-vimeo"]
     args: [build, -f, mcps/canva-enterprise/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-canva-enterprise:${_TAG}", .]
 
   - id: mcp-docugenerate
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-google-tag-manager"]
     args: [build, -f, mcps/docugenerate/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-docugenerate:${_TAG}", .]
 
   - id: mcp-leonardo-ai
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-google-meet"]
     args: [build, -f, mcps/leonardo-ai/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-leonardo-ai:${_TAG}", .]
 
   - id: mcp-spotify
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-lucid"]
     args: [build, -f, mcps/spotify/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-spotify:${_TAG}", .]
 
   - id: mcp-bannerbear
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-biorender"]
     args: [build, -f, mcps/bannerbear/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-bannerbear:${_TAG}", .]
 
   - id: mcp-egnyte
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-figma"]
     args: [build, -f, mcps/egnyte/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-egnyte:${_TAG}", .]
 
   - id: mcp-google-photos
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-canva-enterprise"]
     args: [build, -f, mcps/google-photos/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-google-photos:${_TAG}", .]
 
   - id: mcp-pdf-co
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-docugenerate"]
     args: [build, -f, mcps/pdf-co/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-pdf-co:${_TAG}", .]
 
   - id: mcp-mux
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-leonardo-ai"]
     args: [build, -f, mcps/mux/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-mux:${_TAG}", .]
 
   - id: mcp-youtube-data
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-spotify"]
     args: [build, -f, mcps/youtube-data/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-youtube-data:${_TAG}", .]
 
   - id: mcp-intercom
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-bannerbear"]
     args: [build, -f, mcps/intercom/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-intercom:${_TAG}", .]
 
   - id: mcp-x-twitter
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-egnyte"]
     args: [build, -f, mcps/x-twitter/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-x-twitter:${_TAG}", .]
 
   - id: mcp-smstools
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-google-photos"]
     args: [build, -f, mcps/smstools/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-smstools:${_TAG}", .]
 
   - id: mcp-z-api
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-pdf-co"]
     args: [build, -f, mcps/z-api/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-z-api:${_TAG}", .]
 
   - id: mcp-zoom-admin
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-mux"]
     args: [build, -f, mcps/zoom-admin/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-zoom-admin:${_TAG}", .]
 
   - id: mcp-help-scout
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-youtube-data"]
     args: [build, -f, mcps/help-scout/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-help-scout:${_TAG}", .]
 
   - id: mcp-missive
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-intercom"]
     args: [build, -f, mcps/missive/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-missive:${_TAG}", .]
 
   - id: mcp-sendblue
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-x-twitter"]
     args: [build, -f, mcps/sendblue/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-sendblue:${_TAG}", .]
 
   - id: mcp-zoho-mail
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-smstools"]
     args: [build, -f, mcps/zoho-mail/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-zoho-mail:${_TAG}", .]
 
   - id: mcp-postmark
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-z-api"]
     args: [build, -f, mcps/postmark/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-postmark:${_TAG}", .]
 
   - id: mcp-twilio
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-zoom-admin"]
     args: [build, -f, mcps/twilio/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-twilio:${_TAG}", .]
 
   - id: mcp-zoom
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-help-scout"]
     args: [build, -f, mcps/zoom/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-zoom:${_TAG}", .]
 
   - id: mcp-freshdesk
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-missive"]
     args: [build, -f, mcps/freshdesk/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-freshdesk:${_TAG}", .]
 
   - id: mcp-mixmax
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-sendblue"]
     args: [build, -f, mcps/mixmax/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-mixmax:${_TAG}", .]
 
   - id: mcp-loops-so
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-zoho-mail"]
     args: [build, -f, mcps/loops-so/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-loops-so:${_TAG}", .]
 
   - id: mcp-telegram
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-postmark"]
     args: [build, -f, mcps/telegram/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-telegram:${_TAG}", .]
 
   - id: mcp-atlassian
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-twilio"]
     args: [build, -f, mcps/atlassian/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-atlassian:${_TAG}", .]
 
   - id: mcp-ticket-tailor
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-zoom"]
     args: [build, -f, mcps/ticket-tailor/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-ticket-tailor:${_TAG}", .]
 
   - id: mcp-shopify
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-freshdesk"]
     args: [build, -f, mcps/shopify/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-shopify:${_TAG}", .]
 
   - id: mcp-carta
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-mixmax"]
     args: [build, -f, mcps/carta/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-carta:${_TAG}", .]
 
   - id: mcp-sendcloud
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-loops-so"]
     args: [build, -f, mcps/sendcloud/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-sendcloud:${_TAG}", .]
 
   - id: mcp-drata
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-telegram"]
     args: [build, -f, mcps/drata/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-drata:${_TAG}", .]
 
   - id: mcp-microsoft-bookings
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-atlassian"]
     args: [build, -f, mcps/microsoft-bookings/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-microsoft-bookings:${_TAG}", .]
 
   - id: mcp-brex
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-ticket-tailor"]
     args: [build, -f, mcps/brex/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-brex:${_TAG}", .]
 
   - id: mcp-clockify
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-shopify"]
     args: [build, -f, mcps/clockify/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-clockify:${_TAG}", .]
 
   - id: mcp-google-workspace-admin
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-carta"]
     args: [build, -f, mcps/google-workspace-admin/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-google-workspace-admin:${_TAG}", .]
 
   - id: mcp-personio
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-sendcloud"]
     args: [build, -f, mcps/personio/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-personio:${_TAG}", .]
 
   - id: mcp-zoho-desk
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-drata"]
     args: [build, -f, mcps/zoho-desk/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-zoho-desk:${_TAG}", .]
 
   - id: mcp-microsoft-entra-id
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-microsoft-bookings"]
     args: [build, -f, mcps/microsoft-entra-id/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-microsoft-entra-id:${_TAG}", .]
 
   - id: mcp-google-business-profile
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-brex"]
     args: [build, -f, mcps/google-business-profile/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-google-business-profile:${_TAG}", .]
 
   - id: mcp-calendly
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-clockify"]
     args: [build, -f, mcps/calendly/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-calendly:${_TAG}", .]
 
   - id: mcp-msdynamics-365-business
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-google-workspace-admin"]
     args: [build, -f, mcps/msdynamics-365-business/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-msdynamics-365-business:${_TAG}", .]
 
   - id: mcp-rippling
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-personio"]
     args: [build, -f, mcps/rippling/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-rippling:${_TAG}", .]
 
   - id: mcp-bluesky
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-zoho-desk"]
     args: [build, -f, mcps/bluesky/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-bluesky:${_TAG}", .]
 
   - id: mcp-bamboohr
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-microsoft-entra-id"]
     args: [build, -f, mcps/bamboohr/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-bamboohr:${_TAG}", .]
 
   - id: mcp-toggl-track
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-google-business-profile"]
     args: [build, -f, mcps/toggl-track/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-toggl-track:${_TAG}", .]
 
   - id: mcp-gong
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-calendly"]
     args: [build, -f, mcps/gong/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-gong:${_TAG}", .]
 
   - id: mcp-expensify
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-msdynamics-365-business"]
     args: [build, -f, mcps/expensify/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-expensify:${_TAG}", .]
 
   - id: mcp-unleashed-software
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-rippling"]
     args: [build, -f, mcps/unleashed-software/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-unleashed-software:${_TAG}", .]
 
   - id: mcp-ashby
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-bluesky"]
     args: [build, -f, mcps/ashby/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-ashby:${_TAG}", .]
 
   - id: mcp-cal-com
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-bamboohr"]
     args: [build, -f, mcps/cal-com/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-cal-com:${_TAG}", .]
 
   - id: mcp-optimoroute
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-toggl-track"]
     args: [build, -f, mcps/optimoroute/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-optimoroute:${_TAG}", .]
 
   - id: mcp-connectwise-psa
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-gong"]
     args: [build, -f, mcps/connectwise-psa/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-connectwise-psa:${_TAG}", .]
 
   - id: mcp-drip
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-expensify"]
     args: [build, -f, mcps/drip/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-drip:${_TAG}", .]
 
   - id: mcp-lemlist
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-unleashed-software"]
     args: [build, -f, mcps/lemlist/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-lemlist:${_TAG}", .]
 
   - id: mcp-mailerlite
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-ashby"]
     args: [build, -f, mcps/mailerlite/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-mailerlite:${_TAG}", .]
 
   - id: mcp-copper
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-cal-com"]
     args: [build, -f, mcps/copper/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-copper:${_TAG}", .]
 
   - id: mcp-customer-io
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-optimoroute"]
     args: [build, -f, mcps/customer-io/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-customer-io:${_TAG}", .]
 
   - id: mcp-contactout
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-connectwise-psa"]
     args: [build, -f, mcps/contactout/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-contactout:${_TAG}", .]
 
   - id: mcp-elastic-email
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-drip"]
     args: [build, -f, mcps/elastic-email/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-elastic-email:${_TAG}", .]
 
   - id: mcp-lusha
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-lemlist"]
     args: [build, -f, mcps/lusha/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-lusha:${_TAG}", .]
 
   - id: mcp-pipeline
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-mailerlite"]
     args: [build, -f, mcps/pipeline/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-pipeline:${_TAG}", .]
 
   - id: mcp-wealthbox
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-copper"]
     args: [build, -f, mcps/wealthbox/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-wealthbox:${_TAG}", .]
 
   - id: mcp-salesforce
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-customer-io"]
     args: [build, -f, mcps/salesforce/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-salesforce:${_TAG}", .]
 
   - id: mcp-convertkit
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-contactout"]
     args: [build, -f, mcps/convertkit/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-convertkit:${_TAG}", .]
 
   - id: mcp-instantly
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-elastic-email"]
     args: [build, -f, mcps/instantly/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-instantly:${_TAG}", .]
 
   - id: mcp-outreach
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-lusha"]
     args: [build, -f, mcps/outreach/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-outreach:${_TAG}", .]
 
   - id: mcp-msdynamics-365-sales
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-pipeline"]
     args: [build, -f, mcps/msdynamics-365-sales/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-msdynamics-365-sales:${_TAG}", .]
 
   - id: mcp-activecampaign
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-wealthbox"]
     args: [build, -f, mcps/activecampaign/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-activecampaign:${_TAG}", .]
 
   - id: mcp-mailgun
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-salesforce"]
     args: [build, -f, mcps/mailgun/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-mailgun:${_TAG}", .]
 
   - id: mcp-aweber
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-convertkit"]
     args: [build, -f, mcps/aweber/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-aweber:${_TAG}", .]
 
   - id: mcp-mastodon
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-instantly"]
     args: [build, -f, mcps/mastodon/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-mastodon:${_TAG}", .]
 
   - id: mcp-attio
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-outreach"]
     args: [build, -f, mcps/attio/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-attio:${_TAG}", .]
 
   - id: mcp-sms-messages
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-msdynamics-365-sales"]
     args: [build, -f, mcps/sms-messages/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-sms-messages:${_TAG}", .]
 
   - id: mcp-front
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-activecampaign"]
     args: [build, -f, mcps/front/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-front:${_TAG}", .]
 
   - id: mcp-wordpress-org
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-mailgun"]
     args: [build, -f, mcps/wordpress-org/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-wordpress-org:${_TAG}", .]
 
   - id: mcp-freshsales
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-aweber"]
     args: [build, -f, mcps/freshsales/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-freshsales:${_TAG}", .]
 
   - id: mcp-zoho-crm
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-mastodon"]
     args: [build, -f, mcps/zoho-crm/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-zoho-crm:${_TAG}", .]
 
   - id: mcp-brevo
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-attio"]
     args: [build, -f, mcps/brevo/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-brevo:${_TAG}", .]
 
   - id: mcp-pipedrive
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-sms-messages"]
     args: [build, -f, mcps/pipedrive/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-pipedrive:${_TAG}", .]
 
   - id: mcp-close
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-front"]
     args: [build, -f, mcps/close/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-close:${_TAG}", .]
 
   - id: mcp-streak
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-wordpress-org"]
     args: [build, -f, mcps/streak/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-streak:${_TAG}", .]
 
   - id: mcp-circleback
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-freshsales"]
     args: [build, -f, mcps/circleback/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-circleback:${_TAG}", .]
 
   - id: mcp-fireflies
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-zoho-crm"]
     args: [build, -f, mcps/fireflies/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-fireflies:${_TAG}", .]
 
   - id: mcp-jotform
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-brevo"]
     args: [build, -f, mcps/jotform/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-jotform:${_TAG}", .]
 
   - id: mcp-granola
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-pipedrive"]
     args: [build, -f, mcps/granola/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-granola:${_TAG}", .]
 
   - id: mcp-coda
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-close"]
     args: [build, -f, mcps/coda/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-coda:${_TAG}", .]
 
   - id: mcp-taiga
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-streak"]
     args: [build, -f, mcps/taiga/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-taiga:${_TAG}", .]
 
   - id: mcp-snipe-it
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-circleback"]
     args: [build, -f, mcps/snipe-it/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-snipe-it:${_TAG}", .]
 
   - id: mcp-typeform
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-fireflies"]
     args: [build, -f, mcps/typeform/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-typeform:${_TAG}", .]
 
   - id: mcp-highlevel-oauth
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-jotform"]
     args: [build, -f, mcps/highlevel-oauth/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-highlevel-oauth:${_TAG}", .]
 
   - id: mcp-constant-contact
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-granola"]
     args: [build, -f, mcps/constant-contact/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-constant-contact:${_TAG}", .]
 
   - id: mcp-fibery
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-coda"]
     args: [build, -f, mcps/fibery/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-fibery:${_TAG}", .]
 
   - id: mcp-google-appsheet
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-taiga"]
     args: [build, -f, mcps/google-appsheet/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-google-appsheet:${_TAG}", .]
 
   - id: mcp-dub
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-snipe-it"]
     args: [build, -f, mcps/dub/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-dub:${_TAG}", .]
 
   - id: mcp-microsoft-onenote
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-typeform"]
     args: [build, -f, mcps/microsoft-onenote/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-microsoft-onenote:${_TAG}", .]
 
   - id: mcp-microsoft-365-people
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-highlevel-oauth"]
     args: [build, -f, mcps/microsoft-365-people/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-microsoft-365-people:${_TAG}", .]
 
   - id: mcp-teamwork
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-constant-contact"]
     args: [build, -f, mcps/teamwork/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-teamwork:${_TAG}", .]
 
   - id: mcp-google-sheets
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-fibery"]
     args: [build, -f, mcps/google-sheets/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-google-sheets:${_TAG}", .]
 
   - id: mcp-raindrop
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-google-appsheet"]
     args: [build, -f, mcps/raindrop/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-raindrop:${_TAG}", .]
 
   - id: mcp-servicenow
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-dub"]
     args: [build, -f, mcps/servicenow/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-servicenow:${_TAG}", .]
 
   - id: mcp-meistertask
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-microsoft-onenote"]
     args: [build, -f, mcps/meistertask/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-meistertask:${_TAG}", .]
 
   - id: mcp-canvas-lms
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-microsoft-365-people"]
     args: [build, -f, mcps/canvas-lms/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-canvas-lms:${_TAG}", .]
 
   - id: mcp-google-docs
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-teamwork"]
     args: [build, -f, mcps/google-docs/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-google-docs:${_TAG}", .]
 
   - id: mcp-dart
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-google-sheets"]
     args: [build, -f, mcps/dart/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-dart:${_TAG}", .]
 
   - id: mcp-podio
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-raindrop"]
     args: [build, -f, mcps/podio/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-podio:${_TAG}", .]
 
   - id: mcp-microsoft-365-planner
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-servicenow"]
     args: [build, -f, mcps/microsoft-365-planner/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-microsoft-365-planner:${_TAG}", .]
 
   - id: mcp-motion
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-meistertask"]
     args: [build, -f, mcps/motion/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-motion:${_TAG}", .]
 
   - id: mcp-microsoft-excel
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-canvas-lms"]
     args: [build, -f, mcps/microsoft-excel/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-microsoft-excel:${_TAG}", .]
 
   - id: mcp-acuity-scheduling
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-google-docs"]
     args: [build, -f, mcps/acuity-scheduling/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-acuity-scheduling:${_TAG}", .]
 
   - id: mcp-wati
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-dart"]
     args: [build, -f, mcps/wati/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-wati:${_TAG}", .]
 
   - id: mcp-google-maps-places
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-podio"]
     args: [build, -f, mcps/google-maps-places/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-google-maps-places:${_TAG}", .]
 
   - id: mcp-surveymonkey
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-microsoft-365-planner"]
     args: [build, -f, mcps/surveymonkey/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-surveymonkey:${_TAG}", .]
 
   - id: mcp-google-slides
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-motion"]
     args: [build, -f, mcps/google-slides/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-google-slides:${_TAG}", .]
 
   - id: mcp-freshservice
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-microsoft-excel"]
     args: [build, -f, mcps/freshservice/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-freshservice:${_TAG}", .]
 
   - id: mcp-roam-research
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-acuity-scheduling"]
     args: [build, -f, mcps/roam-research/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-roam-research:${_TAG}", .]
 
   - id: mcp-procore
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-wati"]
     args: [build, -f, mcps/procore/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-procore:${_TAG}", .]
 
   - id: mcp-pipefy
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-google-maps-places"]
     args: [build, -f, mcps/pipefy/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-pipefy:${_TAG}", .]
 
   - id: mcp-tidycal
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-surveymonkey"]
     args: [build, -f, mcps/tidycal/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-tidycal:${_TAG}", .]
 
   - id: mcp-basecamp
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-google-slides"]
     args: [build, -f, mcps/basecamp/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-basecamp:${_TAG}", .]
 
   - id: mcp-zoho-projects
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-freshservice"]
     args: [build, -f, mcps/zoho-projects/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-zoho-projects:${_TAG}", .]
 
   - id: mcp-google-classroom
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-roam-research"]
     args: [build, -f, mcps/google-classroom/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-google-classroom:${_TAG}", .]
 
   - id: mcp-trello
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-procore"]
     args: [build, -f, mcps/trello/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-trello:${_TAG}", .]
 
   - id: mcp-mixpanel
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-pipefy"]
     args: [build, -f, mcps/mixpanel/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-mixpanel:${_TAG}", .]
 
   - id: mcp-airtop
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-tidycal"]
     args: [build, -f, mcps/airtop/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-airtop:${_TAG}", .]
 
   - id: mcp-harpa-ai
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-basecamp"]
     args: [build, -f, mcps/harpa-ai/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-harpa-ai:${_TAG}", .]
 
   - id: mcp-google-cloud
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-zoho-projects"]
     args: [build, -f, mcps/google-cloud/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-google-cloud:${_TAG}", .]
 
   - id: mcp-finnhub
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-google-classroom"]
     args: [build, -f, mcps/finnhub/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-finnhub:${_TAG}", .]
 
   - id: mcp-chartmogul
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-trello"]
     args: [build, -f, mcps/chartmogul/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-chartmogul:${_TAG}", .]
 
   - id: mcp-google-analytics
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-mixpanel"]
     args: [build, -f, mcps/google-analytics/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-google-analytics:${_TAG}", .]
 
   - id: mcp-hex
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-airtop"]
     args: [build, -f, mcps/hex/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-hex:${_TAG}", .]
 
   - id: mcp-metabase
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-harpa-ai"]
     args: [build, -f, mcps/metabase/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-metabase:${_TAG}", .]
 
   - id: mcp-mboum
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-google-cloud"]
     args: [build, -f, mcps/mboum/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-mboum:${_TAG}", .]
 
   - id: mcp-deepgram
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-finnhub"]
     args: [build, -f, mcps/deepgram/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-deepgram:${_TAG}", .]
 
   - id: mcp-airweave
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-chartmogul"]
     args: [build, -f, mcps/airweave/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-airweave:${_TAG}", .]
 
   - id: mcp-google-search-console
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-google-analytics"]
     args: [build, -f, mcps/google-search-console/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-google-search-console:${_TAG}", .]
 
   - id: mcp-livekit
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-hex"]
     args: [build, -f, mcps/livekit/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-livekit:${_TAG}", .]
 
   - id: mcp-axesso-amazon
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-metabase"]
     args: [build, -f, mcps/axesso-amazon/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-axesso-amazon:${_TAG}", .]
 
   - id: mcp-posthog
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-mboum"]
     args: [build, -f, mcps/posthog/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-posthog:${_TAG}", .]
 
   - id: mcp-ms-power-bi
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-deepgram"]
     args: [build, -f, mcps/ms-power-bi/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-ms-power-bi:${_TAG}", .]
 
   - id: mcp-stytch
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-airweave"]
     args: [build, -f, mcps/stytch/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-stytch:${_TAG}", .]
 
   - id: mcp-jam
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-google-search-console"]
     args: [build, -f, mcps/jam/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-jam:${_TAG}", .]
 
   - id: mcp-doordash
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-livekit"]
     args: [build, -f, mcps/doordash/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-doordash:${_TAG}", .]
 
   - id: mcp-cloudinary
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-axesso-amazon"]
     args: [build, -f, mcps/cloudinary/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-cloudinary:${_TAG}", .]
 
   - id: mcp-sentry
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-posthog"]
     args: [build, -f, mcps/sentry/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-sentry:${_TAG}", .]
 
   - id: mcp-wordpress-com
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-ms-power-bi"]
     args: [build, -f, mcps/wordpress-com/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-wordpress-com:${_TAG}", .]
 
   - id: mcp-context7
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-stytch"]
     args: [build, -f, mcps/context7/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-context7:${_TAG}", .]
 
   - id: mcp-datadog
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-jam"]
     args: [build, -f, mcps/datadog/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-datadog:${_TAG}", .]
 
   - id: mcp-linear
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-doordash"]
     args: [build, -f, mcps/linear/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-linear:${_TAG}", .]
 
   - id: mcp-wix
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-cloudinary"]
     args: [build, -f, mcps/wix/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-wix:${_TAG}", .]
 
   - id: mcp-cloudflare-browser
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-sentry"]
     args: [build, -f, mcps/cloudflare-browser/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-cloudflare-browser:${_TAG}", .]
 
   - id: mcp-squarespace
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-wordpress-com"]
     args: [build, -f, mcps/squarespace/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-squarespace:${_TAG}", .]
 
   - id: mcp-telnyx
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-context7"]
     args: [build, -f, mcps/telnyx/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-telnyx:${_TAG}", .]
 
   - id: mcp-blogger
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-datadog"]
     args: [build, -f, mcps/blogger/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-blogger:${_TAG}", .]
 
   - id: mcp-ms-sql-server
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-linear"]
     args: [build, -f, mcps/ms-sql-server/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-ms-sql-server:${_TAG}", .]
 
   - id: mcp-webflow
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-wix"]
     args: [build, -f, mcps/webflow/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-webflow:${_TAG}", .]
 
   - id: mcp-firecrawl
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-cloudflare-browser"]
     args: [build, -f, mcps/firecrawl/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-firecrawl:${_TAG}", .]
 
   - id: mcp-digitalocean
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-squarespace"]
     args: [build, -f, mcps/digitalocean/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-digitalocean:${_TAG}", .]
 
   - id: mcp-cloudflare
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-telnyx"]
     args: [build, -f, mcps/cloudflare/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-cloudflare:${_TAG}", .]
 
   - id: mcp-postgresql
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-blogger"]
     args: [build, -f, mcps/postgresql/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-postgresql:${_TAG}", .]
 
   - id: mcp-zerobounce
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-ms-sql-server"]
     args: [build, -f, mcps/zerobounce/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-zerobounce:${_TAG}", .]
 
   - id: mcp-alpaca
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-webflow"]
     args: [build, -f, mcps/alpaca/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-alpaca:${_TAG}", .]
 
   - id: mcp-sanity
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-firecrawl"]
     args: [build, -f, mcps/sanity/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-sanity:${_TAG}", .]
 
   - id: mcp-bitbucket
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-digitalocean"]
     args: [build, -f, mcps/bitbucket/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-bitbucket:${_TAG}", .]
 
   - id: mcp-netlify
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-cloudflare"]
     args: [build, -f, mcps/netlify/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-netlify:${_TAG}", .]
 
   - id: mcp-ms-azure-sql
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-postgresql"]
     args: [build, -f, mcps/ms-azure-sql/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-ms-azure-sql:${_TAG}", .]
 
   - id: mcp-qdrant
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-zerobounce"]
     args: [build, -f, mcps/qdrant/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-qdrant:${_TAG}", .]
 
   - id: mcp-replicate
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-alpaca"]
     args: [build, -f, mcps/replicate/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-replicate:${_TAG}", .]
 
   - id: mcp-aws
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-sanity"]
     args: [build, -f, mcps/aws/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-aws:${_TAG}", .]
 
   - id: mcp-fal-ai
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-bitbucket"]
     args: [build, -f, mcps/fal-ai/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-fal-ai:${_TAG}", .]
 
   - id: mcp-nango
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-netlify"]
     args: [build, -f, mcps/nango/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-nango:${_TAG}", .]
 
   - id: mcp-prodpad
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-ms-azure-sql"]
     args: [build, -f, mcps/prodpad/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-prodpad:${_TAG}", .]
 
   - id: mcp-resend
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-qdrant"]
     args: [build, -f, mcps/resend/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-resend:${_TAG}", .]
 
   - id: mcp-prisma-postgres
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-replicate"]
     args: [build, -f, mcps/prisma-postgres/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-prisma-postgres:${_TAG}", .]
 
   - id: mcp-clerk
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-aws"]
     args: [build, -f, mcps/clerk/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-clerk:${_TAG}", .]
 
   - id: mcp-carbon-arc
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-fal-ai"]
     args: [build, -f, mcps/carbon-arc/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-carbon-arc:${_TAG}", .]
 
   - id: mcp-link-ai
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-nango"]
     args: [build, -f, mcps/link-ai/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-link-ai:${_TAG}", .]
 
   - id: mcp-morningstar
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-prodpad"]
     args: [build, -f, mcps/morningstar/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-morningstar:${_TAG}", .]
 
   - id: mcp-factset
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-resend"]
     args: [build, -f, mcps/factset/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-factset:${_TAG}", .]
 
   - id: mcp-ramp
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-prisma-postgres"]
     args: [build, -f, mcps/ramp/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-ramp:${_TAG}", .]
 
   - id: mcp-plaid
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-clerk"]
     args: [build, -f, mcps/plaid/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-plaid:${_TAG}", .]
 
   - id: mcp-perplexity-finance
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-carbon-arc"]
     args: [build, -f, mcps/perplexity-finance/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-perplexity-finance:${_TAG}", .]
 
   - id: mcp-midpage
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-link-ai"]
     args: [build, -f, mcps/midpage/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-midpage:${_TAG}", .]
 
   - id: mcp-cb-insights
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-morningstar"]
     args: [build, -f, mcps/cb-insights/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-cb-insights:${_TAG}", .]
 
   - id: mcp-mailchimp
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-factset"]
     args: [build, -f, mcps/mailchimp/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-mailchimp:${_TAG}", .]
 
   - id: mcp-eventbrite
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-ramp"]
     args: [build, -f, mcps/eventbrite/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-eventbrite:${_TAG}", .]
 
   - id: mcp-discord-bot
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-plaid"]
     args: [build, -f, mcps/discord-bot/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-discord-bot:${_TAG}", .]
 
   - id: mcp-bingx
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-perplexity-finance"]
     args: [build, -f, mcps/bingx/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-bingx:${_TAG}", .]
 
   - id: mcp-dataforseo
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-midpage"]
     args: [build, -f, mcps/dataforseo/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-dataforseo:${_TAG}", .]
 
   - id: mcp-zendesk
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-cb-insights"]
     args: [build, -f, mcps/zendesk/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-zendesk:${_TAG}", .]
 
   - id: mcp-resend-mail
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-mailchimp"]
     args: [build, -f, mcps/resend-mail/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-resend-mail:${_TAG}", .]
 
   - id: mcp-quickbooks
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-eventbrite"]
     args: [build, -f, mcps/quickbooks/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-quickbooks:${_TAG}", .]
 
   - id: mcp-xero-accounting
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-discord-bot"]
     args: [build, -f, mcps/xero-accounting/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-xero-accounting:${_TAG}", .]
 
   - id: mcp-bigcommerce
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-bingx"]
     args: [build, -f, mcps/bigcommerce/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-bigcommerce:${_TAG}", .]
 
   - id: mcp-zoho-books
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-dataforseo"]
     args: [build, -f, mcps/zoho-books/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-zoho-books:${_TAG}", .]
 
   - id: mcp-google-merchant-center
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-zendesk"]
     args: [build, -f, mcps/google-merchant-center/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-google-merchant-center:${_TAG}", .]
 
   - id: mcp-google-contacts
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-resend-mail"]
     args: [build, -f, mcps/google-contacts/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-google-contacts:${_TAG}", .]
 
   - id: mcp-google-chat
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-quickbooks"]
     args: [build, -f, mcps/google-chat/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-google-chat:${_TAG}", .]
 
   - id: mcp-webscraping-ai
     name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
+    waitFor: ["mcp-xero-accounting"]
     args: [build, -f, mcps/webscraping-ai/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-webscraping-ai:${_TAG}", .]

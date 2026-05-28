@@ -25,18 +25,39 @@ updates:
           - "eslint*"
           - "prettier*"
 
-  # Backend Go modules.
+  # Backend Go modules. Group all non-major bumps into one PR so the
+  # weekly sweep isn't 20 separate dependency PRs.
   - package-ecosystem: "gomod"
     directory: "/backend"
     schedule:
       interval: "weekly"
     open-pull-requests-limit: 5
+    groups:
+      go-minor-patch:
+        update-types: ["minor", "patch"]
 
-  # GitHub Actions versions.
+  # Desktop Tauri shell — Rust crate (apps/desktop/src-tauri). The npm
+  # side of apps/desktop is already covered by the root workspace entry
+  # above; the Cargo manifest needs its own ecosystem.
+  - package-ecosystem: "cargo"
+    directory: "/apps/desktop/src-tauri"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    groups:
+      cargo-minor-patch:
+        update-types: ["minor", "patch"]
+
+  # GitHub Actions versions. Grouped so an actions/* bump doesn't open
+  # a PR per workflow file.
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
       interval: "weekly"
+    groups:
+      actions-all:
+        patterns:
+          - "*"
 
   # Docker base image digest pinning. Workflows can opt-in by setting the
   # FROM line to use a tag — Dependabot will then propose digest bumps.

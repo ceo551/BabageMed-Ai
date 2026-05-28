@@ -1,0 +1,127 @@
+name: Security
+
+on:
+  pull_request:
+  push:
+    branches: [main, develop]
+  schedule:
+    # Weekly re-scan so newly-disclosed CVEs in already-pinned deps surface
+    # even when the tree hasn't changed. Mondays 06:17 UTC.
+    - cron: "17 6 * * 1"
+
+# Read-only by default. The CodeQL job opts into security-events: write
+# at the job level so SARIF can be uploaded to code scanning.
+permissions:
+  contents: read
+
+concurrency:
+  group: security-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ─── Hard-coded secret scan (blocking) ────────────────────────────────
+  # gitleaks needs no GitHub Advanced Security and runs on any repo. A
+  # leaked key in a commit is the single highest-impact mistake here
+  # (LLM provider keys, payment creds, the MFA encryption key), so this
+  # job FAILS the build on a finding rather than just reporting.
+  secret-scan:
+    name: Secret scan (gitleaks)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Full history so the scan covers the whole branch, not just the
+          # tip commit — a secret added and "removed" in an earlier commit
+          # is still in the pack and still compromised.
+          fetch-depth: 0
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # ─── Go known-vulnerability scan (blocking) ───────────────────────────
+  # govulncheck is call-graph aware: it only flags a CVE when the
+  # vulnerable symbol is actually reachable from our code, so the signal
+  # is high and worth blocking on.
+  go-vuln:
+    name: Go vuln (govulncheck)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.23"
+          cache-dependency-path: backend/go.sum
+      - name: govulncheck
+        working-directory: backend
+        run: |
+          go install golang.org/x/vuln/cmd/govulncheck@latest
+          govulncheck ./...
+
+  # ─── Filesystem dependency + IaC scan (report-only) ───────────────────
+  # Trivy works on any repo (no GHAS). Vuln results are report-only
+  # (exit-code 0) because transitive CVEs with no fix shouldn't block a
+  # feature PR; the table shows up in the job log and the weekly cron
+  # keeps it visible. The misconfig (IaC) scan covers the Helm chart,
+  # k8s manifests and Dockerfiles.
+  trivy:
+    name: Trivy (deps + IaC)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Trivy filesystem (vulns + secrets)
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          scan-type: fs
+          scanners: vuln,secret
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          format: table
+          exit-code: "0"
+      - name: Trivy config (Dockerfile + Helm + k8s misconfig)
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          scan-type: config
+          severity: HIGH,CRITICAL
+          format: table
+          exit-code: "0"
+
+  # ─── npm audit (report-only) ──────────────────────────────────────────
+  npm-audit:
+    name: npm audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: package-lock.json
+      - name: audit (high+critical, report-only)
+        run: npm audit --audit-level=high || true
+
+  # ─── CodeQL static analysis (Go + JS/TS) ──────────────────────────────
+  # CodeQL on a PRIVATE repo requires GitHub Advanced Security. To avoid a
+  # perpetually-red required check before GHAS is enabled, this job is
+  # gated on a repo variable: set Actions variable ENABLE_CODEQL=true
+  # (Settings → Secrets and variables → Actions → Variables) once GHAS is
+  # on, or make the repo public. Until then the job is skipped cleanly.
+  codeql:
+    name: CodeQL (${{ matrix.language }})
+    if: vars.ENABLE_CODEQL == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+    strategy:
+      fail-fast: false
+      matrix:
+        language: [go, javascript-typescript]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: github/codeql-action/init@v3
+        with:
+          languages: ${{ matrix.language }}
+      - uses: github/codeql-action/autobuild@v3
+      - uses: github/codeql-action/analyze@v3
+        with:
+          category: "/language:${{ matrix.language }}"
