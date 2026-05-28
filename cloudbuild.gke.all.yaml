@@ -306,9 +306,13 @@ steps:
     env:
       - "REG=${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}"
       - "TAG=${_TAG}"
+    # NB: shell $ must be escaped as $$ in Cloud Build YAML — Cloud Build
+    # does substitution-expansion on single-$ tokens first (and would
+    # reject $REG/$TAG as unknown substitutions), collapsing $$ -> $ before
+    # the script reaches bash.
     args:
       - -c
       - |
         set -euo pipefail
-        echo "building $(wc -w < infra/helm/babagemed/mcps-all.txt) MCP images with -P6 parallelism"
-        tr ' ' '\n' < infra/helm/babagemed/mcps-all.txt | grep -v '^$' | xargs -P 6 -I {} bash -c 'docker build -q -f "mcps/{}/Dockerfile" -t "$REG/mcp-{}:$TAG" .'
+        echo "building $$(wc -w < infra/helm/babagemed/mcps-all.txt) MCP images with -P6 parallelism"
+        tr ' ' '\n' < infra/helm/babagemed/mcps-all.txt | grep -v '^$$' | xargs -P 6 -I {} bash -c 'docker build -q -f "mcps/{}/Dockerfile" -t "$$REG/mcp-{}:$$TAG" .'
