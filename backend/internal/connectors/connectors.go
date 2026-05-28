@@ -14,6 +14,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"log"
 	"net/http"
 	"strings"
 	"time"
@@ -220,7 +221,15 @@ func (s *Service) handleDisconnect(w http.ResponseWriter, r *http.Request) {
 
 func writeJSON(w http.ResponseWriter, v any, err error) {
 	if err != nil {
-		http.Error(w, err.Error(), statusFromErr(err))
+		code := statusFromErr(err)
+		// 5xx → log full text, return opaque body. 4xx stays verbose so
+		// the client can surface "not connected" / "invalid scope" etc.
+		if code >= 500 {
+			log.Printf("connectors: %d %v", code, err)
+			http.Error(w, "internal error", code)
+			return
+		}
+		http.Error(w, err.Error(), code)
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")

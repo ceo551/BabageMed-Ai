@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
+	"log"
 	"net/http"
 
 	"github.com/babagemed/backend/internal/audit"
@@ -168,7 +169,17 @@ func writeJSON(w http.ResponseWriter, code int, v any) {
 	w.WriteHeader(code)
 	_ = json.NewEncoder(w).Encode(v)
 }
+// writeErr scrubs 5xx error bodies — full text goes to the server log
+// while clients see an opaque "internal error". 4xx messages are kept
+// verbatim so the UI can show "code expired" / "code already used".
 func writeErr(w http.ResponseWriter, code int, msg string) {
+	if code >= 500 {
+		log.Printf("mfa: %d %s", code, msg)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(code)
+		_ = json.NewEncoder(w).Encode(map[string]string{"error": "internal error"})
+		return
+	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(code)
 	_ = json.NewEncoder(w).Encode(map[string]string{"error": msg})

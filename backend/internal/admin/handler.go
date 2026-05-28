@@ -442,7 +442,16 @@ func writeJSON(w http.ResponseWriter, code int, v any) {
 	w.WriteHeader(code)
 	_ = json.NewEncoder(w).Encode(v)
 }
+// writeErr serialises a single-line JSON error. 5xx codes are logged
+// in full and downgraded to an opaque "internal error" body so SQL /
+// SQLSTATE / file-path detail doesn't bleed through to clients. 4xx
+// codes keep the original message so callers can recover.
 func writeErr(w http.ResponseWriter, code int, msg string) {
+	if code >= 500 {
+		log.Printf("admin: %d %s", code, msg)
+		writeJSON(w, code, map[string]string{"error": "internal error"})
+		return
+	}
 	writeJSON(w, code, map[string]string{"error": msg})
 }
 

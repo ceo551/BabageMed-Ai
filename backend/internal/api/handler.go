@@ -80,7 +80,7 @@ func (h *Handler) ListTools(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
 	out, err := h.reg.ListTools(r.Context(), id)
 	if err != nil {
-		writeJSON(w, 502, map[string]string{"error": err.Error()})
+		upstreamErr(w, 502, err, "upstream tools list failed")
 		return
 	}
 	writeJSON(w, 200, out)
@@ -97,13 +97,14 @@ func (h *Handler) CallTool(w http.ResponseWriter, r *http.Request) {
 	var args any
 	if len(body) > 0 {
 		if err := json.Unmarshal(body, &args); err != nil {
-			writeJSON(w, 400, map[string]string{"error": "invalid json: " + err.Error()})
+			// JSON parse errors are caller-controlled — safe to surface.
+			writeJSON(w, 400, map[string]string{"error": "invalid json"})
 			return
 		}
 	}
 	out, err := h.reg.Call(r.Context(), id, tool, args)
 	if err != nil {
-		writeJSON(w, 502, map[string]string{"error": err.Error()})
+		upstreamErr(w, 502, err, "upstream tool call failed")
 		return
 	}
 	writeJSON(w, 200, out)
@@ -145,7 +146,7 @@ func (h *Handler) Chat(w http.ResponseWriter, r *http.Request) {
 	sanitiseChatRequest(&req)
 	res, err := h.run(r.Context(), req)
 	if err != nil {
-		writeJSON(w, 502, map[string]string{"error": err.Error()})
+		upstreamErr(w, 502, err, "chat backend failed")
 		return
 	}
 	writeJSON(w, 200, res)
@@ -232,7 +233,12 @@ func (h *Handler) ChatStream(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err != nil {
-		send("error", map[string]string{"error": err.Error()})
+		// Don't echo the raw error to the SSE channel — upstream LLM
+		// errors can include API URLs / auth-header hints. Log the
+		// detail server-side and send a generic message the UI can
+		// render as a toast.
+		log.Printf("api: chat stream upstream error: %v", err)
+		send("error", map[string]string{"error": "model request failed"})
 		return
 	}
 	// Final 'content' carries the full text + provider/model metadata so the
@@ -590,4 +596,14 @@ func writeJSON(w http.ResponseWriter, code int, v any) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(code)
 	_ = json.NewEncoder(w).Encode(v)
+}
+
+// upstreamErr logs the underlying error server-side and returns a
+// scrubbed body so MCP server errors (which can include API URLs,
+// auth tokens, file paths from upstream stack traces) don't leak to
+// authenticated clients. The HTTP status is preserved so frontends
+// can still distinguish 4xx-from-upstream vs 5xx-from-upstream.
+func upstreamErr(w http.ResponseWriter, code int, err error, msg string) {
+	log.Printf("api: %d %s: %v", code, msg, err)
+	writeJSON(w, code, map[string]string{"error": msg})
 }

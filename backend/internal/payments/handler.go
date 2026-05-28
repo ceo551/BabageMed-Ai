@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
+	"log"
 	"net/http"
 	"os"
 	"strconv"
@@ -115,7 +116,12 @@ func (h *Handler) PaymobCheckout(w http.ResponseWriter, r *http.Request) {
 	}
 	out, err := h.pm.Checkout(r.Context(), b.PlanID, b.Billing)
 	if err != nil {
-		writeJSON(w, 502, map[string]string{"error": err.Error()})
+		// Don't echo upstream provider errors verbatim — Paymob/PayPal
+		// responses can include internal IDs and request URLs. Log
+		// full text server-side, give the client a generic message
+		// so the UI shows "payment failed, try again" without leaking.
+		log.Printf("payments: 502 upstream error: %v", err)
+		writeJSON(w, 502, map[string]string{"error": "payment provider unavailable"})
 		return
 	}
 	if h.store != nil {
@@ -196,7 +202,12 @@ func (h *Handler) PayPalCheckout(w http.ResponseWriter, r *http.Request) {
 	}
 	out, err := h.pp.Checkout(r.Context(), b.PlanID, b.ReturnURL, b.CancelURL)
 	if err != nil {
-		writeJSON(w, 502, map[string]string{"error": err.Error()})
+		// Don't echo upstream provider errors verbatim — Paymob/PayPal
+		// responses can include internal IDs and request URLs. Log
+		// full text server-side, give the client a generic message
+		// so the UI shows "payment failed, try again" without leaking.
+		log.Printf("payments: 502 upstream error: %v", err)
+		writeJSON(w, 502, map[string]string{"error": "payment provider unavailable"})
 		return
 	}
 	if h.store != nil {
@@ -220,7 +231,12 @@ func (h *Handler) PayPalCapture(w http.ResponseWriter, r *http.Request) {
 	}
 	out, err := h.pp.Capture(r.Context(), b.OrderID)
 	if err != nil {
-		writeJSON(w, 502, map[string]string{"error": err.Error()})
+		// Don't echo upstream provider errors verbatim — Paymob/PayPal
+		// responses can include internal IDs and request URLs. Log
+		// full text server-side, give the client a generic message
+		// so the UI shows "payment failed, try again" without leaking.
+		log.Printf("payments: 502 upstream error: %v", err)
+		writeJSON(w, 502, map[string]string{"error": "payment provider unavailable"})
 		return
 	}
 	if h.store != nil {
@@ -245,7 +261,10 @@ func (h *Handler) PayPalWebhook(w http.ResponseWriter, r *http.Request) {
 		// 400, not 401, so the upstream PayPal retry logic doesn't loop
 		// against a malformed message we'd never accept.
 		if errors.Is(err, errBadBody) || strings.HasPrefix(err.Error(), "bad webhook body") {
-			writeJSON(w, 400, map[string]string{"error": err.Error()})
+			// 400-class error caused by malformed input — the message
+			// is generic enough ("bad webhook body") that surfacing
+			// it is safe and useful for the PayPal Webhook Inspector.
+			writeJSON(w, 400, map[string]string{"error": "bad webhook body"})
 			return
 		}
 		// Verifier UNREACHABLE (network, expired client token, PayPal

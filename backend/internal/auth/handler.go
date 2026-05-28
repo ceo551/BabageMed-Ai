@@ -298,6 +298,16 @@ func writeJSON(w http.ResponseWriter, code int, v any) {
 	w.WriteHeader(code)
 	_ = json.NewEncoder(w).Encode(v)
 }
+// writeErr serialises {"error": …}. 5xx codes get the full message
+// logged server-side and an opaque "internal error" body returned so
+// pgx/SMTP/file-path detail can't leak through. 4xx callers are
+// trusted to use generic messages — handler.go already returns
+// "invalid email or password" rather than the underlying mismatch.
 func writeErr(w http.ResponseWriter, code int, msg string) {
+	if code >= 500 {
+		log.Printf("auth: %d %s", code, msg)
+		writeJSON(w, code, map[string]string{"error": "internal error"})
+		return
+	}
 	writeJSON(w, code, map[string]string{"error": msg})
 }

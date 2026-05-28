@@ -15,6 +15,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"path/filepath"
 	"strings"
@@ -534,10 +535,18 @@ func (s *Service) handleContext(w http.ResponseWriter, r *http.Request) {
 // writeJSON serialises v or, when err != nil, picks an HTTP status code
 // from the error shape. Previously every error became 400 — including
 // lookups for missing resources and genuine DB outages — which confused
-// callers and hid real failures.
+// callers and hid real failures. 5xx responses now return an opaque
+// "internal error" body so pgx / SQLSTATE / file-path detail can't
+// bleed through; the full text is logged server-side.
 func writeJSON(w http.ResponseWriter, v any, err error) {
 	if err != nil {
-		http.Error(w, err.Error(), httpStatusFromErr(err))
+		code := httpStatusFromErr(err)
+		if code >= 500 {
+			log.Printf("spaces: %d %v", code, err)
+			http.Error(w, "internal error", code)
+			return
+		}
+		http.Error(w, err.Error(), code)
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")

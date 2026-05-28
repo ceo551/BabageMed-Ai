@@ -19,6 +19,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"path/filepath"
 	"strings"
@@ -303,16 +304,16 @@ func (s *Service) handleUpload(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		f, err := fh.Open()
-		if err != nil { http.Error(w, err.Error(), 500); return }
+		if err != nil { internalServerError(w, err); return }
 		body, err := io.ReadAll(io.LimitReader(f, maxUploadBytes+1))
 		_ = f.Close()
-		if err != nil { http.Error(w, err.Error(), 500); return }
+		if err != nil { internalServerError(w, err); return }
 		if int64(len(body)) > maxUploadBytes {
 			http.Error(w, "file too large", http.StatusRequestEntityTooLarge); return
 		}
 		mime := fh.Header.Get("Content-Type")
 		o, err := s.addFile(r.Context(), u.ID, slug, fh.Filename, mime, body)
-		if err != nil { http.Error(w, err.Error(), 500); return }
+		if err != nil { internalServerError(w, err); return }
 		out = o
 	}
 	writeJSON(w, out, nil)
@@ -341,6 +342,17 @@ func writeJSON(w http.ResponseWriter, v any, err error) {
 		case strings.Contains(low, "invalid"), strings.Contains(low, "required"):
 			code = http.StatusBadRequest
 		}
+		// 4xx errors stay verbose (clients need "name required" /
+		// "feature not found" to recover). 5xx errors get an opaque
+		// "internal error" body so pgx / SQLSTATE / file-path detail
+		// doesn't bleed across the wire; the full error stays
+		// server-side via log.
+		if code >= 500 {
+			log.Printf("features: %d %v", code, err)
+			w.WriteHeader(code)
+			_ = json.NewEncoder(w).Encode(map[string]string{"error": "internal error"})
+			return
+		}
 		w.WriteHeader(code)
 		_ = json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
 		return
@@ -350,6 +362,14 @@ func writeJSON(w http.ResponseWriter, v any, err error) {
 		return
 	}
 	_ = json.NewEncoder(w).Encode(v)
+}
+
+// internalServerError logs the underlying error server-side and
+// returns an opaque body — mirrors the helper in internal/chats so
+// pgx / file-path detail can't leak into 500 responses.
+func internalServerError(w http.ResponseWriter, err error) {
+	log.Printf("features: 500 %v", err)
+	http.Error(w, "internal error", http.StatusInternalServerError)
 }
 
 // silence unused-import warning when build tags exclude the rest
