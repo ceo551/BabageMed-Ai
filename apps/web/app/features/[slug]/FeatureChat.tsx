@@ -596,6 +596,11 @@ function brandMark(brand: ModelBrand): React.ReactNode {
 }
 
 function Transcript({ messages, endRef }: { messages: Msg[]; endRef: React.RefObject<HTMLDivElement> }) {
+  // Round 24: `s` lives on FeatureChat's scope, not Transcript's. The
+  // previous code crashed any feature page the moment a "loading" row
+  // rendered (ReferenceError: s is not defined). Read useUI here so
+  // Transcript is self-contained.
+  const { s } = useUI();
   return (
     <div className="transcript feat-transcript">
       {messages.map((m) => {

@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useId, useRef } from "react";
+import { useUI } from "../lib/ui-context";
 
 // Modal — minimal dialog primitive used by the New-Space form (and any
 // future create / edit dialogs). Renders a centered card over a dimmed
@@ -86,7 +87,13 @@ export function Modal({ open, onClose, title, width = 540, children }: ModalProp
   // with its title text instead of just "dialog". When `title` is a non-
   // string ReactNode we fall back to aria-label="dialog" (no good way to
   // serialise arbitrary JSX into an accessible name).
-  const titleId = "modal-title-" + Math.random().toString(36).slice(2, 9);
+  //
+  // useId() instead of Math.random(): the previous version recomputed
+  // a fresh id on every render, briefly invalidating the screen
+  // reader's aria-labelledby pointer between renders. React's useId
+  // returns a stable, SSR-safe id per component instance.
+  const titleId = useId();
+  const { s } = useUI();
   const labelProps = title
     ? (typeof title === "string"
         ? { "aria-label": title }
@@ -108,7 +115,7 @@ export function Modal({ open, onClose, title, width = 540, children }: ModalProp
               type="button"
               className="modal-close"
               onClick={onClose}
-              aria-label={(typeof window !== "undefined" && document.documentElement.lang === "ar") ? "إغلاق الحوار" : "Close dialog"}
+              aria-label={s.closeDialog}
             >
               ×
             </button>

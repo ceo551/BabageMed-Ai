@@ -5,6 +5,7 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { ConnectorIcon } from "./ConnectorIcon";
 import { safeUrlTransform } from "../lib/url-transform";
+import { useUI } from "../lib/ui-context";
 
 // Citation as returned by the backend's /api/chat[/stream] handler. The
 // `source` field is the MCP id (e.g. "pubmed", "fda"); `result` is whatever
@@ -34,6 +35,7 @@ function AssistantMessageInner({
   citations?: Citation[];
 }) {
   const [openCitation, setOpenCitation] = useState<number | null>(null);
+  const { s } = useUI();
 
   return (
     <div className="msg msg-assistant">
@@ -62,7 +64,7 @@ function AssistantMessageInner({
       </div>
       {citations && citations.length > 0 && (
         <div className="msg-citations">
-          <div className="msg-citations-label">{(typeof window !== "undefined" && document.documentElement.lang === "ar") ? "المصادر" : "Sources"}</div>
+          <div className="msg-citations-label">{s.sources}</div>
           <div className="msg-citations-list">
             {citations.map((c, i) => {
               const isOpen = openCitation === i;
@@ -103,7 +105,15 @@ export const AssistantMessage = React.memo(AssistantMessageInner, (prev, next) =
   if (prev.content !== next.content) return false;
   if (prev.citations === next.citations) return true;
   if (!prev.citations || !next.citations) return false;
-  return prev.citations.length === next.citations.length;
+  if (prev.citations.length !== next.citations.length) return false;
+  // Length match alone fooled the comparator into skipping renders
+  // when a stream emitted a same-count citations list with different
+  // sources (e.g. an MCP swap mid-answer). Compare source IDs in
+  // order — cheap (citations are typically ≤8) and catches the case.
+  for (let i = 0; i < prev.citations.length; i++) {
+    if (prev.citations[i].source !== next.citations[i].source) return false;
+  }
+  return true;
 });
 
 // CodeBlock — pre tag with a Copy button revealed on hover. Pure CSS reveal

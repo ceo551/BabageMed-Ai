@@ -26,10 +26,40 @@ export const viewport = {
   colorScheme: "dark" as const,
 };
 
+// Pre-paint locale + theme bootstrap. SSR can't see localStorage, so
+// without this script the first paint always renders `lang="en"
+// dir="ltr" data-theme="dark"` — Arabic users get a left-to-right
+// flash and the dir flip on mount causes a measurable layout shift.
+// Light-theme users get a dark flash on every navigation. Running
+// this *before* React hydrates sets <html> to the user's choice so
+// the server-rendered HTML and the client's first render agree
+// (the React tree itself stays SSR-friendly because we don't read
+// localStorage during render — only this inline IIFE does, before
+// the React root mounts).
+const PRE_PAINT_SCRIPT = `(function(){
+  try {
+    var p = JSON.parse(localStorage.getItem("babagemed:prefs") || "null");
+    var locale = (p && p.locale) || "en";
+    var theme = (p && p.theme) || "system";
+    if (theme === "system") {
+      theme = window.matchMedia && window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
+    }
+    var d = document.documentElement;
+    d.lang = locale;
+    d.dir = locale === "ar" ? "rtl" : "ltr";
+    d.setAttribute("data-theme", theme);
+  } catch (e) { /* incognito / disabled storage → defaults stand */ }
+})();`;
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
+  // suppressHydrationWarning on <html> tells React it's expected for
+  // the pre-paint script to have mutated lang/dir/data-theme before
+  // hydration; otherwise the dev console fills with mismatch warnings
+  // even though the runtime behaviour is correct.
   return (
-    <html lang="en" dir="ltr" data-theme="dark">
+    <html lang="en" dir="ltr" data-theme="dark" suppressHydrationWarning>
       <head>
+        <script dangerouslySetInnerHTML={{ __html: PRE_PAINT_SCRIPT }} />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link
