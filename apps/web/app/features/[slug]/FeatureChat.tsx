@@ -2,9 +2,9 @@
 
 import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { I } from "../../icons";
+import { I, featureIcon } from "../../icons";
 import { useUI } from "../../lib/ui-context";
-import { chats as chatsApi, type Feature as FeatureRow } from "../../lib/api";
+import { chats as chatsApi, features as featuresApi, type Feature as FeatureRow } from "../../lib/api";
 import { AssistantMessage, type Citation } from "../../components/AssistantMessage";
 import type { FeatureMeta } from "../../i18n";
 import {
@@ -56,12 +56,14 @@ export function FeatureChat({
   const [sending, setSending] = useState(false);
   const [model, setModel] = useState<string>(() => defaultModelId(meta));
   const [modelOpen, setModelOpen] = useState(false);
+  const [uploading, setUploading] = useState(false);
 
   const liveLoadRef = useRef<string>("");
   const streamAbortRef = useRef<AbortController | null>(null);
   const taRef = useRef<HTMLTextAreaElement>(null);
   const composerRef = useRef<HTMLDivElement>(null);
   const transcriptEndRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Reset model when feature changes (e.g. visual ↔ text would otherwise
   // keep a stale id that doesn't exist in the new picker).
@@ -316,7 +318,7 @@ export function FeatureChat({
           <Transcript messages={messages} endRef={transcriptEndRef} />
         ) : (
           <div className="feat-chat-empty">
-            <span className="feat-chat-empty-emoji" aria-hidden="true">{meta.emoji}</span>
+            <span className="feat-chat-empty-emoji" aria-hidden="true">{featureIcon(meta.slug, meta.emoji)}</span>
             <h2>{meta.label}</h2>
             <p>{s.featureChatEmpty}</p>
           </div>
@@ -324,20 +326,50 @@ export function FeatureChat({
       </div>
 
       <div className="feat-composer" ref={composerRef}>
-        <textarea
-          ref={taRef}
-          value={value}
-          onChange={(e) => setValue(e.target.value)}
-          placeholder={s.placeholder}
-          rows={1}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" && !e.shiftKey && !(e.nativeEvent as any).isComposing) {
-              e.preventDefault();
-              if (!sending) send();
+        <input
+          ref={fileInputRef}
+          type="file"
+          multiple
+          hidden
+          accept=".pdf,.csv,.txt,.md,.json,.dcm,.docx,application/pdf,text/csv,text/plain,application/json"
+          onChange={async (e) => {
+            const fl = e.target.files;
+            if (!fl || fl.length === 0) return;
+            setUploading(true);
+            try { await featuresApi.upload(meta.slug, fl); }
+            catch { /* tolerated — user can retry from the rail */ }
+            finally {
+              setUploading(false);
+              if (fileInputRef.current) fileInputRef.current.value = "";
             }
           }}
         />
-        <div className="feat-composer-bar">
+        <div className="composer">
+          <textarea
+            ref={taRef}
+            value={value}
+            onChange={(e) => setValue(e.target.value)}
+            placeholder={s.placeholder}
+            rows={1}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && !e.shiftKey && !(e.nativeEvent as any).isComposing) {
+                e.preventDefault();
+                if (!sending) send();
+              }
+            }}
+          />
+          <div className="composer-bar">
+            <button
+              type="button"
+              className="add-btn"
+              aria-label={s.addFile}
+              title={s.addFile}
+              disabled={uploading}
+              onClick={(e) => { e.preventDefault(); fileInputRef.current?.click(); }}
+            >
+              {I.plus}
+            </button>
+            <span className="spacer" />
           {/* Model picker — text features show one list of 8 chat LLMs;
               visual features (image & video, advertisements) show two
               grouped lists (Image · Video). */}
@@ -423,27 +455,27 @@ export function FeatureChat({
             )}
           </div>
 
-          <span className="spacer" />
-
-          <button
-            type="button"
-            className="cmpr-icon"
-            onClick={send}
-            aria-label={sending ? "Sending" : "Send"}
-            disabled={sending || value.trim() === ""}
-            style={{
-              width: "auto",
-              padding: "0 10px",
-              color: sending || value.trim() === "" ? "var(--muted)" : "var(--hue-ink, var(--cyan))",
-              borderColor: sending || value.trim() === "" ? "var(--border)" : "var(--hue-line, var(--cyan-line))",
-              background: sending || value.trim() === "" ? "var(--panel)" : "var(--hue-bg, var(--cyan-soft))",
-              opacity: sending || value.trim() === "" ? 0.6 : 1,
-              cursor: sending ? "progress" : value.trim() === "" ? "not-allowed" : "pointer",
-              transition: "color .12s, background .12s, opacity .12s",
-            }}
-          >
-            {sending ? "…" : "↵"}
-          </button>
+            <button className="cmpr-icon" type="button" aria-label={s.voiceComingSoon} title={s.voiceComingSoon}>{I.mic}</button>
+            <button
+              type="button"
+              className="cmpr-icon"
+              onClick={send}
+              aria-label={sending ? "Sending" : "Send"}
+              disabled={sending || value.trim() === ""}
+              style={{
+                width: "auto",
+                padding: "0 10px",
+                color: sending || value.trim() === "" ? "var(--muted)" : "var(--hue-ink, var(--cyan))",
+                borderColor: sending || value.trim() === "" ? "var(--border)" : "var(--hue-line, var(--cyan-line))",
+                background: sending || value.trim() === "" ? "var(--panel)" : "var(--hue-bg, var(--cyan-soft))",
+                opacity: sending || value.trim() === "" ? 0.6 : 1,
+                cursor: sending ? "progress" : value.trim() === "" ? "not-allowed" : "pointer",
+                transition: "color .12s, background .12s, opacity .12s",
+              }}
+            >
+              {sending ? "…" : "↵"}
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -452,9 +484,18 @@ export function FeatureChat({
 
 function brandMark(brand: ModelBrand): React.ReactNode {
   switch (brand) {
-    case "anthropic": return I.anthropicMark;
-    case "google":    return I.geminiMark;
-    default:          return <span className="brand-fallback" />;
+    case "anthropic":  return I.anthropicMark;
+    case "google":     return I.geminiMark;
+    case "openai":     return I.openaiMark;
+    case "xai":        return I.xaiMark;
+    case "deepseek":   return I.deepseekMark;
+    case "alibaba":    return I.alibabaMark;
+    case "moonshot":   return I.moonshotMark;
+    case "zhipu":      return I.zhipuMark;
+    case "kling":      return I.klingMark;
+    case "bytedance":  return I.bytedanceMark;
+    case "happyhorse": return I.happyhorseMark;
+    default:           return <span className="brand-fallback" />;
   }
 }
 

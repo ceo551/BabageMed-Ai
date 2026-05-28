@@ -32,13 +32,35 @@ export type Prefs = {
   model: string;
   mode: string;
   sidebarCollapsed: boolean;
+  // Feature-page left rail (per-feature sub-sidebar) collapse + resize state.
+  // Mirrors the main sidebar surface so users can shrink either independently
+  // — handy on mid-size monitors where the 3-column feat-shell-3col is tight.
+  subSidebarCollapsed: boolean;
+  sidebarWidth: number;     // px; clamped 200..360 by setters
+  subSidebarWidth: number;  // px; clamped 200..340 by setters
+  // Right rail (Instructions / Files / Skills / Connectors panel on each
+  // feature page). Same collapse+width pattern.
+  railCollapsed: boolean;
+  railWidth: number;        // px; clamped 260..480 by setters
 };
 
 const PREFS_DEFAULT: Prefs = {
   model: "opus-4.7",
   mode: "bedside",
   sidebarCollapsed: false,
+  subSidebarCollapsed: false,
+  sidebarWidth: 280,
+  subSidebarWidth: 240,
+  railCollapsed: false,
+  railWidth: 340,
 };
+
+// Width bounds shared by the resize handles + the setters. Kept here so a
+// future refactor that moves the drag logic can't drift.
+const SIDEBAR_MIN = 200, SIDEBAR_MAX = 360;
+const SUBSIDEBAR_MIN = 200, SUBSIDEBAR_MAX = 340;
+const RAIL_MIN = 260, RAIL_MAX = 480;
+function clampN(v: number, lo: number, hi: number) { return Math.max(lo, Math.min(hi, v)); }
 
 const PREFS_KEY = "babagemed:prefs";
 
@@ -102,6 +124,19 @@ export const prefs = {
   setMode: (m: string) => prefsStore.set({ mode: m }),
   setSidebarCollapsed: (v: boolean) => prefsStore.set({ sidebarCollapsed: v }),
   toggleSidebar: () => prefsStore.set({ sidebarCollapsed: !prefsStore.get().sidebarCollapsed }),
+  setSubSidebarCollapsed: (v: boolean) => prefsStore.set({ subSidebarCollapsed: v }),
+  toggleSubSidebar: () => prefsStore.set({ subSidebarCollapsed: !prefsStore.get().subSidebarCollapsed }),
+  setSidebarWidth: (v: number) => prefsStore.set({ sidebarWidth: clampN(v, SIDEBAR_MIN, SIDEBAR_MAX) }),
+  setSubSidebarWidth: (v: number) => prefsStore.set({ subSidebarWidth: clampN(v, SUBSIDEBAR_MIN, SUBSIDEBAR_MAX) }),
+  setRailCollapsed: (v: boolean) => prefsStore.set({ railCollapsed: v }),
+  toggleRail: () => prefsStore.set({ railCollapsed: !prefsStore.get().railCollapsed }),
+  setRailWidth: (v: number) => prefsStore.set({ railWidth: clampN(v, RAIL_MIN, RAIL_MAX) }),
+};
+
+export const PREFS_BOUNDS = {
+  sidebar:    { min: SIDEBAR_MIN,    max: SIDEBAR_MAX },
+  subSidebar: { min: SUBSIDEBAR_MIN, max: SUBSIDEBAR_MAX },
+  rail:       { min: RAIL_MIN,       max: RAIL_MAX },
 };
 
 // ─── useSession ──────────────────────────────────────────────────────────────

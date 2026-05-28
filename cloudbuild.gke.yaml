@@ -1,0 +1,98 @@
+timeout: 3600s
+options:
+  machineType: E2_HIGHCPU_8
+  diskSizeGb: 100
+  logging: CLOUD_LOGGING_ONLY
+
+substitutions:
+  _REGION: us-central1
+  _REPO: babbage
+  _TAG: v14
+
+images:
+  - "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/backend:${_TAG}"
+  - "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/frontend:${_TAG}"
+  - "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-pubmed:${_TAG}"
+  - "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-icd10:${_TAG}"
+  - "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-who:${_TAG}"
+  - "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-cdc:${_TAG}"
+  - "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-nci:${_TAG}"
+  - "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-npi:${_TAG}"
+  - "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-cms:${_TAG}"
+  - "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-clinicaltrials:${_TAG}"
+  - "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-medlineplus:${_TAG}"
+  - "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-medrxiv:${_TAG}"
+
+steps:
+  - id: backend
+    name: gcr.io/cloud-builders/docker
+    waitFor: ["-"]
+    args:
+      - build
+      - -f
+      - backend/Dockerfile
+      - -t
+      - ${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/backend:${_TAG}
+      - .
+
+  - id: frontend
+    name: gcr.io/cloud-builders/docker
+    waitFor: ["-"]
+    dir: apps/web
+    args:
+      - build
+      - -f
+      - Dockerfile
+      - -t
+      - ${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/frontend:${_TAG}
+      - .
+
+  - id: mcp-pubmed
+    name: gcr.io/cloud-builders/docker
+    waitFor: ["-"]
+    args: [build, -f, mcps/pubmed/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-pubmed:${_TAG}", .]
+
+  - id: mcp-icd10
+    name: gcr.io/cloud-builders/docker
+    waitFor: ["-"]
+    args: [build, -f, mcps/icd10/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-icd10:${_TAG}", .]
+
+  - id: mcp-who
+    name: gcr.io/cloud-builders/docker
+    waitFor: ["-"]
+    args: [build, -f, mcps/who/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-who:${_TAG}", .]
+
+  - id: mcp-cdc
+    name: gcr.io/cloud-builders/docker
+    waitFor: ["-"]
+    args: [build, -f, mcps/cdc/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-cdc:${_TAG}", .]
+
+  - id: mcp-nci
+    name: gcr.io/cloud-builders/docker
+    waitFor: ["-"]
+    args: [build, -f, mcps/nci/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-nci:${_TAG}", .]
+
+  - id: mcp-npi
+    name: gcr.io/cloud-builders/docker
+    waitFor: ["-"]
+    args: [build, -f, mcps/npi/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-npi:${_TAG}", .]
+
+  - id: mcp-cms
+    name: gcr.io/cloud-builders/docker
+    waitFor: ["-"]
+    args: [build, -f, mcps/cms/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-cms:${_TAG}", .]
+
+  - id: mcp-clinicaltrials
+    name: gcr.io/cloud-builders/docker
+    waitFor: ["-"]
+    args: [build, -f, mcps/clinicaltrials/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-clinicaltrials:${_TAG}", .]
+
+  - id: mcp-medlineplus
+    name: gcr.io/cloud-builders/docker
+    waitFor: ["-"]
+    args: [build, -f, mcps/medlineplus/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-medlineplus:${_TAG}", .]
+
+  - id: mcp-medrxiv
+    name: gcr.io/cloud-builders/docker
+    waitFor: ["-"]
+    args: [build, -f, mcps/medrxiv/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-medrxiv:${_TAG}", .]

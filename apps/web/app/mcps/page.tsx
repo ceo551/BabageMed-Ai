@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   mcps,
   connectors as connectorsApi,
@@ -11,6 +11,7 @@ import {
 import { useAuth } from "../lib/auth-context";
 import { useUI } from "../lib/ui-context";
 import { ConnectorIcon } from "../components/ConnectorIcon";
+import { featureIcon } from "../icons";
 import "./mcps.css";
 
 // "Connectors" directory (mounted at /mcps for backwards-compatible URLs).
@@ -32,13 +33,12 @@ export default function ConnectorsBrowsePage() {
   const [error, setError] = useState<string | null>(null);
   const [q, setQ] = useState("");
   const [kind, setKind] = useState<"all" | "api" | "scrape" | "hybrid">("all");
-  const [category, setCategory] = useState<string>("all");
   const [feature, setFeature] = useState<string>("all");
   const [busy, setBusy] = useState<string | null>(null);
   const [shown, setShown] = useState<number>(PAGE_SIZE);
   // Reset pagination whenever the filter changes so the user always sees the
   // top of the result set after typing.
-  useEffect(() => { setShown(PAGE_SIZE); }, [q, kind, category, feature]);
+  useEffect(() => { setShown(PAGE_SIZE); }, [q, kind, feature]);
 
   useEffect(() => {
     mcps.list()
@@ -56,16 +56,10 @@ export default function ConnectorsBrowsePage() {
       .catch(() => setMine({}));
   }, [user]);
 
-  const categories = useMemo(() => {
-    const set = new Set(all.map((s) => s.category));
-    return ["all", ...Array.from(set).sort()];
-  }, [all]);
-
   const filtered = useMemo(() => {
     const needle = q.trim().toLowerCase();
     return all.filter((srv) => {
       if (kind !== "all" && srv.kind !== kind) return false;
-      if (category !== "all" && srv.category !== category) return false;
       if (feature !== "all" && srv.feature !== feature) return false;
       if (!needle) return true;
       return (
@@ -74,7 +68,7 @@ export default function ConnectorsBrowsePage() {
         srv.base.toLowerCase().includes(needle)
       );
     });
-  }, [all, q, kind, category, feature]);
+  }, [all, q, kind, feature]);
 
   async function toggle(s: McpServer) {
     if (!user) {
@@ -119,22 +113,16 @@ export default function ConnectorsBrowsePage() {
           value={q}
           onChange={(e) => setQ(e.target.value)}
         />
-        <select value={feature} onChange={(e) => setFeature(e.target.value)}>
-          <option value="all">All features</option>
-          {s.features.map((f) => (
-            <option key={f.slug} value={f.slug}>{f.emoji} {f.label}</option>
-          ))}
-        </select>
+        <FeatureDropdown
+          value={feature}
+          onChange={setFeature}
+          features={s.features}
+        />
         <select value={kind} onChange={(e) => setKind(e.target.value as any)}>
           <option value="all">All kinds</option>
           <option value="api">API</option>
           <option value="scrape">Scrape</option>
           <option value="hybrid">Hybrid</option>
-        </select>
-        <select value={category} onChange={(e) => setCategory(e.target.value)}>
-          {categories.map((c) => (
-            <option key={c} value={c}>{c === "all" ? "All categories" : c}</option>
-          ))}
         </select>
         <span className="mcps-counts">{filtered.length} / {all.length}</span>
       </div>
@@ -154,59 +142,237 @@ export default function ConnectorsBrowsePage() {
         </div>
       )}
 
-      <div className="mcps-grid">
-        {filtered.slice(0, shown).map((s) => {
-          const isMine = !!mine[s.id];
-          const isBusy = busy === s.id;
-          return (
-            <div key={s.id} className="mcp-card" data-connected={isMine}>
-              <Link href={`/mcps/${encodeURIComponent(s.id)}`} className="card-body">
-                <div className="row">
-                  <ConnectorIcon id={s.id} name={s.name} iconUrl={s.iconUrl} size={36} className="card-icon" />
-                  <span className="name">{s.name}</span>
-                  <span className={`kind ${s.kind}`}>{s.kind}</span>
-                </div>
-                <div className="meta">{s.base}</div>
-                <div className="meta" style={{ color: "var(--muted-2)" }}>{s.category}</div>
-              </Link>
+      {/* When the user has no filter active, show a Perplexity-style
+          per-feature grouping (each feature gets its own row with the first
+          ~8 connectors + a "View all" link). Otherwise fall back to the
+          flat filtered grid + pager. */}
+      {q.trim() === "" && feature === "all" && kind === "all" ? (
+        <FeatureSections
+          servers={filtered}
+          features={s.features}
+          mine={mine}
+          busy={busy}
+          onToggle={toggle}
+          onViewAll={(slug) => setFeature(slug)}
+        />
+      ) : (
+        <>
+          <div className="mcps-grid">
+            {filtered.slice(0, shown).map((s) => (
+              <ConnectorCard
+                key={s.id}
+                server={s}
+                isMine={!!mine[s.id]}
+                isBusy={busy === s.id}
+                onToggle={toggle}
+              />
+            ))}
+          </div>
+          {filtered.length > shown && (
+            <div style={{ display: "flex", justifyContent: "center", marginTop: 16 }}>
               <button
                 type="button"
                 className="connect-btn"
-                data-connected={isMine}
-                onClick={(e) => { e.preventDefault(); toggle(s); }}
-                disabled={isBusy}
-                aria-label={isMine ? "Disconnect" : "Add connector"}
-                title={isMine ? "Disconnect" : "Add connector"}
+                style={{
+                  padding: "10px 22px",
+                  borderRadius: 999,
+                  fontSize: 13,
+                  background: "var(--cyan-soft)",
+                  color: "var(--cyan)",
+                  border: "1px solid var(--cyan-line)",
+                }}
+                onClick={() => setShown((n) => n + PAGE_SIZE)}
               >
-                {isBusy ? "…" : isMine ? "✓" : "+"}
+                Show {Math.min(PAGE_SIZE, filtered.length - shown)} more · {filtered.length - shown} left
               </button>
             </div>
-          );
-        })}
-      </div>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
 
-      {/* Show-more pager — appears only when there are more matches than the
-          current `shown` window. Keeps initial paint cheap on the full 540-
-          server catalog. */}
-      {filtered.length > shown && (
-        <div style={{ display: "flex", justifyContent: "center", marginTop: 16 }}>
+// ── Custom dropdown for "All features" with SVG icons.
+// Native <select> can't render SVG inside <option> and its dark-mode styling
+// is OS-controlled (which made the labels nearly invisible on dark themes).
+// This popover-based version uses the same featureIcon() set as the sidebar
+// and follows our theme tokens so contrast is consistent in both modes.
+function FeatureDropdown({
+  value,
+  onChange,
+  features,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  features: ReadonlyArray<{ slug: string; label: string; emoji: string }>;
+}) {
+  const [open, setOpen] = useState(false);
+  const rootRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!open) return;
+    function onDoc(e: MouseEvent) {
+      if (!rootRef.current?.contains(e.target as Node)) setOpen(false);
+    }
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") setOpen(false);
+    }
+    document.addEventListener("mousedown", onDoc);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onDoc);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [open]);
+  const selected = value === "all"
+    ? { slug: "all", label: "All features", emoji: "★" }
+    : features.find((f) => f.slug === value) || { slug: "all", label: "All features", emoji: "★" };
+  return (
+    <div className="mcps-fdrop" ref={rootRef}>
+      <button
+        type="button"
+        className="mcps-fdrop-trigger"
+        data-open={open}
+        onClick={() => setOpen((v) => !v)}
+      >
+        <span className="mcps-fdrop-icon">{featureIcon(selected.slug, selected.emoji)}</span>
+        <span className="mcps-fdrop-label">{selected.label}</span>
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor"
+             strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <path d="M6 9l6 6 6-6" />
+        </svg>
+      </button>
+      {open && (
+        <div className="mcps-fdrop-pop" role="menu">
           <button
             type="button"
-            className="connect-btn"
-            style={{
-              padding: "10px 22px",
-              borderRadius: 999,
-              fontSize: 13,
-              background: "var(--cyan-soft)",
-              color: "var(--cyan)",
-              border: "1px solid var(--cyan-line)",
-            }}
-            onClick={() => setShown((n) => n + PAGE_SIZE)}
+            className="mcps-fdrop-item"
+            data-active={value === "all"}
+            onClick={() => { onChange("all"); setOpen(false); }}
           >
-            Show {Math.min(PAGE_SIZE, filtered.length - shown)} more · {filtered.length - shown} left
+            <span className="mcps-fdrop-icon">{featureIcon("all", "★")}</span>
+            <span>All features</span>
           </button>
+          {features.map((f) => (
+            <button
+              key={f.slug}
+              type="button"
+              className="mcps-fdrop-item"
+              data-active={value === f.slug}
+              onClick={() => { onChange(f.slug); setOpen(false); }}
+            >
+              <span className="mcps-fdrop-icon">{featureIcon(f.slug, f.emoji)}</span>
+              <span>{f.label}</span>
+            </button>
+          ))}
         </div>
       )}
+    </div>
+  );
+}
+
+// ── Shared card renderer — used by both flat grid and grouped sections.
+function ConnectorCard({
+  server,
+  isMine,
+  isBusy,
+  onToggle,
+}: {
+  server: McpServer;
+  isMine: boolean;
+  isBusy: boolean;
+  onToggle: (s: McpServer) => void;
+}) {
+  return (
+    <div className="mcp-card" data-connected={isMine}>
+      <Link href={`/mcps/${encodeURIComponent(server.id)}`} className="card-body">
+        <div className="row">
+          <ConnectorIcon id={server.id} name={server.name} iconUrl={server.iconUrl} size={36} className="card-icon" />
+          <span className="name">{server.name}</span>
+          <span className={`kind ${server.kind}`}>{server.kind}</span>
+        </div>
+        <div className="meta">{server.base}</div>
+        <div className="meta" style={{ color: "var(--muted-2)" }}>{server.category}</div>
+      </Link>
+      <button
+        type="button"
+        className="connect-btn"
+        data-connected={isMine}
+        onClick={(e) => { e.preventDefault(); onToggle(server); }}
+        disabled={isBusy}
+        aria-label={isMine ? "Disconnect" : "Add connector"}
+        title={isMine ? "Disconnect" : "Add connector"}
+      >
+        {isBusy ? "…" : isMine ? "✓" : "+"}
+      </button>
+    </div>
+  );
+}
+
+// ── Perplexity-style: one row per feature, top N + "View all" link.
+function FeatureSections({
+  servers,
+  features,
+  mine,
+  busy,
+  onToggle,
+  onViewAll,
+}: {
+  servers: McpServer[];
+  features: ReadonlyArray<{ slug: string; label: string; emoji: string }>;
+  mine: Record<string, Connector>;
+  busy: string | null;
+  onToggle: (s: McpServer) => void;
+  onViewAll: (slug: string) => void;
+}) {
+  const PREVIEW = 8;
+  // Bucket by feature slug; everything without a feature lands in "other".
+  const buckets: Record<string, McpServer[]> = {};
+  for (const s of servers) {
+    const k = s.feature || "other";
+    (buckets[k] ||= []).push(s);
+  }
+  const orderedSections = [
+    ...features
+      .map((f) => ({ slug: f.slug, label: f.label, emoji: f.emoji, items: buckets[f.slug] || [] }))
+      .filter((sec) => sec.items.length > 0),
+    ...(buckets["other"]?.length
+      ? [{ slug: "other", label: "Other", emoji: "•", items: buckets["other"] }]
+      : []),
+  ];
+  return (
+    <div className="mcps-sections">
+      {orderedSections.map((sec) => (
+        <section key={sec.slug} className="mcps-section">
+          <header className="mcps-section-head">
+            <span className="mcps-section-icon" aria-hidden="true">
+              {featureIcon(sec.slug, sec.emoji)}
+            </span>
+            <h2 className="mcps-section-title">{sec.label}</h2>
+            <span className="mcps-section-count">{sec.items.length}</span>
+            {sec.items.length > PREVIEW && sec.slug !== "other" && (
+              <button
+                type="button"
+                className="mcps-section-viewall"
+                onClick={() => onViewAll(sec.slug)}
+              >
+                View all →
+              </button>
+            )}
+          </header>
+          <div className="mcps-grid">
+            {sec.items.slice(0, PREVIEW).map((s) => (
+              <ConnectorCard
+                key={s.id}
+                server={s}
+                isMine={!!mine[s.id]}
+                isBusy={busy === s.id}
+                onToggle={onToggle}
+              />
+            ))}
+          </div>
+        </section>
+      ))}
     </div>
   );
 }

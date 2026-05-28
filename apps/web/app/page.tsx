@@ -121,9 +121,7 @@ function DashboardInner() {
           <h1 className="greet">
             {I.star}
             <span className="brand-greet">
-              <span className="b1">Bab</span>
-              <span className="b2">bage</span>
-              <em className="b3"> AI</em>
+              <span className="b1">Babbage</span>
             </span>
           </h1>
         )}
@@ -385,9 +383,18 @@ function Composer({
 
   function brandMark(brand: string): React.ReactNode {
     switch (brand) {
-      case "anthropic": return I.anthropicMark;
-      case "google":    return I.geminiMark;
-      default:          return <span className="brand-fallback" />;
+      case "anthropic":  return I.anthropicMark;
+      case "google":     return I.geminiMark;
+      case "openai":     return I.openaiMark;
+      case "xai":        return I.xaiMark;
+      case "deepseek":   return I.deepseekMark;
+      case "alibaba":    return I.alibabaMark;
+      case "moonshot":   return I.moonshotMark;
+      case "zhipu":      return I.zhipuMark;
+      case "kling":      return I.klingMark;
+      case "bytedance":  return I.bytedanceMark;
+      case "happyhorse": return I.happyhorseMark;
+      default:           return <span className="brand-fallback" />;
     }
   }
 

@@ -1,0 +1,63 @@
+cloud: gke
+
+image:
+  registry: us-central1-docker.pkg.dev/starlit-braid-497012-q5/babbage
+  pullPolicy: IfNotPresent
+  tag: v14
+
+frontend:
+  enabled: true
+  replicas: 1
+  resources:
+    requests: { cpu: 100m, memory: 256Mi }
+    limits:   { cpu: 1000m, memory: 768Mi }
+
+backend:
+  enabled: true
+  replicas: 1
+  resources:
+    requests: { cpu: 200m, memory: 256Mi }
+    limits:   { cpu: 1500m, memory: 1Gi }
+
+postgres:
+  internal: true
+  storage:
+    size: 10Gi
+    storageClass: standard-rwo
+  resources:
+    requests: { cpu: 200m, memory: 384Mi }
+    limits:   { cpu: 1000m, memory: 1Gi }
+
+mcps:
+  preset: custom
+  enabled:
+    - pubmed
+    - icd10
+    - who
+    - cdc
+    - nci
+    - npi
+    - cms
+    - clinicaltrials
+    - medlineplus
+    - medrxiv
+
+ingress:
+  enabled: true
+  className: "gce"
+  host: ""
+  tls:
+    enabled: false
+
+secrets:
+  anthropicApiKey: ""
+  googleApiKey: ""
+  openaiApiKey: ""
+  postgresPassword: "babbage-gke-test-only"
+  postgresUser: babagemed
+  postgresDb: babagemed
+  bootstrapAdminEmail: "ceo@babagemed.com"
+
+serviceAccount:
+  create: true
+  name: ""

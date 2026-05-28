@@ -6,7 +6,7 @@ export type FeatureMeta = {
   emoji: string;
   // Swatch colour used in the sidebar dot + feature-page hero. Added two
   // values (teal, amber) with the move to 10 features.
-  color: "cyan" | "purple" | "yellow" | "green" | "pink" | "orange" | "blue" | "red" | "teal" | "amber";
+  color: "cyan" | "purple" | "yellow" | "green" | "pink" | "orange" | "blue" | "red" | "teal" | "amber" | "indigo" | "rose" | "fuchsia";
   // text → composer shows the chat LLMs (Opus / GPT / Gemini / GLM / …).
   // visual → composer shows the image + video model groups instead.
   modality: "text" | "visual";
@@ -43,6 +43,32 @@ export type LocaleStrings = {
   featureChatEmpty: string;
   imageGroup: string;
   videoGroup: string;
+  // ── Common actions / dialogs (used by recent UI additions) ───────────────
+  cancel: string;
+  save: string;
+  saving: string;
+  rename: string;
+  renameChat: string;
+  delete: string;
+  edit: string;
+  more: string;
+  chatOptions: string;
+  chatTitle: string;
+  untitledChat: string;
+  addSkill: string;
+  skillExample: string;
+  saveInstructions: string;
+  remove: string;
+  resizeSidebar: string;
+  resizeSubSidebar: string;
+  resizeRail: string;
+  collapseSidebar: string;
+  expandSidebar: string;
+  collapseRail: string;
+  expandRail: string;
+  voiceComingSoon: string;
+  toggleNavigation: string;
+  featureSettings: string;
 };
 
 // The 10 sidebar feature categories — single source of truth. Slug is
@@ -57,7 +83,7 @@ export type LocaleStrings = {
 // the right model list.
 const FEATURES_EN: ReadonlyArray<FeatureMeta> = [
   { slug: "healthcare",     label: "Healthcare & Life sciences",          emoji: "🩺", color: "cyan",   modality: "text"   },
-  { slug: "education",      label: "Education & Academic & Research",     emoji: "🎓", color: "red",    modality: "text"   },
+  { slug: "education",      label: "Education & Academic & Research",     emoji: "🎓", color: "indigo", modality: "text"   },
   { slug: "writing",        label: "Writing & Content creation",          emoji: "✍️", color: "purple", modality: "text"   },
   { slug: "translation",    label: "Translation & Languages",             emoji: "🌐", color: "blue",   modality: "text"   },
   { slug: "data-analysis",  label: "Data Analysis",                       emoji: "📊", color: "teal",   modality: "text"   },
@@ -65,12 +91,12 @@ const FEATURES_EN: ReadonlyArray<FeatureMeta> = [
   { slug: "financial",      label: "Financial Services",                  emoji: "💹", color: "green",  modality: "text"   },
   { slug: "consulting",     label: "Consulting & Professional Services",  emoji: "🤝", color: "orange", modality: "text"   },
   { slug: "image-video",    label: "Image & Video",                       emoji: "🎬", color: "pink",   modality: "visual" },
-  { slug: "advertisements", label: "Advertisements",                      emoji: "📣", color: "amber",  modality: "visual" },
+  { slug: "advertisements", label: "Advertisements",                      emoji: "📣", color: "fuchsia",modality: "visual" },
 ];
 
 const FEATURES_AR: ReadonlyArray<FeatureMeta> = [
   { slug: "healthcare",     label: "الصحة وعلوم الحياة",                   emoji: "🩺", color: "cyan",   modality: "text"   },
-  { slug: "education",      label: "التعليم والبحث الأكاديمي",              emoji: "🎓", color: "red",    modality: "text"   },
+  { slug: "education",      label: "التعليم والبحث الأكاديمي",              emoji: "🎓", color: "indigo", modality: "text"   },
   { slug: "writing",        label: "الكتابة وإنتاج المحتوى",               emoji: "✍️", color: "purple", modality: "text"   },
   { slug: "translation",    label: "الترجمة واللغات",                      emoji: "🌐", color: "blue",   modality: "text"   },
   { slug: "data-analysis",  label: "تحليل البيانات",                       emoji: "📊", color: "teal",   modality: "text"   },
@@ -78,7 +104,7 @@ const FEATURES_AR: ReadonlyArray<FeatureMeta> = [
   { slug: "financial",      label: "الخدمات المالية",                      emoji: "💹", color: "green",  modality: "text"   },
   { slug: "consulting",     label: "الاستشارات والخدمات المهنية",          emoji: "🤝", color: "orange", modality: "text"   },
   { slug: "image-video",    label: "الصور والفيديو",                       emoji: "🎬", color: "pink",   modality: "visual" },
-  { slug: "advertisements", label: "الإعلانات",                            emoji: "📣", color: "amber",  modality: "visual" },
+  { slug: "advertisements", label: "الإعلانات",                            emoji: "📣", color: "fuchsia",modality: "visual" },
 ];
 
 export const STR: Record<Locale, LocaleStrings> = {
@@ -145,6 +171,31 @@ export const STR: Record<Locale, LocaleStrings> = {
     featureChatEmpty: "Start a new chat in this feature. Its instructions, files, skills and connectors are applied automatically.",
     imageGroup: "Image",
     videoGroup: "Video",
+    cancel: "Cancel",
+    save: "Save",
+    saving: "Saving…",
+    rename: "Rename",
+    renameChat: "Rename chat",
+    delete: "Delete",
+    edit: "Edit",
+    more: "More",
+    chatOptions: "Chat options",
+    chatTitle: "Chat title",
+    untitledChat: "Untitled chat",
+    addSkill: "Add skill",
+    skillExample: "e.g. cite sources, use bullets, reply in Arabic",
+    saveInstructions: "Save instructions",
+    remove: "Remove",
+    resizeSidebar: "Resize sidebar",
+    resizeSubSidebar: "Resize sub-sidebar",
+    resizeRail: "Resize rail",
+    collapseSidebar: "Collapse sidebar",
+    expandSidebar: "Expand sidebar",
+    collapseRail: "Collapse rail",
+    expandRail: "Expand rail",
+    voiceComingSoon: "Voice (coming soon)",
+    toggleNavigation: "Toggle navigation",
+    featureSettings: "Feature settings",
   },
   ar: {
     dir: "rtl",
@@ -209,6 +260,31 @@ export const STR: Record<Locale, LocaleStrings> = {
     featureChatEmpty: "ابدأ محادثة جديدة فى هذه الميزة. التعليمات والملفات والمهارات والموصّلات الخاصة بها ستُستخدم تلقائيًا.",
     imageGroup: "صور",
     videoGroup: "فيديو",
+    cancel: "إلغاء",
+    save: "حفظ",
+    saving: "جارٍ الحفظ…",
+    rename: "إعادة تسمية",
+    renameChat: "إعادة تسمية المحادثة",
+    delete: "حذف",
+    edit: "تعديل",
+    more: "المزيد",
+    chatOptions: "خيارات المحادثة",
+    chatTitle: "عنوان المحادثة",
+    untitledChat: "محادثة بلا عنوان",
+    addSkill: "إضافة مهارة",
+    skillExample: "مثال: استشهد بالمصادر، استخدم نقاطًا، اردد بالعربية",
+    saveInstructions: "حفظ التعليمات",
+    remove: "إزالة",
+    resizeSidebar: "تغيير حجم الشريط الجانبى",
+    resizeSubSidebar: "تغيير حجم الشريط الفرعى",
+    resizeRail: "تغيير حجم الشريط",
+    collapseSidebar: "طى الشريط الجانبى",
+    expandSidebar: "توسعة الشريط الجانبى",
+    collapseRail: "طى الشريط",
+    expandRail: "توسعة الشريط",
+    voiceComingSoon: "الصوت (قريبًا)",
+    toggleNavigation: "تبديل الملاحة",
+    featureSettings: "خصائص الميزة",
   },
 };
 

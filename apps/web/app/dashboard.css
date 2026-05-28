@@ -22,7 +22,7 @@ button { font: inherit; cursor: pointer; }
 a { color: inherit; text-decoration: none; }
 ::selection { background: var(--cyan-soft); color: var(--ink); }
 
-.shell { display: grid; grid-template-columns: 280px 1fr; height: 100vh; overflow: hidden; transition: grid-template-columns .22s ease; }
+.shell { display: grid; grid-template-columns: var(--sidebar-w, 280px) 1fr; height: 100vh; overflow: hidden; transition: grid-template-columns .22s ease; position: relative; }
 .shell[data-collapsed="true"] { grid-template-columns: 68px 1fr; }
 /* Persistent main column: per-page shells (.spaces-shell, .mcps-shell, etc.)
  * render inside this column, so we need a vertical scroll here — the outer
@@ -41,8 +41,6 @@ a { color: inherit; text-decoration: none; }
 .sb-brand .wm { display: inline-flex; align-items: baseline; font-weight: 800; font-size: 18px; white-space: nowrap; line-height: 1; }
 [dir="rtl"] .sb-brand .wm { direction: ltr; }
 .sb-brand .b1 { color: var(--ink); }
-.sb-brand .b2 { color: var(--cyan); }
-.sb-brand .b3 { color: var(--yellow); margin-inline-start: 0.32em; font-style: italic; font-family: var(--serif); }
 .sb-collapse { background: transparent; border: 1px solid transparent; color: var(--muted); width: 32px; height: 32px; border-radius: 8px; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; transition: color .15s, background .15s, border-color .15s; }
 .sb-collapse:hover { color: var(--ink); background: var(--panel); border-color: var(--border); }
 .sb-body { flex: 1; display: flex; flex-direction: column; gap: 6px; padding: 6px 12px 12px; overflow-y: auto; min-height: 0; }
@@ -108,8 +106,13 @@ a { color: inherit; text-decoration: none; }
   align-items: center;
   justify-content: center;
   font-size: 14px;
+  color: var(--muted);
   flex-shrink: 0;
+  transition: color .12s;
 }
+.sb-feature-emoji svg { width: 18px; height: 18px; }
+.sb-feature-item:hover .sb-feature-emoji { color: var(--ink); }
+.sb-feature-item[data-active="true"] .sb-feature-emoji { color: inherit; }
 .sb-feature-label {
   flex: 1;
   min-width: 0;
@@ -126,6 +129,10 @@ a { color: inherit; text-decoration: none; }
 .sb-feature-item[data-color="pink"][data-active="true"]    { background: rgba(244,114,182,.10); border-color: rgba(244,114,182,.30); color: rgb(244,114,182); }
 .sb-feature-item[data-color="orange"][data-active="true"]  { background: rgba(251,146,60,.10); border-color: rgba(251,146,60,.30); color: rgb(251,146,60); }
 .sb-feature-item[data-color="red"][data-active="true"]     { background: rgba(248,113,113,.10); border-color: rgba(248,113,113,.30); color: rgb(248,113,113); }
+.sb-feature-item[data-color="teal"][data-active="true"]    { background: rgba(45,212,191,.10);  border-color: rgba(45,212,191,.30);  color: rgb(45,212,191); }
+.sb-feature-item[data-color="amber"][data-active="true"]   { background: rgba(251,191,36,.10);  border-color: rgba(251,191,36,.30);  color: rgb(251,191,36); }
+.sb-feature-item[data-color="indigo"][data-active="true"]  { background: rgba(129,140,248,.10); border-color: rgba(129,140,248,.32); color: rgb(129,140,248); }
+.sb-feature-item[data-color="rose"][data-active="true"]    { background: rgba(244,63,94,.10);   border-color: rgba(244,63,94,.32);   color: rgb(244,63,94); }
 
 .sb-history { display: flex; flex-direction: column; gap: 2px; min-height: 0; margin-top: 6px; }
 .sb-section-label {
@@ -276,8 +283,6 @@ a { color: inherit; text-decoration: none; }
  * Mirrors the existing [dir=rtl] .sb-brand .wm rule on the sidebar logo. */
 .brand-greet { display: inline-flex; align-items: baseline; direction: ltr; unicode-bidi: isolate; }
 .brand-greet .b1 { color: var(--ink); font-family: var(--sans); font-weight: 700; font-size: 44px; }
-.brand-greet .b2 { color: var(--cyan); font-family: var(--sans); font-weight: 700; font-size: 44px; }
-.brand-greet .b3 { color: var(--yellow); font-family: var(--serif); font-style: italic; font-size: 50px; margin-inline-start: .15em; }
 
 /* COMPOSER */
 /* width + max-width here so the composer fills its column instead of
@@ -719,3 +724,235 @@ button.msg-citation[data-open="true"] {
   image-rendering: -webkit-optimize-contrast;
   background: color-mix(in srgb, var(--ink) 6%, transparent);
 }
+
+/* ── Modal primitive ──────────────────────────────────────────────────── */
+.modal-backdrop {
+  position: fixed; inset: 0; z-index: 1000;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(4px);
+  animation: modal-fade-in .15s ease-out;
+}
+.modal-card {
+  background: var(--panel-solid);
+  color: var(--ink);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.45);
+  display: flex; flex-direction: column;
+  max-height: calc(100vh - 80px);
+  margin: 24px;
+  animation: modal-pop-in .18s ease-out;
+}
+.modal-header {
+  display: flex; align-items: center; gap: 12px;
+  padding: 16px 18px 12px;
+  border-bottom: 1px solid var(--border);
+}
+.modal-title { font-size: 16px; font-weight: 600; color: var(--ink); flex: 1; }
+.modal-close {
+  background: transparent; border: 0;
+  color: var(--muted); font-size: 22px; line-height: 1;
+  width: 28px; height: 28px;
+  display: inline-flex; align-items: center; justify-content: center;
+  border-radius: 6px; cursor: pointer;
+  transition: background .12s, color .12s;
+}
+.modal-close:hover { background: var(--panel); color: var(--ink); }
+.modal-body { padding: 16px 18px 18px; overflow-y: auto; }
+
+@keyframes modal-fade-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes modal-pop-in { from { opacity: 0; transform: scale(0.97); } to { opacity: 1; transform: scale(1); } }
+
+/* ── Sidebar resize handle ────────────────────────────────────────────── */
+.sidebar { position: relative; }
+.sidebar-resize {
+  position: absolute;
+  top: 0; bottom: 0;
+  inset-inline-end: -3px;
+  width: 6px;
+  cursor: col-resize;
+  z-index: 5;
+  background: transparent;
+  transition: background .15s;
+}
+.sidebar-resize:hover,
+.sidebar-resize:active {
+  background: color-mix(in srgb, var(--cyan) 35%, transparent);
+}
+.shell[data-collapsed="true"] .sidebar-resize { display: none; }
+
+/* ── Fuchsia hue + Advertisements active row swatch ──────────────────── */
+.sb-feature-item[data-color="fuchsia"][data-active="true"] {
+  background: rgba(217,70,239,.10);
+  border-color: rgba(217,70,239,.32);
+  color: rgb(217,70,239);
+}
+
+/* ── Mobile-only hamburger + drawer behaviour ─────────────────────────── */
+.mobile-nav-btn {
+  display: none;
+  position: fixed;
+  top: 14px;
+  inset-inline-start: 14px;
+  z-index: 60;
+  width: 40px; height: 40px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--panel-solid);
+  color: var(--ink);
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: var(--shadow);
+}
+.mobile-nav-backdrop {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  background: rgba(0,0,0,.45);
+  backdrop-filter: blur(2px);
+}
+
+@media (max-width: 880px) {
+  /* Sidebar becomes an off-canvas drawer. The grid collapses to a single
+   * column and the sidebar pins itself to the inline-start edge with a
+   * transform that slides it in when data-mobile-open is true. */
+  .shell { grid-template-columns: 1fr; }
+  .shell[data-collapsed="true"] { grid-template-columns: 1fr; }
+  .sidebar {
+    position: fixed;
+    top: 0; bottom: 0;
+    inset-inline-start: 0;
+    width: min(280px, 84vw);
+    border-inline-end: 1px solid var(--border);
+    background: var(--panel-solid);
+    transform: translateX(-100%);
+    transition: transform .22s ease;
+    z-index: 55;
+    box-shadow: 8px 0 24px rgba(0,0,0,.30);
+  }
+  [dir="rtl"] .sidebar {
+    inset-inline-start: auto;
+    inset-inline-end: 0;
+    transform: translateX(100%);
+    box-shadow: -8px 0 24px rgba(0,0,0,.30);
+  }
+  .shell[data-mobile-open="true"] .sidebar { transform: translateX(0); }
+  .shell[data-mobile-open="true"] .mobile-nav-backdrop { display: block; }
+  .mobile-nav-btn { display: inline-flex; }
+  .sidebar-resize { display: none; }
+  /* Push the desktop collapse button to the right inside the drawer so the
+   * close-by-tapping-the-grid-pattern is still discoverable. */
+  .sb-collapse { display: none; }
+  /* Push main content over to make room for the hamburger button. */
+  .main { padding-top: 56px; }
+}
+
+/* Modal full-screen on mobile (more touchable than centered 540px). */
+@media (max-width: 560px) {
+  .modal-card {
+    width: 100% !important;
+    max-width: 100%;
+    height: 100%;
+    max-height: 100%;
+    border-radius: 0;
+    margin: 0;
+  }
+  .modal-backdrop { padding: 0; }
+}
+
+/* ── Connectors grid: tighter density on smaller viewports ──────────── */
+@media (max-width: 880px) {
+  .mcps-grid { grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); }
+}
+@media (max-width: 560px) {
+  .mcps-grid { grid-template-columns: 1fr; }
+  .mcps-shell { padding: 24px 14px 64px; }
+  .mcps-shell h1 { font-size: 32px; }
+  .mcps-toolbar { gap: 8px; }
+  .mcps-toolbar input[type="search"] { min-width: 0; }
+  .mcps-fdrop-trigger { min-width: 0; }
+  .mcps-fdrop-label { display: none; }
+}
+
+/* ── Composer: stack the toolbar buttons on very narrow viewports ───── */
+@media (max-width: 560px) {
+  .composer { padding: 10px 10px 8px; max-width: 100%; }
+  .composer-bar { flex-wrap: wrap; gap: 6px; }
+  .composer-bar .model-pill { max-width: 100%; }
+  .greet { font-size: 38px; }
+  .brand-greet .b1 { font-size: 32px !important; }
+}
+
+/* ── Main sidebar history rows: chat icon prefix + overflow menu ────── */
+.sb-history-li { position: relative; display: flex; align-items: center; gap: 4px; }
+.sb-history-li .sb-history-item { flex: 1; min-width: 0; }
+.sb-history-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px; height: 18px;
+  color: var(--muted);
+  flex-shrink: 0;
+}
+.sb-history-icon svg { width: 16px; height: 16px; }
+.sb-history-item[data-active="true"] .sb-history-icon { color: inherit; }
+
+.sb-history-menu-btn {
+  width: 24px; height: 24px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--muted-2);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  opacity: 0;
+  flex-shrink: 0;
+  transition: opacity .12s, background .12s, color .12s;
+}
+.sb-history-li:hover .sb-history-menu-btn,
+.sb-history-li:focus-within .sb-history-menu-btn { opacity: 1; }
+.sb-history-menu-btn:hover { background: var(--panel); color: var(--ink); }
+
+.sb-history-row-menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  inset-inline-end: 0;
+  z-index: 40;
+  min-width: 160px;
+  padding: 4px;
+  background: var(--panel-solid);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: var(--shadow);
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.sb-history-row-menu-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  background: transparent;
+  border: 0;
+  padding: 8px 10px;
+  border-radius: 6px;
+  color: var(--ink);
+  font: inherit;
+  font-size: 13px;
+  text-align: start;
+  cursor: pointer;
+  transition: background .1s, color .1s;
+}
+.sb-history-row-menu-item:hover { background: var(--panel); }
+.sb-history-row-menu-item.is-danger:hover { background: rgba(248,113,113,.10); color: rgb(248,113,113); }
+.sb-history-row-menu-item svg { width: 14px; height: 14px; flex-shrink: 0; }
+
+/* Collapsed main sidebar: hide chat row icon + menu (only feature icons
+ * stay visible per the existing collapsed treatment). */
+.shell[data-collapsed="true"] .sb-history-li { display: none; }

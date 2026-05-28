@@ -18,6 +18,7 @@ __pycache__/
 .cache/
 .idea/
 .vscode/
+.claude/
 *.tsbuildinfo
 # Transient artefacts from the AKS test deploy session
 .acr-build*.json

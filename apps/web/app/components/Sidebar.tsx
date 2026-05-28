@@ -4,11 +4,12 @@ import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
 import React, { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { I } from "../icons";
+import { I, featureIcon } from "../icons";
 import { useAuth } from "../lib/auth-context";
 import { useUI } from "../lib/ui-context";
 import { chats as chatsApi, type Chat } from "../lib/api";
 import type { FeatureMeta } from "../i18n";
+import { Modal } from "./Modal";
 
 // Pull the feature slug out of the current pathname so the matching sidebar
 // row gets the active treatment. Returns "" outside the /features/* routes.
@@ -25,11 +26,47 @@ function featureSlugFromPath(p: string | null): string {
 // Bottom: a single account chip. Clicking it opens a Claude-style popover
 // floating above with Appearance / Language / Settings / Plans / Logout
 // rows. Two nested sub-popovers (Appearance, Language) flyout to the side.
-export function Sidebar() {
+export function Sidebar({
+  onResize,
+  onMobileClose,
+}: {
+  onResize?: (px: number) => void;
+  onMobileClose?: () => void;
+} = {}) {
   const router = useRouter();
   const pathname = usePathname();
   const { user, signOut } = useAuth();
   const { locale, setLocale, theme, setTheme, effectiveTheme, toggleCollapsed, s } = useUI();
+  // Drag-to-resize: while a pointerdown is active on the handle we listen
+  // for window-level move/up events. Width is updated through the parent's
+  // onResize so it persists via the prefs store.
+  const draggingRef = useRef(false);
+  useEffect(() => {
+    if (!onResize) return;
+    // Pin the prop to a local so the inner closure stays narrowed even
+    // after a re-render (TS won't infer this from the optional prop).
+    const resize = onResize;
+    function onMove(e: MouseEvent) {
+      if (!draggingRef.current) return;
+      // RTL mode flips the handle to the left edge — invert delta so the
+      // drag direction still reads "outward = wider".
+      const ltr = document.documentElement.getAttribute("dir") !== "rtl";
+      const x = ltr ? e.clientX : (window.innerWidth - e.clientX);
+      resize(x);
+    }
+    function onUp() {
+      if (!draggingRef.current) return;
+      draggingRef.current = false;
+      document.body.style.cursor = "";
+      document.body.style.userSelect = "";
+    }
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mouseup", onUp);
+    return () => {
+      window.removeEventListener("mousemove", onMove);
+      window.removeEventListener("mouseup", onUp);
+    };
+  }, [onResize]);
 
   const displayName = user?.displayName || user?.email?.split("@")[0] || s.user;
   const initials = (user?.displayName || user?.email || "AR")
@@ -50,18 +87,32 @@ export function Sidebar() {
   return (
     <aside className="sidebar" aria-label="Sidebar">
       <div className="sb-head">
-        <Link className="sb-brand" href="/">
+        <Link className="sb-brand" href="/" onClick={() => onMobileClose?.()}>
           {I.discLogo}
           <span className="wm">
-            <span className="b1">Bab</span>
-            <span className="b2">bage</span>
-            <span className="b3">AI</span>
+            <span className="b1">Babbage</span>
           </span>
         </Link>
-        <button className="sb-collapse" onClick={toggleCollapsed} aria-label="Collapse sidebar">
+        <button className="sb-collapse" onClick={toggleCollapsed} aria-label={s.collapseSidebar}>
           {I.sidebar}
         </button>
       </div>
+      {/* Drag-to-resize handle pinned to the inline-end edge of the
+          sidebar. Becomes invisible at mobile breakpoints (CSS hides it). */}
+      {onResize && (
+        <div
+          className="sidebar-resize"
+          role="separator"
+          aria-orientation="vertical"
+          aria-label={s.resizeSidebar}
+          onMouseDown={(e) => {
+            e.preventDefault();
+            draggingRef.current = true;
+            document.body.style.cursor = "col-resize";
+            document.body.style.userSelect = "none";
+          }}
+        />
+      )}
 
       <div className="sb-body">
         <button className="sb-new" type="button" title={s.new} onClick={startNewChat}>
@@ -168,7 +219,7 @@ function FeaturesSection({
               // hidden via display:none in that mode.
               aria-label={f.label}
             >
-              <span className="sb-feature-emoji" aria-hidden="true">{f.emoji}</span>
+              <span className="sb-feature-emoji" aria-hidden="true">{featureIcon(f.slug, f.emoji)}</span>
               <span className="sb-feature-label">{f.label}</span>
             </Link>
           </li>
@@ -179,19 +230,20 @@ function FeaturesSection({
 }
 
 // ─── History section (inline, Claude-style) ───────────────────────────────
-// Previously this was a sidebar row that opened a portalled flyout to the
-// right — visually busy and out of step with how Claude/Gemini present
-// recent chats. Now it renders inline beneath the primary nav rows as a
-// scrollable list of the user's most-recent chats. Click → /?c=<id> loads
-// that transcript. The list refetches whenever the URL changes (a new
-// chat send pushes ?c=<NEW_ID> which triggers the refetch), and the
-// currently-loaded chat is highlighted via data-active.
+// Inline beneath the primary nav rows; each row prefixed with a chat icon
+// and a 3-dot overflow menu (Rename / Delete) so the affordances match the
+// feature-page sub-sidebar (see FeatureSubSidebar.tsx).
 function HistorySection({ label, feature }: { label: string; feature?: string }) {
   const router = useRouter();
   const pathname = usePathname();
   const { user } = useAuth();
+  const { s } = useUI();
   const [items, setItems] = useState<Chat[]>([]);
   const [loading, setLoading] = useState(false);
+  const [menuOpenId, setMenuOpenId] = useState<string>("");
+  const [renaming, setRenaming] = useState<Chat | null>(null);
+  const [renameDraft, setRenameDraft] = useState("");
+  const [savingRename, setSavingRename] = useState(false);
 
   // Read the current chat id from the URL search part. usePathname() doesn't
   // include the query string, but it does fire on full URL changes so we
@@ -217,13 +269,26 @@ function HistorySection({ label, feature }: { label: string; feature?: string })
     return () => { cancelled = true; };
   }, [user, pathname, feature]);
 
-  async function removeChat(id: string, e: React.MouseEvent) {
-    e.stopPropagation();
-    e.preventDefault();
-    // Snapshot the row so we can put it back if the DELETE fails — the
-    // previous "next navigation will resync" comment was wrong because
-    // pathname doesn't change for in-place deletes, leaving the user
-    // believing a chat was deleted when it wasn't.
+  // Close the overflow menu on outside click / Escape.
+  useEffect(() => {
+    if (!menuOpenId) return;
+    function onDoc(e: MouseEvent) {
+      const t = e.target as HTMLElement;
+      if (!t.closest?.(".sb-history-row-menu") && !t.closest?.(".sb-history-menu-btn")) {
+        setMenuOpenId("");
+      }
+    }
+    function onKey(e: KeyboardEvent) { if (e.key === "Escape") setMenuOpenId(""); }
+    document.addEventListener("mousedown", onDoc);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onDoc);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [menuOpenId]);
+
+  async function removeChat(id: string) {
+    setMenuOpenId("");
     let removed: Chat | undefined;
     setItems((cur) => {
       removed = cur.find((c) => c.id === id);
@@ -231,15 +296,34 @@ function HistorySection({ label, feature }: { label: string; feature?: string })
     });
     try {
       await chatsApi.remove(id);
-      // If the active chat was just removed, drop the URL pointer so the
-      // dashboard resets to the greeting instead of trying to load a 404.
       if (id === activeChatId) router.push("/");
     } catch {
-      // Rollback — re-insert at its original position (top-of-list).
       if (removed) {
         const r = removed;
         setItems((cur) => (cur.some((c) => c.id === r.id) ? cur : [r, ...cur]));
       }
+    }
+  }
+
+  function openRename(c: Chat) {
+    setMenuOpenId("");
+    setRenaming(c);
+    setRenameDraft(c.title || "");
+  }
+  async function submitRename() {
+    if (!renaming) return;
+    const title = renameDraft.trim();
+    if (!title || title === renaming.title) { setRenaming(null); return; }
+    setSavingRename(true);
+    const id = renaming.id;
+    try {
+      const updated = await chatsApi.rename(id, title);
+      setItems((cur) => cur.map((c) => (c.id === id ? { ...c, title: updated.title } : c)));
+      setRenaming(null);
+    } catch {
+      // Leave the modal open so the user can retry.
+    } finally {
+      setSavingRename(false);
     }
   }
 
@@ -256,43 +340,94 @@ function HistorySection({ label, feature }: { label: string; feature?: string })
     <div className="sb-history">
       <div className="sb-section-label">{label}</div>
       {loading && items.length === 0 ? (
-        <div className="sb-history-empty">Loading…</div>
+        <div className="sb-history-empty">{s.loadingChats}</div>
       ) : items.length === 0 ? (
-        <div className="sb-history-empty">No chats yet</div>
+        <div className="sb-history-empty">{s.noChatsYet}</div>
       ) : (
         <ul className="sb-history-list">
           {items.slice(0, 40).map((c) => (
-            <li key={c.id}>
+            <li key={c.id} className="sb-history-li">
               <button
                 type="button"
                 className="sb-history-item"
                 data-active={c.id === activeChatId}
                 onClick={() => router.push(`/?c=${encodeURIComponent(c.id)}`)}
-                title={c.title || "Untitled chat"}
+                title={c.title || s.untitledChat}
               >
-                <span className="sb-history-title">{c.title || "Untitled chat"}</span>
-                <span
-                  className="sb-history-del"
-                  role="button"
-                  tabIndex={0}
-                  aria-label="Delete chat"
-                  onClick={(e) => removeChat(c.id, e)}
-                  onKeyDown={(e) => {
-                    // Enter / Space activates the delete affordance so
-                    // keyboard-only users have parity with mouse-hover.
-                    if (e.key === "Enter" || e.key === " ") {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      removeChat(c.id, e as unknown as React.MouseEvent);
-                    }
-                  }}
-                  title="Delete chat"
-                >×</span>
+                <span className="sb-history-icon" aria-hidden="true">{I.chatBubble}</span>
+                <span className="sb-history-title">{c.title || s.untitledChat}</span>
               </button>
+              <button
+                type="button"
+                className="sb-history-menu-btn"
+                aria-label={s.chatOptions}
+                title={s.more}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setMenuOpenId((cur) => (cur === c.id ? "" : c.id));
+                }}
+              >
+                {I.dotsV}
+              </button>
+              {menuOpenId === c.id && (
+                <div
+                  className="sb-history-row-menu"
+                  role="menu"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <button
+                    type="button"
+                    className="sb-history-row-menu-item"
+                    onClick={() => openRename(c)}
+                  >
+                    {I.edit}
+                    <span>{s.rename}</span>
+                  </button>
+                  <button
+                    type="button"
+                    className="sb-history-row-menu-item is-danger"
+                    onClick={() => removeChat(c.id)}
+                  >
+                    {I.trash}
+                    <span>{s.delete}</span>
+                  </button>
+                </div>
+              )}
             </li>
           ))}
         </ul>
       )}
+
+      <Modal
+        open={renaming !== null}
+        onClose={() => setRenaming(null)}
+        title={s.renameChat}
+        width={420}
+      >
+        <input
+          type="text"
+          className="feat-modal-input"
+          placeholder={s.chatTitle}
+          value={renameDraft}
+          onChange={(e) => setRenameDraft(e.target.value)}
+          onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); submitRename(); } }}
+          autoFocus
+        />
+        <div className="feat-modal-foot">
+          <button
+            type="button"
+            className="feat-btn-secondary"
+            onClick={() => setRenaming(null)}
+            disabled={savingRename}
+          >{s.cancel}</button>
+          <button
+            type="button"
+            className="feat-btn-primary"
+            onClick={submitRename}
+            disabled={savingRename || !renameDraft.trim()}
+          >{savingRename ? s.saving : s.save}</button>
+        </div>
+      </Modal>
     </div>
   );
 }

@@ -1,11 +1,11 @@
 FROM node:20-bookworm-slim AS deps
 WORKDIR /app
 COPY package.json package-lock.json* ./
-# `npm ci` not `npm install`: ci installs exactly the lockfile and fails
-# on drift, so the production image and the lockfile checked into git
-# can never diverge silently. `--ignore-scripts` blocks postinstall
-# hooks from third-party packages, the standard supply-chain mitigation.
-RUN npm ci --no-audit --no-fund --ignore-scripts
+# Workspace monorepo: only the repo-root lockfile exists, so this image
+# falls back to `npm install` when no per-app lockfile is present. For a
+# reproducible build, commit apps/web/package-lock.json or build from the
+# repo root with the root lockfile in scope.
+RUN if [ -f package-lock.json ]; then npm ci --no-audit --no-fund --ignore-scripts; else npm install --no-audit --no-fund --ignore-scripts; fi
 
 FROM node:20-bookworm-slim AS build
 WORKDIR /app
