@@ -73,7 +73,6 @@ RUN cd /build/packages/mcp-base && npm install --no-audit --no-fund && npx tsc -
 WORKDIR /build/mcps/${id}
 COPY mcps/${id}/package.json mcps/${id}/tsconfig.json ./
 COPY mcps/${id}/src ./src
-COPY mcps/_shared /build/mcps/_shared
 RUN npm install --no-audit --no-fund && npx tsc -p tsconfig.json
 
 FROM node:20-bookworm-slim

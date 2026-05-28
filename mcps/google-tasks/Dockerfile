@@ -13,8 +13,7 @@ RUN \
 WORKDIR /build/mcps/google-tasks
 COPY mcps/google-tasks/package.json mcps/google-tasks/tsconfig.json ./
 COPY mcps/google-tasks/src ./src
-# Shared helpers (e.g. Google OAuth) — pulled in by gmail/gcal/gdrive
-COPY mcps/_shared /build/mcps/_shared
+# Google OAuth helper now lives in @babagemed/mcp-base — copied above.
 RUN \
     npm install --no-audit --no-fund --ignore-scripts && npx tsc -p tsconfig.json
 

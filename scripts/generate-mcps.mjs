@@ -111,8 +111,7 @@ RUN \\
 WORKDIR /build/mcps/${s.id}
 COPY mcps/${s.id}/package.json mcps/${s.id}/tsconfig.json ./
 COPY mcps/${s.id}/src ./src
-# Shared helpers (e.g. Google OAuth) — pulled in by gmail/gcal/gdrive
-COPY mcps/_shared /build/mcps/_shared
+# Google OAuth helper now lives in @babagemed/mcp-base — copied above.
 RUN \\
     npm install --no-audit --no-fund && npx tsc -p tsconfig.json
 `;
@@ -308,10 +307,8 @@ export function registerTools(server: McpServer) {
 `;
 }
 
-// Ensure shared dir exists (used by gmail/gcal/gdrive)
-mkdirSync(join(ROOT, "mcps", "_shared", "src"), { recursive: true });
-const sharedKeep = join(ROOT, "mcps", "_shared", ".keep");
-if (!existsSync(sharedKeep)) w(sharedKeep, "");
+// Shared helpers (Google OAuth, etc.) now live in @babagemed/mcp-base
+// — see packages/mcp-base/src/google.ts. Nothing to scaffold here.
 
 let written = 0;
 for (const s of MANIFEST.servers) {

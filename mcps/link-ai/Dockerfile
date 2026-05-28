@@ -13,8 +13,7 @@ RUN \
 WORKDIR /build/mcps/link-ai
 COPY mcps/link-ai/package.json mcps/link-ai/tsconfig.json ./
 COPY mcps/link-ai/src ./src
-# Shared helpers (e.g. Google OAuth) — pulled in by gmail/gcal/gdrive
-COPY mcps/_shared /build/mcps/_shared
+# Google OAuth helper now lives in @babagemed/mcp-base — copied above.
 RUN \
     npm install --no-audit --no-fund --ignore-scripts && npx tsc -p tsconfig.json
 

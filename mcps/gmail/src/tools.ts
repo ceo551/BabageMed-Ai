@@ -1,6 +1,5 @@
 // @hand-edited — do not regenerate via write-real-tools.mjs
-import { z, McpServer, ApiClient } from "@babagemed/mcp-base";
-import { googleAccessToken } from "./google.js";
+import { z, McpServer, ApiClient, googleAccessToken } from "@babagemed/mcp-base";
 // Lazy, persistent client so the response cache + rate-limit slot
 // survive across tool invocations. The per-call `new ApiClient(...)`
 // pattern reset nextSlot to 0 on every call, completely bypassing the

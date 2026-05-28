@@ -13,8 +13,7 @@ RUN \
 WORKDIR /build/mcps/microsoft-365-planner
 COPY mcps/microsoft-365-planner/package.json mcps/microsoft-365-planner/tsconfig.json ./
 COPY mcps/microsoft-365-planner/src ./src
-# Shared helpers (e.g. Google OAuth) — pulled in by gmail/gcal/gdrive
-COPY mcps/_shared /build/mcps/_shared
+# Google OAuth helper now lives in @babagemed/mcp-base — copied above.
 RUN \
     npm install --no-audit --no-fund --ignore-scripts && npx tsc -p tsconfig.json
 

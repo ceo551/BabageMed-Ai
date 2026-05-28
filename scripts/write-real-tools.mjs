@@ -753,51 +753,13 @@ export function registerTools(server: McpServer) {
 }
 `);
 
-// ─── Google APIs share an OAuth refresh-token helper (copied per-package to respect rootDir) ──
-// Shared Google OAuth helper — invalidates cache on failure + clamps
-// expires_in so a malformed 0 doesn't expire tokens immediately.
-const googleHelper = `let cachedToken: { value: string; exp: number } | null = null;
+// ─── Google APIs share an OAuth refresh-token helper ──────────────────
+// The helper used to be copied per-MCP under mcps/<id>/src/google.ts
+// (and a fourth copy in mcps/_shared/). It now lives in
+// @babagemed/mcp-base — see packages/mcp-base/src/google.ts — so
+// every Google MCP imports it from a single source of truth.
 
-export async function googleAccessToken(): Promise<string> {
-  const cid = process.env.GOOGLE_CLIENT_ID;
-  const cs = process.env.GOOGLE_CLIENT_SECRET;
-  const rt = process.env.GOOGLE_REFRESH_TOKEN;
-  if (!cid || !cs || !rt) throw new Error("GOOGLE_CLIENT_ID/SECRET/REFRESH_TOKEN required");
-  if (cachedToken && cachedToken.exp > Date.now()) return cachedToken.value;
-  const body = new URLSearchParams({ client_id: cid, client_secret: cs, refresh_token: rt, grant_type: "refresh_token" });
-  const res = await fetch("https://oauth2.googleapis.com/token", {
-    method: "POST",
-    headers: { "content-type": "application/x-www-form-urlencoded" },
-    body,
-  });
-  if (!res.ok) {
-    cachedToken = null;
-    throw new Error(\`google token refresh \${res.status}\`);
-  }
-  const r = (await res.json()) as { access_token?: string; expires_in?: number; error?: string };
-  if (!r.access_token) {
-    cachedToken = null;
-    throw new Error(\`google token: \${r.error || "no access_token"}\`);
-  }
-  const ttl = Math.min(3600, Math.max(120, r.expires_in ?? 3600));
-  cachedToken = { value: r.access_token, exp: Date.now() + (ttl - 60) * 1000 };
-  return cachedToken.value;
-}
-
-export function invalidateGoogleAccessToken() {
-  cachedToken = null;
-}
-`;
-import { mkdirSync as mk2 } from "node:fs";
-mk2(join(ROOT, "mcps", "_shared", "src"), { recursive: true });
-writeFileSync(join(ROOT, "mcps", "_shared", "src", "google.ts"), googleHelper);
-for (const g of ["gmail", "gcalendar", "gdrive"]) {
-  mk2(join(ROOT, "mcps", g, "src"), { recursive: true });
-  writeFileSync(join(ROOT, "mcps", g, "src", "google.ts"), googleHelper);
-}
-
-w("gmail", `import { z, McpServer, ApiClient } from "@babagemed/mcp-base";
-import { googleAccessToken } from "./google.js";
+w("gmail", `import { z, McpServer, ApiClient, googleAccessToken } from "@babagemed/mcp-base";
 async function client() { const t = await googleAccessToken(); return new ApiClient({ base: "https://gmail.googleapis.com/gmail/v1", rps: 3, defaultHeaders: { Authorization: \`Bearer \${t}\` } }); }
 export function registerTools(server: McpServer) {
   server.tool({ name: "list", description: "List Gmail messages.", input: z.object({ q: z.string().optional(), maxResults: z.number().int().min(1).max(500).optional() }), handler: async ({ q, maxResults = 20 }) => (await client()).get<any>("users/me/messages", { q, maxResults }) });
@@ -811,8 +773,7 @@ export function registerTools(server: McpServer) {
 }
 `);
 
-w("gcalendar", `import { z, McpServer, ApiClient } from "@babagemed/mcp-base";
-import { googleAccessToken } from "./google.js";
+w("gcalendar", `import { z, McpServer, ApiClient, googleAccessToken } from "@babagemed/mcp-base";
 async function client() { const t = await googleAccessToken(); return new ApiClient({ base: "https://www.googleapis.com/calendar/v3", rps: 3, defaultHeaders: { Authorization: \`Bearer \${t}\` } }); }
 export function registerTools(server: McpServer) {
   server.tool({ name: "list", description: "List upcoming events.", input: z.object({ calendarId: z.string().optional(), maxResults: z.number().int().min(1).max(2500).optional(), timeMin: z.string().optional() }), handler: async ({ calendarId = "primary", maxResults = 20, timeMin }) => (await client()).get<any>(\`calendars/\${calendarId}/events\`, { maxResults, timeMin: timeMin || new Date().toISOString(), singleEvents: true, orderBy: "startTime" }) });
@@ -822,8 +783,7 @@ export function registerTools(server: McpServer) {
 }
 `);
 
-w("gdrive", `import { z, McpServer, ApiClient } from "@babagemed/mcp-base";
-import { googleAccessToken } from "./google.js";
+w("gdrive", `import { z, McpServer, ApiClient, googleAccessToken } from "@babagemed/mcp-base";
 async function client() { const t = await googleAccessToken(); return new ApiClient({ base: "https://www.googleapis.com/drive/v3", rps: 3, defaultHeaders: { Authorization: \`Bearer \${t}\` } }); }
 export function registerTools(server: McpServer) {
   server.tool({ name: "list", description: "List files.", input: z.object({ q: z.string().optional(), pageSize: z.number().int().min(1).max(1000).optional() }), handler: async ({ q, pageSize = 20 }) => (await client()).get<any>("files", { q, pageSize, fields: "files(id,name,mimeType,modifiedTime,size,webViewLink)" }) });

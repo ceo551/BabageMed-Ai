@@ -1,3 +1,17 @@
+// Google OAuth — shared by every MCP that hits a Google API
+// (gmail, gcalendar, gdrive today; more later).
+//
+// Previously each MCP shipped its own byte-for-byte copy under
+// mcps/<name>/src/google.ts AND there was a fourth copy in
+// mcps/_shared/. Four files drift; this consolidates them into the
+// one place where shared MCP runtime helpers already live
+// (@babagemed/mcp-base), so a refresh-token fix lands in one commit.
+//
+// Reads GOOGLE_CLIENT_ID / SECRET / REFRESH_TOKEN from env and
+// trades them at the token endpoint. Caches the resulting access
+// token for (expires_in - 60s) so high-frequency callers don't
+// thrash the refresh endpoint.
+
 let cachedToken: { value: string; exp: number } | null = null;
 
 export async function googleAccessToken(): Promise<string> {

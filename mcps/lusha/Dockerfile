@@ -13,8 +13,7 @@ RUN \
 WORKDIR /build/mcps/lusha
 COPY mcps/lusha/package.json mcps/lusha/tsconfig.json ./
 COPY mcps/lusha/src ./src
-# Shared helpers (e.g. Google OAuth) — pulled in by gmail/gcal/gdrive
-COPY mcps/_shared /build/mcps/_shared
+# Google OAuth helper now lives in @babagemed/mcp-base — copied above.
 RUN \
     npm install --no-audit --no-fund --ignore-scripts && npx tsc -p tsconfig.json
 
