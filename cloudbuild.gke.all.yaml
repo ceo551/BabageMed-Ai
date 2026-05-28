@@ -1,12 +1,14 @@
 timeout: 7200s
 options:
-  # E2_HIGHCPU_32 (32 vCPU / 32 GB). The 264 image builds below are
-  # split into 6 parallel lanes via waitFor chaining (each step waits for
-  # the one 6 positions earlier), so at most 6 docker builds run at once.
-  # The previous E2_HIGHCPU_8 with every step waitFor:["-"] tried to start
-  # all 264 builds simultaneously and OOM-killed the daemon on 8 GB.
-  machineType: E2_HIGHCPU_32
-  diskSizeGb: 300
+  # The 264 image builds below are split into 6 parallel lanes via waitFor
+  # chaining (each step waits for the one 6 positions earlier), so at most
+  # 6 docker builds run at once. The previous config had every step
+  # waitFor:["-"], which made Cloud Build start all 264 builds at once and
+  # OOM-kill the daemon. 6 concurrent node/Go builds fit comfortably in the
+  # 8 GB E2_HIGHCPU_8 builder; we keep that machine type because larger
+  # ones (E2_HIGHCPU_32) are quota-denied on fresh projects.
+  machineType: E2_HIGHCPU_8
+  diskSizeGb: 200
   logging: CLOUD_LOGGING_ONLY
 
 substitutions:

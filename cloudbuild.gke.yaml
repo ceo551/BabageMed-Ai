@@ -7,7 +7,7 @@ options:
 substitutions:
   _REGION: us-central1
   _REPO: babbage
-  _TAG: v15
+  _TAG: v18
 
 images:
   - "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/backend:${_TAG}"
@@ -17,8 +17,6 @@ images:
   - "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-who:${_TAG}"
   - "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-cdc:${_TAG}"
   - "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-nci:${_TAG}"
-  - "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-npi:${_TAG}"
-  - "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-cms:${_TAG}"
   - "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-clinicaltrials:${_TAG}"
   - "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-medlineplus:${_TAG}"
   - "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-medrxiv:${_TAG}"
@@ -71,16 +69,6 @@ steps:
     name: gcr.io/cloud-builders/docker
     waitFor: ["-"]
     args: [build, -f, mcps/nci/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-nci:${_TAG}", .]
-
-  - id: mcp-npi
-    name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
-    args: [build, -f, mcps/npi/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-npi:${_TAG}", .]
-
-  - id: mcp-cms
-    name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
-    args: [build, -f, mcps/cms/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-cms:${_TAG}", .]
 
   - id: mcp-clinicaltrials
     name: gcr.io/cloud-builders/docker
