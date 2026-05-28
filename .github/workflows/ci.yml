@@ -129,6 +129,9 @@ jobs:
           # so `NR % 8 + 1` was being read as `NR % (8 + 1)` (mod 9 buckets across
           # 8 shards). Parenthesize the modulus so the round-robin actually spans
           # exactly 8 shards.
+          # `_shared/` was removed in round 8 (helper folded into
+          # @babagemed/mcp-base); the grep -v is kept as a no-op safety
+          # net so a future re-introduction doesn't break the sharder.
           ids=$(ls -d mcps/*/ | xargs -n1 basename | grep -v '^_shared$' | awk -v s="${{ matrix.shard }}" '((NR - 1) % 8) + 1 == s')
           echo "shard ${{ matrix.shard }} → $(echo "$ids" | wc -w) packages"
           fail=0

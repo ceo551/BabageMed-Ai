@@ -1,0 +1,91 @@
+# Top-level local-dev compose: postgres + redis + backend + frontend.
+# Pair with `docker-compose.mcps.yml` (auto-generated) for the 262-MCP
+# fleet: `npm run compose:up` uses both files; running this one alone
+# is enough to bring up auth, persistence, and the chat UI without the
+# MCPs (the backend's /api/chat just gathers from zero connectors).
+#
+# All services share the `babagemed` network. We declare it as
+# external so the MCP file owns its lifecycle — `docker compose down`
+# on this file alone won't tear out from under the running MCPs.
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-babagemed}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-babagemed}
+      POSTGRES_DB: ${POSTGRES_DB:-babagemed}
+    volumes:
+      - babagemed-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "${POSTGRES_USER:-babagemed}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks: [babagemed]
+
+  redis:
+    image: redis:7-alpine
+    # No password in compose-only dev; the helm chart auto-generates
+    # one for k8s prod. Override REDIS_URL in .env to set credentials.
+    command: ["redis-server", "--save", "60", "1", "--loglevel", "warning"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    restart: unless-stopped
+    networks: [babagemed]
+
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    image: babagemed/backend:latest
+    env_file: .env
+    environment:
+      DATABASE_URL: ${DATABASE_URL:-postgres://babagemed:babagemed@postgres:5432/babagemed?sslmode=disable}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
+      PORT: "8080"
+      PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:-http://localhost:3000}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:3000}
+      # MCP_HOST_OVERRIDE empty → backend uses mcp-<id> DNS names,
+      # which the docker-compose.mcps.yml file provides on the same
+      # network.
+      MCP_HOST_OVERRIDE: ""
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    ports:
+      - "8080:8080"
+    restart: unless-stopped
+    networks: [babagemed]
+
+  frontend:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+    image: babagemed/frontend:latest
+    environment:
+      BACKEND_URL: http://backend:8080
+      NODE_ENV: production
+    depends_on:
+      - backend
+    ports:
+      - "3000:3000"
+    restart: unless-stopped
+    networks: [babagemed]
+
+volumes:
+  babagemed-pgdata:
+
+networks:
+  babagemed:
+    name: babagemed
+    # external: true would require the MCP compose file to be up
+    # first; instead we let the first `docker compose up` create the
+    # network and the MCP file's `name: babagemed` reuses it.
+    driver: bridge
