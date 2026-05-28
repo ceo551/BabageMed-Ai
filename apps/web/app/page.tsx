@@ -667,7 +667,7 @@ function Composer({
           type="button"
           data-open={addOpen}
           onClick={() => { setAddOpen((v) => !v); setModelOpen(false); }}
-          aria-label="Add"
+          aria-label={s.addLabel}
         >
           {I.plus}
         </button>
@@ -760,7 +760,7 @@ function Composer({
             </div>
           )}
         </div>
-        <button className="cmpr-icon" type="button" data-on={voiceOn} onClick={() => setVoiceOn((v) => !v)} aria-label="Mic">{I.mic}</button>
+        <button className="cmpr-icon" type="button" data-on={voiceOn} onClick={() => setVoiceOn((v) => !v)} aria-label={s.micLabel}>{I.mic}</button>
         <button
           className="cmpr-icon"
           type="button"

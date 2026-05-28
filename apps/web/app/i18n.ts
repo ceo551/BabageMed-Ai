@@ -98,6 +98,10 @@ export type LocaleStrings = {
   allFeaturesFilter: string;
   disconnect: string;
   generating: string;
+  sidebarLabel: string;
+  settingsNavLabel: string;
+  addLabel: string;
+  micLabel: string;
 };
 
 // The 10 sidebar feature categories — single source of truth. Slug is
@@ -252,6 +256,10 @@ export const STR: Record<Locale, LocaleStrings> = {
     allFeaturesFilter: "All features",
     disconnect: "Disconnect",
     generating: "Generating",
+    sidebarLabel: "Sidebar",
+    settingsNavLabel: "Settings navigation",
+    addLabel: "Add",
+    micLabel: "Mic",
   },
   ar: {
     dir: "rtl",
@@ -368,6 +376,10 @@ export const STR: Record<Locale, LocaleStrings> = {
     allFeaturesFilter: "كل الميزات",
     disconnect: "قطع الاتصال",
     generating: "جارٍ التوليد",
+    sidebarLabel: "الشريط الجانبي",
+    settingsNavLabel: "تنقل الإعدادات",
+    addLabel: "إضافة",
+    micLabel: "ميكروفون",
   },
 };
 

@@ -10,6 +10,7 @@ import { useSearchParams, useRouter } from "next/navigation";
 import { Suspense, useEffect, useMemo, useState } from "react";
 import { auth as authApi, type ProfilePatch, type UsageReport, type User } from "../lib/api";
 import { useAuth } from "../lib/auth-context";
+import { useUI } from "../lib/ui-context";
 import { usePrefs } from "../lib/store";
 import { findModelById } from "../lib/models";
 import "./settings.css";
@@ -26,6 +27,7 @@ export default function SettingsPage() {
 
 function SettingsInner() {
   const { user, loading, refresh } = useAuth();
+  const { s } = useUI();
   const params = useSearchParams();
   const router = useRouter();
   const tab = (params?.get("t") || "general") as Tab;
@@ -54,7 +56,7 @@ function SettingsInner() {
     <div className="settings-shell">
       <h1>Settings</h1>
       <div className="settings-grid">
-        <nav className="settings-nav" aria-label="Settings navigation">
+        <nav className="settings-nav" aria-label={s.settingsNavLabel}>
           <button data-active={tab === "general"} onClick={() => setTab("general")} type="button">General</button>
           <button data-active={tab === "security"} onClick={() => setTab("security")} type="button">Security</button>
           <button data-active={tab === "usage"} onClick={() => setTab("usage")} type="button">Usage</button>
