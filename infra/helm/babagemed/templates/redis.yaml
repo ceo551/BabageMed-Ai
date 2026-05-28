@@ -46,6 +46,7 @@ spec:
         runAsNonRoot: true
         runAsUser: 999
         fsGroup: 999
+        seccompProfile: { type: RuntimeDefault }
       containers:
         - name: redis
           image: redis:7-alpine
@@ -56,6 +57,7 @@ spec:
             runAsUser: 999
             capabilities:
               drop: ["ALL"]
+            seccompProfile: { type: RuntimeDefault }
           args:
             - "--maxmemory"
             - "{{ .Values.redis.maxmemory | default "128mb" }}"

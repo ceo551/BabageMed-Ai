@@ -324,11 +324,25 @@ tolerations: []
 affinity: {}
 
 # ─── Misc ─────────────────────────────────────────────────────────────────
+# Pod-level security: fsGroup matches the runAsUser below so any
+# emptyDir / PVC the container writes to is owned by uid 65532.
+# seccompProfile RuntimeDefault is the baseline GKE Autopilot + the
+# Pod-Security-Standard "restricted" admission level both require —
+# without it the namespace mutates everything to "baseline" silently
+# and we lose the restricted protections. The kubelet's
+# RuntimeDefault profile (containerd/cri-o ship it) blocks ~50
+# rarely-used syscalls so 0-day kernel escalations have a smaller
+# attack surface.
 podSecurityContext:
   fsGroup: 65532
+  runAsNonRoot: true
+  seccompProfile:
+    type: RuntimeDefault
 securityContext:
   runAsNonRoot: true
   runAsUser: 65532
   readOnlyRootFilesystem: false   # Playwright needs to write to /tmp
   allowPrivilegeEscalation: false
   capabilities: { drop: ["ALL"] }
+  seccompProfile:
+    type: RuntimeDefault

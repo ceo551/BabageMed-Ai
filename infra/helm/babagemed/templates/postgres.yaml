@@ -37,9 +37,26 @@ spec:
         app.kubernetes.io/name: babagemed
         app.kubernetes.io/component: postgres
     spec:
+      # Pod-level securityContext. The upstream postgres image runs as
+      # uid 999 (the "postgres" user); fsGroup matches so the PVC
+      # mount at /var/lib/postgresql/data is writable. Without this,
+      # PSP/PSA "restricted" admission rejects the StatefulSet on any
+      # hardened cluster (GKE Autopilot, AKS Pod-Security restricted).
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 999
+        runAsGroup: 999
+        fsGroup: 999
+        seccompProfile: { type: RuntimeDefault }
       containers:
         - name: postgres
           image: {{ .Values.postgres.image }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities: { drop: [ALL] }
+            # readOnlyRootFilesystem can't be true for postgres — the
+            # entrypoint writes /var/run/postgresql + /tmp at startup.
+            # Use an emptyDir below if you need to tighten further.
           env:
             - name: POSTGRES_USER
               valueFrom: { secretKeyRef: { name: {{ .Values.mcps.envFromSecret }}, key: POSTGRES_USER } }
