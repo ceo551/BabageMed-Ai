@@ -18,12 +18,18 @@ helm.sh/chart: {{ printf "%s-%s" .Chart.Name .Chart.Version }}
 {{- end -}}
 {{- end -}}
 
-{{/* Database URL: external if set, else compose internal from postgres values. */}}
+{{/* Database URL: external if set, else compose internal from postgres values.
+     sslmode comes from postgres.internalSslMode — defaults to disable for the
+     bundled StatefulSet (which doesn't ship a server cert). Operators running
+     in clusters WITHOUT NetworkPolicy enforcement should override to require
+     so SQL traffic isn't cleartext across nodes. With templates/networkpolicy
+     .yaml enabled the backend↔postgres path is already pod-isolated and
+     disable is acceptable. */}}
 {{- define "babagemed.databaseUrl" -}}
 {{- if and (not .Values.postgres.internal) .Values.postgres.externalUrl -}}
 {{ .Values.postgres.externalUrl }}
 {{- else -}}
-postgres://{{ .Values.secrets.postgresUser }}:{{ .Values.secrets.postgresPassword }}@{{ .Release.Name }}-postgres:5432/{{ .Values.secrets.postgresDb }}?sslmode=disable
+postgres://{{ .Values.secrets.postgresUser }}:{{ .Values.secrets.postgresPassword }}@{{ .Release.Name }}-postgres:5432/{{ .Values.secrets.postgresDb }}?sslmode={{ .Values.postgres.internalSslMode | default "disable" }}
 {{- end -}}
 {{- end -}}
 
@@ -88,6 +94,21 @@ nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
 # /tools listing burst); a script doing 1k r/s hits 429 here.
 nginx.ingress.kubernetes.io/limit-rpm: "600"
 nginx.ingress.kubernetes.io/limit-connections: "30"
+# Security headers for static assets (the backend handler adds these
+# per-response for API traffic via main.go's CORP layer, but
+# ingress-served Next.js bundles + public/ assets need them at the
+# edge). HSTS gets the 6-month max-age + preload list eligibility;
+# X-Frame-Options blocks clickjacking; X-Content-Type-Options stops
+# IE/Edge from sniffing MIME types; Referrer-Policy strips cross-
+# origin referrers so /reset-password?token=… can't leak via
+# Referer; Permissions-Policy locks down sensors/payment APIs we
+# don't use.
+nginx.ingress.kubernetes.io/configuration-snippet: |
+  more_set_headers "Strict-Transport-Security: max-age=15552000; includeSubDomains; preload";
+  more_set_headers "X-Frame-Options: DENY";
+  more_set_headers "X-Content-Type-Options: nosniff";
+  more_set_headers "Referrer-Policy: strict-origin-when-cross-origin";
+  more_set_headers "Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=(self)";
 {{- end -}}
 {{- end -}}
 

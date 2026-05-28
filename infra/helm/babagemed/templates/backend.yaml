@@ -48,6 +48,20 @@ spec:
       # 30s grace period sometimes raced the load-balancer deregister
       # and forwarded a request to a pod mid-shutdown.
       terminationGracePeriodSeconds: 35
+      # Spread replicas across failure domains so the PDB
+      # (templates/pdb.yaml) actually buys availability — without
+      # topology spread, two replicas can both schedule on the same
+      # node and a single node failure takes down 100% of backends
+      # despite the maxUnavailable: 50% PDB. We prefer (not require)
+      # spreading so single-node dev clusters still install cleanly.
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              app.kubernetes.io/name: babagemed
+              app.kubernetes.io/component: backend
       securityContext: {{- toYaml .Values.podSecurityContext | nindent 8 }}
       {{- with .Values.image.pullSecrets }}
       imagePullSecrets: {{- toYaml . | nindent 8 }}

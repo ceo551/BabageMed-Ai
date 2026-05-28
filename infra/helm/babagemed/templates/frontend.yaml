@@ -36,6 +36,16 @@ spec:
         app.kubernetes.io/component: frontend
     spec:
       serviceAccountName: {{ include "babagemed.serviceAccountName" . }}
+      # Spread replicas across nodes so the PDB actually buys
+      # availability (see backend.yaml for the rationale).
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              app.kubernetes.io/name: babagemed
+              app.kubernetes.io/component: frontend
       securityContext: {{- toYaml .Values.podSecurityContext | nindent 8 }}
       {{- with .Values.image.pullSecrets }}
       imagePullSecrets: {{- toYaml . | nindent 8 }}

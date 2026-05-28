@@ -61,6 +61,11 @@ spec:
         babagemed/mcp-kind: {{ $kind }}
     spec:
       serviceAccountName: {{ include "babagemed.serviceAccountName" $ }}
+      # MCPs don't call the k8s API — mounting the default SA token
+      # into 262 pods just expands the blast radius (a compromised
+      # MCP container could enumerate the namespace + read the SA's
+      # tokens with no benefit). Disable the auto-mount.
+      automountServiceAccountToken: false
       securityContext: {{- toYaml $.Values.podSecurityContext | nindent 8 }}
       {{- with $.Values.image.pullSecrets }}
       imagePullSecrets: {{- toYaml . | nindent 8 }}

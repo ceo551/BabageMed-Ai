@@ -105,6 +105,13 @@ postgres:
     limits:   { cpu: 2000m, memory: 4Gi }
   # When internal=false, set externalUrl to the full DSN.
   externalUrl: ""   # e.g. postgres://user:pass@10.0.0.5:5432/babagemed?sslmode=require
+  # sslmode used when internal=true. Default "disable" because the
+  # bundled StatefulSet doesn't ship a server certificate AND the
+  # NetworkPolicy (templates/networkpolicy.yaml) isolates backend↔
+  # postgres traffic to a single namespace pod-pod path. If you
+  # disable NetworkPolicy on a multi-tenant cluster, override to
+  # "require" and add a postgres-tls init container with cert-manager.
+  internalSslMode: disable
 
 # ─── MCP servers ──────────────────────────────────────────────────────────
 # 262 MCPs would be too heavy for most clusters. Pick what you need.
@@ -346,23 +353,29 @@ tolerations: []
 affinity: {}
 
 # ─── Misc ─────────────────────────────────────────────────────────────────
-# Pod-level security: fsGroup matches the runAsUser below so any
-# emptyDir / PVC the container writes to is owned by uid 65532.
+# Pod-level security: runAsNonRoot is the real security guarantee.
+# We deliberately do NOT pin runAsUser at the chart level any more —
+# the previous global runAsUser: 65532 broke frontend + MCP pods
+# because:
+#   - backend uses distroless/static which ships uid 65532 (nonroot)
+#   - frontend (apps/web/Dockerfile) uses `USER node` = uid 1000
+#   - mcps (mcps/*/Dockerfile) use `USER node` = uid 1000
+#   - Playwright-bound MCPs use `USER pwuser` = uid 1000
+# With runAsUser: 65532 forced globally, the frontend/MCP runtime tried
+# to bind paths chmod'd for uid 1000 and crashed on start. Now we let
+# each image's USER directive win, and runAsNonRoot enforces that none
+# of them are root. fsGroup is similarly omitted — no shared writable
+# volumes need it.
 # seccompProfile RuntimeDefault is the baseline GKE Autopilot + the
 # Pod-Security-Standard "restricted" admission level both require —
 # without it the namespace mutates everything to "baseline" silently
-# and we lose the restricted protections. The kubelet's
-# RuntimeDefault profile (containerd/cri-o ship it) blocks ~50
-# rarely-used syscalls so 0-day kernel escalations have a smaller
-# attack surface.
+# and we lose the restricted protections.
 podSecurityContext:
-  fsGroup: 65532
   runAsNonRoot: true
   seccompProfile:
     type: RuntimeDefault
 securityContext:
   runAsNonRoot: true
-  runAsUser: 65532
   readOnlyRootFilesystem: false   # Playwright needs to write to /tmp
   allowPrivilegeEscalation: false
   capabilities: { drop: ["ALL"] }

@@ -1,4 +1,20 @@
 {{- if .Values.gcp.enabled -}}
+# Fail loudly at template time if a required GCP field is missing —
+# otherwise the generated external-account.json silently embeds an
+# empty audience / service_account_impersonation_url and the backend
+# starts up only to crash on the first Vertex call hours later.
+{{- if not .Values.gcp.projectNumber -}}
+{{- fail "gcp.enabled=true requires gcp.projectNumber (no leading zeros, the bare number from `gcloud projects describe`)" -}}
+{{- end -}}
+{{- if not .Values.gcp.wifPool -}}
+{{- fail "gcp.enabled=true requires gcp.wifPool (the Workload Identity Pool id)" -}}
+{{- end -}}
+{{- if not .Values.gcp.wifProvider -}}
+{{- fail "gcp.enabled=true requires gcp.wifProvider (the OIDC provider id within the pool)" -}}
+{{- end -}}
+{{- if not .Values.gcp.vertexServiceAccount -}}
+{{- fail "gcp.enabled=true requires gcp.vertexServiceAccount (the impersonated GCP SA email, e.g. vertex-sa@project.iam.gserviceaccount.com)" -}}
+{{- end -}}
 # Dedicated ServiceAccount the backend pod runs as. The WIF provider's
 # attribute-condition is locked to (namespace=babagemed, sa=babagemed-backend-sa),
 # so renaming this breaks the trust chain — only do it deliberately and
