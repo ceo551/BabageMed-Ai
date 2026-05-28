@@ -1,4 +1,4 @@
-FROM node:20-bookworm-slim AS deps
+FROM node:26-bookworm-slim AS deps
 WORKDIR /app
 COPY package.json package-lock.json* ./
 # Workspace monorepo: only the repo-root lockfile exists, so this image
@@ -7,14 +7,14 @@ COPY package.json package-lock.json* ./
 # repo root with the root lockfile in scope.
 RUN if [ -f package-lock.json ]; then npm ci --no-audit --no-fund --ignore-scripts; else npm install --no-audit --no-fund --ignore-scripts; fi
 
-FROM node:20-bookworm-slim AS build
+FROM node:26-bookworm-slim AS build
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 ENV NEXT_TELEMETRY_DISABLED=1
 RUN npm run build
 
-FROM node:20-bookworm-slim AS run
+FROM node:26-bookworm-slim AS run
 WORKDIR /app
 # HOSTNAME=0.0.0.0 because Next.js standalone server.js honors the HOSTNAME
 # env var, and Kubernetes sets HOSTNAME to the pod name — which DNS-resolves
