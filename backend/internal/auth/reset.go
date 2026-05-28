@@ -76,6 +76,21 @@ func (s *Service) SendPasswordResetEmail(ctx context.Context, sender email.Sende
 		return err
 	}
 	expires := time.Now().Add(resetTokenTTL)
+	// Pre-purge prior outstanding tokens for this user before issuing
+	// the new one. Without this, an attacker can call /forgot 100×,
+	// stockpile 100 valid bcrypt hashes, then submit any guess —
+	// CompletePasswordReset's loop runs bcrypt.CompareHashAndPassword
+	// against EVERY candidate (constant-time per call, but linear in
+	// candidate count), turning the endpoint into a CPU-amplification
+	// vector (~250 ms per hash × 100 = 25 s per /reset attempt while
+	// still rate-limited at 5/min). Mirror the email-verify path
+	// which already DELETEs prior tokens. The new token is the only
+	// usable one immediately after this INSERT.
+	if _, err := s.db.Pool.Exec(ctx, `
+		DELETE FROM password_reset_tokens WHERE user_id = $1 AND used_at IS NULL
+	`, userID); err != nil {
+		return err
+	}
 	if _, err := s.db.Pool.Exec(ctx, `
 		INSERT INTO password_reset_tokens (user_id, token_hash, expires_at)
 		VALUES ($1, $2, $3)

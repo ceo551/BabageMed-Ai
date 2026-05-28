@@ -256,16 +256,46 @@ func (s *Service) handleDelete(w http.ResponseWriter, r *http.Request) {
 
 // ─── Messages ─────────────────────────────────────────────────────────────
 
+// Hard cap on /messages payload size. Without it, a chat with 50k
+// messages streams every row into RAM and JSON-encodes them — single
+// request can OOM the pod. 500 covers the deepest conversation a real
+// user is likely to scroll; pagination via ?before=<id> is the path
+// for full-history archival pulls.
+const maxMessagesPerList = 500
+
 func (s *Service) handleListMessages(w http.ResponseWriter, r *http.Request) {
 	u := auth.FromContext(r.Context())
-	// Ownership check via JOIN — saves a round-trip.
-	rows, err := s.db.Pool.Query(r.Context(), `
-		SELECT m.id, m.chat_id, m.role, m.content, m.citations, m.meta, m.created_at
-		FROM chat_messages m
-		JOIN chats c ON c.id = m.chat_id
-		WHERE c.id = $1 AND c.user_id = $2
-		ORDER BY m.created_at ASC, m.id ASC
-	`, chi.URLParam(r, "id"), u.ID)
+	// `before` cursor: ?before=<message-uuid> returns the page strictly
+	// older than that message. Returns the most recent maxMessages
+	// rows ordered ASC so the frontend can append on append.
+	beforeID := r.URL.Query().Get("before")
+	chatID := chi.URLParam(r, "id")
+	// Two SQL shapes so the planner uses the right index:
+	//   - no cursor → newest N (DESC LIMIT) then we reverse to ASC
+	//   - with cursor → newest N strictly older than the cursor
+	var rows pgx.Rows
+	var err error
+	if beforeID == "" {
+		rows, err = s.db.Pool.Query(r.Context(), `
+			SELECT m.id, m.chat_id, m.role, m.content, m.citations, m.meta, m.created_at
+			FROM chat_messages m
+			JOIN chats c ON c.id = m.chat_id
+			WHERE c.id = $1 AND c.user_id = $2
+			ORDER BY m.created_at DESC, m.id DESC
+			LIMIT $3
+		`, chatID, u.ID, maxMessagesPerList)
+	} else {
+		rows, err = s.db.Pool.Query(r.Context(), `
+			SELECT m.id, m.chat_id, m.role, m.content, m.citations, m.meta, m.created_at
+			FROM chat_messages m
+			JOIN chats c ON c.id = m.chat_id
+			JOIN chat_messages anchor ON anchor.id = $3 AND anchor.chat_id = c.id
+			WHERE c.id = $1 AND c.user_id = $2
+			  AND (m.created_at, m.id) < (anchor.created_at, anchor.id)
+			ORDER BY m.created_at DESC, m.id DESC
+			LIMIT $4
+		`, chatID, u.ID, beforeID, maxMessagesPerList)
+	}
 	if err != nil {
 		internalServerError(w, err)
 		return
@@ -283,6 +313,11 @@ func (s *Service) handleListMessages(w http.ResponseWriter, r *http.Request) {
 	if err := rows.Err(); err != nil {
 		internalServerError(w, err)
 		return
+	}
+	// Caller expects ASC order for natural append; reverse the DESC
+	// page before sending. In-place reverse is allocation-free.
+	for i, j := 0, len(out)-1; i < j; i, j = i+1, j-1 {
+		out[i], out[j] = out[j], out[i]
 	}
 	writeJSON(w, out)
 }
