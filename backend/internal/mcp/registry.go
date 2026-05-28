@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"regexp"
 	"strings"
 	"sync"
 	"time"
@@ -53,6 +54,13 @@ type Registry struct {
 	healthExpires time.Time
 }
 
+// dnsLabelRE matches the subset of MCP ids we'll accept as DNS labels.
+// The ID is interpolated into Service hostnames (mcp-<id>.<ns>.svc) so
+// a "evil host" or "evil$(cat /etc/passwd)" entry in the manifest used
+// to silently produce a URL http.NewRequest would accept-and-mangle.
+// Locked to a-z, 0-9, and '-' (no leading/trailing dash) per RFC 1123.
+var dnsLabelRE = regexp.MustCompile(`^[a-z0-9]([-a-z0-9]*[a-z0-9])?$`)
+
 func NewRegistry(path string) (*Registry, error) {
 	b, err := os.ReadFile(path)
 	if err != nil {
@@ -61,6 +69,13 @@ func NewRegistry(path string) (*Registry, error) {
 	var m manifest
 	if err := json.Unmarshal(b, &m); err != nil {
 		return nil, err
+	}
+	// Validate MCP ids up-front so a malformed manifest fails at startup
+	// rather than producing surprising request hostnames at runtime.
+	for _, s := range m.Servers {
+		if !dnsLabelRE.MatchString(s.ID) || len(s.ID) > 63 {
+			return nil, fmt.Errorf("manifest: invalid MCP id %q (must be RFC 1123 DNS label, ≤63 chars)", s.ID)
+		}
 	}
 	// Enrich each server with iconUrl + siteUrl up-front so consumers don't
 	// have to recompute on every list call.
@@ -144,11 +159,17 @@ func (r *Registry) ListTools(ctx context.Context, id string) (any, error) {
 	}
 	defer res.Body.Close()
 	if res.StatusCode >= 400 {
-		body, _ := io.ReadAll(res.Body)
-		return nil, fmt.Errorf("tools list failed: %s: %s", res.Status, string(body))
+		// Bound the read so a misbehaving MCP returning a multi-GB
+		// 4xx body can't OOM the backend. 4 KiB is plenty for any
+		// real error envelope.
+		_, _ = io.Copy(io.Discard, io.LimitReader(res.Body, 4<<10))
+		return nil, fmt.Errorf("tools list failed: %s", res.Status)
 	}
+	// Same body cap for the success path — protects against an MCP
+	// returning a 50 GB tools list. maxResponseBytes (4 MiB) matches
+	// the Call() path's existing limit.
 	var out any
-	if err := json.NewDecoder(res.Body).Decode(&out); err != nil {
+	if err := json.NewDecoder(io.LimitReader(res.Body, maxResponseBytes)).Decode(&out); err != nil {
 		return nil, err
 	}
 	return out, nil
@@ -273,9 +294,17 @@ func (r *Registry) Health(ctx context.Context) map[string]string {
 	close(queue)
 	wg.Wait()
 
-	r.healthMu.Lock()
-	r.healthCached = out
-	r.healthExpires = time.Now().Add(5 * time.Second)
-	r.healthMu.Unlock()
+	// Don't cache a result derived from a cancelled context. The worker
+	// loop marks every remaining MCP "down" on ctx cancel; without this
+	// guard a single client disconnect on /health poisons the 5 s
+	// cache so every subsequent dashboard pull serves all-down. When
+	// ctx is cancelled we still return the partial map (caller may
+	// want to render what came through) but skip the cache write.
+	if ctx.Err() == nil {
+		r.healthMu.Lock()
+		r.healthCached = out
+		r.healthExpires = time.Now().Add(5 * time.Second)
+		r.healthMu.Unlock()
+	}
 	return out
 }

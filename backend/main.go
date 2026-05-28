@@ -83,15 +83,26 @@ func main() {
 	var authSvc *auth.Service
 	var payStore *payments.Store
 	if dsn := os.Getenv("DATABASE_URL"); dsn != "" {
-		ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
-		defer cancel()
-		dbConn, err = db.Open(ctx, dsn)
+		// Connect with a 15 s budget — pgx's pool needs a tight ceiling
+		// to surface "DB unreachable" loudly instead of letting the
+		// process appear to be starting indefinitely.
+		connectCtx, connectCancel := context.WithTimeout(context.Background(), 15*time.Second)
+		dbConn, err = db.Open(connectCtx, dsn)
+		connectCancel()
 		if err != nil {
 			log.Fatalf("db open: %v", err)
 		}
-		if err := dbConn.Migrate(ctx); err != nil {
+		// Migrations get their OWN ctx with a much larger budget — a
+		// cold-start running 14 migrations against a freshly created
+		// DB easily exceeds 15 s (the previous shared 15 s ctx
+		// occasionally aborted mid-migration on a slow node, leaving
+		// partial schema).
+		migrateCtx, migrateCancel := context.WithTimeout(context.Background(), 5*time.Minute)
+		if err := dbConn.Migrate(migrateCtx); err != nil {
+			migrateCancel()
 			log.Fatalf("db migrate: %v", err)
 		}
+		migrateCancel()
 		log.Printf("db connected, migrations up")
 		authSvc = auth.New(dbConn)
 		payStore = payments.NewStore(dbConn)
@@ -313,8 +324,17 @@ func main() {
 		// (e.g. mobile networks finishing a multi-MB Space upload) aren't
 		// cut off mid-body. IdleTimeout matches typical reverse-proxy
 		// keep-alive caps so dead connections don't camp on goroutines.
-		ReadTimeout:  10 * time.Minute,
-		WriteTimeout: 10 * time.Minute,
+		ReadTimeout: 10 * time.Minute,
+		// WriteTimeout: 0 because /api/chat/stream legitimately runs
+		// past 10 min in "deep" mode (Opus extended thinking). The
+		// previous 10 m ceiling SIGKILL'd long answers mid-token. The
+		// REAL per-request ceiling is the chi Timeout middleware
+		// (5 min) at the handler level — chat-stream wires its own
+		// longer per-request ctx where needed. Slowloris is bounded
+		// by ReadTimeout + ReadHeaderTimeout above; an attacker can't
+		// pin connections with WriteTimeout: 0 because the response
+		// stream is server-driven (we write or close).
+		WriteTimeout: 0,
 		IdleTimeout:  120 * time.Second,
 	}
 
@@ -336,14 +356,21 @@ func main() {
 	// because a 10s ceiling truncated mid-answer chat streams on
 	// every rollout — users saw the spinner restart instead of the
 	// answer completing.
-	ctx, cancel := context.WithTimeout(context.Background(), 25*time.Second)
-	defer cancel()
-	_ = srv.Shutdown(ctx)
+	// Separate ctx per shutdown stage so a slow srv.Shutdown doesn't
+	// eat the budget for closing the DB pool + flushing tracing
+	// spans. The previous shared 25 s ctx caused tracing.Shutdown to
+	// run on an already-deadlined ctx and drop the final span batch
+	// on every rollout.
+	httpCtx, httpCancel := context.WithTimeout(context.Background(), 25*time.Second)
+	_ = srv.Shutdown(httpCtx)
+	httpCancel()
 	if dbConn != nil {
 		dbConn.Close()
 	}
 	if shutdownTracing != nil {
-		_ = shutdownTracing(ctx)
+		traceCtx, traceCancel := context.WithTimeout(context.Background(), 5*time.Second)
+		_ = shutdownTracing(traceCtx)
+		traceCancel()
 	}
 }
 
