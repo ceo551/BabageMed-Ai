@@ -38,8 +38,17 @@ type Config struct {
 }
 
 type Client struct {
-	cfg  Config
-	http *http.Client
+	cfg Config
+	// Two clients — short-deadline for one-shot completions, no-deadline
+	// for streaming. http.Client.Timeout fires on the WHOLE request
+	// including reading the body, which for SSE/streaming means a
+	// 120 s ceiling on the entire generation; long Opus "deep thinking"
+	// answers (90-120 s+) were getting SIGKILL'd mid-token. The
+	// streaming client relies on per-request ctx (the caller's chat
+	// request ctx, with chi's 5 min middleware ceiling) for the real
+	// upper bound.
+	http       *http.Client
+	httpStream *http.Client
 	// Vertex AI access tokens are valid for ~1h; cache + refresh through the
 	// google.FindDefaultCredentials TokenSource (which itself handles the
 	// federated-token → impersonation dance).
@@ -51,7 +60,11 @@ type Client struct {
 }
 
 func NewClient(cfg Config) *Client {
-	return &Client{cfg: cfg, http: tracing.HTTPClient(&http.Client{Timeout: 120 * time.Second})}
+	return &Client{
+		cfg:        cfg,
+		http:       tracing.HTTPClient(&http.Client{Timeout: 120 * time.Second}),
+		httpStream: tracing.HTTPClient(&http.Client{Timeout: 0}),
+	}
 }
 
 // vertexTokenSource lazily resolves Application Default Credentials and
@@ -453,14 +466,20 @@ func (c *Client) streamAnthropic(ctx context.Context, req CompletionRequest, onD
 	r.Header.Set("x-api-key", c.cfg.AnthropicKey)
 	r.Header.Set("anthropic-version", "2023-06-01")
 	r.Header.Set("content-type", "application/json")
-	res, err := c.http.Do(r)
+	// httpStream has no client-level Timeout so long deep-thinking
+	// streams don't get SIGKILL'd mid-token; the per-request ctx
+	// (chi's 5-min middleware) is the real ceiling.
+	res, err := c.httpStream.Do(r)
 	if err != nil {
 		return nil, err
 	}
 	defer res.Body.Close()
 	if res.StatusCode >= 400 {
-		raw, _ := io.ReadAll(res.Body)
-		return nil, fmt.Errorf("anthropic stream: %s: %s", res.Status, truncBody(raw))
+		// Status-only; the upstream body contains request_id + partial
+		// system prompt and is logged server-side via tracing rather
+		// than echoed back through err.Error() to the client.
+		_, _ = io.Copy(io.Discard, io.LimitReader(res.Body, 4<<10))
+		return nil, fmt.Errorf("anthropic stream: %s", res.Status)
 	}
 
 	var full strings.Builder
@@ -552,7 +571,7 @@ func (c *Client) streamVertexAnthropic(ctx context.Context, req CompletionReques
 	r.Header.Set("Authorization", "Bearer "+tok.AccessToken)
 	r.Header.Set("content-type", "application/json")
 
-	res, err := c.http.Do(r)
+	res, err := c.httpStream.Do(r)
 	if err != nil {
 		return nil, err
 	}
@@ -680,7 +699,7 @@ func (c *Client) streamGoogle(ctx context.Context, req CompletionRequest, onDelt
 	}
 	r.Header.Set("content-type", "application/json")
 
-	res, err := c.http.Do(r)
+	res, err := c.httpStream.Do(r)
 	if err != nil {
 		return nil, err
 	}
@@ -740,7 +759,7 @@ func (c *Client) streamOpenAI(ctx context.Context, req CompletionRequest, onDelt
 	r, _ := http.NewRequestWithContext(ctx, "POST", "https://api.openai.com/v1/chat/completions", bytes.NewReader(body))
 	r.Header.Set("Authorization", "Bearer "+c.cfg.OpenAIKey)
 	r.Header.Set("content-type", "application/json")
-	res, err := c.http.Do(r)
+	res, err := c.httpStream.Do(r)
 	if err != nil {
 		return nil, err
 	}
