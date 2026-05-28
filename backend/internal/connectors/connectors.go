@@ -14,6 +14,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"io"
 	"log"
 	"net/http"
 	"strings"
@@ -190,12 +191,28 @@ func (s *Service) handleList(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, out, err)
 }
 
+// maxConnectorConfigBytes — caps the JSONB config blob a single
+// /connect call can store. A user could otherwise POST a 100 MB
+// "config": {"k": "<huge>"} blob and it would land in the row.
+const maxConnectorConfigBytes = 64 << 10 // 64 KiB
+
 func (s *Service) handleConnect(w http.ResponseWriter, r *http.Request) {
 	u := auth.FromContext(r.Context())
+	// MaxBytesReader caps the *request body* before the decoder sees
+	// it — saves us from a 100 MB single-key trick AND from a 100k
+	// nested-keys parse-bomb attack.
+	r.Body = http.MaxBytesReader(w, r.Body, maxConnectorConfigBytes)
 	var body struct {
 		Config map[string]any `json:"config"`
 	}
-	_ = json.NewDecoder(r.Body).Decode(&body)
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		// io.EOF is "empty body" which Connect handles as nil config —
+		// only surface real parse errors.
+		if !errors.Is(err, io.EOF) {
+			http.Error(w, "invalid json", http.StatusBadRequest)
+			return
+		}
+	}
 	out, err := s.Connect(r.Context(), u.ID, chi.URLParam(r, "mcpID"), body.Config)
 	writeJSON(w, out, err)
 }

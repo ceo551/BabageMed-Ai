@@ -53,6 +53,10 @@ type signupReq struct {
 }
 
 func (h *Handler) signup(w http.ResponseWriter, r *http.Request) {
+	// Cap request body so a 100 MB streaming "password" can't pin a
+	// backend goroutine or overflow the bcrypt 72-byte ceiling check
+	// with a deceptively-large payload.
+	r.Body = http.MaxBytesReader(w, r.Body, 16<<10)
 	var b signupReq
 	if err := json.NewDecoder(r.Body).Decode(&b); err != nil {
 		writeErr(w, 400, "invalid json")
@@ -97,6 +101,7 @@ type MFAGate interface {
 func (h *Handler) SetMFAGate(g MFAGate) { h.mfa = g }
 
 func (h *Handler) login(w http.ResponseWriter, r *http.Request) {
+	r.Body = http.MaxBytesReader(w, r.Body, 16<<10)
 	var b loginReq
 	if err := json.NewDecoder(r.Body).Decode(&b); err != nil {
 		writeErr(w, 400, "invalid json")
@@ -225,6 +230,9 @@ func (h *Handler) updateMe(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
+	// 64 KiB covers a generous instructions field; round 5 also enforces
+	// per-field caps inside UpdateProfile.
+	r.Body = http.MaxBytesReader(w, r.Body, 64<<10)
 	var b ProfilePatch
 	if err := json.NewDecoder(r.Body).Decode(&b); err != nil {
 		writeErr(w, 400, "invalid json")

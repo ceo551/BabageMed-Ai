@@ -160,6 +160,9 @@ type userPatch struct {
 
 func (h *Handler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
+	// 64 KiB is generous for a 3-field patch and stops a 100 MB
+	// streaming body from pinning a backend goroutine.
+	r.Body = http.MaxBytesReader(w, r.Body, 64<<10)
 	var p userPatch
 	if err := json.NewDecoder(r.Body).Decode(&p); err != nil {
 		writeErr(w, 400, "invalid json")
@@ -341,6 +344,7 @@ type paymentPatch struct {
 
 func (h *Handler) UpdatePayment(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
+	r.Body = http.MaxBytesReader(w, r.Body, 64<<10)
 	var p paymentPatch
 	if err := json.NewDecoder(r.Body).Decode(&p); err != nil || p.Status == nil {
 		writeErr(w, 400, "status required")

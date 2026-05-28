@@ -109,6 +109,7 @@ type paymobReq struct {
 }
 
 func (h *Handler) PaymobCheckout(w http.ResponseWriter, r *http.Request) {
+	r.Body = http.MaxBytesReader(w, r.Body, 64<<10)
 	var b paymobReq
 	if err := json.NewDecoder(r.Body).Decode(&b); err != nil {
 		http.Error(w, "invalid json", 400)
@@ -183,6 +184,7 @@ type paypalReq struct {
 }
 
 func (h *Handler) PayPalCheckout(w http.ResponseWriter, r *http.Request) {
+	r.Body = http.MaxBytesReader(w, r.Body, 64<<10)
 	var b paypalReq
 	if err := json.NewDecoder(r.Body).Decode(&b); err != nil {
 		http.Error(w, "invalid json", 400)
@@ -222,6 +224,7 @@ func (h *Handler) PayPalCheckout(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) PayPalCapture(w http.ResponseWriter, r *http.Request) {
+	r.Body = http.MaxBytesReader(w, r.Body, 16<<10)
 	var b struct {
 		OrderID string `json:"order_id"`
 	}

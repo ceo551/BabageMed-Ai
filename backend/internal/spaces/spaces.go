@@ -676,6 +676,21 @@ func chunk(text string) []string {
 		if split < chunkChars/2 {
 			split = chunkChars
 		}
+		// UTF-8 safety: split is a byte index into `window` (a slice of
+		// `text`). For Latin-1 input every byte is a rune so this is
+		// fine, but Arabic / CJK / emoji are 2-4 bytes per rune. A
+		// raw byte-slice at `pos+split` can land mid-rune, producing an
+		// invalid UTF-8 sequence that to_tsvector silently drops AND
+		// that downstream prompt construction (which round-trips through
+		// json.Marshal) would render as the U+FFFD replacement char.
+		// Walk backwards to the nearest rune boundary so each chunk is
+		// always valid UTF-8.
+		for split > 0 && !utf8.RuneStart(text[pos+split]) {
+			split--
+		}
+		if split <= 0 {
+			split = chunkChars
+		}
 		out = append(out, strings.TrimSpace(text[pos:pos+split]))
 		// Guarantee forward progress: if the chosen split equals (or is
 		// less than) chunkOverlap, pos won't advance and the loop spins
@@ -690,6 +705,11 @@ func chunk(text string) []string {
 		pos += step
 		if pos < 0 {
 			pos = 0
+		}
+		// Also align `pos` to a rune boundary for the same reason —
+		// the overlap math might back us up onto a continuation byte.
+		for pos < len(text) && pos > 0 && !utf8.RuneStart(text[pos]) {
+			pos++
 		}
 	}
 	return out
