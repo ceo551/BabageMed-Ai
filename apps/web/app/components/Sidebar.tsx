@@ -37,21 +37,22 @@ export function Sidebar({
   const pathname = usePathname();
   const { user, signOut } = useAuth();
   const { locale, setLocale, theme, setTheme, effectiveTheme, toggleCollapsed, s } = useUI();
-  // Drag-to-resize: while a pointerdown is active on the handle we listen
-  // for window-level move/up events. Width is updated through the parent's
-  // onResize so it persists via the prefs store.
+  // Drag-to-resize: while a pointer is active on the handle we listen
+  // for window-level move/up events. Width is updated through the
+  // parent's onResize so it persists via the prefs store.
+  //
+  // Round 26: Switched from MouseEvent to PointerEvent so pen / touch
+  // / stylus users on tablets can drag too. Also snapshot the document
+  // dir at drag-start instead of reading it on every pointermove —
+  // dir doesn't change mid-drag.
   const draggingRef = useRef(false);
+  const ltrRef = useRef(true);
   useEffect(() => {
     if (!onResize) return;
-    // Pin the prop to a local so the inner closure stays narrowed even
-    // after a re-render (TS won't infer this from the optional prop).
     const resize = onResize;
-    function onMove(e: MouseEvent) {
+    function onMove(e: PointerEvent) {
       if (!draggingRef.current) return;
-      // RTL mode flips the handle to the left edge — invert delta so the
-      // drag direction still reads "outward = wider".
-      const ltr = document.documentElement.getAttribute("dir") !== "rtl";
-      const x = ltr ? e.clientX : (window.innerWidth - e.clientX);
+      const x = ltrRef.current ? e.clientX : (window.innerWidth - e.clientX);
       resize(x);
     }
     function onUp() {
@@ -60,11 +61,13 @@ export function Sidebar({
       document.body.style.cursor = "";
       document.body.style.userSelect = "";
     }
-    window.addEventListener("mousemove", onMove);
-    window.addEventListener("mouseup", onUp);
+    window.addEventListener("pointermove", onMove);
+    window.addEventListener("pointerup", onUp);
+    window.addEventListener("pointercancel", onUp);
     return () => {
-      window.removeEventListener("mousemove", onMove);
-      window.removeEventListener("mouseup", onUp);
+      window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("pointerup", onUp);
+      window.removeEventListener("pointercancel", onUp);
     };
   }, [onResize]);
 
@@ -98,18 +101,43 @@ export function Sidebar({
         </button>
       </div>
       {/* Drag-to-resize handle pinned to the inline-end edge of the
-          sidebar. Becomes invisible at mobile breakpoints (CSS hides it). */}
+          sidebar. Becomes invisible at mobile breakpoints (CSS hides
+          it). tabIndex=0 + arrow-key handler satisfies ARIA APG
+          separator pattern so keyboard users can resize too. */}
       {onResize && (
         <div
           className="sidebar-resize"
           role="separator"
           aria-orientation="vertical"
           aria-label={s.resizeSidebar}
-          onMouseDown={(e) => {
+          tabIndex={0}
+          onPointerDown={(e) => {
             e.preventDefault();
+            // Snapshot dir once per drag (doesn't change mid-drag) so
+            // we don't re-read documentElement.getAttribute on every
+            // 60-120 Hz pointermove.
+            ltrRef.current = document.documentElement.getAttribute("dir") !== "rtl";
             draggingRef.current = true;
             document.body.style.cursor = "col-resize";
             document.body.style.userSelect = "none";
+          }}
+          onKeyDown={(e) => {
+            // Arrow keys nudge the sidebar 8 px per press; Shift+arrow
+            // jumps 32 px for fast adjustment. Matches the resize step
+            // common in DAW-style UIs. Width derives from the current
+            // sidebar offsetWidth so the keyboard interaction is
+            // independent of pointer state.
+            const sb = (e.currentTarget.parentElement as HTMLElement | null);
+            if (!sb) return;
+            const ltr = document.documentElement.getAttribute("dir") !== "rtl";
+            const step = e.shiftKey ? 32 : 8;
+            const sign = (e.key === (ltr ? "ArrowRight" : "ArrowLeft")) ? 1
+              : (e.key === (ltr ? "ArrowLeft" : "ArrowRight")) ? -1
+              : 0;
+            if (sign === 0) return;
+            e.preventDefault();
+            const next = sb.offsetWidth + sign * step;
+            onResize(next);
           }}
         />
       )}

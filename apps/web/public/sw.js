@@ -1,10 +1,18 @@
 // Babbage AI service worker.
 //
-// Strategy: network-first for HTML + API, stale-while-revalidate for
-// static assets, cache-first for icons. We deliberately do NOT cache
-// /api/backend/* responses — they carry per-user auth state.
+// Strategy: stale-while-revalidate for static assets, network-with-
+// offline-fallback for HTML navigations (NOT cached — see below).
+// We deliberately do NOT cache /api/backend/* — those carry per-user
+// auth state.
 
-const VERSION = "v1";
+// VERSION is derived from the `?v=<buildId>` query string the client
+// uses when calling navigator.serviceWorker.register (see
+// apps/web/app/components/ServiceWorker.tsx). Each deploy passes a
+// new buildId, so a fresh worker installs with fresh caches — the
+// previous version stayed "v1" forever and the install handler
+// never re-ran across deploys.
+const swParams = new URLSearchParams(self.location.search);
+const VERSION = swParams.get("v") || "dev";
 const STATIC_CACHE = `babbage-static-${VERSION}`;
 const RUNTIME_CACHE = `babbage-runtime-${VERSION}`;
 const OFFLINE_URL = "/offline.html";
@@ -42,18 +50,23 @@ self.addEventListener("fetch", (event) => {
   // between sessions if we did.
   if (url.pathname.startsWith("/api/")) return;
 
-  // HTML navigations: network-first with offline fallback so the app
-  // still opens to a sensible page on a flight.
+  // HTML navigations: network-only with offline fallback. We do NOT
+  // cache the response body — Next.js injects per-user content into
+  // the SSR HTML (sidebar names, draft state) and stamping that into
+  // the cache would surface it to the next signed-in user on a shared
+  // device. /offline.html is precached at install for the offline path.
   if (req.mode === "navigate") {
     event.respondWith(
       (async () => {
         try {
-          const fresh = await fetch(req);
-          const cache = await caches.open(RUNTIME_CACHE);
-          cache.put(req, fresh.clone());
-          return fresh;
+          return await fetch(req);
         } catch {
-          return (await caches.match(req)) || (await caches.match(OFFLINE_URL));
+          const offline = await caches.match(OFFLINE_URL);
+          // Last-resort: if even /offline.html is missing from cache
+          // (precache failed) return Response.error() so the browser
+          // shows its native "no connection" UI rather than hanging
+          // forever on a never-resolved promise.
+          return offline || Response.error();
         }
       })(),
     );
@@ -74,7 +87,10 @@ self.addEventListener("fetch", (event) => {
             return res;
           })
           .catch(() => cached);
-        return cached || fetched;
+        // If both cached and network fail, return Response.error()
+        // instead of letting the FetchEvent resolve to undefined
+        // (which hangs the request indefinitely in Chrome).
+        return (await (cached || fetched)) || Response.error();
       }),
     );
   }

@@ -14,8 +14,15 @@ export function ServiceWorker() {
     let cancelled = false;
     let cleanup: (() => void) | null = null;
 
+    // Append the build id as a query param so the browser detects a
+    // different sw.js per deploy and re-installs it. Without this,
+    // sw.js bytes never change between deploys (it doesn't import
+    // anything that does) so the install handler doesn't re-run and
+    // the precache stays pinned to the first-ever-deployed VERSION.
+    // NEXT_PUBLIC_BUILD_ID is injected by Next.js at build time.
+    const buildId = process.env.NEXT_PUBLIC_BUILD_ID || "dev";
     navigator.serviceWorker
-      .register("/sw.js", { scope: "/" })
+      .register(`/sw.js?v=${encodeURIComponent(buildId)}`, { scope: "/" })
       .then((reg) => {
         if (cancelled) return;
         // Auto-update on tab focus instead of waiting for the browser's
