@@ -1,0 +1,66 @@
+{{/*
+  PodDisruptionBudgets — guarantee at least one replica of each
+  user-facing workload stays up during voluntary disruptions:
+    - kubectl drain (node maintenance)
+    - cluster autoscaler scale-down
+    - GKE / AKS node-pool upgrades
+
+  Without a PDB, a single `drain` can evict every replica of a
+  Deployment simultaneously, taking the service down for the time it
+  takes the new pods to schedule on a fresh node (often >2 minutes
+  on Autopilot). With `minAvailable: 1` (or 50% for HPA-scaled
+  workloads), K8s evicts only after a replacement is Ready.
+
+  Each PDB is gated behind `.pdb.enabled` so single-replica dev
+  installs don't get a PDB that would block all node drains
+  (minAvailable:1 with only 1 replica means "never evict").
+
+  We deliberately do NOT add a PDB for postgres or mcps:
+    - postgres is a single-replica StatefulSet by design; the
+      operator running `helm upgrade` accepts the downtime.
+    - The MCP fleet is ~262 pods with no HA per MCP — adding 262
+      PDBs would fight the cluster autoscaler hard for marginal
+      availability gain. Add per-MCP PDBs later if a specific MCP
+      becomes critical-path.
+*/}}
+
+{{- if .Values.backend.pdb.enabled }}
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ .Release.Name }}-backend
+  labels:
+    {{- include "babagemed.labels" . | nindent 4 }}
+    app.kubernetes.io/component: backend
+spec:
+  {{- if .Values.backend.pdb.minAvailable }}
+  minAvailable: {{ .Values.backend.pdb.minAvailable }}
+  {{- else }}
+  maxUnavailable: {{ .Values.backend.pdb.maxUnavailable | default "50%" }}
+  {{- end }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: babagemed
+      app.kubernetes.io/component: backend
+{{- end }}
+
+{{- if .Values.frontend.pdb.enabled }}
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ .Release.Name }}-frontend
+  labels:
+    {{- include "babagemed.labels" . | nindent 4 }}
+    app.kubernetes.io/component: frontend
+spec:
+  {{- if .Values.frontend.pdb.minAvailable }}
+  minAvailable: {{ .Values.frontend.pdb.minAvailable }}
+  {{- else }}
+  maxUnavailable: {{ .Values.frontend.pdb.maxUnavailable | default "50%" }}
+  {{- end }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: babagemed
+      app.kubernetes.io/component: frontend
+{{- end }}

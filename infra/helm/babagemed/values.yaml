@@ -36,6 +36,14 @@ frontend:
     minReplicas: 2
     maxReplicas: 10
     targetCPUUtilizationPercentage: 70
+  # PodDisruptionBudget — protects against simultaneous eviction during
+  # node drain / autoscaler scale-down. minAvailable wins over
+  # maxUnavailable when both are set. Disable for single-replica dev
+  # installs (minAvailable:1 with 1 replica blocks all drains).
+  pdb:
+    enabled: true
+    maxUnavailable: "50%"
+    # minAvailable: 1
 
 # ─── Backend ──────────────────────────────────────────────────────────────
 backend:
@@ -62,6 +70,13 @@ backend:
     maxReplicas: 20
     targetCPUUtilizationPercentage: 70
     targetMemoryUtilizationPercentage: 80
+  # PodDisruptionBudget — see frontend.pdb for rationale. Backend is
+  # the critical path (chat-stream SSE), so we want at least one
+  # replica up at all times during a rolling node drain.
+  pdb:
+    enabled: true
+    maxUnavailable: "50%"
+    # minAvailable: 1
 
 # ─── Postgres ─────────────────────────────────────────────────────────────
 # Two modes:

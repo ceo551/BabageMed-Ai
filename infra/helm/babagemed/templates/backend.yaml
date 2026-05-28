@@ -40,6 +40,14 @@ spec:
       # sa=babagemed-backend-sa) and the projected token can be exchanged for
       # an impersonated bearer on the Vertex SA.
       serviceAccountName: {{ if .Values.gcp.enabled }}babagemed-backend-sa{{ else }}{{ include "babagemed.serviceAccountName" . }}{{ end }}
+      # Graceful drain window. main.go's srv.Shutdown gets 25s, so we
+      # give the pod 35s before SIGKILL: 10s slack accommodates the
+      # CNI / service-mesh / kube-proxy time to deregister the pod from
+      # the load-balancer pool, then 25s for in-flight chat-stream SSE
+      # answers to finish their final token. Without this, the default
+      # 30s grace period sometimes raced the load-balancer deregister
+      # and forwarded a request to a pod mid-shutdown.
+      terminationGracePeriodSeconds: 35
       securityContext: {{- toYaml .Values.podSecurityContext | nindent 8 }}
       {{- with .Values.image.pullSecrets }}
       imagePullSecrets: {{- toYaml . | nindent 8 }}

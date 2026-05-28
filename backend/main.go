@@ -328,7 +328,15 @@ func main() {
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, syscall.SIGINT, syscall.SIGTERM)
 	<-stop
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	log.Printf("shutdown signal received, draining…")
+	// Drain budget: 25s leaves ~5s of slack before K8s sends SIGKILL
+	// at the default 30s terminationGracePeriodSeconds. Chat-stream
+	// SSE handlers honour ctx cancellation, so most active streams
+	// finish their current token + close cleanly. Bumped from 10s
+	// because a 10s ceiling truncated mid-answer chat streams on
+	// every rollout — users saw the spinner restart instead of the
+	// answer completing.
+	ctx, cancel := context.WithTimeout(context.Background(), 25*time.Second)
 	defer cancel()
 	_ = srv.Shutdown(ctx)
 	if dbConn != nil {
