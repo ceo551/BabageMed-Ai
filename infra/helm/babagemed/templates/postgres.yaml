@@ -59,6 +59,17 @@ spec:
             exec: { command: ["pg_isready", "-U", "$(POSTGRES_USER)"] }
             initialDelaySeconds: 5
             periodSeconds: 10
+          # Liveness probe — without it a wedged Postgres process stays
+          # "ready" forever and connected backend pods all stall. Generous
+          # timeouts so a slow query doesn't trigger a false restart and
+          # cascade-fail. failureThreshold high so 3 successive slow
+          # pg_isready calls before the SIGKILL.
+          livenessProbe:
+            exec: { command: ["pg_isready", "-U", "$(POSTGRES_USER)"] }
+            initialDelaySeconds: 30
+            periodSeconds: 30
+            timeoutSeconds: 5
+            failureThreshold: 6
           resources: {{- toYaml .Values.postgres.resources | nindent 12 }}
   volumeClaimTemplates:
     - metadata: { name: data }

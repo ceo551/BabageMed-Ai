@@ -14,8 +14,9 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"strings"
 	"net/http"
+	"strings"
+	"time"
 
 	"github.com/babagemed/backend/internal/auth"
 	"github.com/babagemed/backend/internal/db"
@@ -63,7 +64,12 @@ func (s *Service) List(ctx context.Context, userID string) ([]Connector, error) 
 	for rows.Next() {
 		var c Connector
 		var cfgRaw []byte
-		var connectedAt interface{}
+		// pgx scans TIMESTAMPTZ into time.Time, not []byte. The previous
+		// interface{} + switch on []byte case always defaulted to "" so
+		// the API has been returning empty connectedAt for the entire
+		// lifetime of this endpoint. Scan into time.Time directly and
+		// format as RFC3339 (matches what the frontend expects).
+		var connectedAt time.Time
 		if err := rows.Scan(&c.MCPID, &c.Kind, &cfgRaw, &connectedAt); err != nil {
 			return nil, err
 		}
@@ -73,13 +79,7 @@ func (s *Service) List(ctx context.Context, userID string) ([]Connector, error) 
 		if c.Config == nil {
 			c.Config = map[string]any{}
 		}
-		// scan timestamps as strings via fmt — keeps the package free of time imports.
-		switch v := connectedAt.(type) {
-		case []byte:
-			c.ConnectedAt = string(v)
-		default:
-			c.ConnectedAt = ""
-		}
+		c.ConnectedAt = connectedAt.UTC().Format(time.RFC3339)
 		// Enrich with current MCP metadata (name, base, icon).
 		if srv, ok := s.reg.Get(c.MCPID); ok {
 			c.Name = srv.Name

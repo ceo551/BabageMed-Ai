@@ -92,11 +92,11 @@ postgres:
   externalUrl: ""   # e.g. postgres://user:pass@10.0.0.5:5432/babagemed?sslmode=require
 
 # ─── MCP servers ──────────────────────────────────────────────────────────
-# 416 MCPs would be too heavy for most clusters. Pick what you need.
+# 262 MCPs would be too heavy for most clusters. Pick what you need.
 # The "default" preset is the same 47 the laptop/KVM2 stack runs.
 # Override to deploy more or fewer:
 #   --set 'mcps.enabled={pubmed,fda,clinicaltrials}'   # 3 only
-#   --set mcps.preset=all                              # all 416 (heavy)
+#   --set mcps.preset=all                              # all 262 (heavy)
 mcps:
   preset: default
   # When preset != "custom", `enabled` is overridden by the preset list below.
@@ -111,7 +111,7 @@ mcps:
   # All MCPs read the shared .env via the same Secret as the backend.
   envFromSecret: babagemed-env
   # Per-MCP autoscaling. Off by default — most clusters won't have metrics
-  # for each of 416 deployments. Turn on selectively.
+  # for each of 262 deployments. Turn on selectively.
   autoscaling:
     enabled: false
     api:

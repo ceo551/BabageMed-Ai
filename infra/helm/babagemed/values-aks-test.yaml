@@ -1,6 +1,6 @@
 # Throw-away values used by the AKS test deploy on rg-babagemed-test.
 # Sized for 1 system pod + 4 user pods (D8s_v3 / E8as_v4 / D8as_v4 / F8as_v6 / E8s_v3)
-# = 40 vCPU, ~208 GB total. Hosts the full 416-MCP preset.
+# = 40 vCPU, ~208 GB total. Hosts the full 262-MCP preset.
 cloud: aks
 
 image:
@@ -35,7 +35,7 @@ postgres:
     requests: { cpu: 200m, memory: 384Mi }
     limits:   { cpu: 1000m, memory: 1Gi }
 
-# All 416 MCPs. Trim resources hard so they fit on 5 nodes.
+# All 262 MCPs. Trim resources hard so they fit on 5 nodes.
 mcps:
   preset: all
   resourcesApi:
