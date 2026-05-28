@@ -42,6 +42,13 @@ const nextConfig = {
       { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
       { key: "Permissions-Policy", value: "camera=(self), microphone=(self), geolocation=(self), clipboard-write=(self), interest-cohort=()" },
       { key: "Cross-Origin-Opener-Policy", value: "same-origin" },
+      // Cross-Origin-Resource-Policy: cross-origin pages can't fetch
+      // our resources unless they explicitly opt in via CORS. Same-site
+      // is wider than same-origin (allows tauri.localhost on the
+      // desktop shell which embeds babagemed.com via WebView) but
+      // still blocks unrelated third parties from including our pages
+      // as <script> / <img> / <link>.
+      { key: "Cross-Origin-Resource-Policy", value: "same-site" },
       { key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains; preload" },
       { key: "Content-Security-Policy", value: csp },
     ];

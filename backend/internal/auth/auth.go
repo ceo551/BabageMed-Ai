@@ -64,7 +64,7 @@ var userCtxKey = ctxKey{"user"}
 var (
 	ErrAlreadyExists  = errors.New("email already registered")
 	ErrInvalidCreds   = errors.New("invalid email or password")
-	ErrWeakPassword   = errors.New("password must be at least 8 characters")
+	ErrWeakPassword   = errors.New("password must be 12-72 characters and mix letters with a number/symbol")
 	ErrInvalidEmail   = errors.New("invalid email")
 	ErrUnauthorised   = errors.New("not authenticated")
 	ErrSessionExpired = errors.New("session expired")
