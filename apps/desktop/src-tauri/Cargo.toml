@@ -34,7 +34,7 @@ tauri        = { version = "2.0", features = ["protocol-asset", "tray-icon", "im
 serde        = { version = "1.0", features = ["derive"] }
 serde_json   = "1.0"
 tokio        = { version = "1", features = ["full"] }
-thiserror    = "1.0"
+thiserror    = "2.0"
 log          = "0.4"
 
 # Hardware / system introspection
