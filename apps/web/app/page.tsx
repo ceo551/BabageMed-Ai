@@ -454,11 +454,15 @@ function Composer({
           setChatId(created.id);
           // Stamp the URL so a reload restores this conversation. Push to
           // history with replaceState so the back button doesn't ping-pong.
+          // Dispatch a custom event the Sidebar listens for so the new
+          // chat title appears immediately — pathname doesn't change so
+          // the sidebar's path-driven effect wouldn't refire.
           if (typeof window !== "undefined") {
             const url = new URL(window.location.href);
             url.searchParams.set("c", created.id);
             url.searchParams.delete("n");
             window.history.replaceState({}, "", url.toString());
+            window.dispatchEvent(new CustomEvent("babbage:chat-created", { detail: { id: created.id } }));
           }
         } catch { /* persistence is best-effort */ }
       }
@@ -597,13 +601,19 @@ function Composer({
                   : m,
               ),
             );
-            finalContent = ""; // don't persist a broken turn
+            // Persist the error so a chat reload doesn't silently
+            // drop it — the user saw "Error: …" on screen; if we
+            // skip persistence the row vanishes on the next refresh
+            // and the user is left wondering whether anything ran.
+            finalContent = "Error: " + parsed.error;
           }
           // 'status' + 'done' are advisory only.
         }
       }
 
       // Persist the assistant turn (best-effort, fire and forget).
+      // Skip only if we have literally nothing — a streamed answer
+      // that produced zero bytes is the only case worth dropping.
       if (activeChatId && finalContent !== "") {
         chatsApi.append(activeChatId, {
           role: "assistant",

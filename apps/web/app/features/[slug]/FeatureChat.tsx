@@ -193,6 +193,10 @@ export function FeatureChat({
             url.searchParams.set("c", created.id);
             url.searchParams.delete("n");
             window.history.replaceState({}, "", url.toString());
+            // Same custom event as the home page so the sub-sidebar
+            // history list surfaces the new chat without waiting for
+            // the next route push.
+            window.dispatchEvent(new CustomEvent("babbage:chat-created", { detail: { id: created.id } }));
           }
         } catch { /* persistence is best-effort */ }
       }
@@ -303,7 +307,11 @@ export function FeatureChat({
             setMessages((cur) =>
               cur.map((m) => m.id === assistantId && m.role === "assistant" ? { ...m, content: "Error: " + parsed.error } : m),
             );
-            finalContent = "";
+            // Same fix as page.tsx round 27: persist the error row so
+            // a chat reload doesn't silently drop it (the user saw
+            // "Error: …" on screen; dropping it on persist leaves a
+            // confusing gap on refresh).
+            finalContent = "Error: " + parsed.error;
           }
         }
       }
@@ -311,14 +319,11 @@ export function FeatureChat({
       if (activeChatId && finalContent !== "") {
         chatsApi.append(activeChatId, { role: "assistant", content: finalContent, citations: cites ?? [] }).catch(() => {});
       }
-      // Refresh sub-sidebar history so the new chat surfaces immediately.
-      // Sub-sidebar listens to pathname; we don't want a full route push
-      // (would re-trigger the load effect), so it polls when the URL
-      // changes via replaceState. Belt-and-braces: bump n= so it re-fetches.
-      if (typeof window !== "undefined" && !chatId) {
-        // The new chat already had ?c=<id> stamped above; the sub-sidebar
-        // is keyed off pathname so it will refetch on the next navigation.
-      }
+      // Sub-sidebar history refresh is now driven by the
+      // `babbage:chat-created` window event the create branch above
+      // dispatches (round 27) — pathname doesn't change on
+      // replaceState so the previous pathname-keyed effect couldn't
+      // see the new chat until the next real route push.
     } catch (e: unknown) {
       const err = e as { name?: string; message?: string };
       if (err?.name === "AbortError") {

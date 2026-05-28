@@ -286,15 +286,34 @@ function HistorySection({ label, feature }: { label: string; feature?: string })
   // Refetch on mount and whenever the URL pathname changes (so creating a
   // new chat or switching tabs surfaces the latest titles). Skip the call
   // entirely for anonymous users — /api/chats requires auth.
+  //
+  // Round 27: pathname stays the same when the chat-stream code does
+  // `history.replaceState` to stamp `?c=<id>` on the URL (no real
+  // navigation), so the just-created chat's title was missing from the
+  // sidebar list until the next real route push. Also listen for a
+  // custom "babbage:chat-created" window event the streamer dispatches
+  // after the URL replacement, so the new chat surfaces immediately.
   useEffect(() => {
     if (!user) { setItems([]); return; }
     let cancelled = false;
-    setLoading(true);
-    chatsApi.list(feature)
-      .then((list) => { if (!cancelled) setItems(list); })
-      .catch(() => { if (!cancelled) setItems([]); })
-      .finally(() => { if (!cancelled) setLoading(false); });
-    return () => { cancelled = true; };
+    const refetch = () => {
+      setLoading(true);
+      chatsApi.list(feature)
+        .then((list) => { if (!cancelled) setItems(list); })
+        .catch(() => { if (!cancelled) setItems([]); })
+        .finally(() => { if (!cancelled) setLoading(false); });
+    };
+    refetch();
+    const onChatCreated = () => refetch();
+    if (typeof window !== "undefined") {
+      window.addEventListener("babbage:chat-created", onChatCreated);
+    }
+    return () => {
+      cancelled = true;
+      if (typeof window !== "undefined") {
+        window.removeEventListener("babbage:chat-created", onChatCreated);
+      }
+    };
   }, [user, pathname, feature]);
 
   // Close the overflow menu on outside click / Escape.
@@ -317,9 +336,15 @@ function HistorySection({ label, feature }: { label: string; feature?: string })
 
   async function removeChat(id: string) {
     setMenuOpenId("");
+    // Capture both the row AND its original index so a failed delete
+    // can put the row back where the user dragged-or-typed it to,
+    // not at the top of the list. The previous version prepended on
+    // rollback, which silently re-ordered the user's chat history.
     let removed: Chat | undefined;
+    let removedIdx = -1;
     setItems((cur) => {
-      removed = cur.find((c) => c.id === id);
+      removedIdx = cur.findIndex((c) => c.id === id);
+      removed = removedIdx >= 0 ? cur[removedIdx] : undefined;
       return cur.filter((c) => c.id !== id);
     });
     try {
@@ -328,7 +353,15 @@ function HistorySection({ label, feature }: { label: string; feature?: string })
     } catch {
       if (removed) {
         const r = removed;
-        setItems((cur) => (cur.some((c) => c.id === r.id) ? cur : [r, ...cur]));
+        const idx = removedIdx;
+        setItems((cur) => {
+          if (cur.some((c) => c.id === r.id)) return cur;
+          const next = cur.slice();
+          // clamp index in case the list shrunk further while we
+          // were awaiting the failed network call.
+          next.splice(Math.min(idx, next.length), 0, r);
+          return next;
+        });
       }
     }
   }
