@@ -130,6 +130,69 @@ func TestSanitisePromptFieldDropsQuotesAndControls(t *testing.T) {
 	}
 }
 
+// Round 10 added structural caps to defend the upstream LLM token
+// counter + fan-out goroutine pool against single-char-message floods
+// and useMcps=[same-id]*1000 spam. These tests pin the contract so
+// future refactors of sanitiseChatRequest can't drop the caps.
+
+func TestSanitiseChatRequestCapsMessageCount(t *testing.T) {
+	msgs := make([]llm.Message, maxChatMessages+50)
+	for i := range msgs {
+		role := "user"
+		if i%2 == 1 {
+			role = "assistant"
+		}
+		msgs[i] = llm.Message{Role: role, Content: "m"}
+	}
+	// Tag the last message so we can assert "newest wins" trimming.
+	msgs[len(msgs)-1].Content = "newest"
+	req := &chatRequest{Messages: msgs}
+	sanitiseChatRequest(req)
+	if len(req.Messages) != maxChatMessages {
+		t.Fatalf("expected %d after cap, got %d", maxChatMessages, len(req.Messages))
+	}
+	if req.Messages[len(req.Messages)-1].Content != "newest" {
+		t.Errorf("expected newest message to survive, got %q", req.Messages[len(req.Messages)-1].Content)
+	}
+}
+
+func TestSanitiseChatRequestDedupsAndCapsUseMcps(t *testing.T) {
+	ids := []string{"pubmed", "pubmed", "  ", "fda", "pubmed", "cdc"}
+	for i := 0; i < maxUseMcps*2; i++ {
+		ids = append(ids, "extra-"+string(rune('a'+i%26)))
+	}
+	req := &chatRequest{UseMcps: ids}
+	sanitiseChatRequest(req)
+	if len(req.UseMcps) > maxUseMcps {
+		t.Fatalf("expected cap at %d, got %d", maxUseMcps, len(req.UseMcps))
+	}
+	seen := map[string]bool{}
+	for _, id := range req.UseMcps {
+		if seen[id] {
+			t.Errorf("duplicate id survived: %q", id)
+		}
+		if id == "" || id == "  " {
+			t.Errorf("empty/blank id survived: %q", id)
+		}
+		seen[id] = true
+	}
+	if !seen["pubmed"] || !seen["fda"] || !seen["cdc"] {
+		t.Errorf("expected pubmed/fda/cdc to be retained, got %v", req.UseMcps)
+	}
+}
+
+func TestSanitiseChatRequestCapsFeatureInstructions(t *testing.T) {
+	big := make([]byte, maxFeatureInstrLen+1024)
+	for i := range big {
+		big[i] = 'a'
+	}
+	req := &chatRequest{FeatureInstructions: string(big)}
+	sanitiseChatRequest(req)
+	if len(req.FeatureInstructions) != maxFeatureInstrLen {
+		t.Errorf("expected truncate to %d, got %d", maxFeatureInstrLen, len(req.FeatureInstructions))
+	}
+}
+
 func contains(s, sub string) bool {
 	for i := 0; i+len(sub) <= len(s); i++ {
 		if s[i:i+len(sub)] == sub {
