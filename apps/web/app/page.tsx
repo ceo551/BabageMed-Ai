@@ -148,6 +148,10 @@ function DashboardInner() {
 // prose (no chip) so multi-paragraph answers read naturally. The "loading"
 // placeholder swaps in the pulsing brand mark while we're waiting on the LLM.
 function Transcript({ messages }: { messages: ChatMessage[] }) {
+  // Round 24 fix: read useUI here too so s.generating doesn't crash
+  // at runtime (Transcript is a sibling component to Dashboard's
+  // render, not a child — useUI in Dashboard doesn't pass `s` down).
+  const { s } = useUI();
   const endRef = useRef<HTMLDivElement>(null);
   // Track whether the user has manually scrolled away from the bottom. When
   // they have, we stop auto-following the stream — yanking the viewport on

@@ -26,7 +26,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 }
 
 function Frame({ children }: { children: React.ReactNode }) {
-  const { collapsed, toggleCollapsed, s } = useUI();
+  const { collapsed, s } = useUI();
   const { sidebarWidth } = usePrefs();
   // Mobile drawer state — distinct from desktop "collapsed". On a phone the
   // sidebar is off-canvas by default and the hamburger toggles a slide-in

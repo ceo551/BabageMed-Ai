@@ -31,12 +31,15 @@ export default function LoginPage() {
     setBusy(true);
     setErr(null);
     try {
-      const body: Record<string, string> = { email, password };
-      if (mfaRequired) body.mfaCode = mfaCode;
-      const res = await auth.login(body);
-      if (res.mfaRequired) {
-        setMfaRequired(true);
-        return;
+      // Two-leg login: first call is password-only; backend replies
+      // with mfaRequired:true (via ApiError) if a second factor is
+      // needed, which the catch handler below routes to the MFA step.
+      // Once mfaRequired is true, the form submits via loginWithMFA
+      // (different endpoint shape) so the typed signatures match.
+      if (mfaRequired) {
+        await auth.loginWithMFA(email, password, mfaCode);
+      } else {
+        await auth.login(email, password);
       }
       await refresh();
       router.push("/");
