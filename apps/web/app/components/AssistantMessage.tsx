@@ -19,7 +19,14 @@ export type Citation = {
 // extension: tables, task lists, strikethrough, autolinks) plus the source
 // chips for any MCP that fed the response. Mirrors how Claude / Gemini
 // present a turn — text first, then a tidy footer of provenance.
-export function AssistantMessage({
+//
+// Wrapped in React.memo (see export at bottom) because the parent
+// <Transcript> re-renders on every streamed token; without memo every
+// previous assistant turn re-runs react-markdown on each delta — a
+// measurable perf hit at 5+ turns. Referential-equality check on props
+// works because content is a primitive and citations are a stable array
+// reference from the SSE handler until a new one is emitted.
+function AssistantMessageInner({
   content,
   citations,
 }: {
@@ -86,6 +93,18 @@ export function AssistantMessage({
     </div>
   );
 }
+
+// React.memo wrapper — primitive `content` + stable citations reference
+// short-circuit re-render when nothing relevant changed. The custom
+// equality fn is necessary because citations defaults to undefined and
+// the default shallow compare treats undefined as equal-to-undefined,
+// but we want a length+ref check on the array too.
+export const AssistantMessage = React.memo(AssistantMessageInner, (prev, next) => {
+  if (prev.content !== next.content) return false;
+  if (prev.citations === next.citations) return true;
+  if (!prev.citations || !next.citations) return false;
+  return prev.citations.length === next.citations.length;
+});
 
 // CodeBlock — pre tag with a Copy button revealed on hover. Pure CSS reveal
 // would have worked but we also need to swap the label to "Copied!" for two

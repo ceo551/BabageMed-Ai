@@ -196,6 +196,11 @@ func main() {
 	// SSE fan-out from a single client.
 	chatLimiter := ratelimit.New(10, 6*time.Second) // ~10 burst, +1 every 6 s → 10/min sustained
 	authLimiter := ratelimit.New(5, time.Minute)    // ~5 burst, +1/min → defeats password spraying
+	// Dedicated MFA bucket so a successful password-stuffing attempt
+	// doesn't share the 5-burst budget with the login bucket — that
+	// gave the attacker a free 5-code burst at the 6-digit TOTP space
+	// before throttling kicked in.
+	mfaLimiter := ratelimit.New(3, 30*time.Second) // 3 burst, +1 every 30 s → 2/min sustained
 
 	// Chat — usable anonymously, but if auth is on we'll persist messages.
 	r.With(chatLimiter.Middleware).Post("/api/chat", apiH.Chat)
@@ -226,10 +231,11 @@ func main() {
 			auth.NewResetHandler(authSvc, emailSender, auditSvc).Register(pr)
 		})
 		// MFA enrollment / disable endpoints — all behind auth.Required
-		// (handler enforces). Rate-limited so a stolen session can't
-		// brute-force a 6-digit confirmation code.
+		// (handler enforces). Uses the dedicated mfaLimiter (3 burst,
+		// 2/min sustained) so a leaked password + login throttle bypass
+		// doesn't grant 5 free TOTP guesses through the login budget.
 		r.Group(func(pr chi.Router) {
-			pr.Use(authLimiter.Middleware)
+			pr.Use(mfaLimiter.Middleware)
 			mfa.NewHandler(mfaSvc, authSvc, auditSvc).Register(pr)
 		})
 		admin.NewHandler(dbConn, authSvc).Register(r)

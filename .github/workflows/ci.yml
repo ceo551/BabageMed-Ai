@@ -65,6 +65,14 @@ jobs:
         run: |
           cd apps/web
           npx tsc --noEmit
+      - name: lint (apps/web)
+        # Catches dead code / unused imports — added in the 40-agent
+        # audit pass when the cleanup uncovered ~360 LoC of orphan card
+        # components shipping in the bundle. --max-warnings=0 so a new
+        # warning becomes a PR-blocking failure instead of slow rot.
+        run: |
+          cd apps/web
+          npx next lint --max-warnings=0
       - name: unit tests (apps/web)
         run: |
           cd apps/web
