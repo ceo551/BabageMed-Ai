@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { Suspense, useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import { UIProvider, useUI } from "../lib/ui-context";
 import { usePrefs, prefs } from "../lib/store";
@@ -64,7 +64,17 @@ function Frame({ children }: { children: React.ReactNode }) {
       >
         {I.sidebar}
       </button>
-      <Sidebar onResize={prefs.setSidebarWidth} onMobileClose={() => setMobileOpen(false)} />
+      {/* Sidebar calls useSearchParams() (to read ?c=<chat> and keep the
+          active-chat highlight in sync). Next 14 requires any
+          useSearchParams() consumer to sit inside a <Suspense> boundary or
+          the whole route bails out of static prerender — and because
+          AppShell is mounted by the ROOT layout it wraps every page, so an
+          unwrapped Sidebar fails `next build` for all 15 routes at once.
+          The fallback renders the empty sidebar column (the .shell grid
+          already reserves --sidebar-w) so there's no layout shift. */}
+      <Suspense fallback={<aside className="sidebar" aria-hidden="true" />}>
+        <Sidebar onResize={prefs.setSidebarWidth} onMobileClose={() => setMobileOpen(false)} />
+      </Suspense>
       {/* Backdrop tappable area to close the mobile drawer. */}
       <div
         className="mobile-nav-backdrop"
