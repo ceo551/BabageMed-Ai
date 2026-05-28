@@ -87,6 +87,17 @@ export type LocaleStrings = {
   createOne: string;
   alreadyHaveAccount: string;
   signInLink: string;
+  // ── Misc UI bits ──────────────────────────────────────────────────────
+  sources: string;
+  closeDialog: string;
+  searchConnectorsPlaceholder: string;
+  allKinds: string;
+  apiKind: string;
+  scrapeKind: string;
+  hybridKind: string;
+  allFeaturesFilter: string;
+  disconnect: string;
+  generating: string;
 };
 
 // The 10 sidebar feature categories — single source of truth. Slug is
@@ -231,6 +242,16 @@ export const STR: Record<Locale, LocaleStrings> = {
     createOne: "Create one",
     alreadyHaveAccount: "Already have one?",
     signInLink: "Sign in",
+    sources: "Sources",
+    closeDialog: "Close dialog",
+    searchConnectorsPlaceholder: "Search by id, name, or URL…",
+    allKinds: "All kinds",
+    apiKind: "API",
+    scrapeKind: "Scrape",
+    hybridKind: "Hybrid",
+    allFeaturesFilter: "All features",
+    disconnect: "Disconnect",
+    generating: "Generating",
   },
   ar: {
     dir: "rtl",
@@ -337,6 +358,16 @@ export const STR: Record<Locale, LocaleStrings> = {
     createOne: "أنشئ واحدًا",
     alreadyHaveAccount: "لديك حساب بالفعل؟",
     signInLink: "تسجيل الدخول",
+    sources: "المصادر",
+    closeDialog: "إغلاق الحوار",
+    searchConnectorsPlaceholder: "ابحث بالمعرّف أو الاسم أو الرابط…",
+    allKinds: "كل الأنواع",
+    apiKind: "API",
+    scrapeKind: "Scrape",
+    hybridKind: "Hybrid",
+    allFeaturesFilter: "كل الميزات",
+    disconnect: "قطع الاتصال",
+    generating: "جارٍ التوليد",
   },
 };
 

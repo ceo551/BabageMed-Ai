@@ -46,17 +46,35 @@ func main() {
 		log.Printf("tracing init: %v", err)
 	}
 
-	registry, err := mcp.NewRegistry("scripts/mcps.manifest.json")
-	if err != nil {
-		for _, p := range []string{"/app/mcps.manifest.json", "../scripts/mcps.manifest.json", "mcps.manifest.json"} {
-			registry, err = mcp.NewRegistry(p)
-			if err == nil {
-				break
-			}
-		}
+	// Manifest path resolution: explicit MCP_MANIFEST_PATH wins so ops
+	// can point at any location (mounted ConfigMap, sidecar volume, etc.).
+	// When it's unset we walk a fallback chain that covers the three
+	// common runtime layouts: container image (/app/...), `go run` from
+	// the backend dir (../scripts/...), and "the binary lives next to
+	// the manifest" (mcps.manifest.json). We log each miss so a wrong
+	// mount path doesn't silently fall through to a stale manifest.
+	manifestCandidates := []string{}
+	if explicit := os.Getenv("MCP_MANIFEST_PATH"); explicit != "" {
+		manifestCandidates = append(manifestCandidates, explicit)
 	}
-	if err != nil {
-		log.Fatalf("manifest load failed: %v", err)
+	manifestCandidates = append(manifestCandidates,
+		"/app/mcps.manifest.json",
+		"scripts/mcps.manifest.json",
+		"../scripts/mcps.manifest.json",
+		"mcps.manifest.json",
+	)
+	var registry *mcp.Registry
+	var manifestErr error
+	for _, p := range manifestCandidates {
+		registry, manifestErr = mcp.NewRegistry(p)
+		if manifestErr == nil {
+			log.Printf("loaded MCP manifest from %s", p)
+			break
+		}
+		log.Printf("manifest candidate %s: %v", p, manifestErr)
+	}
+	if manifestErr != nil {
+		log.Fatalf("manifest load failed: tried %v", manifestCandidates)
 	}
 	log.Printf("loaded %d MCP servers from manifest", len(registry.Servers()))
 
@@ -143,6 +161,16 @@ func main() {
 		os.Getenv("CORS_ALLOWED_ORIGINS"),
 		os.Getenv("PUBLIC_BASE_URL"),
 	)
+	// Loud failure beats silent misconfig — if neither CORS_ALLOWED_ORIGINS
+	// nor PUBLIC_BASE_URL was set AND the dev fallbacks are disabled
+	// (publicBase non-empty), the list will be tauri+publicBase only.
+	// We only fatal when the list is *truly* empty, which buildAllowedOrigins
+	// guarantees can't happen — but keep this guard for posterity if the
+	// helper ever changes.
+	if len(allowedOrigins) == 0 {
+		log.Fatalf("CORS allow-list resolved to empty — set CORS_ALLOWED_ORIGINS or PUBLIC_BASE_URL")
+	}
+	log.Printf("CORS allow-list: %v", allowedOrigins)
 	r.Use(cors.Handler(cors.Options{
 		AllowedOrigins:   allowedOrigins,
 		AllowedMethods:   []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
@@ -369,11 +397,8 @@ func buildAllowedOrigins(csv, publicBase string) []string {
 		add("http://localhost:3000")
 		add("http://127.0.0.1:3000")
 	}
-	if len(out) == 0 {
-		// Last-resort: be safe and only allow same-origin
-		// (no Origin header). Returning [] would make chi/cors panic on
-		// startup, so use a sentinel that matches nothing useful.
-		out = append(out, "http://invalid.local")
-	}
+	// Caller (main) guards against an empty list with log.Fatalf, so
+	// we no longer return a sentinel here — the previous
+	// "http://invalid.local" placeholder masked misconfiguration.
 	return out
 }

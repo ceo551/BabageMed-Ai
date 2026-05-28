@@ -170,7 +170,7 @@ export function Sidebar({
                 flex: 1, justifyContent: "center", textDecoration: "none",
                 border: "1px solid var(--border)",
               }}
-            ><span className="lbl">Sign in</span></Link>
+            ><span className="lbl">{s.signInCta}</span></Link>
             <Link
               href="/signup"
               className="sb-row"
@@ -179,7 +179,7 @@ export function Sidebar({
                 background: "var(--cyan-soft)", color: "var(--cyan)",
                 border: "1px solid var(--cyan-line)",
               }}
-            ><span className="lbl">Sign up</span></Link>
+            ><span className="lbl">{s.signUpCta}</span></Link>
           </div>
         )}
       </div>

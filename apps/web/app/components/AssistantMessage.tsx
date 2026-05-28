@@ -62,7 +62,7 @@ function AssistantMessageInner({
       </div>
       {citations && citations.length > 0 && (
         <div className="msg-citations">
-          <div className="msg-citations-label">Sources</div>
+          <div className="msg-citations-label">{(typeof window !== "undefined" && document.documentElement.lang === "ar") ? "المصادر" : "Sources"}</div>
           <div className="msg-citations-list">
             {citations.map((c, i) => {
               const isOpen = openCitation === i;

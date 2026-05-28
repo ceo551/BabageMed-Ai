@@ -603,7 +603,7 @@ function Transcript({ messages, endRef }: { messages: Msg[]; endRef: React.RefOb
           return (
             <div key={m.id} className="msg msg-assistant msg-loading">
               <img src="/babagemed-icon.png" alt="" className="msg-loading-mark" width={40} height={40} aria-hidden="true" />
-              <span className="msg-loading-dots" aria-label="Generating"><span /><span /><span /></span>
+              <span className="msg-loading-dots" aria-label={s.generating}><span /><span /><span /></span>
             </div>
           );
         }

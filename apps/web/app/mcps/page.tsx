@@ -109,7 +109,7 @@ export default function ConnectorsBrowsePage() {
       <div className="mcps-toolbar">
         <input
           type="search"
-          placeholder="Search by id, name, or URL…"
+          placeholder={s.searchConnectorsPlaceholder}
           value={q}
           onChange={(e) => setQ(e.target.value)}
         />
@@ -117,12 +117,13 @@ export default function ConnectorsBrowsePage() {
           value={feature}
           onChange={setFeature}
           features={s.features}
+          allLabel={s.allFeaturesFilter}
         />
-        <select value={kind} onChange={(e) => setKind(e.target.value as any)}>
-          <option value="all">All kinds</option>
-          <option value="api">API</option>
-          <option value="scrape">Scrape</option>
-          <option value="hybrid">Hybrid</option>
+        <select value={kind} onChange={(e) => setKind(e.target.value as "all" | "api" | "scrape" | "hybrid")}>
+          <option value="all">{s.allKinds}</option>
+          <option value="api">{s.apiKind}</option>
+          <option value="scrape">{s.scrapeKind}</option>
+          <option value="hybrid">{s.hybridKind}</option>
         </select>
         <span className="mcps-counts">{filtered.length} / {all.length}</span>
       </div>
@@ -202,10 +203,12 @@ function FeatureDropdown({
   value,
   onChange,
   features,
+  allLabel,
 }: {
   value: string;
   onChange: (v: string) => void;
   features: ReadonlyArray<{ slug: string; label: string; emoji: string }>;
+  allLabel: string;
 }) {
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
@@ -225,8 +228,8 @@ function FeatureDropdown({
     };
   }, [open]);
   const selected = value === "all"
-    ? { slug: "all", label: "All features", emoji: "★" }
-    : features.find((f) => f.slug === value) || { slug: "all", label: "All features", emoji: "★" };
+    ? { slug: "all", label: allLabel, emoji: "★" }
+    : features.find((f) => f.slug === value) || { slug: "all", label: allLabel, emoji: "★" };
   return (
     <div className="mcps-fdrop" ref={rootRef}>
       <button
@@ -251,7 +254,7 @@ function FeatureDropdown({
             onClick={() => { onChange("all"); setOpen(false); }}
           >
             <span className="mcps-fdrop-icon">{featureIcon("all", "★")}</span>
-            <span>All features</span>
+            <span>{allLabel}</span>
           </button>
           {features.map((f) => (
             <button
@@ -302,6 +305,9 @@ function ConnectorCard({
         disabled={isBusy}
         aria-label={isMine ? "Disconnect" : "Add connector"}
         title={isMine ? "Disconnect" : "Add connector"}
+        // (kept inline for the icon-only "+/✓" button; full localization
+        // would need useUI() inside ConnectorCard which is a pure render
+        // child — short-form deferred.)
       >
         {isBusy ? "…" : isMine ? "✓" : "+"}
       </button>

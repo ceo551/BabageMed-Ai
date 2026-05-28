@@ -108,7 +108,7 @@ export function Modal({ open, onClose, title, width = 540, children }: ModalProp
               type="button"
               className="modal-close"
               onClick={onClose}
-              aria-label="Close dialog"
+              aria-label={(typeof window !== "undefined" && document.documentElement.lang === "ar") ? "إغلاق الحوار" : "Close dialog"}
             >
               ×
             </button>

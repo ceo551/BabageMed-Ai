@@ -192,7 +192,7 @@ function Transcript({ messages }: { messages: ChatMessage[] }) {
               {/* Three-dot wave so the user sees a heartbeat while the
                   retrieval + first-token phases run. The pulse on the mark
                   alone wasn't visible enough on light theme. */}
-              <span className="msg-loading-dots" aria-label="Generating">
+              <span className="msg-loading-dots" aria-label={s.generating}>
                 <span /><span /><span />
               </span>
             </div>
