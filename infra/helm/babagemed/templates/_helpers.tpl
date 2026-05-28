@@ -75,6 +75,19 @@ nginx.ingress.kubernetes.io/proxy-body-size: "20m"
 nginx.ingress.kubernetes.io/proxy-buffering: "off"
 nginx.ingress.kubernetes.io/proxy-read-timeout: "300"
 nginx.ingress.kubernetes.io/proxy-send-timeout: "300"
+# Force HTTPS even if cert-manager hasn't issued yet — nginx defaults
+# to 308-redirecting only when a TLS cert is present, which is the
+# wrong-failsafe direction. ssl-redirect: true ensures the redirect
+# is unconditional once TLS is configured at the ingress.
+nginx.ingress.kubernetes.io/ssl-redirect: "true"
+nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+# Belt-and-braces L7 rate limiting. The backend already does
+# per-IP token buckets, but the ingress layer stops a flood before
+# it ever reaches a backend goroutine. limit-rpm is per source IP.
+# These numbers are generous for a real user (a chat send +
+# /tools listing burst); a script doing 1k r/s hits 429 here.
+nginx.ingress.kubernetes.io/limit-rpm: "600"
+nginx.ingress.kubernetes.io/limit-connections: "30"
 {{- end -}}
 {{- end -}}
 

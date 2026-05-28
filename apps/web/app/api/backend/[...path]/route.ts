@@ -83,8 +83,13 @@ async function proxy(
   try {
     upstream = await fetch(target, init);
   } catch (e) {
+    // Server-side log keeps the diagnostic value (the cluster-internal
+    // BACKEND_URL + error chain) for ops. Echoing it to clients on a
+    // 502 used to leak the internal Service DNS name + node error
+    // detail — useful to attackers mapping the cluster topology.
+    console.error("[/api/backend] upstream fetch failed:", target, e);
     return NextResponse.json(
-      { error: "backend_unreachable", target, detail: String(e) },
+      { error: "backend_unreachable" },
       { status: 502 }
     );
   }
