@@ -255,6 +255,13 @@ gcp:
 # assume that secret contains the same keys (see templates/secret.yaml).
 secrets:
   existingSecret: ""
+  # MFA secret encryption key (32 random bytes, base64-encoded).
+  # Leave empty → the secret template auto-generates one on first
+  # install and preserves it across upgrades via a `lookup` of the
+  # existing Secret. Set explicitly if you need cross-cluster
+  # portability (blue/green, disaster recovery). Rotating invalidates
+  # every existing TOTP enrolment so users must re-enrol.
+  mfaEncryptionKey: ""
   # Core
   anthropicApiKey: ""
   googleApiKey: ""
