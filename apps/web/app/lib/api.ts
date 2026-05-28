@@ -7,6 +7,16 @@ const BASE = "/api/backend";
 // whether to show the second-factor prompt vs a hard failure.
 export type ApiError = { error: string; status: number; [key: string]: unknown };
 
+// Listener for 401 responses. AuthProvider registers itself here so a
+// session expiring mid-session immediately clears the in-memory user
+// + redirects to /login instead of leaving the UI in a half-logged-in
+// state where every subsequent call 401s and the user sees their
+// chats silently fail with no feedback.
+let on401: (() => void) | null = null;
+export function setOn401Handler(fn: (() => void) | null) {
+  on401 = fn;
+}
+
 async function call<T>(path: string, init: RequestInit = {}): Promise<T> {
   const res = await fetch(BASE + path, {
     credentials: "include",
@@ -15,8 +25,23 @@ async function call<T>(path: string, init: RequestInit = {}): Promise<T> {
   });
   const text = await res.text();
   let body: any = null;
-  try { body = text ? JSON.parse(text) : null; } catch { body = text; }
+  let parsed = false;
+  try {
+    body = text ? JSON.parse(text) : null;
+    parsed = true;
+  } catch {
+    body = text;
+    parsed = false;
+  }
   if (!res.ok) {
+    // Global 401 watchdog — see setOn401Handler above. Skip for the
+    // login / signup / me endpoints where 401 is the normal way to
+    // signal "wrong credentials" / "not signed in"; otherwise a
+    // failed login attempt would flush the *current* session before
+    // it ever stored the new one.
+    if (res.status === 401 && on401 && !path.startsWith("/api/auth/")) {
+      on401();
+    }
     // Spread the response body so non-error fields (mfaRequired,
     // retryAfter, etc.) survive into catch handlers. The previous
     // version dropped them — login's MFA branch would never see
@@ -27,6 +52,16 @@ async function call<T>(path: string, init: RequestInit = {}): Promise<T> {
       status: res.status,
     };
     throw err;
+  }
+  // Treat non-JSON 2xx as a hard error — a proxy 200 with an HTML
+  // error page used to be passed back as `T` and crash every
+  // downstream `.user`, `.id`, `.title` access with
+  // "Cannot read properties of undefined".
+  if (text && !parsed) {
+    throw {
+      error: "non_json_response",
+      status: res.status,
+    } as ApiError;
   }
   return body as T;
 }

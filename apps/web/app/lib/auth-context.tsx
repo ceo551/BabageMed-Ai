@@ -1,7 +1,13 @@
 "use client";
 
-import React, { createContext, useCallback, useContext, useEffect, useState } from "react";
-import { auth, type User } from "./api";
+import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
+import { auth, setOn401Handler, type User } from "./api";
+// Static imports for the local state stores. The previous version used
+// dynamic import("./store") inside signOut — that produces a separate
+// code-split chunk whose URL goes stale after a deploy, so signOut
+// would throw ChunkLoadError on the first post-deploy logout and the
+// previous user's drafts / connectors leaked into the next session.
+import { prefs, session } from "./store";
 
 type AuthState = {
   user: User | null;
@@ -20,15 +26,30 @@ const Ctx = createContext<AuthState>({
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  // In-flight refresh singleton — two concurrent refresh() calls (e.g.
+  // tab focus + storage event firing simultaneously) used to both hit
+  // /auth/me and could race so the second setUser stomped the first.
+  // Dedupe via a Promise ref so concurrent callers await the same
+  // network response.
+  const refreshInFlight = useRef<Promise<void> | null>(null);
 
   const refresh = useCallback(async () => {
+    if (refreshInFlight.current) return refreshInFlight.current;
+    const p = (async () => {
+      try {
+        const r = await auth.me();
+        setUser(r.user);
+      } catch {
+        setUser(null);
+      } finally {
+        setLoading(false);
+      }
+    })();
+    refreshInFlight.current = p;
     try {
-      const r = await auth.me();
-      setUser(r.user);
-    } catch {
-      setUser(null);
+      await p;
     } finally {
-      setLoading(false);
+      refreshInFlight.current = null;
     }
   }, []);
 
@@ -57,8 +78,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Wipe the in-memory module-level singletons too — localStorage
       // alone leaves the prev user's draft, active connectors, sidebar
       // widths in memory, and they'd leak to user B on next signin.
+      // prefs / session are statically imported above so we can't
+      // ChunkLoadError-out of the cleanup.
       try {
-        const { prefs, session } = await import("./store");
         prefs.reset();
         session.resetForNewChat();
         session.clearDraft();
@@ -72,6 +94,41 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => { refresh(); }, [refresh]);
+
+  // Wire the global 401 watchdog so an expired session cookie clears
+  // the in-memory user the moment any backend call returns 401. Without
+  // this, the sidebar account chip stays "signed in" while every chat
+  // /file load 401s silently. Excluded paths (/api/auth/*) are filtered
+  // inside setOn401Handler's call site in api.ts.
+  useEffect(() => {
+    setOn401Handler(() => {
+      setUser(null);
+    });
+    return () => setOn401Handler(null);
+  }, []);
+
+  // Periodic re-check so a session that expires on the server side
+  // (e.g. operator revoked the session row from /admin) drops the
+  // signed-in state on the next interval even if no other API call
+  // fires. 5 min is a reasonable middle between "fast feedback" and
+  // "extra /me load per tab".
+  useEffect(() => {
+    const t = setInterval(() => {
+      // Skip when the tab is hidden — saves a /me round-trip every
+      // 5 min for backgrounded tabs. The visibilitychange listener
+      // below catches the focus-back case so we don't drift further
+      // than necessary.
+      if (typeof document !== "undefined" && document.visibilityState === "visible") {
+        refresh();
+      }
+    }, 5 * 60 * 1000);
+    const onFocus = () => { if (document.visibilityState === "visible") refresh(); };
+    if (typeof document !== "undefined") document.addEventListener("visibilitychange", onFocus);
+    return () => {
+      clearInterval(t);
+      if (typeof document !== "undefined") document.removeEventListener("visibilitychange", onFocus);
+    };
+  }, [refresh]);
 
   return <Ctx.Provider value={{ user, loading, refresh, signOut }}>{children}</Ctx.Provider>;
 }

@@ -7,7 +7,14 @@
 // url-transform.test.ts.
 export function safeUrlTransform(url: string | null | undefined): string {
   if (!url) return "";
-  const u = url.trim();
+  let u = url.trim();
+  // Whitespace + control characters inside the first ~20 chars defeat
+  // the scheme-prefix check by embedding a CR/LF/tab inside "javascript:"
+  // — `java\nscript:alert(1)` was passing the /^https?:/ test because
+  // String.prototype.trim only strips OUTER whitespace, but the
+  // browser still parses the value as `javascript:`. Defang any
+  // whitespace / control bytes before the prefix test.
+  u = u.replace(/[\x00-\x1F\x7F]/g, "");
   // Protocol-relative `//evil.com/x` resolves to the current scheme +
   // attacker host — block it explicitly. Plain relative paths and
   // fragments are fine.
