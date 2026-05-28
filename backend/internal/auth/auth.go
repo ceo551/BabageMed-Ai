@@ -83,8 +83,8 @@ func (s *Service) Signup(ctx context.Context, email, password, displayName strin
 	if !looksLikeEmail(email) {
 		return nil, "", ErrInvalidEmail
 	}
-	if len(password) < 8 {
-		return nil, "", ErrWeakPassword
+	if err := validatePassword(password); err != nil {
+		return nil, "", err
 	}
 	hash, err := bcrypt.GenerateFromPassword([]byte(password), BcryptCost)
 	if err != nil {
@@ -408,6 +408,38 @@ func (s *Service) createSession(ctx context.Context, userID, ua, ip string) (str
 func hashToken(t string) string {
 	sum := sha256.Sum256([]byte(t))
 	return hex.EncodeToString(sum[:])
+}
+
+// validatePassword enforces the project's password policy in one place:
+// minimum length, max-byte cap (bcrypt silently truncates at 72 bytes —
+// longer passwords look stronger but contribute zero entropy past byte
+// 72), and basic complexity. HIBP k-anonymity check is a follow-up the
+// audit flagged but isn't shipped here (needs an outbound HTTP call to
+// api.pwnedpasswords.com that ops will want to gate per env).
+func validatePassword(p string) error {
+	if len(p) < 12 {
+		return ErrWeakPassword
+	}
+	if len(p) > 72 {
+		return ErrWeakPassword
+	}
+	// At least one letter + one non-letter — defends against weakest
+	// "password1234" / "aaaaaaaaaaaa" forms without imposing the awkward
+	// "uppercase + lowercase + symbol" rules NIST now actively discourages.
+	hasLetter := false
+	hasOther := false
+	for _, r := range p {
+		switch {
+		case (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z'):
+			hasLetter = true
+		default:
+			hasOther = true
+		}
+	}
+	if !hasLetter || !hasOther {
+		return ErrWeakPassword
+	}
+	return nil
 }
 
 func looksLikeEmail(s string) bool {

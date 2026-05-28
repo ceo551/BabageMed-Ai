@@ -50,7 +50,7 @@ export default function SignupPage() {
         </div>
         <div className="auth-field">
           <label htmlFor="password">{s.passwordLabel}</label>
-          <input id="password" type="password" required minLength={8} value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="new-password" />
+          <input id="password" type="password" required minLength={12} maxLength={72} value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="new-password" />
         </div>
         <button className="auth-btn" type="submit" disabled={busy}>{busy ? "…" : s.createAccount}</button>
         <p className="auth-foot">{s.alreadyHaveAccount} <Link href="/login">{s.signInLink}</Link></p>

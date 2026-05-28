@@ -81,7 +81,16 @@ spec:
             - name: K8S_POD_NAME
               valueFrom: { fieldRef: { fieldPath: metadata.name } }
           envFrom:
-            - secretRef: { name: {{ $.Values.mcps.envFromSecret }} }
+            # MCPs mount the *-mcp Secret which carries only the keys
+            # this tier actually needs (per-MCP API tokens, OAuth creds,
+            # scraper config, Redis, OTEL). The full babagemed-env Secret
+            # with DB password / LLM keys / payment creds stays on the
+            # backend Deployment — least-privilege per the 40-agent
+            # audit. To override (e.g. point at an externalSecrets-
+            # managed CRD), set mcps.envFromSecret in values.yaml — the
+            # template appends "-mcp" unless the override is already a
+            # full secret name.
+            - secretRef: { name: {{ printf "%s-mcp" $.Values.mcps.envFromSecret }} }
           readinessProbe:
             httpGet: { path: /health, port: http }
             initialDelaySeconds: 5

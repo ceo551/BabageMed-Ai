@@ -315,11 +315,22 @@ func (s *Service) handleAppendMessage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Verify ownership before inserting (RLS would be nicer; the JOIN here is
-	// pragmatic for the current schema). Filter soft-deleted so a stale
-	// frontend can't append into a chat the user already "deleted".
+	// Three-step write — ownership check, message INSERT, updated_at
+	// bump — wrapped in a single transaction. Previously each ran as a
+	// separate pool call, so a concurrent DELETE between the ownership
+	// SELECT and the INSERT could land an orphaned message attempt (the
+	// ON DELETE CASCADE saves it but the trailing UPDATE then targets a
+	// vanished row, surfacing 500 errors at the user). Single TX with
+	// the SELECT inside removes the race.
+	tx, err := s.db.Pool.Begin(r.Context())
+	if err != nil {
+		internalServerError(w, err)
+		return
+	}
+	defer func() { _ = tx.Rollback(context.Background()) }()
+
 	var owns bool
-	if err := s.db.Pool.QueryRow(r.Context(),
+	if err := tx.QueryRow(r.Context(),
 		`SELECT EXISTS(SELECT 1 FROM chats WHERE id = $1 AND user_id = $2 AND deleted_at IS NULL)`,
 		chatID, u.ID).Scan(&owns); err != nil {
 		internalServerError(w, err)
@@ -331,7 +342,7 @@ func (s *Service) handleAppendMessage(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var m Message
-	err := s.db.Pool.QueryRow(r.Context(), `
+	err = tx.QueryRow(r.Context(), `
 		INSERT INTO chat_messages (chat_id, role, content, citations, meta)
 		VALUES ($1, $2, $3, COALESCE($4, '[]'::jsonb), COALESCE($5, '{}'::jsonb))
 		RETURNING id, chat_id, role, content, citations, meta, created_at
@@ -342,7 +353,15 @@ func (s *Service) handleAppendMessage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	// Bump the chat's updated_at so it sorts to the top of the sidebar list.
-	_, _ = s.db.Pool.Exec(r.Context(), `UPDATE chats SET updated_at = now() WHERE id = $1`, chatID)
+	if _, err := tx.Exec(r.Context(),
+		`UPDATE chats SET updated_at = now() WHERE id = $1 AND deleted_at IS NULL`, chatID); err != nil {
+		internalServerError(w, err)
+		return
+	}
+	if err := tx.Commit(r.Context()); err != nil {
+		internalServerError(w, err)
+		return
+	}
 	writeJSON(w, m)
 }
 

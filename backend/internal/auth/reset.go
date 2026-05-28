@@ -101,8 +101,8 @@ func (s *Service) SendPasswordResetEmail(ctx context.Context, sender email.Sende
 // reset row for that email and, on success, updates the password and
 // purges ALL reset tokens for that user (one-shot, prevents replay).
 func (s *Service) CompletePasswordReset(ctx context.Context, rawEmail, token, newPassword string) error {
-	if len(newPassword) < 8 {
-		return ErrWeakPassword
+	if err := validatePassword(newPassword); err != nil {
+		return err
 	}
 	normalised := strings.ToLower(strings.TrimSpace(rawEmail))
 

@@ -148,9 +148,25 @@ func (c *Client) CompleteStream(ctx context.Context, req CompletionRequest, onDe
 	case strings.HasPrefix(req.Model, "gpt"):
 		provider = "openai"
 		out, err = c.streamOpenAI(ctx, req, onDelta)
+	case strings.HasPrefix(req.Model, "glm"),
+		strings.HasPrefix(req.Model, "kimi"),
+		strings.HasPrefix(req.Model, "qwen"),
+		strings.HasPrefix(req.Model, "deepseek"),
+		strings.HasPrefix(req.Model, "grok"):
+		// Models advertised in the UI picker but not yet wired to a real
+		// provider client. Returning an explicit "model not yet
+		// supported" error is honest — the previous default branch
+		// silently routed them to Claude, so the user thought "GLM"
+		// gave them a Zhipu answer when it was actually Anthropic.
+		provider = req.Model
+		err = fmt.Errorf("model %q is on the roadmap but not yet supported by this backend", req.Model)
+		out = nil
 	default:
-		provider = "anthropic"
-		out, err = c.streamAnthropic(ctx, req, onDelta)
+		// Unrecognized model id — fail closed instead of silently
+		// routing to a fallback the user didn't choose.
+		provider = "unknown"
+		err = fmt.Errorf("unrecognized model %q", req.Model)
+		out = nil
 	}
 	model := req.Model
 	if out != nil && out.Model != "" {
@@ -340,10 +356,11 @@ func (c *Client) callGoogle(ctx context.Context, req CompletionRequest) (*Comple
 		if location == "" {
 			location = "us-central1"
 		}
-		// publisher endpoint, gemini-2.5-pro mirrors what was used on AI Studio.
+		// publisher endpoint, the model name is mapped from req.Model.
+		geminiModel := mapGeminiModel(req.Model)
 		url := fmt.Sprintf(
-			"https://%s-aiplatform.googleapis.com/v1/projects/%s/locations/%s/publishers/google/models/gemini-2.5-pro:generateContent",
-			location, c.cfg.VertexProject, location,
+			"https://%s-aiplatform.googleapis.com/v1/projects/%s/locations/%s/publishers/google/models/%s:generateContent",
+			location, c.cfg.VertexProject, location, geminiModel,
 		)
 		ts, err := c.vertexTokenSource()
 		if err != nil {
@@ -356,7 +373,7 @@ func (c *Client) callGoogle(ctx context.Context, req CompletionRequest) (*Comple
 		r, _ = http.NewRequestWithContext(ctx, "POST", url, bytes.NewReader(body))
 		r.Header.Set("Authorization", "Bearer "+tok.AccessToken)
 	} else {
-		url := "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent?key=" + c.cfg.GoogleKey
+		url := "https://generativelanguage.googleapis.com/v1beta/models/" + mapGeminiModel(req.Model) + ":generateContent?key=" + c.cfg.GoogleKey
 		r, _ = http.NewRequestWithContext(ctx, "POST", url, bytes.NewReader(body))
 	}
 	r.Header.Set("content-type", "application/json")
@@ -583,6 +600,30 @@ func (c *Client) streamVertexAnthropic(ctx context.Context, req CompletionReques
 // VertexProject is set) or AI Studio streamGenerateContent (with API key).
 // Vertex returns a streaming JSON array — each chunk decoded as one
 // generateContent response. AI Studio's same endpoint returns the same shape.
+// mapGeminiModel maps the UI's friendly model id (apps/web/app/lib/models.ts)
+// to the actual Google API model name. Per the audit, the previous code
+// hardcoded "gemini-2.5-pro" no matter what the user picked.
+func mapGeminiModel(id string) string {
+	switch id {
+	case "gemini-pro-3.1", "gemini-3.1-pro":
+		// 3.1 isn't released as a public Google API name yet; fall back
+		// to the latest GA Pro model. When Google ships 3.1 swap the
+		// return value here without touching the rest of the code.
+		return "gemini-2.5-pro"
+	case "gemini-pro", "gemini-2.5-pro":
+		return "gemini-2.5-pro"
+	case "gemini-flash", "gemini-2.5-flash":
+		return "gemini-2.5-flash"
+	default:
+		// Unknown gemini id — pass through if it starts with `gemini-`,
+		// otherwise default to the GA Pro model.
+		if strings.HasPrefix(id, "gemini-") {
+			return id
+		}
+		return "gemini-2.5-pro"
+	}
+}
+
 func (c *Client) streamGoogle(ctx context.Context, req CompletionRequest, onDelta func(string)) (*CompletionResponse, error) {
 	if c.cfg.VertexProject == "" && c.cfg.GoogleKey == "" {
 		return nil, errors.New("neither GOOGLE_CLOUD_PROJECT (Vertex) nor GOOGLE_API_KEY (AI Studio) configured")
@@ -603,7 +644,11 @@ func (c *Client) streamGoogle(ctx context.Context, req CompletionRequest, onDelt
 	})
 
 	var r *http.Request
-	model := "gemini-2.5-pro"
+	// Map the UI-facing model id to the actual Google API endpoint name.
+	// Users picking "gemini-pro-3.1" / "gemini-flash-2.5" / etc. were
+	// previously silently routed to gemini-2.5-pro because of a hard-
+	// coded value. Translate now so the user's pick reaches the wire.
+	model := mapGeminiModel(req.Model)
 	if c.cfg.VertexProject != "" {
 		location := c.cfg.VertexLocation
 		if location == "" {
