@@ -54,22 +54,29 @@ func GenerateCode(secretBase32 string, at time.Time) (string, error) {
 // Verify returns true if `code` matches the TOTP for `secret` at `at`,
 // allowing ±1 period of clock drift. The comparison is constant-time.
 func Verify(secretBase32, code string, at time.Time) bool {
+	ok, _ := VerifyCounter(secretBase32, code, at)
+	return ok
+}
+
+// VerifyCounter is like Verify but also returns the matched counter so
+// the caller can persist it for replay detection. (0 on failure.)
+func VerifyCounter(secretBase32, code string, at time.Time) (bool, uint64) {
 	if len(code) != Digits {
-		return false
+		return false, 0
 	}
 	secret, err := decodeBase32(secretBase32)
 	if err != nil {
-		return false
+		return false, 0
 	}
 	counter := uint64(at.Unix()) / uint64(Period.Seconds())
 	// ±1 window of drift — matches every mainstream authenticator.
 	for _, delta := range []int64{0, -1, 1} {
 		c := uint64(int64(counter) + delta)
 		if hmac.Equal([]byte(hotpCode(secret, c)), []byte(code)) {
-			return true
+			return true, c
 		}
 	}
-	return false
+	return false, 0
 }
 
 // hotpCode is the HMAC-SHA1 + dynamic-truncation routine from RFC 4226.

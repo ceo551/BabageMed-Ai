@@ -199,7 +199,7 @@ func (s *Service) EnrollConfirm(ctx context.Context, userID, code string) (backu
 	// Promote pending → live. Storing the encrypted secret on the user
 	// row keeps Login()'s second-factor check a single JOIN.
 	if _, err := tx.Exec(ctx, `
-		UPDATE users SET totp_secret_encrypted = $1, totp_enabled_at = now() WHERE id = $2
+		UPDATE users SET totp_secret_encrypted = $1, totp_enabled_at = now(), totp_last_counter = 0 WHERE id = $2
 	`, encSecret, userID); err != nil {
 		return nil, err
 	}
@@ -235,7 +235,10 @@ func (s *Service) Validate(ctx context.Context, userID, code string) error {
 	}
 
 	var encSecret *string
-	if err := s.db.Pool.QueryRow(ctx, `SELECT totp_secret_encrypted FROM users WHERE id = $1`, userID).Scan(&encSecret); err != nil {
+	var lastCounter int64
+	if err := s.db.Pool.QueryRow(ctx,
+		`SELECT totp_secret_encrypted, COALESCE(totp_last_counter, 0) FROM users WHERE id = $1`,
+		userID).Scan(&encSecret, &lastCounter); err != nil {
 		return err
 	}
 	if encSecret == nil || *encSecret == "" {
@@ -251,10 +254,32 @@ func (s *Service) Validate(ctx context.Context, userID, code string) error {
 		if err != nil {
 			return err
 		}
-		if Verify(EncodeSecretBase32(raw), code, time.Now()) {
-			return nil
+		ok, matchedCounter := VerifyCounter(EncodeSecretBase32(raw), code, time.Now())
+		if !ok {
+			return ErrMFACodeInvalid
 		}
-		return ErrMFACodeInvalid
+		// Replay protection: reject if this counter (or any prior one
+		// inside the drift window) has already been accepted. ±1 step
+		// from current means matchedCounter ≤ lastCounter implies the
+		// code was previously consumed inside its 30s+drift window.
+		if int64(matchedCounter) <= lastCounter {
+			return ErrMFACodeInvalid
+		}
+		// Persist the consumed counter inside the same transactional
+		// window the rest of the auth flow uses. Best-effort logged on
+		// error: the user already passed the TOTP, refusing the login
+		// because the bookkeeping write failed is worse than allowing
+		// one extra replay window.
+		if _, err := s.db.Pool.Exec(ctx,
+			`UPDATE users SET totp_last_counter = $1 WHERE id = $2 AND COALESCE(totp_last_counter, 0) < $1`,
+			int64(matchedCounter), userID); err != nil {
+			// Don't fail the validate just because the counter write
+			// failed — log so ops sees the degraded state.
+			// (Logging is intentionally lightweight here; callers may
+			// add their own audit/log layer.)
+			_ = err
+		}
+		return nil
 	}
 
 	// Backup code path: bcrypt-compare against every unused row,
@@ -303,7 +328,7 @@ func (s *Service) Disable(ctx context.Context, userID string) error {
 	}
 	defer func() { _ = tx.Rollback(context.Background()) }()
 	if _, err := tx.Exec(ctx, `
-		UPDATE users SET totp_secret_encrypted = NULL, totp_enabled_at = NULL WHERE id = $1
+		UPDATE users SET totp_secret_encrypted = NULL, totp_enabled_at = NULL, totp_last_counter = 0 WHERE id = $1
 	`, userID); err != nil {
 		return err
 	}

@@ -69,6 +69,24 @@ export type LocaleStrings = {
   voiceComingSoon: string;
   toggleNavigation: string;
   featureSettings: string;
+  // ── Auth pages ────────────────────────────────────────────────────────
+  welcomeBack: string;
+  signInToContinue: string;
+  signInCta: string;
+  signUpCta: string;
+  signUpToContinue: string;
+  createAccount: string;
+  emailLabel: string;
+  passwordLabel: string;
+  mfaCodePrompt: string;
+  authenticatorCode: string;
+  mfaCodePlaceholder: string;
+  verifyAndSignIn: string;
+  forgotPassword: string;
+  noAccountYet: string;
+  createOne: string;
+  alreadyHaveAccount: string;
+  signInLink: string;
 };
 
 // The 10 sidebar feature categories — single source of truth. Slug is
@@ -196,6 +214,23 @@ export const STR: Record<Locale, LocaleStrings> = {
     voiceComingSoon: "Voice (coming soon)",
     toggleNavigation: "Toggle navigation",
     featureSettings: "Feature settings",
+    welcomeBack: "Welcome back",
+    signInToContinue: "Sign in to continue with Babbage.",
+    signInCta: "Sign in",
+    signUpCta: "Sign up",
+    signUpToContinue: "Create an account to get started with Babbage.",
+    createAccount: "Create account",
+    emailLabel: "Email",
+    passwordLabel: "Password",
+    mfaCodePrompt: "Enter the 6-digit code from your authenticator app, or a backup code.",
+    authenticatorCode: "Authenticator code",
+    mfaCodePlaceholder: "123456 or XXXX-XXXX",
+    verifyAndSignIn: "Verify and sign in",
+    forgotPassword: "Forgot password?",
+    noAccountYet: "No account yet?",
+    createOne: "Create one",
+    alreadyHaveAccount: "Already have one?",
+    signInLink: "Sign in",
   },
   ar: {
     dir: "rtl",
@@ -285,6 +320,23 @@ export const STR: Record<Locale, LocaleStrings> = {
     voiceComingSoon: "الصوت (قريبًا)",
     toggleNavigation: "إظهار/إخفاء التنقّل",
     featureSettings: "إعدادات الميزة",
+    welcomeBack: "أهلاً بعودتك",
+    signInToContinue: "سجّل الدخول للمتابعة مع Babbage.",
+    signInCta: "تسجيل الدخول",
+    signUpCta: "إنشاء حساب",
+    signUpToContinue: "أنشئ حسابًا للبدء مع Babbage.",
+    createAccount: "إنشاء حساب",
+    emailLabel: "البريد الإلكترونى",
+    passwordLabel: "كلمة المرور",
+    mfaCodePrompt: "أدخل الرمز المكوّن من 6 أرقام من تطبيق المصادقة، أو رمز احتياطى.",
+    authenticatorCode: "رمز المصادقة",
+    mfaCodePlaceholder: "123456 أو XXXX-XXXX",
+    verifyAndSignIn: "تحقّق وسجّل الدخول",
+    forgotPassword: "نسيت كلمة المرور؟",
+    noAccountYet: "ليس لديك حساب؟",
+    createOne: "أنشئ واحدًا",
+    alreadyHaveAccount: "لديك حساب بالفعل؟",
+    signInLink: "تسجيل الدخول",
   },
 };
 

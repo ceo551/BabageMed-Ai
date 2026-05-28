@@ -92,25 +92,29 @@ func (s *Service) handleList(w http.ResponseWriter, r *http.Request) {
 		err  error
 	)
 	switch feature {
+	// All list paths filter `deleted_at IS NULL` so soft-deleted chats
+	// disappear from the sidebar history but stay recoverable until a
+	// background purge job (future) hard-deletes them. The
+	// chats_user_active_idx partial index covers these queries.
 	case "":
 		rows, err = s.db.Pool.Query(r.Context(), `
 			SELECT id, COALESCE(title, ''), COALESCE(model, ''), COALESCE(mode, ''),
 			       COALESCE(feature_slug, ''), created_at, updated_at
-			FROM chats WHERE user_id = $1
+			FROM chats WHERE user_id = $1 AND deleted_at IS NULL
 			ORDER BY updated_at DESC LIMIT 200
 		`, u.ID)
 	case "general":
 		rows, err = s.db.Pool.Query(r.Context(), `
 			SELECT id, COALESCE(title, ''), COALESCE(model, ''), COALESCE(mode, ''),
 			       COALESCE(feature_slug, ''), created_at, updated_at
-			FROM chats WHERE user_id = $1 AND feature_slug IS NULL
+			FROM chats WHERE user_id = $1 AND deleted_at IS NULL AND feature_slug IS NULL
 			ORDER BY updated_at DESC LIMIT 200
 		`, u.ID)
 	default:
 		rows, err = s.db.Pool.Query(r.Context(), `
 			SELECT id, COALESCE(title, ''), COALESCE(model, ''), COALESCE(mode, ''),
 			       COALESCE(feature_slug, ''), created_at, updated_at
-			FROM chats WHERE user_id = $1 AND feature_slug = $2
+			FROM chats WHERE user_id = $1 AND deleted_at IS NULL AND feature_slug = $2
 			ORDER BY updated_at DESC LIMIT 200
 		`, u.ID, feature)
 	}
@@ -182,7 +186,7 @@ func (s *Service) handleGet(w http.ResponseWriter, r *http.Request) {
 	err := s.db.Pool.QueryRow(r.Context(), `
 		SELECT id, COALESCE(title, ''), COALESCE(model, ''), COALESCE(mode, ''),
 		       COALESCE(feature_slug, ''), created_at, updated_at
-		FROM chats WHERE id = $1 AND user_id = $2
+		FROM chats WHERE id = $1 AND user_id = $2 AND deleted_at IS NULL
 	`, chi.URLParam(r, "id"), u.ID).Scan(&c.ID, &c.Title, &c.Model, &c.Mode, &c.Feature, &c.CreatedAt, &c.UpdatedAt)
 	if errors.Is(err, pgx.ErrNoRows) {
 		http.Error(w, "not found", 404)
@@ -231,7 +235,14 @@ func (s *Service) handleUpdate(w http.ResponseWriter, r *http.Request) {
 
 func (s *Service) handleDelete(w http.ResponseWriter, r *http.Request) {
 	u := auth.FromContext(r.Context())
-	tag, err := s.db.Pool.Exec(r.Context(), `DELETE FROM chats WHERE id = $1 AND user_id = $2`, chi.URLParam(r, "id"), u.ID)
+	// Soft-delete by stamping deleted_at — preserves message history for
+	// audit / GDPR-export / accidental-undo. The list and messages
+	// queries filter on `deleted_at IS NULL` so the user sees the chat
+	// disappear immediately. A future admin tool can hard-purge after
+	// a retention window.
+	tag, err := s.db.Pool.Exec(r.Context(),
+		`UPDATE chats SET deleted_at = now() WHERE id = $1 AND user_id = $2 AND deleted_at IS NULL`,
+		chi.URLParam(r, "id"), u.ID)
 	if err != nil {
 		internalServerError(w, err)
 		return
@@ -305,10 +316,11 @@ func (s *Service) handleAppendMessage(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Verify ownership before inserting (RLS would be nicer; the JOIN here is
-	// pragmatic for the current schema).
+	// pragmatic for the current schema). Filter soft-deleted so a stale
+	// frontend can't append into a chat the user already "deleted".
 	var owns bool
 	if err := s.db.Pool.QueryRow(r.Context(),
-		`SELECT EXISTS(SELECT 1 FROM chats WHERE id = $1 AND user_id = $2)`,
+		`SELECT EXISTS(SELECT 1 FROM chats WHERE id = $1 AND user_id = $2 AND deleted_at IS NULL)`,
 		chatID, u.ID).Scan(&owns); err != nil {
 		internalServerError(w, err)
 		return

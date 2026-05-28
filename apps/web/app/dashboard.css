@@ -956,3 +956,30 @@ button.msg-citation[data-open="true"] {
 /* Collapsed main sidebar: hide chat row icon + menu (only feature icons
  * stay visible per the existing collapsed treatment). */
 .shell[data-collapsed="true"] .sb-history-li { display: none; }
+
+/* ── Mobile touch targets (WCAG 2.5.5 AAA / 2.5.8 AA) ─────────────────
+ * Below 768px every interactive button on the chrome surfaces (sidebar
+ * collapse, history menu, composer +/mic/send, model pill, sub-sidebar
+ * collapse) bumps to 44×44px hit area. Visual size unchanged on desktop
+ * so the dense layout stays. */
+@media (max-width: 768px) {
+  .sb-collapse,
+  .sb-history-menu-btn,
+  .add-btn,
+  .cmpr-icon,
+  .mobile-nav-btn,
+  .feat-subsb-collapse,
+  .feat-subsb-item-menu-btn,
+  .feat-rail-collapse,
+  .modal-close,
+  .feat-card-add,
+  .feat-card-edit,
+  .feat-subsb-row-add {
+    min-width: 44px;
+    min-height: 44px;
+  }
+  .model-pill {
+    min-height: 44px;
+    padding: 8px 12px;
+  }
+}
