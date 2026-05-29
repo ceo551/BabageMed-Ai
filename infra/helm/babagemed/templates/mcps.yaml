@@ -70,6 +70,14 @@ spec:
       {{- with $.Values.image.pullSecrets }}
       imagePullSecrets: {{- toYaml . | nindent 8 }}
       {{- end }}
+      {{- with $.Values.nodeSelector }}
+      # On GKE Autopilot the nodeSelector carries the compute-class label
+      # (cloud.google.com/compute-class: Balanced) so the 262 MCP pods land
+      # on N2 nodes — the default general-purpose pool is E2-backed and the
+      # project's E2_CPUS quota (24) is far too small for the full fan-out,
+      # whereas N2_CPUS is 200. backend/frontend carry the same selector.
+      nodeSelector: {{- toYaml . | nindent 8 }}
+      {{- end }}
       containers:
         - name: mcp
           image: "{{ $imgRegistry }}/mcp-{{ $id }}:{{ $.Values.image.tag }}"

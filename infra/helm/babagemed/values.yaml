@@ -353,29 +353,31 @@ tolerations: []
 affinity: {}
 
 # ─── Misc ─────────────────────────────────────────────────────────────────
-# Pod-level security: runAsNonRoot is the real security guarantee.
-# We deliberately do NOT pin runAsUser at the chart level any more —
-# the previous global runAsUser: 65532 broke frontend + MCP pods
-# because:
-#   - backend uses distroless/static which ships uid 65532 (nonroot)
-#   - frontend (apps/web/Dockerfile) uses `USER node` = uid 1000
-#   - mcps (mcps/*/Dockerfile) use `USER node` = uid 1000
-#   - Playwright-bound MCPs use `USER pwuser` = uid 1000
-# With runAsUser: 65532 forced globally, the frontend/MCP runtime tried
-# to bind paths chmod'd for uid 1000 and crashed on start. Now we let
-# each image's USER directive win, and runAsNonRoot enforces that none
-# of them are root. fsGroup is similarly omitted — no shared writable
-# volumes need it.
-# seccompProfile RuntimeDefault is the baseline GKE Autopilot + the
-# Pod-Security-Standard "restricted" admission level both require —
-# without it the namespace mutates everything to "baseline" silently
-# and we lose the restricted protections.
+# Pod-level security. runAsNonRoot is the real guarantee, but it is NOT
+# sufficient on its own: GKE Autopilot (Pod-Security "restricted") REJECTS
+# a container that sets runAsNonRoot:true when the image's USER is a
+# non-numeric NAME, because the kubelet can't resolve the name to a uid at
+# admission time → "container has runAsNonRoot and image has non-numeric
+# user (node/nonroot), cannot verify user is non-root" → CreateContainerConfigError.
+# Our images all use NAME-form USER directives:
+#   - frontend (apps/web/Dockerfile) → USER node       = uid 1000
+#   - mcps (mcps/*/Dockerfile)       → USER node        = uid 1000
+#   - backend (distroless/static)    → USER nonroot     = uid 65532 (overridden in backend.yaml)
+# So we MUST pin a NUMERIC runAsUser. The global default below is 1000
+# (matching `USER node`, so frontend + all MCPs verify cleanly and still
+# bind paths chmod'd for uid 1000 — the thing that broke when 65532 was
+# forced globally). The backend Deployment overrides runAsUser to 65532
+# to match its distroless nonroot uid. postgres/redis set their own (999).
+# seccompProfile RuntimeDefault is the restricted-PSS baseline; without it
+# the namespace silently downgrades to "baseline".
 podSecurityContext:
   runAsNonRoot: true
+  runAsUser: 1000
   seccompProfile:
     type: RuntimeDefault
 securityContext:
   runAsNonRoot: true
+  runAsUser: 1000
   readOnlyRootFilesystem: false   # Playwright needs to write to /tmp
   allowPrivilegeEscalation: false
   capabilities: { drop: ["ALL"] }

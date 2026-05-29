@@ -62,7 +62,11 @@ spec:
             matchLabels:
               app.kubernetes.io/name: babagemed
               app.kubernetes.io/component: backend
-      securityContext: {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      # Backend is distroless/static → USER nonroot = uid 65532, so it needs
+      # a numeric runAsUser of 65532 (the global default is 1000, matching the
+      # node-based frontend/MCP images). deepCopy keeps the merge from mutating
+      # the shared .Values map (which would leak 65532 onto frontend/MCPs).
+      securityContext: {{- toYaml (merge (dict "runAsUser" 65532) (deepCopy .Values.podSecurityContext)) | nindent 8 }}
       {{- with .Values.image.pullSecrets }}
       imagePullSecrets: {{- toYaml . | nindent 8 }}
       {{- end }}
@@ -195,7 +199,7 @@ spec:
             timeoutSeconds: 3
             failureThreshold: 5
           resources: {{- toYaml .Values.backend.resources | nindent 12 }}
-          securityContext: {{- toYaml .Values.securityContext | nindent 12 }}
+          securityContext: {{- toYaml (merge (dict "runAsUser" 65532) (deepCopy .Values.securityContext)) | nindent 12 }}
       {{- with .Values.nodeSelector }}
       nodeSelector: {{- toYaml . | nindent 8 }}
       {{- end }}
