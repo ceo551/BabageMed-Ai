@@ -161,7 +161,7 @@ class MainActivity : ComponentActivity() {
             if (scheme != "https" && scheme != "http") {
                 return true
             }
-            // External (non-babagemed) URLs spin out to the system browser
+            // External (non-babbage) URLs spin out to the system browser
             // so OAuth callbacks etc. don't leave the WebView trapped on a
             // third-party site.
             val host = url.host ?: return true

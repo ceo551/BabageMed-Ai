@@ -9,9 +9,9 @@ kind: ConfigMap
 metadata:
   name: {{ .Release.Name }}-dashboards
   labels:
-    {{- include "babagemed.labels" . | nindent 4 }}
+    {{- include "babbage.labels" . | nindent 4 }}
     {{ .Values.monitoring.grafanaDashboard.label }}: {{ .Values.monitoring.grafanaDashboard.labelValue | quote }}
 data:
-  babagemed-overview.json: |-
-    {{- .Files.Get "dashboards/babagemed-overview.json" | nindent 4 }}
+  babbage-overview.json: |-
+    {{- .Files.Get "dashboards/babbage-overview.json" | nindent 4 }}
 {{- end }}

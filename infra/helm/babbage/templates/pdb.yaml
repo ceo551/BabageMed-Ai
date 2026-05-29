@@ -30,7 +30,7 @@ kind: PodDisruptionBudget
 metadata:
   name: {{ .Release.Name }}-backend
   labels:
-    {{- include "babagemed.labels" . | nindent 4 }}
+    {{- include "babbage.labels" . | nindent 4 }}
     app.kubernetes.io/component: backend
 spec:
   {{- if .Values.backend.pdb.minAvailable }}
@@ -40,7 +40,7 @@ spec:
   {{- end }}
   selector:
     matchLabels:
-      app.kubernetes.io/name: babagemed
+      app.kubernetes.io/name: babbage
       app.kubernetes.io/component: backend
 {{- end }}
 
@@ -51,7 +51,7 @@ kind: PodDisruptionBudget
 metadata:
   name: {{ .Release.Name }}-frontend
   labels:
-    {{- include "babagemed.labels" . | nindent 4 }}
+    {{- include "babbage.labels" . | nindent 4 }}
     app.kubernetes.io/component: frontend
 spec:
   {{- if .Values.frontend.pdb.minAvailable }}
@@ -61,6 +61,6 @@ spec:
   {{- end }}
   selector:
     matchLabels:
-      app.kubernetes.io/name: babagemed
+      app.kubernetes.io/name: babbage
       app.kubernetes.io/component: frontend
 {{- end }}

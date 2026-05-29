@@ -40,7 +40,7 @@ function wIfMissing(p, body) {
 function pkgJson(s) {
   return JSON.stringify(
     {
-      name: `@babagemed/mcp-${s.id}`,
+      name: `@babbage/mcp-${s.id}`,
       version: "0.1.0",
       private: true,
       type: "module",
@@ -51,7 +51,7 @@ function pkgJson(s) {
         dev: "tsx src/index.ts",
       },
       dependencies: {
-        "@babagemed/mcp-base": "file:../../packages/mcp-base",
+        "@babbage/mcp-base": "file:../../packages/mcp-base",
         zod: "^3.23.8",
         cheerio: "^1.0.0",
         undici: "^6.21.0",
@@ -111,7 +111,7 @@ RUN \\
 WORKDIR /build/mcps/${s.id}
 COPY mcps/${s.id}/package.json mcps/${s.id}/tsconfig.json ./
 COPY mcps/${s.id}/src ./src
-# Google OAuth helper now lives in @babagemed/mcp-base — copied above.
+# Google OAuth helper now lives in @babbage/mcp-base — copied above.
 RUN \\
     npm install --no-audit --no-fund && npx tsc -p tsconfig.json
 `;
@@ -121,7 +121,7 @@ FROM mcr.microsoft.com/playwright:v1.49.0-jammy
 WORKDIR /app
 ENV NODE_ENV=production HTTP_ONLY=1
 COPY --from=build /build/mcps/${s.id} /app
-COPY --from=build /build/packages/mcp-base /app/node_modules/@babagemed/mcp-base
+COPY --from=build /build/packages/mcp-base /app/node_modules/@babbage/mcp-base
 EXPOSE ${s.port}
 # Drop privileges — the Playwright base image ships with a pwuser
 # (uid 1000) for exactly this purpose. Without it the renderer + the
@@ -137,7 +137,7 @@ FROM node:20-bookworm-slim
 WORKDIR /app
 ENV NODE_ENV=production HTTP_ONLY=1
 COPY --from=build /build/mcps/${s.id} /app
-COPY --from=build /build/packages/mcp-base /app/node_modules/@babagemed/mcp-base
+COPY --from=build /build/packages/mcp-base /app/node_modules/@babbage/mcp-base
 EXPOSE ${s.port}
 USER node
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \\
@@ -147,7 +147,7 @@ CMD ["node", "dist/index.js"]
 }
 
 function indexTs(s) {
-  return `import { McpServer } from "@babagemed/mcp-base";
+  return `import { McpServer } from "@babbage/mcp-base";
 import { registerTools } from "./tools.js";
 
 const server = new McpServer({
@@ -168,7 +168,7 @@ server.run();
 // Generic fallback tools.ts (created only if no real implementation exists yet for that server).
 function fallbackTools(s) {
   if (s.kind === "api" || s.kind === "hybrid") {
-    return `import { z, McpServer, ApiClient } from "@babagemed/mcp-base";
+    return `import { z, McpServer, ApiClient } from "@babbage/mcp-base";
 
 const api = new ApiClient({
   base: ${JSON.stringify(s.base)},
@@ -208,7 +208,7 @@ export function registerTools(server: McpServer) {
       origin = s.base; // best-effort, leave as-is for malformed entries
     }
   }
-  return `import { z, McpServer, Scraper, cheerioLoad } from "@babagemed/mcp-base";
+  return `import { z, McpServer, Scraper, cheerioLoad } from "@babbage/mcp-base";
 
 const scraper = new Scraper({
   base: ${JSON.stringify(s.base)},
@@ -307,7 +307,7 @@ export function registerTools(server: McpServer) {
 `;
 }
 
-// Shared helpers (Google OAuth, etc.) now live in @babagemed/mcp-base
+// Shared helpers (Google OAuth, etc.) now live in @babbage/mcp-base
 // — see packages/mcp-base/src/google.ts. Nothing to scaffold here.
 
 let written = 0;
@@ -342,7 +342,7 @@ for (const s of MANIFEST.servers) {
   compose.push(`    build:`);
   compose.push(`      context: .`);
   compose.push(`      dockerfile: mcps/${s.id}/Dockerfile`);
-  compose.push(`    image: babagemed/mcp-${s.id}:latest`);
+  compose.push(`    image: babbage/mcp-${s.id}:latest`);
   compose.push(`    env_file: .env`);
   compose.push(`    environment:`);
   compose.push(`      HTTP_ONLY: "1"`);
@@ -350,22 +350,22 @@ for (const s of MANIFEST.servers) {
   compose.push(`    ports:`);
   compose.push(`      - "${s.port}:${s.port}"`);
   compose.push(`    restart: unless-stopped`);
-  compose.push(`    networks: [babagemed]`);
+  compose.push(`    networks: [babbage]`);
 }
 compose.push("");
 compose.push("networks:");
-compose.push("  babagemed:");
-compose.push("    name: babagemed");
+compose.push("  babbage:");
+compose.push("    name: babbage");
 compose.push("    driver: bridge");
 w(join(ROOT, "docker-compose.mcps.yml"), compose.join("\n"));
 
 // Regenerate mcps-all.txt for the Helm chart + CI sharding. The previous
 // file was hand-maintained and silently drifted from the manifest.
 const allTxt = MANIFEST.servers.map((s) => s.id).join(" ");
-w(join(ROOT, "infra/helm/babagemed/mcps-all.txt"), allTxt + "\n");
+w(join(ROOT, "infra/helm/babbage/mcps-all.txt"), allTxt + "\n");
 
 // Also emit mcps-index.json (the chart consumes this for templating).
 const indexJson = MANIFEST.servers.map((s) => ({ id: s.id, port: s.port, kind: s.kind, category: s.category }));
-w(join(ROOT, "infra/helm/babagemed/mcps-index.json"), JSON.stringify(indexJson, null, 2) + "\n");
+w(join(ROOT, "infra/helm/babbage/mcps-index.json"), JSON.stringify(indexJson, null, 2) + "\n");
 
 console.log(`generated ${written} MCP servers`);

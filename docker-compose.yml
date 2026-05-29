@@ -4,7 +4,7 @@
 # is enough to bring up auth, persistence, and the chat UI without the
 # MCPs (the backend's /api/chat just gathers from zero connectors).
 #
-# All services share the `babagemed` network. We declare it as
+# All services share the `babbage` network. We declare it as
 # external so the MCP file owns its lifecycle — `docker compose down`
 # on this file alone won't tear out from under the running MCPs.
 
@@ -12,18 +12,18 @@ services:
   postgres:
     image: postgres:16-alpine
     environment:
-      POSTGRES_USER: ${POSTGRES_USER:-babagemed}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-babagemed}
-      POSTGRES_DB: ${POSTGRES_DB:-babagemed}
+      POSTGRES_USER: ${POSTGRES_USER:-babbage}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-babbage}
+      POSTGRES_DB: ${POSTGRES_DB:-babbage}
     volumes:
-      - babagemed-pgdata:/var/lib/postgresql/data
+      - babbage-pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD", "pg_isready", "-U", "${POSTGRES_USER:-babagemed}"]
+      test: ["CMD", "pg_isready", "-U", "${POSTGRES_USER:-babbage}"]
       interval: 10s
       timeout: 5s
       retries: 5
     restart: unless-stopped
-    networks: [babagemed]
+    networks: [babbage]
 
   redis:
     image: redis:7-alpine
@@ -36,16 +36,16 @@ services:
       timeout: 3s
       retries: 5
     restart: unless-stopped
-    networks: [babagemed]
+    networks: [babbage]
 
   backend:
     build:
       context: .
       dockerfile: backend/Dockerfile
-    image: babagemed/backend:latest
+    image: babbage/backend:latest
     env_file: .env
     environment:
-      DATABASE_URL: ${DATABASE_URL:-postgres://babagemed:babagemed@postgres:5432/babagemed?sslmode=disable}
+      DATABASE_URL: ${DATABASE_URL:-postgres://babbage:babbage@postgres:5432/babbage?sslmode=disable}
       REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
       PORT: "8080"
       PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:-http://localhost:3000}
@@ -62,13 +62,13 @@ services:
     ports:
       - "8080:8080"
     restart: unless-stopped
-    networks: [babagemed]
+    networks: [babbage]
 
   frontend:
     build:
       context: .
       dockerfile: apps/web/Dockerfile
-    image: babagemed/frontend:latest
+    image: babbage/frontend:latest
     environment:
       BACKEND_URL: http://backend:8080
       NODE_ENV: production
@@ -77,15 +77,15 @@ services:
     ports:
       - "3000:3000"
     restart: unless-stopped
-    networks: [babagemed]
+    networks: [babbage]
 
 volumes:
-  babagemed-pgdata:
+  babbage-pgdata:
 
 networks:
-  babagemed:
-    name: babagemed
+  babbage:
+    name: babbage
     # external: true would require the MCP compose file to be up
     # first; instead we let the first `docker compose up` create the
-    # network and the MCP file's `name: babagemed` reuses it.
+    # network and the MCP file's `name: babbage` reuses it.
     driver: bridge

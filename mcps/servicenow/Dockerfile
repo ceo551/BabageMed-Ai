@@ -13,7 +13,7 @@ RUN \
 WORKDIR /build/mcps/servicenow
 COPY mcps/servicenow/package.json mcps/servicenow/tsconfig.json ./
 COPY mcps/servicenow/src ./src
-# Google OAuth helper now lives in @babagemed/mcp-base — copied above.
+# Google OAuth helper now lives in @babbage/mcp-base — copied above.
 RUN \
     npm install --no-audit --no-fund --ignore-scripts && npx tsc -p tsconfig.json
 
@@ -21,7 +21,7 @@ FROM node:20-bookworm-slim
 WORKDIR /app
 ENV NODE_ENV=production HTTP_ONLY=1
 COPY --from=build /build/mcps/servicenow /app
-COPY --from=build /build/packages/mcp-base /app/node_modules/@babagemed/mcp-base
+COPY --from=build /build/packages/mcp-base /app/node_modules/@babbage/mcp-base
 EXPOSE 6654
 USER node
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \

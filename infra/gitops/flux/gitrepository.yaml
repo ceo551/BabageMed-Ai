@@ -3,16 +3,16 @@
 apiVersion: source.toolkit.fluxcd.io/v1
 kind: GitRepository
 metadata:
-  name: babagemed
+  name: babbage
   namespace: flux-system
 spec:
   interval: 1m
-  url: https://github.com/ceo551/babagemed-ai
+  url: https://github.com/ceo551/babbage-ai
   ref:
     branch: main
   # For private repos:
   # secretRef:
-  #   name: babagemed-git-creds   # kubernetes.io/basic-auth or SSH key Secret
+  #   name: babbage-git-creds   # kubernetes.io/basic-auth or SSH key Secret
   ignore: |
     # Don't pull these into the working copy Flux clones.
     /node_modules

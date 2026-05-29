@@ -1,18 +1,18 @@
-{{- define "babagemed.fullname" -}}
-{{- printf "%s-%s" .Release.Name "babagemed" | trunc 63 | trimSuffix "-" -}}
+{{- define "babbage.fullname" -}}
+{{- printf "%s-%s" .Release.Name "babbage" | trunc 63 | trimSuffix "-" -}}
 {{- end -}}
 
-{{- define "babagemed.labels" -}}
-app.kubernetes.io/name: babagemed
+{{- define "babbage.labels" -}}
+app.kubernetes.io/name: babbage
 app.kubernetes.io/instance: {{ .Release.Name }}
 app.kubernetes.io/managed-by: {{ .Release.Service }}
 app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
 helm.sh/chart: {{ printf "%s-%s" .Chart.Name .Chart.Version }}
 {{- end -}}
 
-{{- define "babagemed.serviceAccountName" -}}
+{{- define "babbage.serviceAccountName" -}}
 {{- if .Values.serviceAccount.create -}}
-{{- default (include "babagemed.fullname" .) .Values.serviceAccount.name -}}
+{{- default (include "babbage.fullname" .) .Values.serviceAccount.name -}}
 {{- else -}}
 {{- default "default" .Values.serviceAccount.name -}}
 {{- end -}}
@@ -25,7 +25,7 @@ helm.sh/chart: {{ printf "%s-%s" .Chart.Name .Chart.Version }}
      so SQL traffic isn't cleartext across nodes. With templates/networkpolicy
      .yaml enabled the backend↔postgres path is already pod-isolated and
      disable is acceptable. */}}
-{{- define "babagemed.databaseUrl" -}}
+{{- define "babbage.databaseUrl" -}}
 {{- if and (not .Values.postgres.internal) .Values.postgres.externalUrl -}}
 {{ .Values.postgres.externalUrl }}
 {{- else -}}
@@ -34,7 +34,7 @@ postgres://{{ .Values.secrets.postgresUser }}:{{ .Values.secrets.postgresPasswor
 {{- end -}}
 
 {{/* Image reference for backend/frontend/mcp. */}}
-{{- define "babagemed.image" -}}
+{{- define "babbage.image" -}}
 {{- $registry := .registry -}}
 {{- $name := .name -}}
 {{- $tag := .tag -}}
@@ -42,7 +42,7 @@ postgres://{{ .Values.secrets.postgresUser }}:{{ .Values.secrets.postgresPasswor
 {{- end -}}
 
 {{/* Effective ingress class + annotations based on cloud target. */}}
-{{- define "babagemed.ingressClass" -}}
+{{- define "babbage.ingressClass" -}}
 {{- if .Values.ingress.className -}}
 {{ .Values.ingress.className }}
 {{- else if eq .Values.cloud "gke" -}}
@@ -56,7 +56,7 @@ nginx
 {{- end -}}
 {{- end -}}
 
-{{- define "babagemed.ingressAnnotations" -}}
+{{- define "babbage.ingressAnnotations" -}}
 {{- if .Values.ingress.annotations -}}
 {{ toYaml .Values.ingress.annotations }}
 {{- else if eq .Values.cloud "gke" -}}
@@ -114,7 +114,7 @@ nginx.ingress.kubernetes.io/configuration-snippet: |
 
 {{/* Single source of truth for the generated Redis password.
 
-     secret.yaml (babagemed-env) and secret-mcp.yaml (babagemed-env-mcp) BOTH
+     secret.yaml (babbage-env) and secret-mcp.yaml (babbage-env-mcp) BOTH
      need REDIS_PASSWORD: the redis server starts with --requirepass that
      value and the backend reads it from -env, while all 262 MCPs read it
      from -mcp. Previously each template independently `lookup`-ed the env
@@ -123,12 +123,12 @@ nginx.ingress.kubernetes.io/configuration-snippet: |
      every MCP's Redis AUTH failed.
 
      This helper makes both render the SAME value:
-       1. reuse the existing babagemed-env value on upgrade (lookup), else
+       1. reuse the existing babbage-env value on upgrade (lookup), else
        2. generate once and cache it on the shared render context (.Values)
           so the second template invocation in the same `helm` pass reads
           the cached value instead of generating a fresh one. */}}
-{{- define "babagemed.redisPassword" -}}
-{{- $name := .Values.mcps.envFromSecret | default "babagemed-env" -}}
+{{- define "babbage.redisPassword" -}}
+{{- $name := .Values.mcps.envFromSecret | default "babbage-env" -}}
 {{- $existing := lookup "v1" "Secret" .Release.Namespace $name -}}
 {{- if and $existing (index $existing.data "REDIS_PASSWORD") -}}
 {{- index $existing.data "REDIS_PASSWORD" | b64dec -}}
@@ -141,7 +141,7 @@ nginx.ingress.kubernetes.io/configuration-snippet: |
 {{- end -}}
 
 {{/* Resolve the MCP list. preset=custom uses mcps.enabled directly. */}}
-{{- define "babagemed.mcpList" -}}
+{{- define "babbage.mcpList" -}}
 {{- if eq .Values.mcps.preset "all" -}}
 {{ .Files.Get "mcps-all.txt" }}
 {{- else if eq .Values.mcps.preset "default" -}}

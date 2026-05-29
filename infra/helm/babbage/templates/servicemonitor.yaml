@@ -10,7 +10,7 @@ kind: ServiceMonitor
 metadata:
   name: {{ .Release.Name }}-backend
   labels:
-    {{- include "babagemed.labels" . | nindent 4 }}
+    {{- include "babbage.labels" . | nindent 4 }}
     app.kubernetes.io/component: backend
     {{- with .Values.monitoring.serviceMonitor.labels }}
     {{- toYaml . | nindent 4 }}
@@ -18,7 +18,7 @@ metadata:
 spec:
   selector:
     matchLabels:
-      app.kubernetes.io/name: babagemed
+      app.kubernetes.io/name: babbage
       app.kubernetes.io/component: backend
       app.kubernetes.io/instance: {{ .Release.Name }}
   namespaceSelector:
@@ -34,7 +34,7 @@ kind: ServiceMonitor
 metadata:
   name: {{ .Release.Name }}-mcps
   labels:
-    {{- include "babagemed.labels" . | nindent 4 }}
+    {{- include "babbage.labels" . | nindent 4 }}
     app.kubernetes.io/component: mcp
     {{- with .Values.monitoring.serviceMonitor.labels }}
     {{- toYaml . | nindent 4 }}
@@ -42,7 +42,7 @@ metadata:
 spec:
   selector:
     matchLabels:
-      app.kubernetes.io/name: babagemed
+      app.kubernetes.io/name: babbage
       app.kubernetes.io/component: mcp
   namespaceSelector:
     matchNames: [ {{ .Release.Namespace }} ]
@@ -65,13 +65,13 @@ kind: PrometheusRule
 metadata:
   name: {{ .Release.Name }}-alerts
   labels:
-    {{- include "babagemed.labels" . | nindent 4 }}
+    {{- include "babbage.labels" . | nindent 4 }}
     {{- with .Values.monitoring.prometheusRule.labels }}
     {{- toYaml . | nindent 4 }}
     {{- end }}
 spec:
   groups:
-    - name: babagemed.mcps
+    - name: babbage.mcps
       rules:
         - alert: McpDown
           expr: up{job=~".*mcps.*"} == 0
@@ -99,7 +99,7 @@ spec:
           labels: { severity: info }
           annotations:
             summary: "MCP {{`{{ $labels.mcp_id }}`}} {{`{{ $labels.tool }}`}} p95 > 5s"
-    - name: babagemed.backend
+    - name: babbage.backend
       rules:
         - alert: BackendDown
           expr: up{job=~".*backend.*"} == 0

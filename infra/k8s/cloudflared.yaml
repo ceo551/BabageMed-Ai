@@ -6,7 +6,7 @@
 #   browser ─► Cloudflare edge ─► cloudflared (outbound tunnel) ─► AKS pod
 #                                  │
 #                                  └─► ingress-nginx-controller.ingress-nginx
-#                                         ─► babagemed-frontend / -backend
+#                                         ─► babbage-frontend / -backend
 #
 # The TUNNEL_TOKEN secret is created out-of-band (see the PS script that
 # stamped it from a tempfile — the value never lives on disk or in shell

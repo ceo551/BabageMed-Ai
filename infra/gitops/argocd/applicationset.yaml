@@ -4,7 +4,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: ApplicationSet
 metadata:
-  name: babagemed
+  name: babbage
   namespace: argocd
 spec:
   generators:
@@ -12,29 +12,29 @@ spec:
         elements:
           - env: staging
             cluster: https://kubernetes.default.svc
-            namespace: babagemed-staging
+            namespace: babbage-staging
             valueFile: values.yaml
-            host: app.staging.babagemed.example
+            host: app.staging.babbage.example
             issuer: letsencrypt-staging
             registry: ghcr.io/ceo551
           - env: prod-gke
             cluster: https://kubernetes.default.svc
-            namespace: babagemed
+            namespace: babbage
             valueFile: values-gke.yaml
-            host: app.babagemed.example
+            host: app.babbage.example
             issuer: letsencrypt-prod
             registry: gcr.io/your-project
           # Add prod-aks, prod-eks similarly.
   template:
     metadata:
-      name: 'babagemed-{{env}}'
+      name: 'babbage-{{env}}'
       finalizers: [resources-finalizer.argocd.argoproj.io]
     spec:
-      project: babagemed
+      project: babbage
       source:
-        repoURL: https://github.com/ceo551/babagemed-ai
+        repoURL: https://github.com/ceo551/babbage-ai
         targetRevision: main
-        path: infra/helm/babagemed
+        path: infra/helm/babbage
         helm:
           valueFiles:
             - '{{valueFile}}'

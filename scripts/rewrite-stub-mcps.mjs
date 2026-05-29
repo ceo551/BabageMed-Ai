@@ -32,9 +32,9 @@ const TEMPLATE = (server) => `// @generated-by scripts/rewrite-stub-mcps.mjs —
 //
 // To turn this into a real MCP, replace this file with an actual
 // implementation that imports ApiClient / Scraper from
-// @babagemed/mcp-base and call \`server.tool({ name, ... })\` properly.
+// @babbage/mcp-base and call \`server.tool({ name, ... })\` properly.
 
-import { z, McpServer } from "@babagemed/mcp-base";
+import { z, McpServer } from "@babbage/mcp-base";
 
 // Note: we use \`connector\` (not \`name\`) here on purpose — the manifest
 // validator scans \`name: "…"\` after \`server.tool({\` to verify the

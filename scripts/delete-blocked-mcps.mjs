@@ -5,9 +5,9 @@
 //
 // Touches:
 //   - mcps/<id>/                                  (rmdir -r)
-//   - infra/helm/babagemed/mcps-all.txt           (space-separated)
-//   - infra/helm/babagemed/mcps-index.json        ({ byId: { … } })
-//   - infra/helm/babagemed/templates/_helpers.tpl ('default' preset literal)
+//   - infra/helm/babbage/mcps-all.txt           (space-separated)
+//   - infra/helm/babbage/mcps-index.json        ({ byId: { … } })
+//   - infra/helm/babbage/templates/_helpers.tpl ('default' preset literal)
 //   - scripts/mcps.manifest.json                  (servers: [{id, …}])
 //   - docker-compose.mcps.yml                     (per-MCP service block)
 //   - frontend/app/components/ConnectorIcon.tsx   (logo map, cosmetic)
@@ -32,14 +32,14 @@ for (const id of toRemove) {
 console.log(`  removed ${dirsGone} mcps/ directories`);
 
 // --- 2. mcps-all.txt (single space-separated line) --------------------------
-const allPath = path.join(ROOT, "infra/helm/babagemed/mcps-all.txt");
+const allPath = path.join(ROOT, "infra/helm/babbage/mcps-all.txt");
 const allTokens = fs.readFileSync(allPath, "utf8").split(/\s+/).filter(Boolean);
 const allKept = allTokens.filter((t) => !removeSet.has(t));
 fs.writeFileSync(allPath, allKept.join(" ") + "\n");
 console.log(`  mcps-all.txt: ${allTokens.length} -> ${allKept.length}`);
 
 // --- 3. mcps-index.json ------------------------------------------------------
-const indexPath = path.join(ROOT, "infra/helm/babagemed/mcps-index.json");
+const indexPath = path.join(ROOT, "infra/helm/babbage/mcps-index.json");
 const index = JSON.parse(fs.readFileSync(indexPath, "utf8"));
 let idxRemoved = 0;
 for (const id of Object.keys(index.byId)) {
@@ -49,7 +49,7 @@ fs.writeFileSync(indexPath, JSON.stringify(index, null, 2) + "\n");
 console.log(`  mcps-index.json: removed ${idxRemoved}`);
 
 // --- 4. _helpers.tpl 'default' preset line ----------------------------------
-const tplPath = path.join(ROOT, "infra/helm/babagemed/templates/_helpers.tpl");
+const tplPath = path.join(ROOT, "infra/helm/babbage/templates/_helpers.tpl");
 let tpl = fs.readFileSync(tplPath, "utf8");
 // The 'default' preset is a single line listing IDs separated by spaces, between
 // `preset "default"` and the next `{{- else -}}`. We rewrite that line only.

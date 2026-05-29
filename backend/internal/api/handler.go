@@ -12,11 +12,11 @@ import (
 	"sync"
 	"time"
 
-	"github.com/babagemed/backend/internal/auth"
-	"github.com/babagemed/backend/internal/cache"
-	"github.com/babagemed/backend/internal/llm"
-	"github.com/babagemed/backend/internal/mcp"
-	"github.com/babagemed/backend/internal/metrics"
+	"github.com/babbage/backend/internal/auth"
+	"github.com/babbage/backend/internal/cache"
+	"github.com/babbage/backend/internal/llm"
+	"github.com/babbage/backend/internal/mcp"
+	"github.com/babbage/backend/internal/metrics"
 	"github.com/go-chi/chi/v5"
 	"golang.org/x/sync/errgroup"
 )

@@ -1,7 +1,7 @@
 # GKE-specific values overlay. Use with:
-#   helm install babagemed ./infra/helm/babagemed \
-#     -n babagemed --create-namespace \
-#     -f infra/helm/babagemed/values-gke.yaml \
+#   helm install babbage ./infra/helm/babbage \
+#     -n babbage --create-namespace \
+#     -f infra/helm/babbage/values-gke.yaml \
 #     --set image.registry=gcr.io/your-project \
 #     --set ingress.host=app.yourdomain.com \
 #     --set ingress.tls.issuer=letsencrypt-prod \
@@ -17,7 +17,7 @@ ingress:
 
 postgres:
   internal: false
-  externalUrl: ""   # paste your Cloud SQL DSN here: postgres://USER:PASS@10.x.x.x:5432/babagemed?sslmode=disable
+  externalUrl: ""   # paste your Cloud SQL DSN here: postgres://USER:PASS@10.x.x.x:5432/babbage?sslmode=disable
 
 # StorageClass defaults to standard-rwo on GKE — keep blank to use it.
 # Use premium-rwo for SSD.

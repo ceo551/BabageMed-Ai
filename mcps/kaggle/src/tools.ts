@@ -1,5 +1,5 @@
 // @hand-edited — do not regenerate via write-real-tools.mjs
-import { z, McpServer, ApiClient } from "@babagemed/mcp-base";
+import { z, McpServer, ApiClient } from "@babbage/mcp-base";
 
 const USER = process.env.KAGGLE_USERNAME || "";
 const KEY = process.env.KAGGLE_KEY || "";

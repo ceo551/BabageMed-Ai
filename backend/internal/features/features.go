@@ -25,8 +25,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/babagemed/backend/internal/auth"
-	"github.com/babagemed/backend/internal/db"
+	"github.com/babbage/backend/internal/auth"
+	"github.com/babbage/backend/internal/db"
 	"github.com/go-chi/chi/v5"
 	"github.com/jackc/pgx/v5"
 )

@@ -13,7 +13,7 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/babagemed/backend/internal/db"
+	"github.com/babbage/backend/internal/db"
 )
 
 type Service struct {

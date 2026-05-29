@@ -13,7 +13,7 @@ RUN \
 WORKDIR /build/mcps/jkma
 COPY mcps/jkma/package.json mcps/jkma/tsconfig.json ./
 COPY mcps/jkma/src ./src
-# Google OAuth helper now lives in @babagemed/mcp-base — copied above.
+# Google OAuth helper now lives in @babbage/mcp-base — copied above.
 RUN \
     npm install --no-audit --no-fund --ignore-scripts && npx tsc -p tsconfig.json
 
@@ -21,7 +21,7 @@ FROM mcr.microsoft.com/playwright:v1.49.0-jammy
 WORKDIR /app
 ENV NODE_ENV=production HTTP_ONLY=1
 COPY --from=build /build/mcps/jkma /app
-COPY --from=build /build/packages/mcp-base /app/node_modules/@babagemed/mcp-base
+COPY --from=build /build/packages/mcp-base /app/node_modules/@babbage/mcp-base
 EXPOSE 6516
 # Drop privileges — the Playwright base image ships with a pwuser
 # (uid 1000) for exactly this purpose. Without it the renderer + the

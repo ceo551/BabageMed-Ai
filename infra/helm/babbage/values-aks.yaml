@@ -1,7 +1,7 @@
 # AKS-specific values overlay. Use with:
-#   helm install babagemed ./infra/helm/babagemed \
-#     -n babagemed --create-namespace \
-#     -f infra/helm/babagemed/values-aks.yaml \
+#   helm install babbage ./infra/helm/babbage \
+#     -n babbage --create-namespace \
+#     -f infra/helm/babbage/values-aks.yaml \
 #     --set image.registry=youracr.azurecr.io \
 #     --set ingress.host=app.yourdomain.com \
 #     --set ingress.tls.issuer=letsencrypt-prod

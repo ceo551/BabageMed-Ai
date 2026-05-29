@@ -49,7 +49,7 @@ for (const id of mcpIds) {
 console.log(`re-auditing ${mcps.length} scraping MCPs`);
 
 // ── 2. Fetch robots.txt per unique origin ──────────────────────────────────
-const UA = "Mozilla/5.0 (compatible; BabageMedBot/1.0; +https://babagemed.com)";
+const UA = "Mozilla/5.0 (compatible; BabbageBot/1.0; +https://babagemed.com)";
 function fetchOnce(url, timeout) {
   return new Promise((resolve) => {
     let u; try { u = new URL(url); } catch { return resolve({ status: 0, error: "bad-url" }); }
@@ -143,7 +143,7 @@ for (const mcp of mcps) {
   else if (r.status !== 200) { verdict = "fetch_error"; reason = `robots.txt returned status ${r.status}`; }
   else {
     const groups = parseRobots(r.body);
-    const d = isAllowed(groups, mcp.searchPath, "BabageMedBot");
+    const d = isAllowed(groups, mcp.searchPath, "BabbageBot");
     verdict = d.allowed ? "allowed" : "blocked";
     reason  = d.reason;
   }
@@ -171,13 +171,13 @@ for (const id of remove) {
 }
 console.log(`  removed ${dirsGone} mcps/ directories`);
 
-const allPath = path.join(ROOT, "infra/helm/babagemed/mcps-all.txt");
+const allPath = path.join(ROOT, "infra/helm/babbage/mcps-all.txt");
 const allTokens = fs.readFileSync(allPath, "utf8").split(/\s+/).filter(Boolean);
 const allKept = allTokens.filter((t) => !removeSet.has(t));
 fs.writeFileSync(allPath, allKept.join(" ") + "\n");
 console.log(`  mcps-all.txt: ${allTokens.length} -> ${allKept.length}`);
 
-const indexPath = path.join(ROOT, "infra/helm/babagemed/mcps-index.json");
+const indexPath = path.join(ROOT, "infra/helm/babbage/mcps-index.json");
 const index = JSON.parse(fs.readFileSync(indexPath, "utf8"));
 let idxRemoved = 0;
 for (const id of Object.keys(index.byId)) {
@@ -186,7 +186,7 @@ for (const id of Object.keys(index.byId)) {
 fs.writeFileSync(indexPath, JSON.stringify(index, null, 2) + "\n");
 console.log(`  mcps-index.json: removed ${idxRemoved}`);
 
-const tplPath = path.join(ROOT, "infra/helm/babagemed/templates/_helpers.tpl");
+const tplPath = path.join(ROOT, "infra/helm/babbage/templates/_helpers.tpl");
 let tpl = fs.readFileSync(tplPath, "utf8");
 tpl = tpl.replace(
   /(\{\{-\s*else if eq \.Values\.mcps\.preset\s+"default"\s*-\}\}\s*\n)([^\n]+)/,

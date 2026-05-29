@@ -306,8 +306,8 @@ secrets:
   googleApiKey: ""
   openaiApiKey: ""
   postgresPassword: "babbage-gke-test-only"
-  postgresUser: babagemed
-  postgresDb: babagemed
+  postgresUser: babbage
+  postgresDb: babbage
   bootstrapAdminEmail: "ceo@babagemed.com"
 
 serviceAccount:

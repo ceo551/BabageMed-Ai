@@ -10,7 +10,7 @@ kind: HorizontalPodAutoscaler
 metadata:
   name: {{ .Release.Name }}-backend
   labels:
-    {{- include "babagemed.labels" . | nindent 4 }}
+    {{- include "babbage.labels" . | nindent 4 }}
     app.kubernetes.io/component: backend
 spec:
   scaleTargetRef:
@@ -55,7 +55,7 @@ kind: HorizontalPodAutoscaler
 metadata:
   name: {{ .Release.Name }}-frontend
   labels:
-    {{- include "babagemed.labels" . | nindent 4 }}
+    {{- include "babbage.labels" . | nindent 4 }}
     app.kubernetes.io/component: frontend
 spec:
   scaleTargetRef:
@@ -73,7 +73,7 @@ spec:
 
 {{- if .Values.mcps.autoscaling.enabled }}
 {{- $idx := .Files.Get "mcps-index.json" | fromJson }}
-{{- $list := include "babagemed.mcpList" . | trim | splitList " " }}
+{{- $list := include "babbage.mcpList" . | trim | splitList " " }}
 {{- range $id := $list }}
 {{- if index $idx.byId $id }}
 {{- $kind := (index $idx.byId $id).kind }}
@@ -85,10 +85,10 @@ kind: HorizontalPodAutoscaler
 metadata:
   name: mcp-{{ $id }}
   labels:
-    app.kubernetes.io/name: babagemed
+    app.kubernetes.io/name: babbage
     app.kubernetes.io/component: mcp
-    babagemed/mcp-id: {{ $id }}
-    babagemed/mcp-kind: {{ $kind }}
+    babbage/mcp-id: {{ $id }}
+    babbage/mcp-kind: {{ $kind }}
 spec:
   scaleTargetRef:
     apiVersion: apps/v1

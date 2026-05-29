@@ -1,5 +1,5 @@
 // @hand-edited — do not regenerate via write-real-tools.mjs
-import { z, McpServer, ApiClient, googleAccessToken } from "@babagemed/mcp-base";
+import { z, McpServer, ApiClient, googleAccessToken } from "@babbage/mcp-base";
 
 // Build the ApiClient once and refresh its Authorization header per call.
 // Each tool previously did `new ApiClient(...)` which discarded the cache

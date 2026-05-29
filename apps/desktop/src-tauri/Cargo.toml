@@ -4,7 +4,7 @@ version = "0.1.0"
 description = "Babbage AI desktop client"
 authors = ["Babbage AI"]
 license = "Proprietary"
-repository = "https://github.com/ceo551/BabageMed-Ai"
+repository = "https://github.com/ceo551/Babbage-Ai"
 edition = "2021"
 rust-version = "1.77"
 

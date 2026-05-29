@@ -5,7 +5,7 @@
 cloud: aks
 
 image:
-  registry: acrbabagemedtest5583.azurecr.io
+  registry: acrbabbagetest5583.azurecr.io
   pullPolicy: IfNotPresent
   tag: latest
 
@@ -39,7 +39,7 @@ mcps:
 ingress:
   enabled: true
   className: nginx
-  host: babagemed.74-162-202-246.nip.io
+  host: babbage.74-162-202-246.nip.io
   tls:
     enabled: false
 
@@ -47,9 +47,9 @@ secrets:
   anthropicApiKey: ""
   googleApiKey: ""
   openaiApiKey: ""
-  postgresPassword: "babagemed-test-only-not-prod"
-  postgresUser: babagemed
-  postgresDb: babagemed
+  postgresPassword: "babbage-test-only-not-prod"
+  postgresUser: babbage
+  postgresDb: babbage
   bootstrapAdminEmail: "ceo@babagemed.com"
 
 serviceAccount:

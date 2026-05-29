@@ -1,10 +1,10 @@
-# Throw-away values used by the AKS test deploy on rg-babagemed-test.
+# Throw-away values used by the AKS test deploy on rg-babbage-test.
 # Sized for 1 system pod + 4 user pods (D8s_v3 / E8as_v4 / D8as_v4 / F8as_v6 / E8s_v3)
 # = 40 vCPU, ~208 GB total. Hosts the full 262-MCP preset.
 cloud: aks
 
 image:
-  registry: acrbabagemedtest5583.azurecr.io
+  registry: acrbabbagetest5583.azurecr.io
   # Always re-pull on pod start. We push to :latest from every az acr build,
   # so IfNotPresent leaves nodes stuck on whatever digest they first cached
   # (= the wall of "my new changes never deployed" bugs earlier in this
@@ -59,7 +59,7 @@ ingress:
     # ingress-nginx. Cloudflare SSL/TLS mode = "Flexible": user↔CF over
     # HTTPS, CF↔origin over HTTP. Saves us cert-manager + Let's Encrypt
     # while keeping the browser padlock. To go full end-to-end TLS:
-    # flip this back to true + put a real cert in babagemed-tls AND set
+    # flip this back to true + put a real cert in babbage-tls AND set
     # Cloudflare to "Full (strict)".
     enabled: false
     issuer: ""
@@ -69,9 +69,9 @@ secrets:
   anthropicApiKey: ""
   googleApiKey: ""
   openaiApiKey: ""
-  postgresPassword: "babagemed-test-only-not-prod"
-  postgresUser: babagemed
-  postgresDb: babagemed
+  postgresPassword: "babbage-test-only-not-prod"
+  postgresUser: babbage
+  postgresDb: babbage
   bootstrapAdminEmail: "ceo@babagemed.com"
 
 serviceAccount:
@@ -79,7 +79,7 @@ serviceAccount:
   name: ""
 
 # GCP / Vertex AI via Workload Identity Federation. When enabled, the backend
-# pod runs as babagemed-backend-sa, picks up a projected OIDC token from AKS,
+# pod runs as babbage-backend-sa, picks up a projected OIDC token from AKS,
 # exchanges it via STS for an impersonated bearer on vertexServiceAccount,
 # and routes Gemini calls to {location}-aiplatform.googleapis.com instead of
 # the AI Studio key endpoint. Disable to fall back to GOOGLE_API_KEY.
@@ -99,4 +99,4 @@ gcp:
   anthropicLocation: "us-east5"
   wifPool: "aks-pool"
   wifProvider: "aks-provider"
-  vertexServiceAccount: "babagemed-vertex@starlit-braid-497012-q5.iam.gserviceaccount.com"
+  vertexServiceAccount: "babbage-vertex@starlit-braid-497012-q5.iam.gserviceaccount.com"

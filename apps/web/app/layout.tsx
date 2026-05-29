@@ -39,13 +39,13 @@ export const viewport = {
 const PRE_PAINT_SCRIPT = `(function(){
   try {
     // Locale + theme are persisted as raw strings under their own keys by
-    // ui-context.tsx (LS_LOCALE="babagemed:locale", LS_THEME="babagemed:theme").
-    // The previous version read them off the "babagemed:prefs" JSON object
+    // ui-context.tsx (LS_LOCALE="babbage:locale", LS_THEME="babbage:theme").
+    // The previous version read them off the "babbage:prefs" JSON object
     // (which only holds model/mode/draft) → p.locale/p.theme were always
     // undefined, so this script silently did nothing and the RTL/theme
     // flash it exists to prevent persisted on every load.
-    var locale = localStorage.getItem("babagemed:locale") || "en";
-    var theme = localStorage.getItem("babagemed:theme") || "system";
+    var locale = localStorage.getItem("babbage:locale") || "en";
+    var theme = localStorage.getItem("babbage:theme") || "system";
     if (theme === "system") {
       theme = window.matchMedia && window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
     }

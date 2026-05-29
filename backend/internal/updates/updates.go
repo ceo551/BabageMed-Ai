@@ -213,7 +213,7 @@ func (s *Service) load(ctx context.Context) ([]byte, error) {
 			return nil, err
 		}
 		req.Header.Set("Accept", "application/json")
-		req.Header.Set("User-Agent", "babagemed-backend/updater")
+		req.Header.Set("User-Agent", "babbage-backend/updater")
 		resp, err := s.httpc.Do(req)
 		if err != nil {
 			return nil, fmt.Errorf("fetch manifest: %w", err)

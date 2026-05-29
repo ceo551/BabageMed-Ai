@@ -13,8 +13,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/babagemed/backend/internal/metrics"
-	"github.com/babagemed/backend/internal/tracing"
+	"github.com/babbage/backend/internal/metrics"
+	"github.com/babbage/backend/internal/tracing"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
 )

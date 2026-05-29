@@ -71,7 +71,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         // Wipe app-namespaced keys but leave generic browser data alone.
         for (let i = localStorage.length - 1; i >= 0; i--) {
           const k = localStorage.key(i);
-          if (k && (k.startsWith("babagemed:") || k.startsWith("babbage:"))) {
+          if (k && (k.startsWith("babbage:") || k.startsWith("babbage:"))) {
             localStorage.removeItem(k);
           }
         }

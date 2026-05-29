@@ -1,5 +1,5 @@
 // @hand-edited — do not regenerate via write-real-tools.mjs
-import { z, McpServer, ApiClient } from "@babagemed/mcp-base";
+import { z, McpServer, ApiClient } from "@babbage/mcp-base";
 
 const TOKEN = process.env.LINKEDIN_ACCESS_TOKEN || "";
 // Only attach Authorization when we actually have a token — previously

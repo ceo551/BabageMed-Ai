@@ -1,7 +1,7 @@
 # EKS-specific values overlay. Use with:
-#   helm install babagemed ./infra/helm/babagemed \
-#     -n babagemed --create-namespace \
-#     -f infra/helm/babagemed/values-eks.yaml \
+#   helm install babbage ./infra/helm/babbage \
+#     -n babbage --create-namespace \
+#     -f infra/helm/babbage/values-eks.yaml \
 #     --set image.registry=123456789.dkr.ecr.us-east-1.amazonaws.com \
 #     --set ingress.host=app.yourdomain.com
 cloud: eks

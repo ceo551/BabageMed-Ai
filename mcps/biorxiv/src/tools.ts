@@ -1,5 +1,5 @@
 // @generated-by write-real-tools.mjs (preserved by generate-mcps.mjs)
-import { z, McpServer, ApiClient } from "@babagemed/mcp-base";
+import { z, McpServer, ApiClient } from "@babbage/mcp-base";
 const api = new ApiClient({ base: "https://api.biorxiv.org", rps: 2 });
 const CHANNEL = "biorxiv";
 export function registerTools(server: McpServer) {

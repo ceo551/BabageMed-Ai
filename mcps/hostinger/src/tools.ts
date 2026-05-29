@@ -1,5 +1,5 @@
 // @generated-by write-real-tools.mjs (preserved by generate-mcps.mjs)
-import { z, McpServer, ApiClient } from "@babagemed/mcp-base";
+import { z, McpServer, ApiClient } from "@babbage/mcp-base";
 const T = process.env.HOSTINGER_API_TOKEN || "";
 const api = new ApiClient({ base: "https://developers.hostinger.com/api", rps: 2, defaultHeaders: T ? { Authorization: `Bearer ${T}` } : {} });
 function need(){ if(!T) throw new Error("HOSTINGER_API_TOKEN required"); }

@@ -15,7 +15,7 @@ const errs = report.mcps.filter((m) => m.verdict === "fetch_error");
 const origins = [...new Set(errs.map((m) => m.origin))];
 console.log(`retrying ${origins.length} origins…`);
 
-const UA = "Mozilla/5.0 (compatible; BabageMedBot/1.0; +https://babagemed.com)";
+const UA = "Mozilla/5.0 (compatible; BabbageBot/1.0; +https://babagemed.com)";
 
 function fetchOnce(url, timeout) {
   return new Promise((resolve) => {
@@ -126,7 +126,7 @@ for (const m of errs) {
   }
   if (r.status !== 200) { m.verdict = "fetch_error"; m.reason = `robots.txt returned status ${r.status}`; stillErr++; continue; }
   const groups = parseRobots(r.body);
-  const d = isAllowed(groups, m.probePath, "BabageMedBot");
+  const d = isAllowed(groups, m.probePath, "BabbageBot");
   m.verdict = d.allowed ? "allowed" : "blocked";
   m.reason  = d.reason;
   if (d.allowed) nowAllowed++; else nowBlocked++;

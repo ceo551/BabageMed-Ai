@@ -1,5 +1,5 @@
 // @generated-by write-real-tools.mjs (preserved by generate-mcps.mjs)
-import { z, McpServer, ApiClient } from "@babagemed/mcp-base";
+import { z, McpServer, ApiClient } from "@babbage/mcp-base";
 const K = process.env.GODADDY_API_KEY || "";
 const S = process.env.GODADDY_API_SECRET || "";
 const api = new ApiClient({ base: "https://api.godaddy.com/v1", rps: 2, defaultHeaders: K && S ? { Authorization: `sso-key ${K}:${S}` } : {} });

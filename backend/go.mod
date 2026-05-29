@@ -1,4 +1,4 @@
-module github.com/babagemed/backend
+module github.com/babbage/backend
 
 go 1.24.1
 

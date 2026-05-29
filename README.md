@@ -97,9 +97,9 @@ parallel runners, ~12 min total cold build).
 
 ## Deploy
 
-The Helm chart in `infra/helm/babagemed/` deploys the whole stack to any
+The Helm chart in `infra/helm/babbage/` deploys the whole stack to any
 Kubernetes cluster. See the chart's `values.yaml` for the full surface
-and `infra/helm/babagemed/values-gke-test.yaml` for a known-working GKE Autopilot
+and `infra/helm/babbage/values-gke-test.yaml` for a known-working GKE Autopilot
 overlay.
 
 GitOps overlays in `infra/gitops/` keep ArgoCD or Flux in sync with the

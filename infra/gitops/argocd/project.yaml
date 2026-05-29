@@ -1,22 +1,22 @@
-# ArgoCD AppProject — scopes what the BabageMed application can deploy.
+# ArgoCD AppProject — scopes what the Babbage application can deploy.
 # Apply once: `kubectl apply -f infra/gitops/argocd/project.yaml -n argocd`
 apiVersion: argoproj.io/v1alpha1
 kind: AppProject
 metadata:
-  name: babagemed
+  name: babbage
   namespace: argocd
   finalizers:
     - resources-finalizer.argocd.argoproj.io
 spec:
-  description: BabageMed AI — Next.js + Go + Postgres + 262 MCPs
+  description: Babbage AI — Next.js + Go + Postgres + 262 MCPs
   sourceRepos:
     # Pin to your fork / private mirror in production.
-    - https://github.com/ceo551/babagemed-ai
-    - https://github.com/ceo551/babagemed-ai.git
+    - https://github.com/ceo551/babbage-ai
+    - https://github.com/ceo551/babbage-ai.git
   destinations:
-    - namespace: babagemed
+    - namespace: babbage
       server: https://kubernetes.default.svc
-    - namespace: babagemed-staging
+    - namespace: babbage-staging
       server: https://kubernetes.default.svc
   clusterResourceWhitelist:
     - group: "*"

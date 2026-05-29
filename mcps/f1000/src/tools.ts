@@ -1,4 +1,4 @@
-import { z, McpServer, Scraper, cheerioLoad } from "@babagemed/mcp-base";
+import { z, McpServer, Scraper, cheerioLoad } from "@babbage/mcp-base";
 
 const scraper = new Scraper({
   base: "https://f1000research.com",

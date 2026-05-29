@@ -1,4 +1,4 @@
-import { McpServer } from "@babagemed/mcp-base";
+import { McpServer } from "@babbage/mcp-base";
 import { registerTools } from "./tools.js";
 
 const server = new McpServer({

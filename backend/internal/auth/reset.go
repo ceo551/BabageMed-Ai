@@ -12,7 +12,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/babagemed/backend/internal/email"
+	"github.com/babbage/backend/internal/email"
 	"github.com/jackc/pgx/v5"
 	"golang.org/x/crypto/bcrypt"
 )

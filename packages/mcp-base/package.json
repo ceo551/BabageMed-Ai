@@ -1,7 +1,7 @@
 {
-  "name": "@babagemed/mcp-base",
+  "name": "@babbage/mcp-base",
   "version": "0.1.0",
-  "description": "Shared runtime for BabageMed-AI MCP servers (API + scrape).",
+  "description": "Shared runtime for Babbage-AI MCP servers (API + scrape).",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "type": "module",

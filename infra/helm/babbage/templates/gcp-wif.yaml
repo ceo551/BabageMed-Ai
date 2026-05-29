@@ -16,14 +16,14 @@
 {{- fail "gcp.enabled=true requires gcp.vertexServiceAccount (the impersonated GCP SA email, e.g. vertex-sa@project.iam.gserviceaccount.com)" -}}
 {{- end -}}
 # Dedicated ServiceAccount the backend pod runs as. The WIF provider's
-# attribute-condition is locked to (namespace=babagemed, sa=babagemed-backend-sa),
+# attribute-condition is locked to (namespace=babbage, sa=babbage-backend-sa),
 # so renaming this breaks the trust chain — only do it deliberately and
 # update the GCP-side provider too.
 apiVersion: v1
 kind: ServiceAccount
 metadata:
-  name: babagemed-backend-sa
-  labels: {{- include "babagemed.labels" . | nindent 4 }}
+  name: babbage-backend-sa
+  labels: {{- include "babbage.labels" . | nindent 4 }}
 ---
 # external_account credentials config (NOT a secret — no keys inside).
 # The Go google.FindDefaultCredentials reads this, picks up the OIDC token
@@ -33,8 +33,8 @@ metadata:
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: babagemed-gcp-wif
-  labels: {{- include "babagemed.labels" . | nindent 4 }}
+  name: babbage-gcp-wif
+  labels: {{- include "babbage.labels" . | nindent 4 }}
 data:
   external-account.json: |
     {

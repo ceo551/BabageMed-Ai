@@ -38,7 +38,7 @@ const NEEDS_CREDS = new Set([
 ]);
 
 const HOST_PORT = 30000 + (s.port % 1000);      // host port; container port stays $s.port
-const IMAGE = process.env.IMAGE || `babagemed/mcp-${id}:e2e`;
+const IMAGE = process.env.IMAGE || `babbage/mcp-${id}:e2e`;
 const CONTAINER = `e2e-${id}-${Date.now()}`;
 
 function sh(cmd, opts = {}) {
@@ -63,7 +63,7 @@ async function postJson(path, body) {
 
 async function main() {
   if (!skipBuild && !process.env.IMAGE) {
-    console.log(`▶ docker build babagemed/mcp-${id}:e2e`);
+    console.log(`▶ docker build babbage/mcp-${id}:e2e`);
     sh(`docker build -f mcps/${id}/Dockerfile -t ${IMAGE} .`);
   }
 

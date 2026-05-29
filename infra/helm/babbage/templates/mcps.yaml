@@ -1,11 +1,11 @@
 {{/*
   Generates one Deployment + Service per enabled MCP. The list comes from
-  mcps.preset (default | all | custom) — see _helpers.tpl#babagemed.mcpList.
+  mcps.preset (default | all | custom) — see _helpers.tpl#babbage.mcpList.
   Ports & kinds are read from .Files.Get "mcps-index.json" which is the
   canonical manifest snapshot shipped alongside the chart.
 */}}
 {{- $idx := .Files.Get "mcps-index.json" | fromJson -}}
-{{- $list := include "babagemed.mcpList" . | trim | splitList " " -}}
+{{- $list := include "babbage.mcpList" . | trim | splitList " " -}}
 {{- $ns := .Release.Namespace -}}
 {{- range $id := $list -}}
 {{- $entry := index $idx.byId $id -}}
@@ -21,16 +21,16 @@ kind: Service
 metadata:
   name: mcp-{{ $id }}
   labels:
-    app.kubernetes.io/name: babagemed
+    app.kubernetes.io/name: babbage
     app.kubernetes.io/component: mcp
-    babagemed/mcp-id: {{ $id }}
-    babagemed/mcp-kind: {{ $kind }}
+    babbage/mcp-id: {{ $id }}
+    babbage/mcp-kind: {{ $kind }}
 spec:
   type: ClusterIP
   selector:
-    app.kubernetes.io/name: babagemed
+    app.kubernetes.io/name: babbage
     app.kubernetes.io/component: mcp
-    babagemed/mcp-id: {{ $id }}
+    babbage/mcp-id: {{ $id }}
   ports:
     - name: http
       port: {{ $port }}
@@ -41,26 +41,26 @@ kind: Deployment
 metadata:
   name: mcp-{{ $id }}
   labels:
-    app.kubernetes.io/name: babagemed
+    app.kubernetes.io/name: babbage
     app.kubernetes.io/component: mcp
-    babagemed/mcp-id: {{ $id }}
-    babagemed/mcp-kind: {{ $kind }}
+    babbage/mcp-id: {{ $id }}
+    babbage/mcp-kind: {{ $kind }}
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app.kubernetes.io/name: babagemed
+      app.kubernetes.io/name: babbage
       app.kubernetes.io/component: mcp
-      babagemed/mcp-id: {{ $id }}
+      babbage/mcp-id: {{ $id }}
   template:
     metadata:
       labels:
-        app.kubernetes.io/name: babagemed
+        app.kubernetes.io/name: babbage
         app.kubernetes.io/component: mcp
-        babagemed/mcp-id: {{ $id }}
-        babagemed/mcp-kind: {{ $kind }}
+        babbage/mcp-id: {{ $id }}
+        babbage/mcp-kind: {{ $kind }}
     spec:
-      serviceAccountName: {{ include "babagemed.serviceAccountName" $ }}
+      serviceAccountName: {{ include "babbage.serviceAccountName" $ }}
       # MCPs don't call the k8s API — mounting the default SA token
       # into 262 pods just expands the blast radius (a compromised
       # MCP container could enumerate the namespace + read the SA's
@@ -90,13 +90,13 @@ spec:
             - name: HTTP_ONLY
               value: "1"
             - name: OTEL_SERVICE_NAME
-              value: "babagemed-mcp-{{ $id }}"
+              value: "babbage-mcp-{{ $id }}"
             - name: K8S_POD_NAME
               valueFrom: { fieldRef: { fieldPath: metadata.name } }
           envFrom:
             # MCPs mount the *-mcp Secret which carries only the keys
             # this tier actually needs (per-MCP API tokens, OAuth creds,
-            # scraper config, Redis, OTEL). The full babagemed-env Secret
+            # scraper config, Redis, OTEL). The full babbage-env Secret
             # with DB password / LLM keys / payment creds stays on the
             # backend Deployment — least-privilege per the 40-agent
             # audit. To override (e.g. point at an externalSecrets-

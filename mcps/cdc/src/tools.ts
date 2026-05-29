@@ -1,5 +1,5 @@
 // @generated-by write-real-tools.mjs (preserved by generate-mcps.mjs)
-import { z, McpServer, ApiClient } from "@babagemed/mcp-base";
+import { z, McpServer, ApiClient } from "@babbage/mcp-base";
 const TOKEN = process.env.SOCRATA_APP_TOKEN;
 const api = new ApiClient({
   base: "https://data.cdc.gov/resource",

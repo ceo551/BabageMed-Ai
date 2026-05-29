@@ -4,12 +4,12 @@ kind: Service
 metadata:
   name: {{ .Release.Name }}-backend
   labels:
-    {{- include "babagemed.labels" . | nindent 4 }}
+    {{- include "babbage.labels" . | nindent 4 }}
     app.kubernetes.io/component: backend
 spec:
   type: {{ .Values.backend.service.type }}
   selector:
-    app.kubernetes.io/name: babagemed
+    app.kubernetes.io/name: babbage
     app.kubernetes.io/component: backend
   ports:
     - name: http
@@ -21,25 +21,25 @@ kind: Deployment
 metadata:
   name: {{ .Release.Name }}-backend
   labels:
-    {{- include "babagemed.labels" . | nindent 4 }}
+    {{- include "babbage.labels" . | nindent 4 }}
     app.kubernetes.io/component: backend
 spec:
   replicas: {{ .Values.backend.replicas }}
   selector:
     matchLabels:
-      app.kubernetes.io/name: babagemed
+      app.kubernetes.io/name: babbage
       app.kubernetes.io/component: backend
   template:
     metadata:
       labels:
-        app.kubernetes.io/name: babagemed
+        app.kubernetes.io/name: babbage
         app.kubernetes.io/component: backend
     spec:
-      # When gcp.enabled, the pod runs as babagemed-backend-sa so the WIF
-      # provider's attribute-condition matches (namespace=babagemed,
-      # sa=babagemed-backend-sa) and the projected token can be exchanged for
+      # When gcp.enabled, the pod runs as babbage-backend-sa so the WIF
+      # provider's attribute-condition matches (namespace=babbage,
+      # sa=babbage-backend-sa) and the projected token can be exchanged for
       # an impersonated bearer on the Vertex SA.
-      serviceAccountName: {{ if .Values.gcp.enabled }}babagemed-backend-sa{{ else }}{{ include "babagemed.serviceAccountName" . }}{{ end }}
+      serviceAccountName: {{ if .Values.gcp.enabled }}babbage-backend-sa{{ else }}{{ include "babbage.serviceAccountName" . }}{{ end }}
       # Graceful drain window. main.go's srv.Shutdown gets 25s, so we
       # give the pod 35s before SIGKILL: 10s slack accommodates the
       # CNI / service-mesh / kube-proxy time to deregister the pod from
@@ -60,7 +60,7 @@ spec:
           whenUnsatisfiable: ScheduleAnyway
           labelSelector:
             matchLabels:
-              app.kubernetes.io/name: babagemed
+              app.kubernetes.io/name: babbage
               app.kubernetes.io/component: backend
       # Backend is distroless/static → USER nonroot = uid 65532, so it needs
       # a numeric runAsUser of 65532 (the global default is 1000, matching the
@@ -88,7 +88,7 @@ spec:
         # bearer that impersonates the Vertex SA.
         - name: gcp-wif-config
           configMap:
-            name: babagemed-gcp-wif
+            name: babbage-gcp-wif
             items:
               - key: external-account.json
                 path: external-account.json
@@ -109,7 +109,7 @@ spec:
       {{- end }}
       containers:
         - name: backend
-          image: {{ include "babagemed.image" (dict "registry" .Values.image.registry "name" "backend" "tag" .Values.image.tag) }}
+          image: {{ include "babbage.image" (dict "registry" .Values.image.registry "name" "backend" "tag" .Values.image.tag) }}
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           ports:
             - name: http
@@ -126,7 +126,7 @@ spec:
             {{- end }}
             {{- if $desktopCM }}
             - name: desktop-updates
-              mountPath: {{ .Values.desktopUpdates.configMap.mountPath | default "/etc/babagemed/desktop-updates" }}
+              mountPath: {{ .Values.desktopUpdates.configMap.mountPath | default "/etc/babbage/desktop-updates" }}
               readOnly: true
             {{- end }}
           {{- end }}
@@ -143,7 +143,7 @@ spec:
             - name: MCP_HOST_OVERRIDE
               value: {{ .Values.backend.mcpHostOverride | quote }}
             - name: OTEL_SERVICE_NAME
-              value: "babagemed-backend"
+              value: "babbage-backend"
             - name: K8S_POD_NAME
               valueFrom: { fieldRef: { fieldPath: metadata.name } }
             {{- if .Values.gcp.enabled }}
@@ -167,7 +167,7 @@ spec:
             - name: REDIS_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: {{ .Values.mcps.envFromSecret | default "babagemed-env" }}
+                  name: {{ .Values.mcps.envFromSecret | default "babbage-env" }}
                   key: REDIS_PASSWORD
             - name: REDIS_URL
               value: "redis://:$(REDIS_PASSWORD)@{{ .Release.Name }}-redis:6379/0"
@@ -177,7 +177,7 @@ spec:
             # with the volumeMount above when an operator overrides
             # configMap.mountPath / configMap.key.
             - name: DESKTOP_UPDATES_MANIFEST_PATH
-              value: {{ printf "%s/%s" (.Values.desktopUpdates.configMap.mountPath | default "/etc/babagemed/desktop-updates") (.Values.desktopUpdates.configMap.key | default "latest.json") | quote }}
+              value: {{ printf "%s/%s" (.Values.desktopUpdates.configMap.mountPath | default "/etc/babbage/desktop-updates") (.Values.desktopUpdates.configMap.key | default "latest.json") | quote }}
             {{- end }}
           envFrom:
             - secretRef:

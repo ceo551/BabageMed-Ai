@@ -11,7 +11,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/babagemed/backend/internal/tracing"
+	"github.com/babbage/backend/internal/tracing"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 

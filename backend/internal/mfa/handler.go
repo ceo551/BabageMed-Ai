@@ -7,8 +7,8 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/babagemed/backend/internal/audit"
-	"github.com/babagemed/backend/internal/auth"
+	"github.com/babbage/backend/internal/audit"
+	"github.com/babbage/backend/internal/auth"
 	"github.com/go-chi/chi/v5"
 )
 

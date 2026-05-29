@@ -1,5 +1,5 @@
 // @generated-by write-real-tools.mjs (preserved by generate-mcps.mjs)
-import { z, McpServer, ApiClient } from "@babagemed/mcp-base";
+import { z, McpServer, ApiClient } from "@babbage/mcp-base";
 const api = new ApiClient({ base: "https://api.fda.gov", rps: 4 });
 const KEY = process.env.OPENFDA_API_KEY;
 function withKey(q: Record<string, any>) { return KEY ? { ...q, api_key: KEY } : q; }

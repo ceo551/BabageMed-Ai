@@ -1,5 +1,5 @@
 // @generated-by write-real-tools.mjs (preserved by generate-mcps.mjs)
-import { z, McpServer, ApiClient } from "@babagemed/mcp-base";
+import { z, McpServer, ApiClient } from "@babbage/mcp-base";
 const api = new ApiClient({ base: "https://clinicaltrials.gov/api/v2", rps: 4 });
 export function registerTools(server: McpServer) {
   server.tool({

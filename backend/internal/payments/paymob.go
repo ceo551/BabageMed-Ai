@@ -108,7 +108,7 @@ func (p *Paymob) Checkout(ctx context.Context, planID string, b BillingInfo) (*P
 		b.FirstName = "Customer"
 	}
 	if b.LastName == "" {
-		b.LastName = "Babagemed"
+		b.LastName = "Babbage"
 	}
 	if b.Email == "" {
 		b.Email = "billing@babagemed.com"

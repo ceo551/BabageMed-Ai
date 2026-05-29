@@ -1,22 +1,22 @@
 # Flux HelmRelease — installs/upgrades the chart from the GitRepository above.
-# Apply once: `kubectl apply -f infra/gitops/flux/helmrelease.yaml -n babagemed`
+# Apply once: `kubectl apply -f infra/gitops/flux/helmrelease.yaml -n babbage`
 # Flux then drives `helm upgrade --install` on every change to chart sources
 # or to the values below.
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
-  name: babagemed
-  namespace: babagemed
+  name: babbage
+  namespace: babbage
 spec:
   interval: 5m
-  releaseName: babagemed
-  targetNamespace: babagemed
+  releaseName: babbage
+  targetNamespace: babbage
   chart:
     spec:
-      chart: infra/helm/babagemed
+      chart: infra/helm/babbage
       sourceRef:
         kind: GitRepository
-        name: babagemed
+        name: babbage
         namespace: flux-system
   install:
     createNamespace: true
@@ -31,10 +31,10 @@ spec:
   # or external-secrets. Don't paste raw secrets into `values:` below.
   valuesFrom:
     - kind: ConfigMap
-      name: babagemed-values
+      name: babbage-values
       optional: true
     - kind: Secret
-      name: babagemed-helm-secrets
+      name: babbage-helm-secrets
       optional: true
   # Layer the CI-bumped image overlay on top so every successful build
   # rolls forward without manual intervention. Flux picks up the change
@@ -48,7 +48,7 @@ spec:
       tag: latest
     ingress:
       enabled: true
-      host: app.babagemed.example
+      host: app.babbage.example
       tls:
         enabled: true
         issuer: letsencrypt-prod
@@ -62,4 +62,4 @@ spec:
       preset: default
     # Use an existing secret created out-of-band so values stay safe to commit.
     secrets:
-      existingSecret: babagemed-env
+      existingSecret: babbage-env

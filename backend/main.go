@@ -11,25 +11,25 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/babagemed/backend/internal/admin"
-	"github.com/babagemed/backend/internal/api"
-	"github.com/babagemed/backend/internal/audit"
-	"github.com/babagemed/backend/internal/auth"
-	"github.com/babagemed/backend/internal/cache"
-	"github.com/babagemed/backend/internal/email"
-	"github.com/babagemed/backend/internal/chats"
-	"github.com/babagemed/backend/internal/connectors"
-	"github.com/babagemed/backend/internal/db"
-	"github.com/babagemed/backend/internal/llm"
-	"github.com/babagemed/backend/internal/mcp"
-	"github.com/babagemed/backend/internal/metrics"
-	"github.com/babagemed/backend/internal/payments"
-	"github.com/babagemed/backend/internal/features"
-	"github.com/babagemed/backend/internal/mfa"
-	"github.com/babagemed/backend/internal/ratelimit"
-	"github.com/babagemed/backend/internal/spaces"
-	"github.com/babagemed/backend/internal/tracing"
-	"github.com/babagemed/backend/internal/updates"
+	"github.com/babbage/backend/internal/admin"
+	"github.com/babbage/backend/internal/api"
+	"github.com/babbage/backend/internal/audit"
+	"github.com/babbage/backend/internal/auth"
+	"github.com/babbage/backend/internal/cache"
+	"github.com/babbage/backend/internal/email"
+	"github.com/babbage/backend/internal/chats"
+	"github.com/babbage/backend/internal/connectors"
+	"github.com/babbage/backend/internal/db"
+	"github.com/babbage/backend/internal/llm"
+	"github.com/babbage/backend/internal/mcp"
+	"github.com/babbage/backend/internal/metrics"
+	"github.com/babbage/backend/internal/payments"
+	"github.com/babbage/backend/internal/features"
+	"github.com/babbage/backend/internal/mfa"
+	"github.com/babbage/backend/internal/ratelimit"
+	"github.com/babbage/backend/internal/spaces"
+	"github.com/babbage/backend/internal/tracing"
+	"github.com/babbage/backend/internal/updates"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
@@ -41,7 +41,7 @@ func main() {
 	_ = godotenv.Load()
 
 	// Tracing — picks up OTEL_EXPORTER_OTLP_ENDPOINT etc. or stays a no-op.
-	shutdownTracing, err := tracing.Init(context.Background(), "babagemed-backend", "0.1.0")
+	shutdownTracing, err := tracing.Init(context.Background(), "babbage-backend", "0.1.0")
 	if err != nil {
 		log.Printf("tracing init: %v", err)
 	}
@@ -148,7 +148,7 @@ func main() {
 	r.Use(middleware.RequestID)
 	r.Use(middleware.RealIP)
 	if tracing.Enabled() {
-		r.Use(otelchi.Middleware("babagemed-backend", otelchi.WithChiRoutes(r)))
+		r.Use(otelchi.Middleware("babbage-backend", otelchi.WithChiRoutes(r)))
 	}
 	r.Use(tracing.TraceIDHeader)
 	r.Use(middleware.Logger)

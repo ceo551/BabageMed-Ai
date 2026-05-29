@@ -9,18 +9,18 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: babagemed
+  name: babbage
   namespace: argocd
   finalizers:
     - resources-finalizer.argocd.argoproj.io
   labels:
-    app.kubernetes.io/name: babagemed
+    app.kubernetes.io/name: babbage
 spec:
-  project: babagemed
+  project: babbage
   source:
-    repoURL: https://github.com/ceo551/babagemed-ai
+    repoURL: https://github.com/ceo551/babbage-ai
     targetRevision: main
-    path: infra/helm/babagemed
+    path: infra/helm/babbage
     helm:
       # Pick the cloud overlay that matches your cluster, then layer
       # release-specific overrides in `parameters` or `valuesObject`.
@@ -34,7 +34,7 @@ spec:
         - name: image.registry
           value: ghcr.io/ceo551
         - name: ingress.host
-          value: app.babagemed.example
+          value: app.babbage.example
         - name: ingress.tls.issuer
           value: letsencrypt-prod
         # Sensitive values: prefer `valuesFrom` with a Kubernetes Secret
@@ -43,7 +43,7 @@ spec:
         #   value: sk-ant-…   # ← do not do this in git
   destination:
     server: https://kubernetes.default.svc
-    namespace: babagemed
+    namespace: babbage
   syncPolicy:
     automated:
       prune: true

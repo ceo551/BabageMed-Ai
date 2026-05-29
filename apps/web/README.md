@@ -25,7 +25,7 @@ npm run build        # produces .next/standalone/
 
 ```bash
 # Image is built by infra/k8s/build-and-push.sh and rolled out via the
-# Helm chart in infra/helm/babagemed (deployment name stays `frontend`
+# Helm chart in infra/helm/babbage (deployment name stays `frontend`
 # for backwards compatibility).
 docker build -t ghcr.io/<org>/frontend:latest -f Dockerfile .
 ```

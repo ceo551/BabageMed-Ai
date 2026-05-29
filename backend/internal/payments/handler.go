@@ -12,7 +12,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/babagemed/backend/internal/auth"
+	"github.com/babbage/backend/internal/auth"
 	"github.com/go-chi/chi/v5"
 )
 

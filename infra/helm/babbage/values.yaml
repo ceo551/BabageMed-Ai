@@ -1,9 +1,9 @@
-# Default values for the BabageMed AI Helm chart.
+# Default values for the Babbage AI Helm chart.
 # Override with --values myvalues.yaml or --set key=value.
 #
 # Quick start (any of GKE / AKS / EKS):
-#   helm install babagemed ./infra/helm/babagemed \
-#     --namespace babagemed --create-namespace \
+#   helm install babbage ./infra/helm/babbage \
+#     --namespace babbage --create-namespace \
 #     --set image.registry=ghcr.io/your-org \
 #     --set ingress.host=app.yourdomain.com \
 #     --set secrets.anthropicApiKey=sk-ant-...
@@ -104,7 +104,7 @@ postgres:
     requests: { cpu: 500m, memory: 1Gi }
     limits:   { cpu: 2000m, memory: 4Gi }
   # When internal=false, set externalUrl to the full DSN.
-  externalUrl: ""   # e.g. postgres://user:pass@10.0.0.5:5432/babagemed?sslmode=require
+  externalUrl: ""   # e.g. postgres://user:pass@10.0.0.5:5432/babbage?sslmode=require
   # sslmode used when internal=true. Default "disable" because the
   # bundled StatefulSet doesn't ship a server certificate AND the
   # NetworkPolicy (templates/networkpolicy.yaml) isolates backend↔
@@ -131,7 +131,7 @@ mcps:
     requests: { cpu: 100m, memory: 256Mi }
     limits:   { cpu: 1000m, memory: 512Mi }
   # All MCPs read the shared .env via the same Secret as the backend.
-  envFromSecret: babagemed-env
+  envFromSecret: babbage-env
   # Per-MCP autoscaling. Off by default — most clusters won't have metrics
   # for each of 262 deployments. Turn on selectively.
   autoscaling:
@@ -176,7 +176,7 @@ logging:
     enabled: false
     # ConfigMap name + key the snippet lands in. Mount it into your
     # Promtail/Alloy deployment as needed.
-    configMap: babagemed-promtail-snippet
+    configMap: babbage-promtail-snippet
 
 # ─── Monitoring (Prometheus + Grafana) ────────────────────────────────────
 # Requires the prometheus-operator (kube-prometheus-stack) CRDs to be
@@ -198,7 +198,7 @@ monitoring:
   grafanaDashboard:
     enabled: false
     # kube-prometheus-stack expects { grafana_dashboard: "1" }; bitnami expects
-    # { grafana_dashboard: babagemed-overview }. Defaults to the former.
+    # { grafana_dashboard: babbage-overview }. Defaults to the former.
     label: grafana_dashboard
     labelValue: "1"
 
@@ -225,7 +225,7 @@ networkPolicy:
 #   generic  → "nginx" (assumes ingress-nginx is installed)
 ingress:
   enabled: true
-  host: app.babagemed.local
+  host: app.babbage.local
   className: ""                # filled in from cloud target if empty
   annotations: {}              # filled in from cloud target if empty
   tls:
@@ -243,10 +243,10 @@ redis:
   maxmemory: "128mb"
 
 # ─── GCP / Vertex AI (Workload Identity Federation) ──────────────────────
-# Opt-in. When enabled, the backend pod is bound to babagemed-backend-sa,
+# Opt-in. When enabled, the backend pod is bound to babbage-backend-sa,
 # mounts an OIDC-signed projected token, and exchanges it for an impersonated
 # bearer on vertexServiceAccount — no static SA JSON key in the cluster.
-# See infra/helm/babagemed/templates/gcp-wif.yaml for the external_account
+# See infra/helm/babbage/templates/gcp-wif.yaml for the external_account
 # config that the Go google.FindDefaultCredentials picks up.
 #
 # Set up on GCP side (one-time):
@@ -255,10 +255,10 @@ redis:
 #      --workload-identity-pool=<wifPool>
 #      --issuer-uri=<AKS oidc issuer>
 #      --attribute-mapping="google.subject=assertion.sub,..."
-#      --attribute-condition="namespace == 'babagemed' && sa == 'babagemed-backend-sa'"
+#      --attribute-condition="namespace == 'babbage' && sa == 'babbage-backend-sa'"
 #   3. gcloud iam service-accounts add-iam-policy-binding <vertexServiceAccount>
 #      --role=roles/iam.workloadIdentityUser
-#      --member="principal://iam.googleapis.com/projects/<num>/locations/global/workloadIdentityPools/<wifPool>/subject/system:serviceaccount:babagemed:babagemed-backend-sa"
+#      --member="principal://iam.googleapis.com/projects/<num>/locations/global/workloadIdentityPools/<wifPool>/subject/system:serviceaccount:babbage:babbage-backend-sa"
 gcp:
   enabled: false
   project: ""
@@ -290,8 +290,8 @@ secrets:
   openaiApiKey: ""
   # Postgres password (only used when postgres.internal=true)
   postgresPassword: "change-me-in-prod"
-  postgresUser: "babagemed"
-  postgresDb: "babagemed"
+  postgresUser: "babbage"
+  postgresDb: "babbage"
   # Optional MCP API keys
   ncbiApiKey: ""
   ncbiEmail: "ceo@babagemed.com"
@@ -338,7 +338,7 @@ desktopUpdates:
   configMap:
     name: ""
     key: "latest.json"
-    mountPath: "/etc/babagemed/desktop-updates"
+    mountPath: "/etc/babbage/desktop-updates"
 
 # ─── Service account ──────────────────────────────────────────────────────
 serviceAccount:

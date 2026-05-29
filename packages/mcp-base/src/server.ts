@@ -243,7 +243,7 @@ export class McpServer {
   /** Run both transports unless STDIO_ONLY=1 or HTTP_ONLY=1 is set. */
   run() {
     // Lazy import so tracing doesn't load unless enabled.
-    import("./tracing.js").then(({ startTracing }) => startTracing(`babagemed-mcp-${this.info.id}`, this.info.version)).catch(() => {});
+    import("./tracing.js").then(({ startTracing }) => startTracing(`babbage-mcp-${this.info.id}`, this.info.version)).catch(() => {});
     const stdio = process.env.HTTP_ONLY !== "1";
     const http = process.env.STDIO_ONLY !== "1";
     if (stdio) this.startStdio();

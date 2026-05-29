@@ -1,5 +1,5 @@
 // @hand-edited — do not regenerate via write-real-tools.mjs
-import { z, McpServer, Scraper } from "@babagemed/mcp-base";
+import { z, McpServer, Scraper } from "@babbage/mcp-base";
 
 // `allowedHosts: ["*"]` is intentional and dangerous — this MCP is meant
 // for cross-origin browse-as-a-service. We rely on the Scraper's built-in

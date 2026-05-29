@@ -22,7 +22,7 @@ apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
   name: {{ .Release.Name }}-default-deny
-  labels: {{- include "babagemed.labels" . | nindent 4 }}
+  labels: {{- include "babbage.labels" . | nindent 4 }}
 spec:
   podSelector: {}
   policyTypes: [Ingress, Egress]
@@ -32,7 +32,7 @@ apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
   name: {{ .Release.Name }}-allow-dns
-  labels: {{- include "babagemed.labels" . | nindent 4 }}
+  labels: {{- include "babbage.labels" . | nindent 4 }}
 spec:
   podSelector: {}
   policyTypes: [Egress]
@@ -49,11 +49,11 @@ apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
   name: {{ .Release.Name }}-frontend
-  labels: {{- include "babagemed.labels" . | nindent 4 }}
+  labels: {{- include "babbage.labels" . | nindent 4 }}
 spec:
   podSelector:
     matchLabels:
-      app.kubernetes.io/name: babagemed
+      app.kubernetes.io/name: babbage
       app.kubernetes.io/component: frontend
   policyTypes: [Ingress, Egress]
   ingress:
@@ -69,7 +69,7 @@ spec:
     - to:
         - podSelector:
             matchLabels:
-              app.kubernetes.io/name: babagemed
+              app.kubernetes.io/name: babbage
               app.kubernetes.io/component: backend
       ports: [ { protocol: TCP, port: 8080 } ]
     - to: [ { ipBlock: { cidr: 0.0.0.0/0, except: [10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16, 169.254.0.0/16] } } ]
@@ -80,18 +80,18 @@ apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
   name: {{ .Release.Name }}-backend
-  labels: {{- include "babagemed.labels" . | nindent 4 }}
+  labels: {{- include "babbage.labels" . | nindent 4 }}
 spec:
   podSelector:
     matchLabels:
-      app.kubernetes.io/name: babagemed
+      app.kubernetes.io/name: babbage
       app.kubernetes.io/component: backend
   policyTypes: [Ingress, Egress]
   ingress:
     - from:
         - podSelector:
             matchLabels:
-              app.kubernetes.io/name: babagemed
+              app.kubernetes.io/name: babbage
               app.kubernetes.io/component: frontend
         {{- range .Values.networkPolicy.ingressFromNamespaces }}
         - namespaceSelector:
@@ -103,7 +103,7 @@ spec:
     - to:
         - podSelector:
             matchLabels:
-              app.kubernetes.io/name: babagemed
+              app.kubernetes.io/name: babbage
               app.kubernetes.io/component: postgres
       ports: [ { protocol: TCP, port: 5432 } ]
     # → every MCP. NetworkPolicy v1 doesn't support port ranges, and the
@@ -116,7 +116,7 @@ spec:
     - to:
         - podSelector:
             matchLabels:
-              app.kubernetes.io/name: babagemed
+              app.kubernetes.io/name: babbage
               app.kubernetes.io/component: mcp
     # → internet (LLM APIs, payment providers, etc.)
     - to: [ { ipBlock: { cidr: 0.0.0.0/0, except: [10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16, 169.254.0.0/16] } } ]
@@ -128,18 +128,18 @@ apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
   name: {{ .Release.Name }}-postgres
-  labels: {{- include "babagemed.labels" . | nindent 4 }}
+  labels: {{- include "babbage.labels" . | nindent 4 }}
 spec:
   podSelector:
     matchLabels:
-      app.kubernetes.io/name: babagemed
+      app.kubernetes.io/name: babbage
       app.kubernetes.io/component: postgres
   policyTypes: [Ingress]
   ingress:
     - from:
         - podSelector:
             matchLabels:
-              app.kubernetes.io/name: babagemed
+              app.kubernetes.io/name: babbage
               app.kubernetes.io/component: backend
       ports: [ { protocol: TCP, port: 5432 } ]
 {{- end }}
@@ -150,18 +150,18 @@ apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
   name: {{ .Release.Name }}-mcps
-  labels: {{- include "babagemed.labels" . | nindent 4 }}
+  labels: {{- include "babbage.labels" . | nindent 4 }}
 spec:
   podSelector:
     matchLabels:
-      app.kubernetes.io/name: babagemed
+      app.kubernetes.io/name: babbage
       app.kubernetes.io/component: mcp
   policyTypes: [Ingress, Egress]
   ingress:
     - from:
         - podSelector:
             matchLabels:
-              app.kubernetes.io/name: babagemed
+              app.kubernetes.io/name: babbage
               app.kubernetes.io/component: backend
       # NetworkPolicy doesn't allow port ranges, and listing 416 ports here
       # would be silly. We omit `ports:` so any port on these pods is allowed

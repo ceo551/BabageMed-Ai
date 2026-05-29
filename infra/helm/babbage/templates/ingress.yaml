@@ -3,11 +3,11 @@ apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: {{ .Release.Name }}-ingress
-  labels: {{- include "babagemed.labels" . | nindent 4 }}
+  labels: {{- include "babbage.labels" . | nindent 4 }}
   annotations:
-    {{- include "babagemed.ingressAnnotations" . | nindent 4 }}
+    {{- include "babbage.ingressAnnotations" . | nindent 4 }}
 spec:
-  ingressClassName: {{ include "babagemed.ingressClass" . | quote }}
+  ingressClassName: {{ include "babbage.ingressClass" . | quote }}
   {{- if .Values.ingress.tls.enabled }}
   tls:
     - hosts: [ {{ .Values.ingress.host | quote }} ]

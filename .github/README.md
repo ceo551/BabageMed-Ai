@@ -20,7 +20,7 @@ Runs on every push to `main`, on `v*` tags, and on manual dispatch. Pipeline:
 1. **`meta`** — derives the image tag (`v…` for tags, `sha-<short>` otherwise) and produces a 16-shard JSON matrix of MCP ids.
 2. **`build-core`** — backend + frontend images, parallel, with BuildKit gha cache.
 3. **`build-mcps`** — 16-shard MCP image build, also with per-image gha cache. Each shard builds ~26 images sequentially inside a runner.
-4. **`gitops-bump`** — writes the new tag to `infra/helm/babagemed/values-images.yaml`, commits + pushes back to `main`. ArgoCD / Flux pick up the file on their next reconcile and roll the deployment. If `vars.ARGOCD_WEBHOOK_URL` is set, the job also pings it for instant sync.
+4. **`gitops-bump`** — writes the new tag to `infra/helm/babbage/values-images.yaml`, commits + pushes back to `main`. ArgoCD / Flux pick up the file on their next reconcile and roll the deployment. If `vars.ARGOCD_WEBHOOK_URL` is set, the job also pings it for instant sync.
 
 Override the registry with the `REGISTRY` repository variable (defaults to `ghcr.io/<owner>`). For private registries, the GitOps overlay still works — the chart honours `image.pullSecrets`.
 
