@@ -217,7 +217,7 @@ func (h *Handler) ChatStream(w http.ResponseWriter, r *http.Request) {
 	// single 'content' chunk at the end.
 	system := buildSystem(req.Mode, req.Locale, citations, req.UseMcps, req.SpaceContext, req.SpaceName, req.Feature, req.FeatureInstructions)
 	if req.Model == "" {
-		req.Model = "opus-4.7"
+		req.Model = "opus-4.8"
 	}
 	if len(req.Messages) == 0 {
 		send("error", map[string]string{"error": "messages required"})
@@ -394,7 +394,7 @@ func mcpSupportsSearch(s mcp.Server) bool {
 func (h *Handler) complete(ctx context.Context, req chatRequest, citations []map[string]any) (*llm.CompletionResponse, error) {
 	system := buildSystem(req.Mode, req.Locale, citations, req.UseMcps, req.SpaceContext, req.SpaceName, req.Feature, req.FeatureInstructions)
 	if req.Model == "" {
-		req.Model = "opus-4.7"
+		req.Model = "opus-4.8"
 	}
 	if len(req.Messages) == 0 {
 		return nil, errors.New("messages required")

@@ -90,12 +90,6 @@
       "name": "Microsoft 365",
       "category": "productivity"
     },
-    "outlook": {
-      "kind": "stub",
-      "port": 6530,
-      "name": "Outlook",
-      "category": "communication"
-    },
     "stripe": {
       "kind": "stub",
       "port": 6534,
@@ -144,12 +138,6 @@
       "name": "Google Ads",
       "category": "marketing"
     },
-    "google-tag-manager": {
-      "kind": "stub",
-      "port": 6548,
-      "name": "Google Tag Manager",
-      "category": "marketing"
-    },
     "google-meet": {
       "kind": "stub",
       "port": 6549,
@@ -192,12 +180,6 @@
       "name": "X (Twitter)",
       "category": "communication"
     },
-    "smstools": {
-      "kind": "stub",
-      "port": 6566,
-      "name": "SMSTools",
-      "category": "communication"
-    },
     "zoom-admin": {
       "kind": "stub",
       "port": 6568,
@@ -234,12 +216,6 @@
       "name": "Shopify",
       "category": "operations"
     },
-    "microsoft-bookings": {
-      "kind": "stub",
-      "port": 6586,
-      "name": "Microsoft Bookings",
-      "category": "operations"
-    },
     "google-workspace-admin": {
       "kind": "stub",
       "port": 6589,
@@ -264,23 +240,11 @@
       "name": "Calendly",
       "category": "productivity"
     },
-    "msdynamics-365-business": {
-      "kind": "stub",
-      "port": 6595,
-      "name": "Microsoft Dynamics 365 Business",
-      "category": "operations"
-    },
     "bluesky": {
       "kind": "stub",
       "port": 6597,
       "name": "Bluesky",
       "category": "communication"
-    },
-    "msdynamics-365-sales": {
-      "kind": "stub",
-      "port": 6621,
-      "name": "Microsoft Dynamics 365 Sales",
-      "category": "sales"
     },
     "wordpress-org": {
       "kind": "stub",
@@ -288,22 +252,10 @@
       "name": "WordPress.org",
       "category": "cms"
     },
-    "google-appsheet": {
-      "kind": "stub",
-      "port": 6647,
-      "name": "Google AppSheet",
-      "category": "developer"
-    },
     "microsoft-onenote": {
       "kind": "stub",
       "port": 6649,
       "name": "Microsoft OneNote",
-      "category": "productivity"
-    },
-    "microsoft-365-people": {
-      "kind": "stub",
-      "port": 6650,
-      "name": "Microsoft 365 People",
       "category": "productivity"
     },
     "google-sheets": {
@@ -317,12 +269,6 @@
       "port": 6657,
       "name": "Google Docs",
       "category": "productivity"
-    },
-    "microsoft-365-planner": {
-      "kind": "stub",
-      "port": 6660,
-      "name": "Microsoft 365 Planner",
-      "category": "operations"
     },
     "microsoft-excel": {
       "kind": "stub",
@@ -396,35 +342,11 @@
       "name": "Linear",
       "category": "developer"
     },
-    "cloudflare-browser": {
-      "kind": "stub",
-      "port": 6704,
-      "name": "Cloudflare Browser Rendering",
-      "category": "developer"
-    },
     "squarespace": {
       "kind": "stub",
       "port": 6705,
       "name": "Squarespace",
       "category": "cms"
-    },
-    "ms-sql-server": {
-      "kind": "stub",
-      "port": 6708,
-      "name": "Microsoft SQL Server",
-      "category": "data"
-    },
-    "cloudflare": {
-      "kind": "stub",
-      "port": 6712,
-      "name": "Cloudflare",
-      "category": "developer"
-    },
-    "ms-azure-sql": {
-      "kind": "stub",
-      "port": 6719,
-      "name": "Microsoft Azure SQL Database",
-      "category": "data"
     },
     "aws": {
       "kind": "stub",
@@ -437,18 +359,6 @@
       "port": 6749,
       "name": "Google Merchant Center",
       "category": "marketing"
-    },
-    "google-contacts": {
-      "kind": "stub",
-      "port": 6750,
-      "name": "Google Contacts",
-      "category": "productivity"
-    },
-    "google-chat": {
-      "kind": "stub",
-      "port": 6751,
-      "name": "Google Chat",
-      "category": "communication"
     }
   }
 }

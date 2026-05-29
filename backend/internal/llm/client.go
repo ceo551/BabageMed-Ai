@@ -447,8 +447,11 @@ func (c *Client) callGoogle(ctx context.Context, req CompletionRequest) (*Comple
 // with "claude-") and we forward it verbatim, so a freshly-released
 // Anthropic model doesn't need a backend redeploy.
 var anthropicModelMap = map[string]string{
-	"opus-4.7": "claude-opus-4-7",
-	"opus-4.6": "claude-opus-4-6",
+	"opus-4.8": "claude-opus-4-8",
+	// 4.7 / 4.6 kept as harmless back-compat aliases for any chat rows
+	// persisted before the picker moved to 4.8 — they resolve to 4.8.
+	"opus-4.7": "claude-opus-4-8",
+	"opus-4.6": "claude-opus-4-8",
 	"sonnet":   "claude-sonnet-4-6",
 	"haiku":    "claude-haiku-4-5",
 }
@@ -459,7 +462,7 @@ func anthropicModel(id string) string {
 
 func resolveAnthropicModel(id string) string {
 	if id == "" {
-		return "claude-opus-4-7"
+		return "claude-opus-4-8"
 	}
 	if m, ok := anthropicModelMap[id]; ok {
 		return m
@@ -468,7 +471,7 @@ func resolveAnthropicModel(id string) string {
 	if strings.HasPrefix(id, "claude-") {
 		return id
 	}
-	return "claude-opus-4-7"
+	return "claude-opus-4-8"
 }
 
 // openAIModelMap translates UI picker ids to real OpenAI API model names.

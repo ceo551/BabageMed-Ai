@@ -37,10 +37,8 @@ export type MediaModel = {
 // Used by every feature with modality = "text" + the main "/" dashboard
 // chat. Order here is the order rendered in the picker.
 export const TEXT_MODELS: ReadonlyArray<TextModel> = [
-  { id: "opus-4.7",      name: "Claude Opus 4.7", brand: "anthropic", short: "Opus 4.7",
+  { id: "opus-4.8",      name: "Claude Opus 4.8", brand: "anthropic", short: "Opus 4.8",
     pills: { en: ["FRONTIER", "REASONING"], ar: ["متقدّم", "استدلال"] } },
-  { id: "opus-4.6",      name: "Claude Opus 4.6", brand: "anthropic", short: "Opus 4.6",
-    pills: { en: ["BALANCED", "FAST"], ar: ["متوازن", "سريع"] } },
   { id: "gpt-5.5",       name: "GPT 5.5",         brand: "openai",    short: "GPT 5.5",
     pills: { en: ["VISION", "TOOLS"], ar: ["رؤية", "أدوات"] } },
   { id: "gemini-pro-3.1", name: "Gemini Pro 3.1", brand: "google",    short: "Gemini 3.1",

@@ -221,20 +221,6 @@
       "feature": "business"
     },
     {
-      "id": "outlook",
-      "name": "Outlook",
-      "kind": "stub",
-      "category": "communication",
-      "feature": "business",
-      "port": 6530,
-      "base": "",
-      "homepage": "https://outlook.live.com",
-      "tools": [
-        "search",
-        "fetch"
-      ]
-    },
-    {
       "id": "stripe",
       "name": "Stripe",
       "kind": "stub",
@@ -347,20 +333,6 @@
       ]
     },
     {
-      "id": "google-tag-manager",
-      "name": "Google Tag Manager",
-      "kind": "stub",
-      "category": "marketing",
-      "feature": "business",
-      "port": 6548,
-      "base": "",
-      "homepage": "https://tagmanager.google.com",
-      "tools": [
-        "search",
-        "fetch"
-      ]
-    },
-    {
       "id": "google-meet",
       "name": "Google Meet",
       "kind": "stub",
@@ -459,20 +431,6 @@
       ]
     },
     {
-      "id": "smstools",
-      "name": "SMSTools",
-      "kind": "stub",
-      "category": "communication",
-      "feature": "business",
-      "port": 6566,
-      "base": "",
-      "homepage": "https://www.smstools.com",
-      "tools": [
-        "search",
-        "fetch"
-      ]
-    },
-    {
       "id": "zoom-admin",
       "name": "Zoom Admin",
       "kind": "stub",
@@ -557,20 +515,6 @@
       ]
     },
     {
-      "id": "microsoft-bookings",
-      "name": "Microsoft Bookings",
-      "kind": "stub",
-      "category": "operations",
-      "feature": "business",
-      "port": 6586,
-      "base": "",
-      "homepage": "https://www.microsoft.com/microsoft-365/business/scheduling-and-booking-app",
-      "tools": [
-        "search",
-        "fetch"
-      ]
-    },
-    {
       "id": "google-workspace-admin",
       "name": "Google Workspace Admin",
       "kind": "stub",
@@ -627,20 +571,6 @@
       ]
     },
     {
-      "id": "msdynamics-365-business",
-      "name": "Microsoft Dynamics 365 Business",
-      "kind": "stub",
-      "category": "operations",
-      "feature": "business",
-      "port": 6595,
-      "base": "",
-      "homepage": "https://dynamics.microsoft.com",
-      "tools": [
-        "search",
-        "fetch"
-      ]
-    },
-    {
       "id": "bluesky",
       "name": "Bluesky",
       "kind": "stub",
@@ -649,20 +579,6 @@
       "port": 6597,
       "base": "",
       "homepage": "https://bsky.app",
-      "tools": [
-        "search",
-        "fetch"
-      ]
-    },
-    {
-      "id": "msdynamics-365-sales",
-      "name": "Microsoft Dynamics 365 Sales",
-      "kind": "stub",
-      "category": "sales",
-      "feature": "business",
-      "port": 6621,
-      "base": "",
-      "homepage": "https://dynamics.microsoft.com",
       "tools": [
         "search",
         "fetch"
@@ -683,20 +599,6 @@
       ]
     },
     {
-      "id": "google-appsheet",
-      "name": "Google AppSheet",
-      "kind": "stub",
-      "category": "developer",
-      "feature": "business",
-      "port": 6647,
-      "base": "",
-      "homepage": "https://about.appsheet.com",
-      "tools": [
-        "search",
-        "fetch"
-      ]
-    },
-    {
       "id": "microsoft-onenote",
       "name": "Microsoft OneNote",
       "kind": "stub",
@@ -705,20 +607,6 @@
       "port": 6649,
       "base": "",
       "homepage": "https://www.onenote.com",
-      "tools": [
-        "search",
-        "fetch"
-      ]
-    },
-    {
-      "id": "microsoft-365-people",
-      "name": "Microsoft 365 People",
-      "kind": "stub",
-      "category": "productivity",
-      "feature": "business",
-      "port": 6650,
-      "base": "",
-      "homepage": "https://www.microsoft.com/microsoft-365",
       "tools": [
         "search",
         "fetch"
@@ -747,20 +635,6 @@
       "port": 6657,
       "base": "",
       "homepage": "https://docs.google.com",
-      "tools": [
-        "search",
-        "fetch"
-      ]
-    },
-    {
-      "id": "microsoft-365-planner",
-      "name": "Microsoft 365 Planner",
-      "kind": "stub",
-      "category": "operations",
-      "feature": "business",
-      "port": 6660,
-      "base": "",
-      "homepage": "https://tasks.office.com",
       "tools": [
         "search",
         "fetch"
@@ -935,20 +809,6 @@
       ]
     },
     {
-      "id": "cloudflare-browser",
-      "name": "Cloudflare Browser Rendering",
-      "kind": "stub",
-      "category": "developer",
-      "feature": "business",
-      "port": 6704,
-      "base": "",
-      "homepage": "https://developers.cloudflare.com/browser-rendering",
-      "tools": [
-        "search",
-        "fetch"
-      ]
-    },
-    {
       "id": "squarespace",
       "name": "Squarespace",
       "kind": "stub",
@@ -957,48 +817,6 @@
       "port": 6705,
       "base": "",
       "homepage": "https://www.squarespace.com",
-      "tools": [
-        "search",
-        "fetch"
-      ]
-    },
-    {
-      "id": "ms-sql-server",
-      "name": "Microsoft SQL Server",
-      "kind": "stub",
-      "category": "data",
-      "feature": "business",
-      "port": 6708,
-      "base": "",
-      "homepage": "https://www.microsoft.com/sql-server",
-      "tools": [
-        "search",
-        "fetch"
-      ]
-    },
-    {
-      "id": "cloudflare",
-      "name": "Cloudflare",
-      "kind": "stub",
-      "category": "developer",
-      "feature": "business",
-      "port": 6712,
-      "base": "",
-      "homepage": "https://www.cloudflare.com",
-      "tools": [
-        "search",
-        "fetch"
-      ]
-    },
-    {
-      "id": "ms-azure-sql",
-      "name": "Microsoft Azure SQL Database",
-      "kind": "stub",
-      "category": "data",
-      "feature": "business",
-      "port": 6719,
-      "base": "",
-      "homepage": "https://azure.microsoft.com/services/sql-database",
       "tools": [
         "search",
         "fetch"
@@ -1027,34 +845,6 @@
       "port": 6749,
       "base": "",
       "homepage": "https://merchants.google.com",
-      "tools": [
-        "search",
-        "fetch"
-      ]
-    },
-    {
-      "id": "google-contacts",
-      "name": "Google Contacts",
-      "kind": "stub",
-      "category": "productivity",
-      "feature": "business",
-      "port": 6750,
-      "base": "",
-      "homepage": "https://contacts.google.com",
-      "tools": [
-        "search",
-        "fetch"
-      ]
-    },
-    {
-      "id": "google-chat",
-      "name": "Google Chat",
-      "kind": "stub",
-      "category": "communication",
-      "feature": "business",
-      "port": 6751,
-      "base": "",
-      "homepage": "https://chat.google.com",
       "tools": [
         "search",
         "fetch"

@@ -45,7 +45,7 @@ export type Prefs = {
 };
 
 const PREFS_DEFAULT: Prefs = {
-  model: "opus-4.7",
+  model: "opus-4.8",
   mode: "bedside",
   sidebarCollapsed: false,
   subSidebarCollapsed: false,
