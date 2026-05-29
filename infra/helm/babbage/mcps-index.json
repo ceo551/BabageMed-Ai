@@ -90,12 +90,6 @@
       "name": "Microsoft 365",
       "category": "productivity"
     },
-    "karger-oa": {
-      "kind": "scrape",
-      "port": 6506,
-      "name": "Karger Open Access",
-      "category": "oa-journal"
-    },
     "outlook": {
       "kind": "stub",
       "port": 6530,
@@ -107,12 +101,6 @@
       "port": 6534,
       "name": "Stripe",
       "category": "finance"
-    },
-    "motherduck": {
-      "kind": "stub",
-      "port": 6535,
-      "name": "MotherDuck",
-      "category": "data"
     },
     "vercel": {
       "kind": "stub",
@@ -186,23 +174,11 @@
       "name": "Spotify",
       "category": "creative"
     },
-    "bannerbear": {
-      "kind": "stub",
-      "port": 6558,
-      "name": "Bannerbear",
-      "category": "creative"
-    },
     "google-photos": {
       "kind": "stub",
       "port": 6560,
       "name": "Google Photos",
       "category": "storage"
-    },
-    "mux": {
-      "kind": "stub",
-      "port": 6562,
-      "name": "Mux",
-      "category": "creative"
     },
     "youtube-data": {
       "kind": "stub",
@@ -222,34 +198,10 @@
       "name": "SMSTools",
       "category": "communication"
     },
-    "z-api": {
-      "kind": "stub",
-      "port": 6567,
-      "name": "Z-API (WhatsApp)",
-      "category": "communication"
-    },
     "zoom-admin": {
       "kind": "stub",
       "port": 6568,
       "name": "Zoom Admin",
-      "category": "communication"
-    },
-    "help-scout": {
-      "kind": "stub",
-      "port": 6569,
-      "name": "Help Scout",
-      "category": "communication"
-    },
-    "sendblue": {
-      "kind": "stub",
-      "port": 6571,
-      "name": "Sendblue",
-      "category": "communication"
-    },
-    "zoho-mail": {
-      "kind": "stub",
-      "port": 6572,
-      "name": "Zoho Mail",
       "category": "communication"
     },
     "twilio": {
@@ -288,12 +240,6 @@
       "name": "Microsoft Bookings",
       "category": "operations"
     },
-    "brex": {
-      "kind": "stub",
-      "port": 6587,
-      "name": "Brex",
-      "category": "finance"
-    },
     "google-workspace-admin": {
       "kind": "stub",
       "port": 6589,
@@ -324,35 +270,17 @@
       "name": "Microsoft Dynamics 365 Business",
       "category": "operations"
     },
-    "rippling": {
-      "kind": "stub",
-      "port": 6596,
-      "name": "Rippling",
-      "category": "hr"
-    },
     "bluesky": {
       "kind": "stub",
       "port": 6597,
       "name": "Bluesky",
       "category": "communication"
     },
-    "convertkit": {
-      "kind": "stub",
-      "port": 6618,
-      "name": "ConvertKit",
-      "category": "marketing"
-    },
     "msdynamics-365-sales": {
       "kind": "stub",
       "port": 6621,
       "name": "Microsoft Dynamics 365 Sales",
       "category": "sales"
-    },
-    "mastodon": {
-      "kind": "stub",
-      "port": 6625,
-      "name": "Mastodon",
-      "category": "communication"
     },
     "wordpress-org": {
       "kind": "stub",
@@ -383,12 +311,6 @@
       "port": 6652,
       "name": "Google Sheets",
       "category": "productivity"
-    },
-    "servicenow": {
-      "kind": "stub",
-      "port": 6654,
-      "name": "ServiceNow",
-      "category": "operations"
     },
     "google-docs": {
       "kind": "stub",
@@ -431,12 +353,6 @@
       "port": 6676,
       "name": "Trello",
       "category": "operations"
-    },
-    "harpa-ai": {
-      "kind": "stub",
-      "port": 6679,
-      "name": "HARPA AI",
-      "category": "ai"
     },
     "google-cloud": {
       "kind": "stub",
@@ -492,35 +408,17 @@
       "name": "Squarespace",
       "category": "cms"
     },
-    "blogger": {
-      "kind": "stub",
-      "port": 6707,
-      "name": "Blogger",
-      "category": "cms"
-    },
     "ms-sql-server": {
       "kind": "stub",
       "port": 6708,
       "name": "Microsoft SQL Server",
       "category": "data"
     },
-    "webflow": {
-      "kind": "stub",
-      "port": 6709,
-      "name": "Webflow",
-      "category": "cms"
-    },
     "cloudflare": {
       "kind": "stub",
       "port": 6712,
       "name": "Cloudflare",
       "category": "developer"
-    },
-    "sanity": {
-      "kind": "stub",
-      "port": 6716,
-      "name": "Sanity",
-      "category": "cms"
     },
     "ms-azure-sql": {
       "kind": "stub",
@@ -533,84 +431,6 @@
       "port": 6722,
       "name": "AWS",
       "category": "developer"
-    },
-    "fal-ai": {
-      "kind": "stub",
-      "port": 6723,
-      "name": "fal.ai",
-      "category": "ai"
-    },
-    "resend": {
-      "kind": "stub",
-      "port": 6726,
-      "name": "Resend",
-      "category": "developer"
-    },
-    "carbon-arc": {
-      "kind": "stub",
-      "port": 6729,
-      "name": "Carbon Arc",
-      "category": "finance"
-    },
-    "link-ai": {
-      "kind": "stub",
-      "port": 6730,
-      "name": "Link (CLI)",
-      "category": "finance"
-    },
-    "morningstar": {
-      "kind": "stub",
-      "port": 6731,
-      "name": "Morningstar",
-      "category": "finance"
-    },
-    "factset": {
-      "kind": "stub",
-      "port": 6732,
-      "name": "FactSet",
-      "category": "finance"
-    },
-    "ramp": {
-      "kind": "stub",
-      "port": 6733,
-      "name": "Ramp",
-      "category": "finance"
-    },
-    "plaid": {
-      "kind": "stub",
-      "port": 6734,
-      "name": "Plaid",
-      "category": "finance"
-    },
-    "perplexity-finance": {
-      "kind": "stub",
-      "port": 6735,
-      "name": "Perplexity Finance",
-      "category": "finance"
-    },
-    "bingx": {
-      "kind": "stub",
-      "port": 6741,
-      "name": "BingX",
-      "category": "finance"
-    },
-    "quickbooks": {
-      "kind": "stub",
-      "port": 6745,
-      "name": "QuickBooks",
-      "category": "finance"
-    },
-    "xero-accounting": {
-      "kind": "stub",
-      "port": 6746,
-      "name": "Xero Accounting",
-      "category": "finance"
-    },
-    "zoho-books": {
-      "kind": "stub",
-      "port": 6748,
-      "name": "Zoho Books",
-      "category": "finance"
     },
     "google-merchant-center": {
       "kind": "stub",

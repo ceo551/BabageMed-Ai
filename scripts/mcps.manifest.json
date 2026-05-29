@@ -221,19 +221,6 @@
       "feature": "business"
     },
     {
-      "id": "karger-oa",
-      "name": "Karger Open Access",
-      "kind": "scrape",
-      "category": "oa-journal",
-      "port": 6506,
-      "base": "https://karger.com/services/open-access",
-      "tools": [
-        "search",
-        "fetch"
-      ],
-      "feature": "education"
-    },
-    {
       "id": "outlook",
       "name": "Outlook",
       "kind": "stub",
@@ -256,20 +243,6 @@
       "port": 6534,
       "base": "",
       "homepage": "https://stripe.com",
-      "tools": [
-        "search",
-        "fetch"
-      ]
-    },
-    {
-      "id": "motherduck",
-      "name": "MotherDuck",
-      "kind": "stub",
-      "category": "data",
-      "feature": "data-analysis",
-      "port": 6535,
-      "base": "",
-      "homepage": "https://motherduck.com",
       "tools": [
         "search",
         "fetch"
@@ -444,20 +417,6 @@
       ]
     },
     {
-      "id": "bannerbear",
-      "name": "Bannerbear",
-      "kind": "stub",
-      "category": "creative",
-      "feature": "writing",
-      "port": 6558,
-      "base": "",
-      "homepage": "https://www.bannerbear.com",
-      "tools": [
-        "search",
-        "fetch"
-      ]
-    },
-    {
       "id": "google-photos",
       "name": "Google Photos",
       "kind": "stub",
@@ -466,20 +425,6 @@
       "port": 6560,
       "base": "",
       "homepage": "https://photos.google.com",
-      "tools": [
-        "search",
-        "fetch"
-      ]
-    },
-    {
-      "id": "mux",
-      "name": "Mux",
-      "kind": "stub",
-      "category": "creative",
-      "feature": "writing",
-      "port": 6562,
-      "base": "",
-      "homepage": "https://www.mux.com",
       "tools": [
         "search",
         "fetch"
@@ -528,20 +473,6 @@
       ]
     },
     {
-      "id": "z-api",
-      "name": "Z-API (WhatsApp)",
-      "kind": "stub",
-      "category": "communication",
-      "feature": "business",
-      "port": 6567,
-      "base": "",
-      "homepage": "https://z-api.io",
-      "tools": [
-        "search",
-        "fetch"
-      ]
-    },
-    {
       "id": "zoom-admin",
       "name": "Zoom Admin",
       "kind": "stub",
@@ -550,48 +481,6 @@
       "port": 6568,
       "base": "",
       "homepage": "https://zoom.us",
-      "tools": [
-        "search",
-        "fetch"
-      ]
-    },
-    {
-      "id": "help-scout",
-      "name": "Help Scout",
-      "kind": "stub",
-      "category": "communication",
-      "feature": "business",
-      "port": 6569,
-      "base": "",
-      "homepage": "https://www.helpscout.com",
-      "tools": [
-        "search",
-        "fetch"
-      ]
-    },
-    {
-      "id": "sendblue",
-      "name": "Sendblue",
-      "kind": "stub",
-      "category": "communication",
-      "feature": "business",
-      "port": 6571,
-      "base": "",
-      "homepage": "https://sendblue.co",
-      "tools": [
-        "search",
-        "fetch"
-      ]
-    },
-    {
-      "id": "zoho-mail",
-      "name": "Zoho Mail",
-      "kind": "stub",
-      "category": "communication",
-      "feature": "business",
-      "port": 6572,
-      "base": "",
-      "homepage": "https://www.zoho.com/mail",
       "tools": [
         "search",
         "fetch"
@@ -682,20 +571,6 @@
       ]
     },
     {
-      "id": "brex",
-      "name": "Brex",
-      "kind": "stub",
-      "category": "finance",
-      "feature": "financial",
-      "port": 6587,
-      "base": "",
-      "homepage": "https://www.brex.com",
-      "tools": [
-        "search",
-        "fetch"
-      ]
-    },
-    {
       "id": "google-workspace-admin",
       "name": "Google Workspace Admin",
       "kind": "stub",
@@ -766,20 +641,6 @@
       ]
     },
     {
-      "id": "rippling",
-      "name": "Rippling",
-      "kind": "stub",
-      "category": "hr",
-      "feature": "business",
-      "port": 6596,
-      "base": "",
-      "homepage": "https://rippling.com",
-      "tools": [
-        "search",
-        "fetch"
-      ]
-    },
-    {
       "id": "bluesky",
       "name": "Bluesky",
       "kind": "stub",
@@ -794,20 +655,6 @@
       ]
     },
     {
-      "id": "convertkit",
-      "name": "ConvertKit",
-      "kind": "stub",
-      "category": "marketing",
-      "feature": "writing",
-      "port": 6618,
-      "base": "",
-      "homepage": "https://convertkit.com",
-      "tools": [
-        "search",
-        "fetch"
-      ]
-    },
-    {
       "id": "msdynamics-365-sales",
       "name": "Microsoft Dynamics 365 Sales",
       "kind": "stub",
@@ -816,20 +663,6 @@
       "port": 6621,
       "base": "",
       "homepage": "https://dynamics.microsoft.com",
-      "tools": [
-        "search",
-        "fetch"
-      ]
-    },
-    {
-      "id": "mastodon",
-      "name": "Mastodon",
-      "kind": "stub",
-      "category": "communication",
-      "feature": "writing",
-      "port": 6625,
-      "base": "",
-      "homepage": "https://joinmastodon.org",
       "tools": [
         "search",
         "fetch"
@@ -900,20 +733,6 @@
       "port": 6652,
       "base": "",
       "homepage": "https://sheets.google.com",
-      "tools": [
-        "search",
-        "fetch"
-      ]
-    },
-    {
-      "id": "servicenow",
-      "name": "ServiceNow",
-      "kind": "stub",
-      "category": "operations",
-      "feature": "business",
-      "port": 6654,
-      "base": "",
-      "homepage": "https://www.servicenow.com",
       "tools": [
         "search",
         "fetch"
@@ -1012,20 +831,6 @@
       "port": 6676,
       "base": "",
       "homepage": "https://trello.com",
-      "tools": [
-        "search",
-        "fetch"
-      ]
-    },
-    {
-      "id": "harpa-ai",
-      "name": "HARPA AI",
-      "kind": "stub",
-      "category": "ai",
-      "feature": "writing",
-      "port": 6679,
-      "base": "",
-      "homepage": "https://harpa.ai",
       "tools": [
         "search",
         "fetch"
@@ -1158,20 +963,6 @@
       ]
     },
     {
-      "id": "blogger",
-      "name": "Blogger",
-      "kind": "stub",
-      "category": "cms",
-      "feature": "writing",
-      "port": 6707,
-      "base": "",
-      "homepage": "https://www.blogger.com",
-      "tools": [
-        "search",
-        "fetch"
-      ]
-    },
-    {
       "id": "ms-sql-server",
       "name": "Microsoft SQL Server",
       "kind": "stub",
@@ -1186,20 +977,6 @@
       ]
     },
     {
-      "id": "webflow",
-      "name": "Webflow",
-      "kind": "stub",
-      "category": "cms",
-      "feature": "writing",
-      "port": 6709,
-      "base": "",
-      "homepage": "https://webflow.com",
-      "tools": [
-        "search",
-        "fetch"
-      ]
-    },
-    {
       "id": "cloudflare",
       "name": "Cloudflare",
       "kind": "stub",
@@ -1208,20 +985,6 @@
       "port": 6712,
       "base": "",
       "homepage": "https://www.cloudflare.com",
-      "tools": [
-        "search",
-        "fetch"
-      ]
-    },
-    {
-      "id": "sanity",
-      "name": "Sanity",
-      "kind": "stub",
-      "category": "cms",
-      "feature": "writing",
-      "port": 6716,
-      "base": "",
-      "homepage": "https://www.sanity.io",
       "tools": [
         "search",
         "fetch"
@@ -1250,188 +1013,6 @@
       "port": 6722,
       "base": "",
       "homepage": "https://aws.amazon.com",
-      "tools": [
-        "search",
-        "fetch"
-      ]
-    },
-    {
-      "id": "fal-ai",
-      "name": "fal.ai",
-      "kind": "stub",
-      "category": "ai",
-      "feature": "writing",
-      "port": 6723,
-      "base": "",
-      "homepage": "https://fal.ai",
-      "tools": [
-        "search",
-        "fetch"
-      ]
-    },
-    {
-      "id": "resend",
-      "name": "Resend",
-      "kind": "stub",
-      "category": "developer",
-      "feature": "business",
-      "port": 6726,
-      "base": "",
-      "homepage": "https://resend.com",
-      "tools": [
-        "search",
-        "fetch"
-      ]
-    },
-    {
-      "id": "carbon-arc",
-      "name": "Carbon Arc",
-      "kind": "stub",
-      "category": "finance",
-      "feature": "financial",
-      "port": 6729,
-      "base": "",
-      "homepage": "https://carbonarc.co",
-      "tools": [
-        "search",
-        "fetch"
-      ]
-    },
-    {
-      "id": "link-ai",
-      "name": "Link (CLI)",
-      "kind": "stub",
-      "category": "finance",
-      "feature": "financial",
-      "port": 6730,
-      "base": "",
-      "homepage": "https://www.cdp.com",
-      "tools": [
-        "search",
-        "fetch"
-      ]
-    },
-    {
-      "id": "morningstar",
-      "name": "Morningstar",
-      "kind": "stub",
-      "category": "finance",
-      "feature": "financial",
-      "port": 6731,
-      "base": "",
-      "homepage": "https://www.morningstar.com",
-      "tools": [
-        "search",
-        "fetch"
-      ]
-    },
-    {
-      "id": "factset",
-      "name": "FactSet",
-      "kind": "stub",
-      "category": "finance",
-      "feature": "financial",
-      "port": 6732,
-      "base": "",
-      "homepage": "https://www.factset.com",
-      "tools": [
-        "search",
-        "fetch"
-      ]
-    },
-    {
-      "id": "ramp",
-      "name": "Ramp",
-      "kind": "stub",
-      "category": "finance",
-      "feature": "financial",
-      "port": 6733,
-      "base": "",
-      "homepage": "https://ramp.com",
-      "tools": [
-        "search",
-        "fetch"
-      ]
-    },
-    {
-      "id": "plaid",
-      "name": "Plaid",
-      "kind": "stub",
-      "category": "finance",
-      "feature": "financial",
-      "port": 6734,
-      "base": "",
-      "homepage": "https://plaid.com",
-      "tools": [
-        "search",
-        "fetch"
-      ]
-    },
-    {
-      "id": "perplexity-finance",
-      "name": "Perplexity Finance",
-      "kind": "stub",
-      "category": "finance",
-      "feature": "financial",
-      "port": 6735,
-      "base": "",
-      "homepage": "https://www.perplexity.ai/finance",
-      "tools": [
-        "search",
-        "fetch"
-      ]
-    },
-    {
-      "id": "bingx",
-      "name": "BingX",
-      "kind": "stub",
-      "category": "finance",
-      "feature": "financial",
-      "port": 6741,
-      "base": "",
-      "homepage": "https://bingx.com",
-      "tools": [
-        "search",
-        "fetch"
-      ]
-    },
-    {
-      "id": "quickbooks",
-      "name": "QuickBooks",
-      "kind": "stub",
-      "category": "finance",
-      "feature": "financial",
-      "port": 6745,
-      "base": "",
-      "homepage": "https://quickbooks.intuit.com",
-      "tools": [
-        "search",
-        "fetch"
-      ]
-    },
-    {
-      "id": "xero-accounting",
-      "name": "Xero Accounting",
-      "kind": "stub",
-      "category": "finance",
-      "feature": "financial",
-      "port": 6746,
-      "base": "",
-      "homepage": "https://www.xero.com",
-      "tools": [
-        "search",
-        "fetch"
-      ]
-    },
-    {
-      "id": "zoho-books",
-      "name": "Zoho Books",
-      "kind": "stub",
-      "category": "finance",
-      "feature": "financial",
-      "port": 6748,
-      "base": "",
-      "homepage": "https://www.zoho.com/books",
       "tools": [
         "search",
         "fetch"
