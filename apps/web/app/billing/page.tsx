@@ -14,6 +14,28 @@ type Plan = {
 
 type Providers = { paymob: boolean; paypal: boolean };
 
+// Per-plan feature lists (keyed by plan name, lower-cased). Rendered as a
+// checklist on each pricing card. Higher tiers say "Everything in <lower
+// tier>" so the cumulative value is obvious.
+const PLAN_FEATURES: Record<string, { en: string[]; ar: string[] }> = {
+  go: {
+    en: ["DeepSeek V4 Pro", "Kimi K2.6", "GLM 5.1"],
+    ar: ["DeepSeek V4 Pro", "Kimi K2.6", "GLM 5.1"],
+  },
+  plus: {
+    en: ["Everything in GO", "Gemini Pro 3.1", "Grok Imagine"],
+    ar: ["كل مزايا GO", "Gemini Pro 3.1", "Grok Imagine"],
+  },
+  pro: {
+    en: ["Everything in Plus", "GPT 5.5", "Claude Opus 4.8", "Veo 3.1", "Happy Horse 1.0", "Qwen Image 2.0", "GPT Image 2"],
+    ar: ["كل مزايا Plus", "GPT 5.5", "Claude Opus 4.8", "Veo 3.1", "Happy Horse 1.0", "Qwen Image 2.0", "GPT Image 2"],
+  },
+  max: {
+    en: ["Up to 5× more usage than Pro", "Higher output limits for all tasks", "Everything in Plus", "Every text model", "Every image & video model"],
+    ar: ["استخدام أكثر بـ 5 أضعاف من Pro", "حدود إخراج أعلى لكل المهام", "كل مزايا Plus", "كل نماذج النصوص", "كل نماذج الصور والفيديو"],
+  },
+};
+
 export default function BillingPage() {
   const [plans, setPlans] = useState<Plan[]>([]);
   const [providers, setProviders] = useState<Providers>({ paymob: false, paypal: false });
@@ -144,7 +166,18 @@ export default function BillingPage() {
               <span style={{ fontFamily: "var(--serif)", fontSize: 36 }}>${(p.USD / 100).toFixed(0)}</span>
               <span style={{ color: "var(--muted)" }}>{(p.EGP / 100).toFixed(0)} EGP</span>
             </div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 8 }}>
+            <ul style={{ listStyle: "none", margin: "4px 0 0", padding: 0, display: "flex", flexDirection: "column", gap: 8 }}>
+              {(PLAN_FEATURES[p.Name.toLowerCase()]?.[locale] || []).map((feat, i) => (
+                <li key={i} style={{ display: "flex", alignItems: "flex-start", gap: 8, color: "var(--ink-2)", fontSize: 13, lineHeight: 1.45 }}>
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="var(--cyan)" strokeWidth={2.4}
+                       strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ flexShrink: 0, marginTop: 1 }}>
+                    <path d="M20 6L9 17l-5-5" />
+                  </svg>
+                  <span>{feat}</span>
+                </li>
+              ))}
+            </ul>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: "auto", paddingTop: 8 }}>
               <button
                 type="button"
                 disabled={!providers.paymob || busy === p.ID + ":paymob"}

@@ -164,20 +164,6 @@
       ]
     },
     {
-      "id": "spotify",
-      "name": "Spotify",
-      "kind": "stub",
-      "category": "creative",
-      "feature": "writing",
-      "port": 6557,
-      "base": "",
-      "homepage": "https://www.spotify.com",
-      "tools": [
-        "search",
-        "fetch"
-      ]
-    },
-    {
       "id": "x-twitter",
       "name": "X (Twitter)",
       "kind": "stub",
@@ -186,34 +172,6 @@
       "port": 6565,
       "base": "",
       "homepage": "https://x.com",
-      "tools": [
-        "search",
-        "fetch"
-      ]
-    },
-    {
-      "id": "twilio",
-      "name": "Twilio",
-      "kind": "stub",
-      "category": "communication",
-      "feature": "business",
-      "port": 6574,
-      "base": "",
-      "homepage": "https://www.twilio.com",
-      "tools": [
-        "search",
-        "fetch"
-      ]
-    },
-    {
-      "id": "telegram",
-      "name": "Telegram",
-      "kind": "stub",
-      "category": "communication",
-      "feature": "business",
-      "port": 6579,
-      "base": "",
-      "homepage": "https://telegram.org",
       "tools": [
         "search",
         "fetch"
@@ -234,20 +192,6 @@
       ]
     },
     {
-      "id": "bluesky",
-      "name": "Bluesky",
-      "kind": "stub",
-      "category": "communication",
-      "feature": "writing",
-      "port": 6597,
-      "base": "",
-      "homepage": "https://bsky.app",
-      "tools": [
-        "search",
-        "fetch"
-      ]
-    },
-    {
       "id": "google-sheets",
       "name": "Google Sheets",
       "kind": "stub",
@@ -256,48 +200,6 @@
       "port": 6652,
       "base": "",
       "homepage": "https://sheets.google.com",
-      "tools": [
-        "search",
-        "fetch"
-      ]
-    },
-    {
-      "id": "trello",
-      "name": "Trello",
-      "kind": "stub",
-      "category": "operations",
-      "feature": "business",
-      "port": 6676,
-      "base": "",
-      "homepage": "https://trello.com",
-      "tools": [
-        "search",
-        "fetch"
-      ]
-    },
-    {
-      "id": "google-analytics",
-      "name": "Google Analytics",
-      "kind": "stub",
-      "category": "analytics",
-      "feature": "business",
-      "port": 6683,
-      "base": "",
-      "homepage": "https://analytics.google.com",
-      "tools": [
-        "search",
-        "fetch"
-      ]
-    },
-    {
-      "id": "google-search-console",
-      "name": "Google Search Console",
-      "kind": "stub",
-      "category": "marketing",
-      "feature": "business",
-      "port": 6689,
-      "base": "",
-      "homepage": "https://search.google.com/search-console",
       "tools": [
         "search",
         "fetch"

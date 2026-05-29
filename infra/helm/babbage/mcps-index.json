@@ -66,28 +66,10 @@
       "name": "Figma",
       "category": "creative"
     },
-    "spotify": {
-      "kind": "stub",
-      "port": 6557,
-      "name": "Spotify",
-      "category": "creative"
-    },
     "x-twitter": {
       "kind": "stub",
       "port": 6565,
       "name": "X (Twitter)",
-      "category": "communication"
-    },
-    "twilio": {
-      "kind": "stub",
-      "port": 6574,
-      "name": "Twilio",
-      "category": "communication"
-    },
-    "telegram": {
-      "kind": "stub",
-      "port": 6579,
-      "name": "Telegram",
       "category": "communication"
     },
     "shopify": {
@@ -96,35 +78,11 @@
       "name": "Shopify",
       "category": "operations"
     },
-    "bluesky": {
-      "kind": "stub",
-      "port": 6597,
-      "name": "Bluesky",
-      "category": "communication"
-    },
     "google-sheets": {
       "kind": "stub",
       "port": 6652,
       "name": "Google Sheets",
       "category": "productivity"
-    },
-    "trello": {
-      "kind": "stub",
-      "port": 6676,
-      "name": "Trello",
-      "category": "operations"
-    },
-    "google-analytics": {
-      "kind": "stub",
-      "port": 6683,
-      "name": "Google Analytics",
-      "category": "analytics"
-    },
-    "google-search-console": {
-      "kind": "stub",
-      "port": 6689,
-      "name": "Google Search Console",
-      "category": "marketing"
     },
     "linear": {
       "kind": "stub",

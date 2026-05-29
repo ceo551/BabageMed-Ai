@@ -3,6 +3,7 @@ import "./dashboard.css";
 import { AuthProvider } from "./lib/auth-context";
 import { AppShell } from "./components/AppShell";
 import { ServiceWorker } from "./components/ServiceWorker";
+import { NavProgress } from "./components/NavProgress";
 
 export const metadata = {
   title: "Babbage AI",
@@ -73,6 +74,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         />
       </head>
       <body>
+        <NavProgress />
         <AuthProvider>
           <AppShell>{children}</AppShell>
         </AuthProvider>

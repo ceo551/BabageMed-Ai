@@ -109,3 +109,43 @@
     scroll-behavior: auto !important;
   }
 }
+
+/* ── Global navigation progress bar (components/NavProgress.tsx) ──────────
+   Thin gradient bar pinned to the viewport top; flashes on every route
+   change so a click gives instant "loading" feedback. */
+.nav-progress {
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 2.5px;
+  width: 0;
+  z-index: 9999;
+  background: linear-gradient(90deg, var(--cyan), var(--purple));
+  box-shadow: 0 0 10px var(--cyan-line);
+  opacity: 0;
+  pointer-events: none;
+  transition: width 0.32s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.25s ease;
+}
+.nav-progress[data-phase="run"]  { width: 80%;  opacity: 1; }
+.nav-progress[data-phase="done"] { width: 100%; opacity: 1; }
+.nav-progress[data-phase="idle"] { width: 0;    opacity: 0; }
+
+/* ── Reusable spinner + route loading state (used by per-route loading.tsx) ── */
+@keyframes bb-spin { to { transform: rotate(360deg); } }
+.bb-spinner {
+  width: 24px;
+  height: 24px;
+  border: 2.5px solid var(--border-strong);
+  border-top-color: var(--cyan);
+  border-radius: 50%;
+  animation: bb-spin 0.7s linear infinite;
+}
+.bb-loading {
+  min-height: 55vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  color: var(--muted);
+  font-size: 14px;
+}
