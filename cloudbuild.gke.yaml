@@ -7,19 +7,21 @@ options:
 substitutions:
   _REGION: us-central1
   _REPO: babbage
-  _TAG: v19
+  _TAG: v22
 
+# Deploy subset that fits the project's 2-node quota: backend + frontend +
+# 8 light API survivor MCPs (post-prune; the medical MCPs were removed).
 images:
   - "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/backend:${_TAG}"
   - "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/frontend:${_TAG}"
   - "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-pubmed:${_TAG}"
-  - "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-icd10:${_TAG}"
-  - "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-who:${_TAG}"
-  - "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-cdc:${_TAG}"
-  - "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-nci:${_TAG}"
-  - "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-clinicaltrials:${_TAG}"
-  - "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-medlineplus:${_TAG}"
-  - "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-medrxiv:${_TAG}"
+  - "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-notion:${_TAG}"
+  - "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-slack:${_TAG}"
+  - "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-github:${_TAG}"
+  - "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-gmail:${_TAG}"
+  - "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-gcalendar:${_TAG}"
+  - "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-linkedin:${_TAG}"
+  - "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-huggingface:${_TAG}"
 
 steps:
   - id: backend
@@ -50,37 +52,37 @@ steps:
     waitFor: ["-"]
     args: [build, -f, mcps/pubmed/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-pubmed:${_TAG}", .]
 
-  - id: mcp-icd10
+  - id: mcp-notion
     name: gcr.io/cloud-builders/docker
     waitFor: ["-"]
-    args: [build, -f, mcps/icd10/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-icd10:${_TAG}", .]
+    args: [build, -f, mcps/notion/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-notion:${_TAG}", .]
 
-  - id: mcp-who
+  - id: mcp-slack
     name: gcr.io/cloud-builders/docker
     waitFor: ["-"]
-    args: [build, -f, mcps/who/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-who:${_TAG}", .]
+    args: [build, -f, mcps/slack/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-slack:${_TAG}", .]
 
-  - id: mcp-cdc
+  - id: mcp-github
     name: gcr.io/cloud-builders/docker
     waitFor: ["-"]
-    args: [build, -f, mcps/cdc/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-cdc:${_TAG}", .]
+    args: [build, -f, mcps/github/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-github:${_TAG}", .]
 
-  - id: mcp-nci
+  - id: mcp-gmail
     name: gcr.io/cloud-builders/docker
     waitFor: ["-"]
-    args: [build, -f, mcps/nci/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-nci:${_TAG}", .]
+    args: [build, -f, mcps/gmail/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-gmail:${_TAG}", .]
 
-  - id: mcp-clinicaltrials
+  - id: mcp-gcalendar
     name: gcr.io/cloud-builders/docker
     waitFor: ["-"]
-    args: [build, -f, mcps/clinicaltrials/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-clinicaltrials:${_TAG}", .]
+    args: [build, -f, mcps/gcalendar/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-gcalendar:${_TAG}", .]
 
-  - id: mcp-medlineplus
+  - id: mcp-linkedin
     name: gcr.io/cloud-builders/docker
     waitFor: ["-"]
-    args: [build, -f, mcps/medlineplus/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-medlineplus:${_TAG}", .]
+    args: [build, -f, mcps/linkedin/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-linkedin:${_TAG}", .]
 
-  - id: mcp-medrxiv
+  - id: mcp-huggingface
     name: gcr.io/cloud-builders/docker
     waitFor: ["-"]
-    args: [build, -f, mcps/medrxiv/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-medrxiv:${_TAG}", .]
+    args: [build, -f, mcps/huggingface/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-huggingface:${_TAG}", .]

@@ -162,9 +162,18 @@ export const I = {
       className="disc-logo"
       src="/babbage-icon.png"
       alt="Babbage"
-      width={36}
-      height={36}
-      style={{ display: "block", borderRadius: 8 }}
+      width={40}
+      height={40}
+      // The asset has a near-black rounded-square background that merges
+      // into the dark sidebar, so the mark read as faint/edgeless. A
+      // hairline ring + soft shadow defines its edge so it stands out
+      // crisply, and 40px (was 36) gives it more presence.
+      style={{
+        display: "block",
+        borderRadius: 10,
+        border: "1px solid rgba(255,255,255,0.18)",
+        boxShadow: "0 1px 6px rgba(0,0,0,0.5)",
+      }}
     />
   ),
   // Anthropic mark — orange asterisk/burst. Used as the model-picker swatch

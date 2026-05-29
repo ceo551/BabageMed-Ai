@@ -153,7 +153,7 @@ nginx.ingress.kubernetes.io/configuration-snippet: |
   handful of Deployments. Keep this list small and authoritative; for
   the full catalog use preset=all.
 */}}
-pubmed mayoclinic who cdc nci clinicaltrials medlineplus cochrane fda ncbi nejm bmj jamanetwork frontiers gmail gcalendar gdrive github slack notion linkedin huggingface
+pubmed notion slack github gmail gcalendar gdrive linkedin huggingface stripe shopify google-sheets google-docs trello calendly zoom
 {{- else -}}
 {{ join " " .Values.mcps.enabled }}
 {{- end -}}
