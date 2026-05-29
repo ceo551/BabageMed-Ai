@@ -87,9 +87,10 @@ func TestPlanFromPlanID(t *testing.T) {
 	cases := []struct {
 		in, want string
 	}{
+		{"go_monthly", "go"},
+		{"plus_monthly", "plus"},
 		{"pro_monthly", "pro"},
 		{"max_monthly", "max"},
-		{"max_yearly", "max"},
 		{"", "free"},
 		{"unknown_garbage", "free"},
 		{"PRO_MONTHLY", "free"}, // case-sensitive — verified

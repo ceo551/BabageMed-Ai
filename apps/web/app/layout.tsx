@@ -13,8 +13,8 @@ export const metadata = {
   // Point every favicon size at the brand asset shipped in /public so the
   // browser tab gets the disc mark instead of the default globe.
   icons: {
-    icon:     "/babagemed-icon.png",
-    shortcut: "/babagemed-icon.png",
+    icon:     "/babbage-icon.png",
+    shortcut: "/babbage-icon.png",
   },
 };
 

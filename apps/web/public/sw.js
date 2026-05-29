@@ -17,7 +17,7 @@ const STATIC_CACHE = `babbage-static-${VERSION}`;
 const RUNTIME_CACHE = `babbage-runtime-${VERSION}`;
 const OFFLINE_URL = "/offline.html";
 
-const PRECACHE = [OFFLINE_URL, "/babagemed-icon.png", "/manifest.webmanifest"];
+const PRECACHE = [OFFLINE_URL, "/babbage-icon.png", "/manifest.webmanifest"];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(

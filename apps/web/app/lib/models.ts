@@ -65,18 +65,10 @@ export const IMAGE_MODELS: ReadonlyArray<MediaModel> = [
 
 // ── Video models ────────────────────────────────────────────────────
 export const VIDEO_MODELS: ReadonlyArray<MediaModel> = [
-  { id: "sora-2",        name: "Sora 2",        brand: "openai",      kind: "video", short: "Sora 2",
-    pills: { en: ["HQ", "TEXT-TO-VIDEO"], ar: ["جودة عالية", "نص-إلى-فيديو"] } },
-  { id: "kling-o3",      name: "Kling o3",      brand: "kling",       kind: "video", short: "Kling o3",
-    pills: { en: ["MOTION"], ar: ["حركة"] } },
-  { id: "kling-3.0",     name: "Kling 3.0",     brand: "kling",       kind: "video", short: "Kling 3.0",
-    pills: { en: ["FAST", "I2V"], ar: ["سريع", "صورة-لفيديو"] } },
   { id: "grok-imagine",  name: "Grok Imagine",  brand: "xai",         kind: "video", short: "Grok Imagine",
     pills: { en: ["CREATIVE"], ar: ["إبداعى"] } },
   { id: "veo-3.1",       name: "Veo 3.1",       brand: "google",      kind: "video", short: "Veo 3.1",
     pills: { en: ["CINEMATIC"], ar: ["سينمائى"] } },
-  { id: "seedance-2.0",  name: "Seedance 2.0",  brand: "bytedance",   kind: "video", short: "Seedance 2.0",
-    pills: { en: ["DANCE", "MOTION"], ar: ["حركة"] } },
   { id: "happy-horse-1.0", name: "Happy Horse 1.0", brand: "happyhorse", kind: "video", short: "Happy Horse 1.0",
     pills: { en: ["FAST", "STYLISED"], ar: ["سريع"] } },
 ];

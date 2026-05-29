@@ -98,10 +98,14 @@ func (s *Store) MarkPaid(ctx context.Context, provider, externalID, planID strin
 
 func planFromPlanID(planID string) string {
 	switch planID {
-	case "max_monthly", "max_yearly":
+	case "max_monthly":
 		return "max"
 	case "pro_monthly":
 		return "pro"
+	case "plus_monthly":
+		return "plus"
+	case "go_monthly":
+		return "go"
 	default:
 		return "free"
 	}

@@ -186,7 +186,7 @@ function Transcript({ messages }: { messages: ChatMessage[] }) {
           return (
             <div key={m.id} className="msg msg-assistant msg-loading">
               <img
-                src="/babagemed-icon.png"
+                src="/babbage-icon.png"
                 alt=""
                 className="msg-loading-mark"
                 width={40}

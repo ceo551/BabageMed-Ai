@@ -154,13 +154,13 @@ export const I = {
     </svg>
   ),
   // Primary brand mark — uses the rasterized asset shipped at
-  // /public/babagemed-icon.png so the logo is pixel-identical to the brief.
+  // /public/babbage-icon.png so the logo is pixel-identical to the brief.
   // (An earlier SVG approximation lived here but always read as "close, not
   // matching" — the PNG is the canonical version.)
   discLogo: (
     <img
       className="disc-logo"
-      src="/babagemed-icon.png"
+      src="/babbage-icon.png"
       alt="Babbage"
       width={36}
       height={36}

@@ -1,5 +1,7 @@
 package payments
 
+import "sort"
+
 // Plans is the canonical price list. Amounts are in MINOR units (piasters / cents)
 // so we can pass them straight to Paymob (EGP cents) and PayPal (USD cents → /100).
 type Plan struct {
@@ -12,33 +14,44 @@ type Plan struct {
 	Interval    string // "month" | "year" | "one_time"
 }
 
+// Four monthly tiers: GO $17, Plus $30, Pro $50, Max $100. EGP amounts are
+// the USD figure at ~50 EGP/$ (matching the historical price points).
 var Plans = map[string]Plan{
+	"go_monthly": {
+		ID:            "go_monthly",
+		Name:          "GO",
+		DescriptionEN: "Everyday AI · all connectors · standard speed",
+		DescriptionAR: "ذكاء اصطناعي يومي · كل الموصّلات · سرعة قياسية",
+		EGP:           85000, // 850 EGP
+		USD:           1700,  // $17
+		Interval:      "month",
+	},
+	"plus_monthly": {
+		ID:            "plus_monthly",
+		Name:          "Plus",
+		DescriptionEN: "Higher limits · all features · faster responses",
+		DescriptionAR: "حدود أعلى · كل الميزات · ردود أسرع",
+		EGP:           150000, // 1500 EGP
+		USD:           3000,   // $30
+		Interval:      "month",
+	},
 	"pro_monthly": {
 		ID:            "pro_monthly",
 		Name:          "Pro",
-		DescriptionEN: "Unlimited consults · all 86 MCPs · cited mode",
-		DescriptionAR: "استشارات غير محدودة · 86 خادم MCP · وضع الاستشهاد",
+		DescriptionEN: "Unlimited chats · all connectors · cited + deep modes",
+		DescriptionAR: "محادثات غير محدودة · كل الموصّلات · أوضاع الاستشهاد والتعمّق",
 		EGP:           250000, // 2500 EGP
-		USD:           4900,   // $49
+		USD:           5000,   // $50
 		Interval:      "month",
 	},
 	"max_monthly": {
 		ID:            "max_monthly",
 		Name:          "Max",
-		DescriptionEN: "Team seats · priority compute · EHR integrations",
-		DescriptionAR: "مقاعد للفريق · حوسبة بأولوية · تكامل EHR",
-		EGP:           750000, // 7500 EGP
-		USD:           14900,  // $149
+		DescriptionEN: "Team seats · priority compute · everything in Pro",
+		DescriptionAR: "مقاعد للفريق · حوسبة بأولوية · كل مزايا Pro",
+		EGP:           500000, // 5000 EGP
+		USD:           10000,  // $100
 		Interval:      "month",
-	},
-	"max_yearly": {
-		ID:            "max_yearly",
-		Name:          "Max (annual)",
-		DescriptionEN: "Same as Max, billed yearly (2 months free)",
-		DescriptionAR: "نفس Max، فوترة سنوية (شهران مجانًا)",
-		EGP:           7500000, // 75000 EGP
-		USD:           149000,  // $1490
-		Interval:      "year",
 	},
 }
 
@@ -47,10 +60,14 @@ func GetPlan(id string) (Plan, bool) {
 	return p, ok
 }
 
+// ListPlans returns the plans in ascending price order (GO, Plus, Pro, Max)
+// so the billing page renders them low→high. Ranging the map directly gave a
+// non-deterministic order.
 func ListPlans() []Plan {
 	out := make([]Plan, 0, len(Plans))
 	for _, p := range Plans {
 		out = append(out, p)
 	}
+	sort.Slice(out, func(i, j int) bool { return out[i].USD < out[j].USD })
 	return out
 }
