@@ -27,6 +27,15 @@ const FOCUSABLE =
 export function Modal({ open, onClose, title, width = 540, children }: ModalProps) {
   const cardRef = useRef<HTMLDivElement | null>(null);
   const triggerRef = useRef<Element | null>(null);
+  // These two hooks MUST run on every render — before the `if (!open)`
+  // early-return below. Calling them after a conditional return is a Rules-
+  // of-Hooks violation: while the modal is closed they don't run, and the
+  // first time `open` flips true React sees "more hooks than last render"
+  // and throws (the whole feature page crashed into the ErrorBoundary the
+  // moment any modal-opening button — Instructions / Files / Skills — was
+  // clicked).
+  const titleId = useId();
+  const { s } = useUI();
 
   useEffect(() => {
     if (!open) return;
@@ -86,14 +95,8 @@ export function Modal({ open, onClose, title, width = 540, children }: ModalProp
   // Stable id for aria-labelledby — screen readers announce the dialog
   // with its title text instead of just "dialog". When `title` is a non-
   // string ReactNode we fall back to aria-label="dialog" (no good way to
-  // serialise arbitrary JSX into an accessible name).
-  //
-  // useId() instead of Math.random(): the previous version recomputed
-  // a fresh id on every render, briefly invalidating the screen
-  // reader's aria-labelledby pointer between renders. React's useId
-  // returns a stable, SSR-safe id per component instance.
-  const titleId = useId();
-  const { s } = useUI();
+  // serialise arbitrary JSX into an accessible name). titleId/s are
+  // computed above (before the early return) to satisfy the Rules of Hooks.
   const labelProps = title
     ? (typeof title === "string"
         ? { "aria-label": title }
