@@ -1,43 +1,45 @@
 :root,
 [data-theme="dark"] {
-  --bg: #0b0d10;
-  --bg-2: #07080b;
+  /* Refined dark palette — a faint cool-blue cast over flat grey gives the
+     surfaces depth; a true 2-tier elevation (panel-solid → surface-2) and
+     lifted borders make layering legible. Accents desaturated to a calm,
+     premium teal+violet pair (was candy cyan/purple). */
+  --bg: #0a0c10;
+  --bg-2: #06070a;
   --page-bg: var(--bg);
   --panel: rgba(255, 255, 255, 0.04);
-  --panel-solid: #14171c;
-  --border: rgba(255, 255, 255, 0.07);
-  --border-strong: rgba(255, 255, 255, 0.14);
-  --grid-line: rgba(255, 255, 255, 0.035);
-  --ink: #f3f5f8;
-  --ink-2: #c7cdd4;
-  --muted: #7c8694;
-  --muted-2: #5a626d;
-  --cyan: #5ad7f5;
-  --cyan-soft: rgba(90, 215, 245, 0.10);
-  --cyan-line: rgba(90, 215, 245, 0.32);
-  --purple: #b88dff;
-  --purple-soft: rgba(184, 141, 255, 0.10);
-  --purple-line: rgba(184, 141, 255, 0.32);
-  --yellow: #f6d36b;
-  --yellow-soft: rgba(246, 211, 107, 0.10);
-  --yellow-line: rgba(246, 211, 107, 0.32);
-  --orange: #f59e6e;
-  --green: #6fcf97;
-  /* Extended feature palette — added with the indigo/rose/fuchsia
-   * recolouring. Soft + line derivatives are pre-computed so consumers
-   * can reuse the same `var(--X-soft)` / `var(--X-line)` idiom as cyan
-   * / purple, instead of inlining raw rgba() in dashboard.css and
-   * feature.css. Theme overrides live in [data-theme="light"] below. */
-  --indigo: #818cf8;
-  --indigo-soft: rgba(129, 140, 248, 0.10);
-  --indigo-line: rgba(129, 140, 248, 0.32);
-  --rose: #f43f5e;
-  --rose-soft: rgba(244, 63, 94, 0.10);
-  --rose-line: rgba(244, 63, 94, 0.32);
-  --fuchsia: #d946ef;
-  --fuchsia-soft: rgba(217, 70, 239, 0.10);
-  --fuchsia-line: rgba(217, 70, 239, 0.32);
-  --shadow: 0 18px 60px rgba(0, 0, 0, 0.5);
+  --panel-solid: #15181e;
+  --surface-2: #1c2027;
+  --border: rgba(255, 255, 255, 0.09);
+  --border-strong: rgba(255, 255, 255, 0.16);
+  --grid-line: rgba(255, 255, 255, 0.04);
+  --ink: #f4f6fa;
+  --ink-2: #c4ccd6;
+  --muted: #8b96a5;
+  --muted-2: #6c7787;
+  --cyan: #56cfe1;
+  --cyan-soft: rgba(86, 207, 225, 0.10);
+  --cyan-line: rgba(86, 207, 225, 0.32);
+  --purple: #a78bfa;
+  --purple-soft: rgba(167, 139, 250, 0.10);
+  --purple-line: rgba(167, 139, 250, 0.32);
+  --yellow: #efc15f;
+  --yellow-soft: rgba(239, 193, 95, 0.10);
+  --yellow-line: rgba(239, 193, 95, 0.32);
+  --orange: #f3a366;
+  --green: #5fd49a;
+  /* Extended feature palette — soft + line derivatives pre-computed so
+   * consumers reuse the var(--X-soft)/var(--X-line) idiom. */
+  --indigo: #8b95f8;
+  --indigo-soft: rgba(139, 149, 248, 0.10);
+  --indigo-line: rgba(139, 149, 248, 0.32);
+  --rose: #f76382;
+  --rose-soft: rgba(247, 99, 130, 0.10);
+  --rose-line: rgba(247, 99, 130, 0.32);
+  --fuchsia: #df7bef;
+  --fuchsia-soft: rgba(223, 123, 239, 0.10);
+  --fuchsia-line: rgba(223, 123, 239, 0.32);
+  --shadow: 0 20px 60px rgba(0, 0, 0, 0.55);
   --sans: "Geist", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   --serif: "Instrument Serif", ui-serif, Georgia, serif;
   --mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
@@ -45,42 +47,65 @@
   --ar-serif: "Amiri", "Instrument Serif", ui-serif, Georgia, serif;
 }
 [data-theme="light"] {
-  --bg: #fafbfd;
-  --bg-2: #f1f3f7;
+  --bg: #fbfcfe;
+  --bg-2: #eef1f6;
   --page-bg: var(--bg);
   --panel: rgba(0, 0, 0, 0.025);
   --panel-solid: #ffffff;
-  --border: rgba(15, 18, 24, 0.08);
-  --border-strong: rgba(15, 18, 24, 0.18);
+  --surface-2: #f6f8fb;
+  --border: rgba(15, 18, 24, 0.10);
+  --border-strong: rgba(15, 18, 24, 0.20);
   --grid-line: rgba(15, 18, 24, 0.04);
-  --ink: #0b0d10;
-  --ink-2: #2c333d;
-  --muted: #6b7480;
-  --muted-2: #95a0ad;
-  --cyan: #008ea8;
-  --cyan-soft: rgba(0, 142, 168, 0.08);
-  --cyan-line: rgba(0, 142, 168, 0.28);
-  --purple: #6f4eda;
-  --purple-soft: rgba(111, 78, 218, 0.08);
-  --purple-line: rgba(111, 78, 218, 0.28);
-  --yellow: #b8810c;
-  --yellow-soft: rgba(184, 129, 12, 0.08);
-  --yellow-line: rgba(184, 129, 12, 0.28);
+  --ink: #0c1118;
+  --ink-2: #353d4a;
+  --muted: #5d6775;
+  --muted-2: #6b7480;
+  --cyan: #0a8fa6;
+  --cyan-soft: rgba(10, 143, 166, 0.08);
+  --cyan-line: rgba(10, 143, 166, 0.28);
+  --purple: #6d4ed6;
+  --purple-soft: rgba(109, 78, 214, 0.08);
+  --purple-line: rgba(109, 78, 214, 0.28);
+  --yellow: #a9760a;
+  --yellow-soft: rgba(169, 118, 10, 0.08);
+  --yellow-line: rgba(169, 118, 10, 0.28);
   --orange: #d77a3a;
-  --green: #2f9c5e;
+  --green: #1f9a55;
   --indigo: #4f46e5;
   --indigo-soft: rgba(79, 70, 229, 0.08);
   --indigo-line: rgba(79, 70, 229, 0.28);
-  --rose: #be123c;
-  --rose-soft: rgba(190, 18, 60, 0.08);
-  --rose-line: rgba(190, 18, 60, 0.28);
+  --rose: #c01a43;
+  --rose-soft: rgba(192, 26, 67, 0.08);
+  --rose-line: rgba(192, 26, 67, 0.28);
   --fuchsia: #a21caf;
   --fuchsia-soft: rgba(162, 28, 175, 0.08);
   --fuchsia-line: rgba(162, 28, 175, 0.28);
-  /* Brighten muted-2 on light theme so descriptive text passes WCAG AA
-   * (previous #95a0ad on #fafbfd was ~2.6:1, fails AA). #6b7480 also
-   * used elsewhere → keep it for the new value. */
-  --muted-2: #6b7480;
   --shadow: 0 12px 40px rgba(20, 30, 50, 0.10);
 }
 [dir="rtl"] body { font-family: var(--ar-sans); }
+/* Arabic hero text must use the Arabic serif, not the Latin Instrument Serif. */
+[dir="rtl"] .greet,
+[dir="rtl"] .brand-greet .b1 { font-family: var(--ar-serif); }
+
+/* Global keyboard focus ring. Most interactive elements removed their
+   outline without a replacement, leaving keyboard users with no visible
+   focus. :focus-visible only shows on keyboard nav (not mouse clicks). */
+:focus-visible {
+  outline: 2px solid var(--cyan);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+/* Respect users who ask for reduced motion (vestibular sensitivity) —
+   the infinite pulse/bounce/skeleton loops and all transitions are
+   neutralised. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}

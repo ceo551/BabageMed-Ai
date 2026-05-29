@@ -27,7 +27,7 @@ const PAGE_SIZE = 60;
 
 export default function ConnectorsBrowsePage() {
   const { user } = useAuth();
-  const { s } = useUI();
+  const { s, locale } = useUI();
   const [all, setAll] = useState<McpServer[]>([]);
   const [mine, setMine] = useState<Record<string, Connector>>({});
   const [error, setError] = useState<string | null>(null);
@@ -143,11 +143,27 @@ export default function ConnectorsBrowsePage() {
         </div>
       )}
 
-      {/* When the user has no filter active, show a Perplexity-style
-          per-feature grouping (each feature gets its own row with the first
-          ~8 connectors + a "View all" link). Otherwise fall back to the
-          flat filtered grid + pager. */}
-      {q.trim() === "" && feature === "all" && kind === "all" ? (
+      {/* Loading: catalog hasn't arrived yet — show a message instead of a
+          blank flash. Empty: a search/filter matched nothing — show a
+          friendly no-results state with a Clear action. Otherwise render
+          the feature-grouped view (no filter) or the flat filtered grid. */}
+      {!error && all.length === 0 ? (
+        <div className="mcps-empty">{s.loadingChats}</div>
+      ) : !error && filtered.length === 0 ? (
+        <div className="mcps-empty">
+          <p>{locale === "ar" ? "لا توجد أدوات مطابقة لبحثك." : "No connectors match your search."}</p>
+          {(q || feature !== "all" || kind !== "all") && (
+            <button
+              type="button"
+              className="connect-btn"
+              style={{ padding: "8px 18px", borderRadius: 999, marginTop: 12, width: "auto" }}
+              onClick={() => { setQ(""); setFeature("all"); setKind("all"); }}
+            >
+              {locale === "ar" ? "مسح الفلاتر" : "Clear filters"}
+            </button>
+          )}
+        </div>
+      ) : q.trim() === "" && feature === "all" && kind === "all" ? (
         <FeatureSections
           servers={filtered}
           features={s.features}

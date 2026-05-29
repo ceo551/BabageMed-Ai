@@ -230,7 +230,9 @@ function UsageTab() {
   // these today (no quota gate on /api/chat); they're here purely so the
   // user has a sense of where they are. Numbers can move once a real
   // metering layer ships.
-  const planLimits: Record<string, number> = { free: 50, pro: 1000, max: 10000 };
+  // Plan ladder is GO/Plus/Pro/Max (see billing). "free" kept as a legacy
+  // fallback so pre-migration accounts still resolve a limit.
+  const planLimits: Record<string, number> = { free: 50, go: 200, plus: 1000, pro: 5000, max: 20000 };
 
   function labelFor(modelId: string): string {
     // Usage rows can reference any text / image / video model id, so

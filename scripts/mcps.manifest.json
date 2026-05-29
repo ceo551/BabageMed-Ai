@@ -46,33 +46,6 @@
       "feature": "business"
     },
     {
-      "id": "kaggle",
-      "name": "Kaggle",
-      "kind": "api",
-      "category": "productivity",
-      "port": 6174,
-      "base": "https://www.kaggle.com/api/v1",
-      "tools": [
-        "datasets",
-        "kernels",
-        "competitions"
-      ],
-      "feature": "business"
-    },
-    {
-      "id": "gamma",
-      "name": "Gamma.app",
-      "kind": "scrape",
-      "category": "productivity",
-      "port": 6175,
-      "base": "https://gamma.app",
-      "tools": [
-        "search",
-        "fetch"
-      ],
-      "feature": "business"
-    },
-    {
       "id": "linkedin",
       "name": "LinkedIn",
       "kind": "api",
@@ -83,21 +56,6 @@
         "me",
         "posts",
         "share"
-      ],
-      "feature": "business"
-    },
-    {
-      "id": "chrome",
-      "name": "Chrome (Playwright)",
-      "kind": "scrape",
-      "category": "productivity",
-      "port": 6177,
-      "base": "about:blank",
-      "tools": [
-        "browse",
-        "screenshot",
-        "extract",
-        "click"
       ],
       "feature": "business"
     },
@@ -147,21 +105,6 @@
       "feature": "business"
     },
     {
-      "id": "huggingface",
-      "name": "Hugging Face",
-      "kind": "api",
-      "category": "productivity",
-      "port": 6182,
-      "base": "https://huggingface.co/api",
-      "tools": [
-        "models",
-        "datasets",
-        "spaces",
-        "infer"
-      ],
-      "feature": "business"
-    },
-    {
       "id": "gdrive",
       "name": "Google Drive",
       "kind": "api",
@@ -173,34 +116,6 @@
         "get",
         "upload",
         "search"
-      ],
-      "feature": "business"
-    },
-    {
-      "id": "hostinger",
-      "name": "Hostinger",
-      "kind": "api",
-      "category": "infra",
-      "port": 6184,
-      "base": "https://developers.hostinger.com/api",
-      "tools": [
-        "domains",
-        "vps",
-        "billing"
-      ],
-      "feature": "business"
-    },
-    {
-      "id": "godaddy",
-      "name": "GoDaddy",
-      "kind": "api",
-      "category": "infra",
-      "port": 6185,
-      "base": "https://api.godaddy.com/v1",
-      "tools": [
-        "domains",
-        "dns",
-        "orders"
       ],
       "feature": "business"
     },
@@ -221,76 +136,6 @@
       "feature": "business"
     },
     {
-      "id": "stripe",
-      "name": "Stripe",
-      "kind": "stub",
-      "category": "finance",
-      "feature": "financial",
-      "port": 6534,
-      "base": "",
-      "homepage": "https://stripe.com",
-      "tools": [
-        "search",
-        "fetch"
-      ]
-    },
-    {
-      "id": "vercel",
-      "name": "Vercel",
-      "kind": "stub",
-      "category": "developer",
-      "feature": "business",
-      "port": 6536,
-      "base": "",
-      "homepage": "https://vercel.com",
-      "tools": [
-        "search",
-        "fetch"
-      ]
-    },
-    {
-      "id": "supabase",
-      "name": "Supabase",
-      "kind": "stub",
-      "category": "developer",
-      "feature": "business",
-      "port": 6537,
-      "base": "",
-      "homepage": "https://supabase.com",
-      "tools": [
-        "search",
-        "fetch"
-      ]
-    },
-    {
-      "id": "google-forms",
-      "name": "Google Forms",
-      "kind": "stub",
-      "category": "productivity",
-      "feature": "education",
-      "port": 6538,
-      "base": "",
-      "homepage": "https://forms.google.com",
-      "tools": [
-        "search",
-        "fetch"
-      ]
-    },
-    {
-      "id": "youtube-analytics",
-      "name": "YouTube Analytics",
-      "kind": "stub",
-      "category": "creative",
-      "feature": "writing",
-      "port": 6539,
-      "base": "",
-      "homepage": "https://analytics.youtube.com",
-      "tools": [
-        "search",
-        "fetch"
-      ]
-    },
-    {
       "id": "facebook-pages",
       "name": "Facebook Pages",
       "kind": "stub",
@@ -299,48 +144,6 @@
       "port": 6540,
       "base": "",
       "homepage": "https://www.facebook.com",
-      "tools": [
-        "search",
-        "fetch"
-      ]
-    },
-    {
-      "id": "google-tasks",
-      "name": "Google Tasks",
-      "kind": "stub",
-      "category": "productivity",
-      "feature": "business",
-      "port": 6542,
-      "base": "",
-      "homepage": "https://tasks.google.com",
-      "tools": [
-        "search",
-        "fetch"
-      ]
-    },
-    {
-      "id": "google-ads",
-      "name": "Google Ads",
-      "kind": "stub",
-      "category": "marketing",
-      "feature": "business",
-      "port": 6545,
-      "base": "",
-      "homepage": "https://ads.google.com",
-      "tools": [
-        "search",
-        "fetch"
-      ]
-    },
-    {
-      "id": "google-meet",
-      "name": "Google Meet",
-      "kind": "stub",
-      "category": "communication",
-      "feature": "business",
-      "port": 6549,
-      "base": "",
-      "homepage": "https://meet.google.com",
       "tools": [
         "search",
         "fetch"
@@ -361,20 +164,6 @@
       ]
     },
     {
-      "id": "canva-enterprise",
-      "name": "Canva Enterprise",
-      "kind": "stub",
-      "category": "creative",
-      "feature": "writing",
-      "port": 6554,
-      "base": "",
-      "homepage": "https://www.canva.com/enterprise",
-      "tools": [
-        "search",
-        "fetch"
-      ]
-    },
-    {
       "id": "spotify",
       "name": "Spotify",
       "kind": "stub",
@@ -383,34 +172,6 @@
       "port": 6557,
       "base": "",
       "homepage": "https://www.spotify.com",
-      "tools": [
-        "search",
-        "fetch"
-      ]
-    },
-    {
-      "id": "google-photos",
-      "name": "Google Photos",
-      "kind": "stub",
-      "category": "storage",
-      "feature": "writing",
-      "port": 6560,
-      "base": "",
-      "homepage": "https://photos.google.com",
-      "tools": [
-        "search",
-        "fetch"
-      ]
-    },
-    {
-      "id": "youtube-data",
-      "name": "YouTube Data",
-      "kind": "stub",
-      "category": "creative",
-      "feature": "writing",
-      "port": 6563,
-      "base": "",
-      "homepage": "https://developers.google.com/youtube/v3",
       "tools": [
         "search",
         "fetch"
@@ -431,20 +192,6 @@
       ]
     },
     {
-      "id": "zoom-admin",
-      "name": "Zoom Admin",
-      "kind": "stub",
-      "category": "communication",
-      "feature": "business",
-      "port": 6568,
-      "base": "",
-      "homepage": "https://zoom.us",
-      "tools": [
-        "search",
-        "fetch"
-      ]
-    },
-    {
       "id": "twilio",
       "name": "Twilio",
       "kind": "stub",
@@ -453,20 +200,6 @@
       "port": 6574,
       "base": "",
       "homepage": "https://www.twilio.com",
-      "tools": [
-        "search",
-        "fetch"
-      ]
-    },
-    {
-      "id": "zoom",
-      "name": "Zoom",
-      "kind": "stub",
-      "category": "communication",
-      "feature": "business",
-      "port": 6575,
-      "base": "",
-      "homepage": "https://zoom.us",
       "tools": [
         "search",
         "fetch"
@@ -487,20 +220,6 @@
       ]
     },
     {
-      "id": "atlassian",
-      "name": "Atlassian (Jira/Confluence)",
-      "kind": "stub",
-      "category": "operations",
-      "feature": "business",
-      "port": 6580,
-      "base": "",
-      "homepage": "https://www.atlassian.com",
-      "tools": [
-        "search",
-        "fetch"
-      ]
-    },
-    {
       "id": "shopify",
       "name": "Shopify",
       "kind": "stub",
@@ -509,62 +228,6 @@
       "port": 6582,
       "base": "",
       "homepage": "https://www.shopify.com",
-      "tools": [
-        "search",
-        "fetch"
-      ]
-    },
-    {
-      "id": "google-workspace-admin",
-      "name": "Google Workspace Admin",
-      "kind": "stub",
-      "category": "operations",
-      "feature": "business",
-      "port": 6589,
-      "base": "",
-      "homepage": "https://workspace.google.com",
-      "tools": [
-        "search",
-        "fetch"
-      ]
-    },
-    {
-      "id": "microsoft-entra-id",
-      "name": "Microsoft Entra ID",
-      "kind": "stub",
-      "category": "operations",
-      "feature": "business",
-      "port": 6592,
-      "base": "",
-      "homepage": "https://www.microsoft.com/security/business/identity-access/microsoft-entra-id",
-      "tools": [
-        "search",
-        "fetch"
-      ]
-    },
-    {
-      "id": "google-business-profile",
-      "name": "Google Business Profile",
-      "kind": "stub",
-      "category": "marketing",
-      "feature": "business",
-      "port": 6593,
-      "base": "",
-      "homepage": "https://www.google.com/business",
-      "tools": [
-        "search",
-        "fetch"
-      ]
-    },
-    {
-      "id": "calendly",
-      "name": "Calendly",
-      "kind": "stub",
-      "category": "productivity",
-      "feature": "business",
-      "port": 6594,
-      "base": "",
-      "homepage": "https://calendly.com",
       "tools": [
         "search",
         "fetch"
@@ -585,34 +248,6 @@
       ]
     },
     {
-      "id": "wordpress-org",
-      "name": "WordPress.org",
-      "kind": "stub",
-      "category": "cms",
-      "feature": "writing",
-      "port": 6629,
-      "base": "",
-      "homepage": "https://wordpress.org",
-      "tools": [
-        "search",
-        "fetch"
-      ]
-    },
-    {
-      "id": "microsoft-onenote",
-      "name": "Microsoft OneNote",
-      "kind": "stub",
-      "category": "productivity",
-      "feature": "education",
-      "port": 6649,
-      "base": "",
-      "homepage": "https://www.onenote.com",
-      "tools": [
-        "search",
-        "fetch"
-      ]
-    },
-    {
       "id": "google-sheets",
       "name": "Google Sheets",
       "kind": "stub",
@@ -627,76 +262,6 @@
       ]
     },
     {
-      "id": "google-docs",
-      "name": "Google Docs",
-      "kind": "stub",
-      "category": "productivity",
-      "feature": "writing",
-      "port": 6657,
-      "base": "",
-      "homepage": "https://docs.google.com",
-      "tools": [
-        "search",
-        "fetch"
-      ]
-    },
-    {
-      "id": "microsoft-excel",
-      "name": "Microsoft Excel",
-      "kind": "stub",
-      "category": "productivity",
-      "feature": "business",
-      "port": 6662,
-      "base": "",
-      "homepage": "https://www.microsoft.com/excel",
-      "tools": [
-        "search",
-        "fetch"
-      ]
-    },
-    {
-      "id": "google-maps-places",
-      "name": "Google Maps (Places API)",
-      "kind": "stub",
-      "category": "developer",
-      "feature": "business",
-      "port": 6665,
-      "base": "",
-      "homepage": "https://developers.google.com/maps",
-      "tools": [
-        "search",
-        "fetch"
-      ]
-    },
-    {
-      "id": "google-slides",
-      "name": "Google Slides",
-      "kind": "stub",
-      "category": "productivity",
-      "feature": "writing",
-      "port": 6667,
-      "base": "",
-      "homepage": "https://slides.google.com",
-      "tools": [
-        "search",
-        "fetch"
-      ]
-    },
-    {
-      "id": "google-classroom",
-      "name": "Google Classroom",
-      "kind": "stub",
-      "category": "education",
-      "feature": "education",
-      "port": 6675,
-      "base": "",
-      "homepage": "https://classroom.google.com",
-      "tools": [
-        "search",
-        "fetch"
-      ]
-    },
-    {
       "id": "trello",
       "name": "Trello",
       "kind": "stub",
@@ -705,20 +270,6 @@
       "port": 6676,
       "base": "",
       "homepage": "https://trello.com",
-      "tools": [
-        "search",
-        "fetch"
-      ]
-    },
-    {
-      "id": "google-cloud",
-      "name": "Google Cloud",
-      "kind": "stub",
-      "category": "developer",
-      "feature": "business",
-      "port": 6680,
-      "base": "",
-      "homepage": "https://cloud.google.com",
       "tools": [
         "search",
         "fetch"
@@ -753,48 +304,6 @@
       ]
     },
     {
-      "id": "ms-power-bi",
-      "name": "Microsoft Power BI",
-      "kind": "stub",
-      "category": "analytics",
-      "feature": "business",
-      "port": 6693,
-      "base": "",
-      "homepage": "https://powerbi.microsoft.com",
-      "tools": [
-        "search",
-        "fetch"
-      ]
-    },
-    {
-      "id": "cloudinary",
-      "name": "Cloudinary",
-      "kind": "stub",
-      "category": "creative",
-      "feature": "writing",
-      "port": 6697,
-      "base": "",
-      "homepage": "https://cloudinary.com",
-      "tools": [
-        "search",
-        "fetch"
-      ]
-    },
-    {
-      "id": "wordpress-com",
-      "name": "WordPress.com",
-      "kind": "stub",
-      "category": "cms",
-      "feature": "writing",
-      "port": 6699,
-      "base": "",
-      "homepage": "https://wordpress.com",
-      "tools": [
-        "search",
-        "fetch"
-      ]
-    },
-    {
       "id": "linear",
       "name": "Linear",
       "kind": "stub",
@@ -803,48 +312,6 @@
       "port": 6702,
       "base": "",
       "homepage": "https://linear.app",
-      "tools": [
-        "search",
-        "fetch"
-      ]
-    },
-    {
-      "id": "squarespace",
-      "name": "Squarespace",
-      "kind": "stub",
-      "category": "cms",
-      "feature": "writing",
-      "port": 6705,
-      "base": "",
-      "homepage": "https://www.squarespace.com",
-      "tools": [
-        "search",
-        "fetch"
-      ]
-    },
-    {
-      "id": "aws",
-      "name": "AWS",
-      "kind": "stub",
-      "category": "developer",
-      "feature": "business",
-      "port": 6722,
-      "base": "",
-      "homepage": "https://aws.amazon.com",
-      "tools": [
-        "search",
-        "fetch"
-      ]
-    },
-    {
-      "id": "google-merchant-center",
-      "name": "Google Merchant Center",
-      "kind": "stub",
-      "category": "marketing",
-      "feature": "business",
-      "port": 6749,
-      "base": "",
-      "homepage": "https://merchants.google.com",
       "tools": [
         "search",
         "fetch"

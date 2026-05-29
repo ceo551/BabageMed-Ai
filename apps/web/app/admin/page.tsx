@@ -148,9 +148,10 @@ function UsersTab() {
                 <td>{u.displayName || <span className="mono">—</span>}</td>
                 <td>
                   <select value={u.plan} onChange={(e) => setPlan(u.id, e.target.value)}>
-                    <option value="free">free</option>
-                    <option value="pro">pro</option>
-                    <option value="max">max</option>
+                    <option value="go">GO</option>
+                    <option value="plus">Plus</option>
+                    <option value="pro">Pro</option>
+                    <option value="max">Max</option>
                   </select>
                   <span className={`admin-pill ${u.plan}`} style={{ marginInlineStart: 8 }}>{u.plan}</span>
                 </td>

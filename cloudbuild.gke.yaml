@@ -7,10 +7,10 @@ options:
 substitutions:
   _REGION: us-central1
   _REPO: babbage
-  _TAG: v22
+  _TAG: v25
 
 # Deploy subset that fits the project's 2-node quota: backend + frontend +
-# 8 light API survivor MCPs (post-prune; the medical MCPs were removed).
+# 7 light survivor MCPs (huggingface was pruned).
 images:
   - "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/backend:${_TAG}"
   - "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/frontend:${_TAG}"
@@ -21,31 +21,18 @@ images:
   - "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-gmail:${_TAG}"
   - "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-gcalendar:${_TAG}"
   - "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-linkedin:${_TAG}"
-  - "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-huggingface:${_TAG}"
 
 steps:
   - id: backend
     name: gcr.io/cloud-builders/docker
     waitFor: ["-"]
-    args:
-      - build
-      - -f
-      - backend/Dockerfile
-      - -t
-      - ${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/backend:${_TAG}
-      - .
+    args: [build, -f, backend/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/backend:${_TAG}", .]
 
   - id: frontend
     name: gcr.io/cloud-builders/docker
     waitFor: ["-"]
     dir: apps/web
-    args:
-      - build
-      - -f
-      - Dockerfile
-      - -t
-      - ${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/frontend:${_TAG}
-      - .
+    args: [build, -f, Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/frontend:${_TAG}", .]
 
   - id: mcp-pubmed
     name: gcr.io/cloud-builders/docker
@@ -81,8 +68,3 @@ steps:
     name: gcr.io/cloud-builders/docker
     waitFor: ["-"]
     args: [build, -f, mcps/linkedin/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-linkedin:${_TAG}", .]
-
-  - id: mcp-huggingface
-    name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
-    args: [build, -f, mcps/huggingface/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-huggingface:${_TAG}", .]

@@ -180,7 +180,7 @@ function Transcript({ messages }: { messages: ChatMessage[] }) {
   }, [messages]);
 
   return (
-    <div className="transcript">
+    <div className="transcript" role="log" aria-live="polite" aria-relevant="additions text">
       {messages.map((m) => {
         if (m.role === "loading") {
           return (
@@ -667,6 +667,7 @@ function Composer({
         value={value}
         onChange={(e) => setValue(e.target.value)}
         placeholder={s.placeholder}
+        aria-label={s.placeholder}
         rows={1}
         onKeyDown={(e) => {
           // Claude / ChatGPT / Gemini muscle memory: plain Enter sends, and

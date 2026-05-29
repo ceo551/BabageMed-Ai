@@ -18,28 +18,10 @@
       "name": "Slack",
       "category": "productivity"
     },
-    "kaggle": {
-      "kind": "api",
-      "port": 6174,
-      "name": "Kaggle",
-      "category": "productivity"
-    },
-    "gamma": {
-      "kind": "scrape",
-      "port": 6175,
-      "name": "Gamma.app",
-      "category": "productivity"
-    },
     "linkedin": {
       "kind": "api",
       "port": 6176,
       "name": "LinkedIn",
-      "category": "productivity"
-    },
-    "chrome": {
-      "kind": "scrape",
-      "port": 6177,
-      "name": "Chrome (Playwright)",
       "category": "productivity"
     },
     "gmail": {
@@ -60,29 +42,11 @@
       "name": "GitHub",
       "category": "productivity"
     },
-    "huggingface": {
-      "kind": "api",
-      "port": 6182,
-      "name": "Hugging Face",
-      "category": "productivity"
-    },
     "gdrive": {
       "kind": "api",
       "port": 6183,
       "name": "Google Drive",
       "category": "productivity"
-    },
-    "hostinger": {
-      "kind": "api",
-      "port": 6184,
-      "name": "Hostinger",
-      "category": "infra"
-    },
-    "godaddy": {
-      "kind": "api",
-      "port": 6185,
-      "name": "GoDaddy",
-      "category": "infra"
     },
     "ms365": {
       "kind": "api",
@@ -90,58 +54,10 @@
       "name": "Microsoft 365",
       "category": "productivity"
     },
-    "stripe": {
-      "kind": "stub",
-      "port": 6534,
-      "name": "Stripe",
-      "category": "finance"
-    },
-    "vercel": {
-      "kind": "stub",
-      "port": 6536,
-      "name": "Vercel",
-      "category": "developer"
-    },
-    "supabase": {
-      "kind": "stub",
-      "port": 6537,
-      "name": "Supabase",
-      "category": "developer"
-    },
-    "google-forms": {
-      "kind": "stub",
-      "port": 6538,
-      "name": "Google Forms",
-      "category": "productivity"
-    },
-    "youtube-analytics": {
-      "kind": "stub",
-      "port": 6539,
-      "name": "YouTube Analytics",
-      "category": "creative"
-    },
     "facebook-pages": {
       "kind": "stub",
       "port": 6540,
       "name": "Facebook Pages",
-      "category": "communication"
-    },
-    "google-tasks": {
-      "kind": "stub",
-      "port": 6542,
-      "name": "Google Tasks",
-      "category": "productivity"
-    },
-    "google-ads": {
-      "kind": "stub",
-      "port": 6545,
-      "name": "Google Ads",
-      "category": "marketing"
-    },
-    "google-meet": {
-      "kind": "stub",
-      "port": 6549,
-      "name": "Google Meet",
       "category": "communication"
     },
     "figma": {
@@ -150,28 +66,10 @@
       "name": "Figma",
       "category": "creative"
     },
-    "canva-enterprise": {
-      "kind": "stub",
-      "port": 6554,
-      "name": "Canva Enterprise",
-      "category": "creative"
-    },
     "spotify": {
       "kind": "stub",
       "port": 6557,
       "name": "Spotify",
-      "category": "creative"
-    },
-    "google-photos": {
-      "kind": "stub",
-      "port": 6560,
-      "name": "Google Photos",
-      "category": "storage"
-    },
-    "youtube-data": {
-      "kind": "stub",
-      "port": 6563,
-      "name": "YouTube Data",
       "category": "creative"
     },
     "x-twitter": {
@@ -180,22 +78,10 @@
       "name": "X (Twitter)",
       "category": "communication"
     },
-    "zoom-admin": {
-      "kind": "stub",
-      "port": 6568,
-      "name": "Zoom Admin",
-      "category": "communication"
-    },
     "twilio": {
       "kind": "stub",
       "port": 6574,
       "name": "Twilio",
-      "category": "communication"
-    },
-    "zoom": {
-      "kind": "stub",
-      "port": 6575,
-      "name": "Zoom",
       "category": "communication"
     },
     "telegram": {
@@ -204,41 +90,11 @@
       "name": "Telegram",
       "category": "communication"
     },
-    "atlassian": {
-      "kind": "stub",
-      "port": 6580,
-      "name": "Atlassian (Jira/Confluence)",
-      "category": "operations"
-    },
     "shopify": {
       "kind": "stub",
       "port": 6582,
       "name": "Shopify",
       "category": "operations"
-    },
-    "google-workspace-admin": {
-      "kind": "stub",
-      "port": 6589,
-      "name": "Google Workspace Admin",
-      "category": "operations"
-    },
-    "microsoft-entra-id": {
-      "kind": "stub",
-      "port": 6592,
-      "name": "Microsoft Entra ID",
-      "category": "operations"
-    },
-    "google-business-profile": {
-      "kind": "stub",
-      "port": 6593,
-      "name": "Google Business Profile",
-      "category": "marketing"
-    },
-    "calendly": {
-      "kind": "stub",
-      "port": 6594,
-      "name": "Calendly",
-      "category": "productivity"
     },
     "bluesky": {
       "kind": "stub",
@@ -246,65 +102,17 @@
       "name": "Bluesky",
       "category": "communication"
     },
-    "wordpress-org": {
-      "kind": "stub",
-      "port": 6629,
-      "name": "WordPress.org",
-      "category": "cms"
-    },
-    "microsoft-onenote": {
-      "kind": "stub",
-      "port": 6649,
-      "name": "Microsoft OneNote",
-      "category": "productivity"
-    },
     "google-sheets": {
       "kind": "stub",
       "port": 6652,
       "name": "Google Sheets",
       "category": "productivity"
     },
-    "google-docs": {
-      "kind": "stub",
-      "port": 6657,
-      "name": "Google Docs",
-      "category": "productivity"
-    },
-    "microsoft-excel": {
-      "kind": "stub",
-      "port": 6662,
-      "name": "Microsoft Excel",
-      "category": "productivity"
-    },
-    "google-maps-places": {
-      "kind": "stub",
-      "port": 6665,
-      "name": "Google Maps (Places API)",
-      "category": "developer"
-    },
-    "google-slides": {
-      "kind": "stub",
-      "port": 6667,
-      "name": "Google Slides",
-      "category": "productivity"
-    },
-    "google-classroom": {
-      "kind": "stub",
-      "port": 6675,
-      "name": "Google Classroom",
-      "category": "education"
-    },
     "trello": {
       "kind": "stub",
       "port": 6676,
       "name": "Trello",
       "category": "operations"
-    },
-    "google-cloud": {
-      "kind": "stub",
-      "port": 6680,
-      "name": "Google Cloud",
-      "category": "developer"
     },
     "google-analytics": {
       "kind": "stub",
@@ -318,47 +126,11 @@
       "name": "Google Search Console",
       "category": "marketing"
     },
-    "ms-power-bi": {
-      "kind": "stub",
-      "port": 6693,
-      "name": "Microsoft Power BI",
-      "category": "analytics"
-    },
-    "cloudinary": {
-      "kind": "stub",
-      "port": 6697,
-      "name": "Cloudinary",
-      "category": "creative"
-    },
-    "wordpress-com": {
-      "kind": "stub",
-      "port": 6699,
-      "name": "WordPress.com",
-      "category": "cms"
-    },
     "linear": {
       "kind": "stub",
       "port": 6702,
       "name": "Linear",
       "category": "developer"
-    },
-    "squarespace": {
-      "kind": "stub",
-      "port": 6705,
-      "name": "Squarespace",
-      "category": "cms"
-    },
-    "aws": {
-      "kind": "stub",
-      "port": 6722,
-      "name": "AWS",
-      "category": "developer"
-    },
-    "google-merchant-center": {
-      "kind": "stub",
-      "port": 6749,
-      "name": "Google Merchant Center",
-      "category": "marketing"
     }
   }
 }

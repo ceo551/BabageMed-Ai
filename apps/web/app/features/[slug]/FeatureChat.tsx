@@ -86,6 +86,11 @@ export function FeatureChat({
   useEffect(() => {
     if (chatIdParam) {
       if (chatIdParam === chatId) return;
+      // Abort any in-flight stream from the chat we're switching AWAY from,
+      // so its remaining tokens don't write into the newly-loaded chat's
+      // transcript (the dashboard does this; FeatureChat previously only
+      // aborted on unmount).
+      streamAbortRef.current?.abort();
       setChatId(chatIdParam);
       const requestedId = chatIdParam;
       liveLoadRef.current = requestedId;
