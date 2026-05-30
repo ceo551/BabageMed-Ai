@@ -15,7 +15,7 @@ import { usePrefs, prefs } from "../../lib/store";
 // chat button for that feature, and a chats-for-this-feature history
 // list. Per-feature chats are filtered via ?feature=<slug>, which the
 // general History row (?feature=general) excludes.
-export function FeatureSubSidebar({ meta, panels }: { meta: FeatureMeta; panels?: React.ReactNode }) {
+export function FeatureSubSidebar({ meta, panels, onMobileClose }: { meta: FeatureMeta; panels?: React.ReactNode; onMobileClose?: () => void }) {
   const router = useRouter();
   const pathname = usePathname();
   const params = useSearchParams();
@@ -95,6 +95,7 @@ export function FeatureSubSidebar({ meta, panels }: { meta: FeatureMeta; panels?
   }, [menuOpenId]);
 
   function startNewChat() {
+    onMobileClose?.();
     router.push(`/features/${encodeURIComponent(meta.slug)}?n=${Date.now()}`);
   }
 
@@ -191,7 +192,7 @@ export function FeatureSubSidebar({ meta, panels }: { meta: FeatureMeta; panels?
                 type="button"
                 className="feat-subsb-item"
                 data-active={c.id === activeChatId}
-                onClick={() => router.push(`/features/${encodeURIComponent(meta.slug)}?c=${encodeURIComponent(c.id)}`)}
+                onClick={() => { onMobileClose?.(); router.push(`/features/${encodeURIComponent(meta.slug)}?c=${encodeURIComponent(c.id)}`); }}
                 title={c.title || s.untitledChat}
               >
                 <span className="feat-subsb-item-icon" aria-hidden="true">{I.chatBubble}</span>

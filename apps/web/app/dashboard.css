@@ -815,7 +815,9 @@ button.msg-citation[data-open="true"] {
   display: none;
   position: fixed;
   inset: 0;
-  z-index: 50;
+  /* Above the feature sub-sidebar drawer (z 52) so opening the main sidebar
+   * over an open sub-sidebar stacks the main sidebar cleanly on top. */
+  z-index: 54;
   background: rgba(0,0,0,.45);
   backdrop-filter: blur(2px);
 }

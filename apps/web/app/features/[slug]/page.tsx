@@ -6,7 +6,7 @@ import { useUI } from "../../lib/ui-context";
 import { useAuth } from "../../lib/auth-context";
 import { usePrefs } from "../../lib/store";
 import { features as featuresApi, type Feature, type FeatureFile } from "../../lib/api";
-import { I } from "../../icons";
+import { I, featureIcon } from "../../icons";
 import { Modal } from "../../components/Modal";
 import { FeatureChat } from "./FeatureChat";
 import { FeatureSubSidebar } from "./FeatureSubSidebar";
@@ -47,6 +47,19 @@ function FeaturePageInner() {
   const [feature, setFeature] = useState<Feature | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  // Mobile-only drawer state for the feature sub-sidebar — distinct from the
+  // desktop collapse pref. Mirrors AppShell's `mobileOpen` for the main
+  // sidebar so the sub-sidebar slides over the feature content on phones.
+  const [subDrawerOpen, setSubDrawerOpen] = useState(false);
+  // Close the drawer when switching to a different feature.
+  useEffect(() => { setSubDrawerOpen(false); }, [slug]);
+  // Esc closes the sub-sidebar drawer.
+  useEffect(() => {
+    if (!subDrawerOpen) return;
+    function onKey(e: KeyboardEvent) { if (e.key === "Escape") setSubDrawerOpen(false); }
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [subDrawerOpen]);
 
   useEffect(() => {
     if (authLoading) return;
@@ -125,11 +138,33 @@ function FeaturePageInner() {
       className="feat-shell feat-shell-2col"
       data-color={meta.color}
       data-subsb-collapsed={subSidebarCollapsed}
+      data-subsb-mobile-open={subDrawerOpen}
       style={{
         "--subsb-w": `${subSidebarCollapsed ? 56 : subSidebarWidth}px`,
       } as React.CSSProperties}
     >
-      <FeatureSubSidebar meta={meta} panels={panels} />
+      {/* Mobile-only second hamburger — opens THIS feature's sub-sidebar as a
+          drawer. Renders next to the main sidebar's hamburger (owned by
+          AppShell) so the two read as a pair; hidden on desktop and while the
+          main sidebar drawer is open (see feature.css). */}
+      <button
+        type="button"
+        className="feat-mobile-subsb-btn"
+        aria-label={meta.label}
+        aria-expanded={subDrawerOpen}
+        onClick={() => setSubDrawerOpen((v) => !v)}
+      >
+        {featureIcon(meta.slug, meta.emoji)}
+      </button>
+
+      <FeatureSubSidebar meta={meta} panels={panels} onMobileClose={() => setSubDrawerOpen(false)} />
+
+      {/* Tap-to-close backdrop for the sub-sidebar drawer. */}
+      <div
+        className="feat-subsb-backdrop"
+        onClick={() => setSubDrawerOpen(false)}
+        aria-hidden="true"
+      />
 
       <section className="feat-main">
         {error && <div className="feat-err">{error}</div>}
