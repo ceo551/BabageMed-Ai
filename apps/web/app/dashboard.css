@@ -277,6 +277,11 @@ a { color: inherit; text-decoration: none; }
 .stage-inner { width: 100%; max-width: 760px; display: flex; flex-direction: column; gap: 28px; }
 .greet { display: flex; align-items: center; gap: 16px; justify-content: center; font-family: var(--serif); font-weight: 400; font-size: 56px; line-height: 1.05; letter-spacing: -.01em; color: var(--ink); margin: 0; }
 .greet .star { width: 56px; height: 56px; flex-shrink: 0; }
+/* Hero brand icon — rendered clean (no white frame/border) so the mark
+   reads like an app tile (Claude-style). The PNG ships an opaque dark
+   background; border-radius rounds the tile and it blends into the dark
+   hero so only the star shows. */
+.brand-greet-icon { width: 54px; height: 54px; object-fit: contain; border-radius: 12px; flex-shrink: 0; display: block; }
 /* direction: ltr + isolation pin the brand spans to their left-to-right
  * order regardless of the page's dir attribute. Without these the spans
  * (Babage / Med / Ai) flip in RTL and render as "Ai MedBabage".
@@ -884,6 +889,7 @@ button.msg-citation[data-open="true"] {
   .composer-bar .model-pill { max-width: 100%; }
   .greet { font-size: 38px; }
   .brand-greet .b1 { font-size: 32px !important; }
+  .brand-greet-icon { width: 40px; height: 40px; }
 }
 
 /* ── Main sidebar history rows: chat icon prefix + overflow menu ────── */

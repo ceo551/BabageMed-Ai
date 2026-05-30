@@ -119,6 +119,7 @@ function DashboardInner() {
           <Transcript messages={messages} />
         ) : (
           <h1 className="greet">
+            <img src="/babbage-icon.png" alt="" aria-hidden="true" className="brand-greet-icon" />
             <span className="brand-greet">
               <span className="b1">Babbage</span>
             </span>
