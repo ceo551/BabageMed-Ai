@@ -818,6 +818,10 @@
  * feature's second hamburger so it doesn't float on top of the main
  * sidebar. (.shell is an ancestor of the feature page via AppShell.) */
 .shell[data-mobile-open="true"] .feat-mobile-subsb-btn { display: none; }
+/* Likewise hide it while any dialog is open — the modal lives inside this
+ * drawer's stacking context, so the fixed toggle (z 60) would bleed over
+ * the dialog header. */
+body.modal-open .feat-mobile-subsb-btn { display: none !important; }
 
 @media (max-width: 820px) {
   .feat-shell-2col { grid-template-columns: 1fr; }

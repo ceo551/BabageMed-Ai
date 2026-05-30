@@ -821,6 +821,11 @@ button.msg-citation[data-open="true"] {
   background: rgba(0,0,0,.45);
   backdrop-filter: blur(2px);
 }
+/* A modal (z 1000) opened from inside a feature's sub-sidebar drawer is
+ * trapped in that drawer's stacking context, so the fixed sidebar toggles
+ * (z 60) would otherwise bleed over the dialog. Hide the main toggle while
+ * any dialog is open — it's unusable behind the modal anyway. */
+body.modal-open .mobile-nav-btn { display: none !important; }
 
 @media (max-width: 880px) {
   /* Sidebar becomes an off-canvas drawer. The grid collapses to a single

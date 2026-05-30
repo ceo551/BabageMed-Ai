@@ -42,6 +42,11 @@ export function Modal({ open, onClose, title, width = 540, children }: ModalProp
     triggerRef.current = document.activeElement;
     const prev = document.body.style.overflow;
     document.body.style.overflow = "hidden";
+    // Flag the dialog as open on <body> so global chrome (the mobile sidebar
+    // toggle buttons, which are position:fixed at a higher z-index than the
+    // sub-sidebar drawer the modal lives in) can hide itself and stop
+    // bleeding over the dialog. See .modal-open rules in the CSS.
+    document.body.classList.add("modal-open");
 
     // Move focus into the dialog on the next tick so the card has mounted.
     queueMicrotask(() => {
@@ -80,6 +85,7 @@ export function Modal({ open, onClose, title, width = 540, children }: ModalProp
     document.addEventListener("keydown", onKey);
     return () => {
       document.body.style.overflow = prev;
+      document.body.classList.remove("modal-open");
       document.removeEventListener("keydown", onKey);
       // Restore focus to the trigger element so keyboard users don't get
       // dumped at the top of the page after close.
