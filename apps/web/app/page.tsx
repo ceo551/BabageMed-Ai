@@ -119,7 +119,6 @@ function DashboardInner() {
           <Transcript messages={messages} />
         ) : (
           <h1 className="greet">
-            {I.star}
             <span className="brand-greet">
               <span className="b1">Babbage</span>
             </span>
