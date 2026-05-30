@@ -684,6 +684,63 @@
   z-index: 30;
 }
 
+/* ── Feature composer on phones ───────────────────────────────────────────
+ * The model pill sits off-centre in the composer bar, so a popover anchored
+ * to it (with a 280px min-width) spills past the right edge on a narrow
+ * screen. Drop the wrap's positioning context on mobile so the dropdown
+ * anchors to the full-width .composer box instead, spanning it edge-to-edge
+ * above the composer. Also give the composer controls a consistent, tidy
+ * touch size. */
+@media (max-width: 560px) {
+  .feat-composer { padding: 10px 12px 16px; }
+  .feat-composer .composer { padding: 12px 12px 10px; }
+
+  .feat-model-wrap { position: static; }
+  .feat-model-pop {
+    inset-inline: 0;
+    bottom: calc(100% + 8px);
+    min-width: 0;
+    width: auto;
+    max-width: none;
+    max-height: 56vh;
+  }
+
+  /* Add-connector popover: cap to the viewport instead of a fixed 320px. */
+  .feat-composer .popover {
+    min-width: 0;
+    width: max-content;
+    max-width: calc(100vw - 28px);
+  }
+
+  /* Composer controls — uniform rounded squares, comfortable hit area. The
+   * 40px overrides the global 44px touch floor for a tighter composer row
+   * while staying an easy tap target. */
+  .feat-composer .add-btn,
+  .feat-composer .cmpr-icon {
+    width: 40px; height: 40px;
+    min-width: 40px; min-height: 40px;
+    border-radius: 12px;
+  }
+  .feat-composer .add-btn svg,
+  .feat-composer .cmpr-icon svg { width: 20px; height: 20px; }
+
+  /* Model pill — readable size, but capped so a long model name can't shove
+   * the send button off the row. */
+  .feat-composer .model-pill {
+    font-size: 13px;
+    padding: 9px 12px;
+    max-width: 48vw;
+    min-height: 40px;
+    overflow: hidden;
+  }
+  .feat-composer .model-pill > span:not(.brand-mark) {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    min-width: 0;
+  }
+}
+
 /* ── Sub-sidebar collapse + resize ────────────────────────────────────── */
 .feat-shell[data-color="fuchsia"] { --hue-bg: rgba(217,70,239,.12); --hue-line: rgba(217,70,239,.32); --hue-ink: rgb(217,70,239); }
 
