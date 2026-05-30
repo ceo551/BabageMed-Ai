@@ -697,10 +697,14 @@
 
   .feat-model-wrap { position: static; }
   .feat-model-pop {
-    inset-inline: 0;
+    /* Anchor to the composer's inline-end edge (under the pill) and cap the
+     * width so the dropdown is narrower than the full composer but still
+     * can't spill past the screen edge. */
+    inset-inline-start: auto;
+    inset-inline-end: 0;
     bottom: calc(100% + 8px);
     min-width: 0;
-    width: auto;
+    width: min(300px, 82vw);
     max-width: none;
     max-height: 56vh;
   }
