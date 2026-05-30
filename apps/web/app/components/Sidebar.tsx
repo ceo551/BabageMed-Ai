@@ -91,7 +91,6 @@ export function Sidebar({
     <aside className="sidebar" aria-label={s.sidebarLabel}>
       <div className="sb-head">
         <Link className="sb-brand" href="/" onClick={() => onMobileClose?.()}>
-          {I.discLogo}
           <span className="wm">
             <span className="b1">Babbage</span>
           </span>
