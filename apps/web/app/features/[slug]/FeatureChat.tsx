@@ -461,18 +461,23 @@ export function FeatureChat({
                     <span className="ttl">{s.addSkill}</span>
                   </span>
                 </button>
-                <Link
-                  href="/mcps"
-                  className="popover-row"
-                  style={{ textDecoration: "none" }}
-                  onClick={() => setAddOpen(false)}
-                >
-                  {I.link}
-                  <span className="col">
-                    <span className="ttl">{s.addConnector}</span>
-                    <span className="desc">{s.addConnectorDesc}</span>
-                  </span>
-                </Link>
+                {/* Connectors aren't used by the visual (Image & Video /
+                    Advertisements) features — their generations don't call
+                    MCP servers — so hide "Add connector" there. */}
+                {meta.modality !== "visual" && (
+                  <Link
+                    href="/mcps"
+                    className="popover-row"
+                    style={{ textDecoration: "none" }}
+                    onClick={() => setAddOpen(false)}
+                  >
+                    {I.link}
+                    <span className="col">
+                      <span className="ttl">{s.addConnector}</span>
+                      <span className="desc">{s.addConnectorDesc}</span>
+                    </span>
+                  </Link>
+                )}
               </div>
             )}
             <span className="spacer" />
