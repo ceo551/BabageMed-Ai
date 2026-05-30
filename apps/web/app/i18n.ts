@@ -115,7 +115,6 @@ export type LocaleStrings = {
 // `modality` is what apps/web/app/lib/models.ts maps from a slug to
 // the right model list.
 const FEATURES_EN: ReadonlyArray<FeatureMeta> = [
-  { slug: "healthcare",     label: "Healthcare & Life sciences",          emoji: "🩺", color: "cyan",   modality: "text"   },
   { slug: "education",      label: "Education & Academic & Research",     emoji: "🎓", color: "indigo", modality: "text"   },
   { slug: "writing",        label: "Writing & Content creation",          emoji: "✍️", color: "purple", modality: "text"   },
   { slug: "translation",    label: "Translation & Languages",             emoji: "🌐", color: "blue",   modality: "text"   },
@@ -123,12 +122,12 @@ const FEATURES_EN: ReadonlyArray<FeatureMeta> = [
   { slug: "business",       label: "Business",                            emoji: "💼", color: "yellow", modality: "text"   },
   { slug: "financial",      label: "Financial Services",                  emoji: "💹", color: "green",  modality: "text"   },
   { slug: "consulting",     label: "Consulting & Professional Services",  emoji: "🤝", color: "orange", modality: "text"   },
+  { slug: "healthcare",     label: "Healthcare & Life sciences",          emoji: "🩺", color: "cyan",   modality: "text"   },
   { slug: "image-video",    label: "Image & Video",                       emoji: "🎬", color: "pink",   modality: "visual" },
   { slug: "advertisements", label: "Advertisements",                      emoji: "📣", color: "fuchsia",modality: "visual" },
 ];
 
 const FEATURES_AR: ReadonlyArray<FeatureMeta> = [
-  { slug: "healthcare",     label: "الصحة وعلوم الحياة",                   emoji: "🩺", color: "cyan",   modality: "text"   },
   { slug: "education",      label: "التعليم والبحث الأكاديمي",              emoji: "🎓", color: "indigo", modality: "text"   },
   { slug: "writing",        label: "الكتابة وإنتاج المحتوى",               emoji: "✍️", color: "purple", modality: "text"   },
   { slug: "translation",    label: "الترجمة واللغات",                      emoji: "🌐", color: "blue",   modality: "text"   },
@@ -136,6 +135,7 @@ const FEATURES_AR: ReadonlyArray<FeatureMeta> = [
   { slug: "business",       label: "الأعمال",                              emoji: "💼", color: "yellow", modality: "text"   },
   { slug: "financial",      label: "الخدمات المالية",                      emoji: "💹", color: "green",  modality: "text"   },
   { slug: "consulting",     label: "الاستشارات والخدمات المهنية",          emoji: "🤝", color: "orange", modality: "text"   },
+  { slug: "healthcare",     label: "الصحة وعلوم الحياة",                   emoji: "🩺", color: "cyan",   modality: "text"   },
   { slug: "image-video",    label: "الصور والفيديو",                       emoji: "🎬", color: "pink",   modality: "visual" },
   { slug: "advertisements", label: "الإعلانات",                            emoji: "📣", color: "fuchsia",modality: "visual" },
 ];
