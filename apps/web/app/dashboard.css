@@ -839,14 +839,25 @@ button.msg-citation[data-open="true"] {
     box-shadow: 8px 0 24px rgba(0,0,0,.30);
   }
   [dir="rtl"] .sidebar {
-    inset-inline-start: auto;
-    inset-inline-end: 0;
+    /* The base rule's inset-inline-start:0 already pins the drawer to the
+       inline-start (right) edge in RTL; only the physical slide direction
+       and shadow side need flipping. Re-pinning the insets here (the old
+       behaviour) put the RTL drawer on the wrong edge. */
     transform: translateX(100%);
     box-shadow: -8px 0 24px rgba(0,0,0,.30);
   }
   .shell[data-mobile-open="true"] .sidebar { transform: translateX(0); }
   .shell[data-mobile-open="true"] .mobile-nav-backdrop { display: block; }
   .mobile-nav-btn { display: inline-flex; }
+  /* While the drawer is open the toggle slides to the sidebar's inner edge
+     so it stops covering the "Babbage" brand wordmark at the top of the
+     sidebar. inset-inline-start resolves to the correct physical edge in
+     both LTR and RTL, matching the drawer's open inner edge. */
+  .shell[data-mobile-open="true"] .mobile-nav-btn {
+    inset-inline-start: calc(min(280px, 84vw) - 54px);
+    background: var(--panel);
+    border-color: var(--border-strong);
+  }
   .sidebar-resize { display: none; }
   /* Push the desktop collapse button to the right inside the drawer so the
    * close-by-tapping-the-grid-pattern is still discoverable. */

@@ -138,7 +138,7 @@ export default function BillingPage() {
         </div>
       )}
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, minmax(0, 1fr))", gap: 16, maxWidth: 1280, width: "100%", alignItems: "stretch" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 16, maxWidth: 1280, width: "100%", alignItems: "stretch" }}>
         {plans.map((p) => (
           <div
             key={p.ID}
