@@ -1,1 +1,1 @@
-pubmed notion slack linkedin gmail gcalendar github gdrive ms365 facebook-pages figma x-twitter shopify google-sheets linear
+pubmed notion slack linkedin gmail gcalendar github gdrive ms365 facebook-pages x-twitter

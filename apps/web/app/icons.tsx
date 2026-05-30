@@ -162,17 +162,17 @@ export const I = {
       className="disc-logo"
       src="/babbage-icon.png"
       alt="Babbage"
-      width={40}
-      height={40}
+      width={44}
+      height={44}
       // The asset has a near-black rounded-square background that merges
-      // into the dark sidebar, so the mark read as faint/edgeless. A
-      // hairline ring + soft shadow defines its edge so it stands out
-      // crisply, and 40px (was 36) gives it more presence.
+      // into the dark sidebar, so the mark read as faint/edgeless. A bright
+      // white frame + soft cyan glow makes it pop hard against the dark
+      // chrome, and 44px gives it clear presence.
       style={{
         display: "block",
-        borderRadius: 10,
-        border: "1px solid rgba(255,255,255,0.18)",
-        boxShadow: "0 1px 6px rgba(0,0,0,0.5)",
+        borderRadius: 11,
+        border: "2px solid rgba(255,255,255,0.82)",
+        boxShadow: "0 2px 10px rgba(0,0,0,0.55), 0 0 16px rgba(86,207,225,0.32)",
       }}
     />
   ),

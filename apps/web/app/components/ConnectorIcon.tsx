@@ -55,7 +55,7 @@ const OVERRIDES: Record<string, string> = {
   fda:             "https://logo.clearbit.com/fda.gov",
   nih:             "https://logo.clearbit.com/nih.gov",
   ncbi:            "https://logo.clearbit.com/ncbi.nlm.nih.gov",
-  pubmed:          "https://logo.clearbit.com/pubmed.ncbi.nlm.nih.gov",
+  pubmed:          "https://www.google.com/s2/favicons?domain=pubmed.ncbi.nlm.nih.gov&sz=128",
   nccn:            "https://logo.clearbit.com/nccn.org",
   bmj:             "https://logo.clearbit.com/bmj.com",
   nejm:            "https://logo.clearbit.com/nejm.org",
@@ -64,13 +64,13 @@ const OVERRIDES: Record<string, string> = {
 
   // Productivity tools — vendor CDNs (or Clearbit) all serve canonical marks.
   github:       "https://github.githubassets.com/assets/GitHub-Mark-ea2971cee799.png",
-  slack:        "https://logo.clearbit.com/slack.com",
-  notion:       "https://logo.clearbit.com/notion.so",
-  linkedin:     "https://logo.clearbit.com/linkedin.com",
+  slack:        "https://cdn.simpleicons.org/slack",
+  notion:       "https://cdn.simpleicons.org/notion/000000",
+  linkedin:     "https://cdn.simpleicons.org/linkedin",
   huggingface:  "https://huggingface.co/front/assets/huggingface_logo-noborder.svg",
   kaggle:       "https://logo.clearbit.com/kaggle.com",
   hostinger:    "https://logo.clearbit.com/hostinger.com",
-  ms365:        "https://logo.clearbit.com/microsoft.com",
+  ms365:        "https://www.google.com/s2/favicons?domain=microsoft365.com&sz=128",
 
   // Popular SaaS — official logos via Clearbit's open logo CDN.
   // Adding these means the avatar never falls back to icon.horse for the
@@ -113,10 +113,10 @@ const OVERRIDES: Record<string, string> = {
   "discord-bot":              "https://logo.clearbit.com/discord.com",
   telegram:                   "https://logo.clearbit.com/telegram.org",
   spotify:                    "https://logo.clearbit.com/spotify.com",
-  "x-twitter":                "https://logo.clearbit.com/x.com",
+  "x-twitter":                "https://cdn.simpleicons.org/x/000000",
   "youtube-data":             "https://logo.clearbit.com/youtube.com",
   "youtube-analytics":        "https://logo.clearbit.com/youtube.com",
-  "facebook-pages":           "https://logo.clearbit.com/facebook.com",
+  "facebook-pages":           "https://cdn.simpleicons.org/facebook",
   "google-ads":               "https://logo.clearbit.com/ads.google.com",
   "google-analytics":         "https://logo.clearbit.com/analytics.google.com",
   "google-search-console":    "https://logo.clearbit.com/search.google.com",
@@ -187,15 +187,6 @@ function s2Url(iconUrl: string | undefined): string | null {
   return host ? `https://www.google.com/s2/favicons?domain=${host}&sz=128` : null;
 }
 
-// Clearbit Logo (now part of HubSpot) keeps an open-access logo CDN for
-// most "real" brands at https://logo.clearbit.com/<domain>. It serves
-// vector / high-res raster and 404s cleanly when it doesn't know a domain.
-// So: cheap to try, free to fail.
-function clearbitUrl(iconUrl: string | undefined): string | null {
-  const host = hostFrom(iconUrl);
-  return host ? `https://logo.clearbit.com/${host}` : null;
-}
-
 export function ConnectorIcon({
   id, name, iconUrl, size = 32, radius, className = "",
 }: ConnectorIconProps) {
@@ -204,9 +195,10 @@ export function ConnectorIcon({
   // (whatever was scraped) → Google S2 at 128 px → letter avatar.
   const sources = useMemo(() => {
     const out: string[] = [];
+    // 1) curated official logo, 2) the scraped favicon (icon.horse),
+    // 3) Google S2 at 128px, 4) letter avatar. (Clearbit's logo CDN was
+    // shut down in 2024, so it's no longer in the chain.)
     if (id && OVERRIDES[id.toLowerCase()]) out.push(OVERRIDES[id.toLowerCase()]);
-    const cb = clearbitUrl(iconUrl);
-    if (cb) out.push(cb);
     if (iconUrl) out.push(iconUrl);
     const s2 = s2Url(iconUrl);
     if (s2) out.push(s2);

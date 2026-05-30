@@ -19,12 +19,12 @@ type Providers = { paymob: boolean; paypal: boolean };
 // tier>" so the cumulative value is obvious.
 const PLAN_FEATURES: Record<string, { en: string[]; ar: string[] }> = {
   go: {
-    en: ["DeepSeek V4 Pro", "Kimi K2.6", "GLM 5.1"],
-    ar: ["DeepSeek V4 Pro", "Kimi K2.6", "GLM 5.1"],
+    en: ["DeepSeek V4 Pro", "Kimi K2.6", "GLM 5.1", "Qwen 3.7 Max"],
+    ar: ["DeepSeek V4 Pro", "Kimi K2.6", "GLM 5.1", "Qwen 3.7 Max"],
   },
   plus: {
-    en: ["Everything in GO", "Gemini Pro 3.1", "Grok Imagine"],
-    ar: ["كل مزايا GO", "Gemini Pro 3.1", "Grok Imagine"],
+    en: ["Up to 2× more usage than GO", "Everything in GO", "Gemini Pro 3.1", "Grok Imagine"],
+    ar: ["استخدام أكثر بـ 2× من GO", "كل مزايا GO", "Gemini Pro 3.1", "Grok Imagine"],
   },
   pro: {
     en: ["Everything in Plus", "GPT 5.5", "Claude Opus 4.8", "Veo 3.1", "Happy Horse 1.0", "Qwen Image 2.0", "GPT Image 2"],
@@ -128,8 +128,8 @@ export default function BillingPage() {
       </h1>
       <p style={{ color: "var(--muted)", margin: 0, textAlign: "center", maxWidth: 560 }}>
         {locale === "ar"
-          ? "ادفع بـ Paymob (لمصر) أو PayPal (دولي). كل الخطط تتضمن وصولاً كاملاً إلى 86 خادم MCP."
-          : "Pay with Paymob (Egypt) or PayPal (international). Every plan includes full access to all 86 MCP servers."}
+          ? "ادفع بـ Paymob (لمصر) أو PayPal (دولي). كل الخطط تتضمن وصولاً كاملاً إلى كل الموصّلات (Connectors)."
+          : "Pay with Paymob (Egypt) or PayPal (international). Every plan includes full access to all connectors."}
       </p>
 
       {error && (
@@ -138,7 +138,7 @@ export default function BillingPage() {
         </div>
       )}
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 16, maxWidth: 1000, width: "100%" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, minmax(0, 1fr))", gap: 16, maxWidth: 1280, width: "100%", alignItems: "stretch" }}>
         {plans.map((p) => (
           <div
             key={p.ID}

@@ -60,35 +60,11 @@
       "name": "Facebook Pages",
       "category": "communication"
     },
-    "figma": {
-      "kind": "stub",
-      "port": 6553,
-      "name": "Figma",
-      "category": "creative"
-    },
     "x-twitter": {
       "kind": "stub",
       "port": 6565,
       "name": "X (Twitter)",
       "category": "communication"
-    },
-    "shopify": {
-      "kind": "stub",
-      "port": 6582,
-      "name": "Shopify",
-      "category": "operations"
-    },
-    "google-sheets": {
-      "kind": "stub",
-      "port": 6652,
-      "name": "Google Sheets",
-      "category": "productivity"
-    },
-    "linear": {
-      "kind": "stub",
-      "port": 6702,
-      "name": "Linear",
-      "category": "developer"
     }
   }
 }

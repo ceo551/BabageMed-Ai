@@ -150,20 +150,6 @@
       ]
     },
     {
-      "id": "figma",
-      "name": "Figma",
-      "kind": "stub",
-      "category": "creative",
-      "feature": "writing",
-      "port": 6553,
-      "base": "",
-      "homepage": "https://www.figma.com",
-      "tools": [
-        "search",
-        "fetch"
-      ]
-    },
-    {
       "id": "x-twitter",
       "name": "X (Twitter)",
       "kind": "stub",
@@ -172,48 +158,6 @@
       "port": 6565,
       "base": "",
       "homepage": "https://x.com",
-      "tools": [
-        "search",
-        "fetch"
-      ]
-    },
-    {
-      "id": "shopify",
-      "name": "Shopify",
-      "kind": "stub",
-      "category": "operations",
-      "feature": "business",
-      "port": 6582,
-      "base": "",
-      "homepage": "https://www.shopify.com",
-      "tools": [
-        "search",
-        "fetch"
-      ]
-    },
-    {
-      "id": "google-sheets",
-      "name": "Google Sheets",
-      "kind": "stub",
-      "category": "productivity",
-      "feature": "business",
-      "port": 6652,
-      "base": "",
-      "homepage": "https://sheets.google.com",
-      "tools": [
-        "search",
-        "fetch"
-      ]
-    },
-    {
-      "id": "linear",
-      "name": "Linear",
-      "kind": "stub",
-      "category": "developer",
-      "feature": "business",
-      "port": 6702,
-      "base": "",
-      "homepage": "https://linear.app",
       "tools": [
         "search",
         "fetch"
