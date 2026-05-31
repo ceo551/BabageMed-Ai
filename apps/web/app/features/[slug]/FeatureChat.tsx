@@ -65,8 +65,9 @@ export function FeatureChat({
   const { mode } = usePrefs();
   const [modelOpen, setModelOpen] = useState(false);
   const [uploading, setUploading] = useState(false);
-  // Composer (+) popover — Add file / Add skill / Add connector.
+  // Composer (+) popover — Add file / Add skill / Web search / Add connector.
   const [addOpen, setAddOpen] = useState(false);
+  const [webSearch, setWebSearch] = useState(false);
 
   const liveLoadRef = useRef<string>("");
   const streamAbortRef = useRef<AbortController | null>(null);
@@ -237,6 +238,7 @@ export function FeatureChat({
         useMcps: feature?.connectors || [],
         spaceContext: ctxChunks,
         spaceName: meta.label,
+        enableWebSearch: webSearch,
       });
 
       const controller = new AbortController();
@@ -461,9 +463,25 @@ export function FeatureChat({
                     <span className="ttl">{s.addSkill}</span>
                   </span>
                 </button>
-                {/* Connectors aren't used by the visual (Image & Video /
-                    Advertisements) features — their generations don't call
-                    MCP servers — so hide "Add connector" there. */}
+                {/* Web search + connectors aren't useful on the visual
+                    (Image & Video / Advertisements) features — their
+                    generations don't ground on text sources — so hide them. */}
+                {meta.modality !== "visual" && (
+                  <button
+                    type="button"
+                    className="popover-row"
+                    aria-pressed={webSearch}
+                    onClick={() => { setWebSearch((v) => !v); setAddOpen(false); }}
+                    style={{ width: "100%", textAlign: "start", border: 0, background: "transparent", cursor: "pointer" }}
+                  >
+                    {I.globe}
+                    <span className="col">
+                      <span className="ttl">{s.webSearch}</span>
+                      <span className="desc">{s.webSearchDesc}</span>
+                    </span>
+                    {webSearch && <span className="check" style={{ opacity: 1 }}>{I.check}</span>}
+                  </button>
+                )}
                 {meta.modality !== "visual" && (
                   <Link
                     href="/mcps"
@@ -479,6 +497,17 @@ export function FeatureChat({
                   </Link>
                 )}
               </div>
+            )}
+            {webSearch && (
+              <button
+                type="button"
+                className="model-pill"
+                onClick={() => setWebSearch(false)}
+                title={s.webSearch}
+                style={{ background: "var(--cyan-soft)", color: "var(--cyan)", border: "1px solid var(--cyan-line)", display: "inline-flex", alignItems: "center", gap: 6 }}
+              >
+                {I.globe}{s.webSearch} ×
+              </button>
             )}
             <span className="spacer" />
           {/* Model picker — text features show one list of 8 chat LLMs;

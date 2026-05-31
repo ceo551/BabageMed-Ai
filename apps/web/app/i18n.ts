@@ -20,6 +20,7 @@ export type LocaleStrings = {
   user: string; plan: string; status: string;
   placeholder: string; placeholderHint: string; disclaim: string;
   addConnector: string; addConnectorDesc: string; addFile: string;
+  webSearch: string; webSearchDesc: string;
   fromTools: string; settings: string; settingsDesc: string; plans: string; plansDesc: string;
   logout: string; logoutDesc: string;
   appearance: string; language: string; themeLight: string; themeDark: string; themeSystem: string;
@@ -163,6 +164,8 @@ export const STR: Record<Locale, LocaleStrings> = {
     addConnector: "Add connector",
     addConnectorDesc: "Pick from connected MCP servers",
     addFile: "Add file or folder",
+    webSearch: "Web search",
+    webSearchDesc: "Search the live web with Brave",
     fromTools: "From connected tools",
     settings: "Settings",
     settingsDesc: "Preferences · model defaults",
@@ -283,6 +286,8 @@ export const STR: Record<Locale, LocaleStrings> = {
     addConnector: "إضافة موصِّل",
     addConnectorDesc: "من خوادم MCP المتّصلة",
     addFile: "إضافة ملف أو مجلد",
+    webSearch: "بحث في الويب",
+    webSearchDesc: "ابحث في الويب مباشرةً عبر Brave",
     fromTools: "من الأدوات المتّصلة",
     settings: "الإعدادات",
     settingsDesc: "تفضيلات · إعدادات النموذج",

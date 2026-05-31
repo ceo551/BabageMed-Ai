@@ -297,6 +297,8 @@ secrets:
   ncbiEmail: "ceo@babagemed.com"
   openfdaApiKey: ""
   socrataAppToken: ""
+  # Web search (composer "Web search" toggle) — Brave Search API key.
+  braveApiKey: ""
   # Payments — Paddle (Merchant of Record: collects payment + handles tax).
   # Payouts go to a Wise multi-currency account configured in the Paddle
   # dashboard; the owner withdraws Wise → Egypt manually. No Wise API here.

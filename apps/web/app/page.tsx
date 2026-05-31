@@ -257,6 +257,7 @@ function Composer({
 
   const [addOpen, setAddOpen] = useState(false);
   const [modelOpen, setModelOpen] = useState(false);
+  const [webSearch, setWebSearch] = useState(false);
   const [voiceOn, setVoiceOn] = useState(false);
   const [sending, setSending] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -490,6 +491,7 @@ function Composer({
         ],
         useMcps, spaceContext,
         spaceName: activeSpace?.name || "",
+        enableWebSearch: webSearch,
       });
 
       // Stream via /api/chat/stream — server emits SSE events
@@ -724,6 +726,17 @@ function Composer({
             +{activeConnectorIds.length - 3}
           </span>
         )}
+        {webSearch && (
+          <button
+            type="button"
+            className="model-pill"
+            onClick={() => setWebSearch(false)}
+            title={s.webSearch}
+            style={{ background: "var(--cyan-soft)", color: "var(--cyan)", border: "1px solid var(--cyan-line)", display: "inline-flex", alignItems: "center", gap: 6 }}
+          >
+            {I.globe}{s.webSearch} ×
+          </button>
+        )}
 
         {addOpen && (
           <div className="popover" role="menu">
@@ -738,6 +751,20 @@ function Composer({
               <span className="col">
                 <span className="ttl">{uploading ? "Uploading…" : s.addFile}</span>
               </span>
+            </button>
+            <button
+              type="button"
+              className="popover-row"
+              aria-pressed={webSearch}
+              onClick={() => { setWebSearch((v) => !v); setAddOpen(false); }}
+              style={{ width: "100%", textAlign: "start", border: 0, background: "transparent", cursor: "pointer" }}
+            >
+              {I.globe}
+              <span className="col">
+                <span className="ttl">{s.webSearch}</span>
+                <span className="desc">{s.webSearchDesc}</span>
+              </span>
+              {webSearch && <span className="check" style={{ opacity: 1 }}>{I.check}</span>}
             </button>
             <Link
               href="/mcps"
