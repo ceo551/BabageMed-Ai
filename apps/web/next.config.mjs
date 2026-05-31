@@ -22,15 +22,19 @@ const nextConfig = {
     //     (provider favicons). Locking img-src down would blank every
     //     connector card.
     //   - data: covers SVG inlines + the brand mark.
-    // connect-src 'self' is enough because every backend call routes
-    // through our same-origin /api/backend/* proxy.
+    // connect-src is 'self' (every backend call routes through our same-origin
+    // /api/backend/* proxy) PLUS *.paddle.com — the Paddle.js checkout overlay
+    // loads its script from cdn.paddle.com, talks to *.paddle.com, and renders
+    // its payment form in a child iframe (frame-src), so those origins are
+    // allowlisted for the billing page.
     const csp = [
       "default-src 'self'",
-      "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.paddle.com",
       "style-src 'self' 'unsafe-inline'",
       "img-src 'self' data: blob: https:",
       "font-src 'self' data:",
-      "connect-src 'self'",
+      "connect-src 'self' https://*.paddle.com",
+      "frame-src 'self' https://*.paddle.com",
       "frame-ancestors 'self'",
       "base-uri 'self'",
       "form-action 'self'",

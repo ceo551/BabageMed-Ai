@@ -297,15 +297,17 @@ secrets:
   ncbiEmail: "ceo@babagemed.com"
   openfdaApiKey: ""
   socrataAppToken: ""
-  # Payments
-  paymobApiKey: ""
-  paymobIntegrationId: ""
-  paymobIframeId: ""
-  paymobHmac: ""
-  paypalEnv: "sandbox"
-  paypalClientId: ""
-  paypalClientSecret: ""
-  paypalWebhookId: ""
+  # Payments — Paddle (Merchant of Record: collects payment + handles tax).
+  # Payouts go to a Wise multi-currency account configured in the Paddle
+  # dashboard; the owner withdraws Wise → Egypt manually. No Wise API here.
+  paddleEnv: "sandbox"          # "sandbox" | "production"
+  paddleApiKey: ""              # server-side API key (secret)
+  paddleClientToken: ""         # public client-side token for Paddle.js
+  paddleWebhookSecret: ""       # webhook signing secret
+  paddlePriceGoMonthly: ""      # Paddle price id (pri_…) for GO
+  paddlePricePlusMonthly: ""    # …for Plus
+  paddlePriceProMonthly: ""     # …for Pro
+  paddlePriceMaxMonthly: ""     # …for Max
   # Admin
   bootstrapAdminEmail: ""
   # Scraping

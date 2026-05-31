@@ -2,10 +2,9 @@ package payments
 
 import "testing"
 
-// PayPal return_url / cancel_url MUST stay on our own origin — without
-// this guard, an attacker can craft a checkout link with a return_url
-// pointing at a phishing page and the user trusts the post-checkout
-// redirect because PayPal honoured it.
+// A checkout success/return URL MUST stay on our own origin — without this
+// guard, an attacker can craft a checkout link with a return URL pointing at
+// a phishing page and the user trusts the post-checkout redirect.
 func TestIsAllowedReturn(t *testing.T) {
 	const base = "https://app.babagemed.com"
 	cases := []struct {

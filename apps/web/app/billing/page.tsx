@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 type Plan = {
   ID: string;
@@ -12,7 +12,7 @@ type Plan = {
   Interval: string;
 };
 
-type Providers = { paymob: boolean; paypal: boolean };
+type Providers = { paddle: boolean };
 
 // Per-plan feature lists (keyed by plan name, lower-cased). Rendered as a
 // checklist on each pricing card. Higher tiers say "Everything in <lower
@@ -36,12 +36,35 @@ const PLAN_FEATURES: Record<string, { en: string[]; ar: string[] }> = {
   },
 };
 
+// Load Paddle.js once and resolve the global Paddle object.
+function loadPaddle(): Promise<any> {
+  return new Promise((resolve, reject) => {
+    const w = window as any;
+    if (w.Paddle) return resolve(w.Paddle);
+    const existing = document.getElementById("paddle-js") as HTMLScriptElement | null;
+    if (existing) {
+      existing.addEventListener("load", () => resolve((window as any).Paddle));
+      existing.addEventListener("error", () => reject(new Error("Failed to load Paddle.js")));
+      return;
+    }
+    const s = document.createElement("script");
+    s.id = "paddle-js";
+    s.src = "https://cdn.paddle.com/paddle/v2/paddle.js";
+    s.async = true;
+    s.onload = () => resolve((window as any).Paddle);
+    s.onerror = () => reject(new Error("Failed to load Paddle.js"));
+    document.body.appendChild(s);
+  });
+}
+
 export default function BillingPage() {
   const [plans, setPlans] = useState<Plan[]>([]);
-  const [providers, setProviders] = useState<Providers>({ paymob: false, paypal: false });
+  const [providers, setProviders] = useState<Providers>({ paddle: false });
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [locale, setLocale] = useState<"en" | "ar">("en");
+  // Paddle.Initialize must run exactly once per token; track it across clicks.
+  const initialized = useRef(false);
 
   useEffect(() => {
     Promise.all([
@@ -50,70 +73,41 @@ export default function BillingPage() {
     ])
       .then(([p, pr]) => {
         setPlans(p?.plans || []);
-        setProviders(pr || { paymob: false, paypal: false });
+        setProviders(pr || { paddle: false });
       })
       .catch((e) => setError(e.message));
     setLocale((document.documentElement.lang as "en" | "ar") || "en");
+    // Warm the Paddle.js script so the overlay opens instantly on click.
+    if (typeof window !== "undefined") loadPaddle().catch(() => {});
   }, []);
 
-  // Validate redirect URLs against an allow-list of known payment-provider
-  // hosts before navigating. If the backend is ever compromised or returns
-  // a bad response, this stops the page from sending the user to an
-  // attacker-controlled site.
-  const PAYMENT_HOSTS = [
-    /(^|\.)paymob\.com$/i,
-    /(^|\.)accept\.paymob\.com$/i,
-    /(^|\.)paypal\.com$/i,
-    /(^|\.)sandbox\.paypal\.com$/i,
-  ];
-  function safeNavigate(url: string) {
-    try {
-      const u = new URL(url);
-      if (!/^https?:$/.test(u.protocol)) throw new Error("non-http URL");
-      if (!PAYMENT_HOSTS.some((re) => re.test(u.hostname))) throw new Error("untrusted host: " + u.hostname);
-      window.location.href = url;
-    } catch (e: any) {
-      setError("Refusing to redirect: " + e.message);
-    }
-  }
-
-  async function payWithPaymob(planID: string) {
-    setBusy(planID + ":paymob");
+  async function subscribe(planID: string) {
+    setBusy(planID);
     setError(null);
     try {
-      const r = await fetch("/api/backend/api/payments/paymob/checkout", {
+      // Backend creates a Paddle transaction (server-trusted user_id + plan)
+      // and returns the id + public client token to open the overlay with.
+      const r = await fetch("/api/backend/api/payments/paddle/checkout", {
         method: "POST",
         credentials: "include",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ plan_id: planID, billing: {} }),
+        body: JSON.stringify({ plan_id: planID }),
       });
       const j = await r.json();
-      if (!r.ok) throw new Error(j.error || "Paymob checkout failed");
-      safeNavigate(j.iframe_url);
-    } catch (e: any) {
-      setError(e.message);
-    } finally {
-      setBusy(null);
-    }
-  }
+      if (!r.ok) throw new Error(j.error || "Checkout failed");
 
-  async function payWithPayPal(planID: string) {
-    setBusy(planID + ":paypal");
-    setError(null);
-    try {
-      const r = await fetch("/api/backend/api/payments/paypal/checkout", {
-        method: "POST",
-        credentials: "include",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          plan_id: planID,
-          return_url: window.location.origin + "/billing/return",
-          cancel_url: window.location.origin + "/billing/cancel",
-        }),
+      const Paddle = await loadPaddle();
+      if (!initialized.current) {
+        if (j.environment === "sandbox" && Paddle.Environment?.set) {
+          Paddle.Environment.set("sandbox");
+        }
+        Paddle.Initialize({ token: j.client_token });
+        initialized.current = true;
+      }
+      Paddle.Checkout.open({
+        transactionId: j.transaction_id,
+        settings: { successUrl: window.location.origin + "/billing/return" },
       });
-      const j = await r.json();
-      if (!r.ok) throw new Error(j.error || "PayPal checkout failed");
-      safeNavigate(j.approve_url);
     } catch (e: any) {
       setError(e.message);
     } finally {
@@ -128,8 +122,8 @@ export default function BillingPage() {
       </h1>
       <p style={{ color: "var(--muted)", margin: 0, textAlign: "center", maxWidth: 560 }}>
         {locale === "ar"
-          ? "ادفع بـ Paymob (لمصر) أو PayPal (دولي). كل الخطط تتضمن وصولاً كاملاً إلى كل الموصّلات (Connectors)."
-          : "Pay with Paymob (Egypt) or PayPal (international). Every plan includes full access to all connectors."}
+          ? "ادفع بأمان عبر Paddle — تُحتسب الضرائب تلقائيًا. كل الخطط تتضمن وصولاً كاملاً إلى كل الموصّلات (Connectors)."
+          : "Secure checkout by Paddle — taxes handled automatically. Every plan includes full access to all connectors."}
       </p>
 
       {error && (
@@ -164,7 +158,7 @@ export default function BillingPage() {
             </p>
             <div style={{ display: "flex", gap: 16, alignItems: "baseline", color: "var(--ink)" }}>
               <span style={{ fontFamily: "var(--serif)", fontSize: 36 }}>${(p.USD / 100).toFixed(0)}</span>
-              <span style={{ color: "var(--muted)" }}>{(p.EGP / 100).toFixed(0)} EGP</span>
+              <span style={{ color: "var(--muted)" }}>/ {p.Interval === "month" ? (locale === "ar" ? "شهريًا" : "mo") : p.Interval}</span>
             </div>
             <ul style={{ listStyle: "none", margin: "4px 0 0", padding: 0, display: "flex", flexDirection: "column", gap: 8 }}>
               {(PLAN_FEATURES[p.Name.toLowerCase()]?.[locale] || []).map((feat, i) => (
@@ -180,25 +174,16 @@ export default function BillingPage() {
             <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: "auto", paddingTop: 8 }}>
               <button
                 type="button"
-                disabled={!providers.paymob || busy === p.ID + ":paymob"}
-                onClick={() => payWithPaymob(p.ID)}
-                style={btnStyle("cyan", !providers.paymob)}
+                disabled={!providers.paddle || busy === p.ID}
+                onClick={() => subscribe(p.ID)}
+                style={btnStyle("cyan", !providers.paddle)}
               >
-                {busy === p.ID + ":paymob" ? "…" : (locale === "ar" ? "ادفع بـ Paymob" : "Pay with Paymob")}
-              </button>
-              <button
-                type="button"
-                disabled={!providers.paypal || busy === p.ID + ":paypal"}
-                onClick={() => payWithPayPal(p.ID)}
-                style={btnStyle("yellow", !providers.paypal)}
-              >
-                {busy === p.ID + ":paypal" ? "…" : (locale === "ar" ? "ادفع بـ PayPal" : "Pay with PayPal")}
+                {busy === p.ID ? "…" : (locale === "ar" ? "اشترك الآن" : "Subscribe")}
               </button>
             </div>
-            {(!providers.paymob || !providers.paypal) && (
+            {!providers.paddle && (
               <p style={{ margin: 0, color: "var(--muted-2)", fontSize: 11 }}>
-                {!providers.paymob && "Paymob not configured. "}
-                {!providers.paypal && "PayPal not configured."}
+                {locale === "ar" ? "بوابة الدفع غير مُهيأة بعد." : "Checkout not configured yet."}
               </p>
             )}
           </div>

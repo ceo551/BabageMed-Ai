@@ -2,8 +2,9 @@ package payments
 
 import "sort"
 
-// Plans is the canonical price list. Amounts are in MINOR units (piasters / cents)
-// so we can pass them straight to Paymob (EGP cents) and PayPal (USD cents → /100).
+// Plans is the canonical price list. Amounts are in MINOR units (cents) for
+// display; the actual charge is driven by the matching Paddle price id
+// (PADDLE_PRICE_* env vars, see paddle.go).
 type Plan struct {
 	ID          string
 	Name        string

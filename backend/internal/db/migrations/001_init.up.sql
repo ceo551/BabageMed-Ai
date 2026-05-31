@@ -26,8 +26,8 @@ CREATE INDEX IF NOT EXISTS sessions_expires_idx ON sessions(expires_at);
 CREATE TABLE IF NOT EXISTS payments (
     id             UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id        UUID REFERENCES users(id) ON DELETE SET NULL,
-    provider       TEXT NOT NULL,        -- 'paymob' | 'paypal'
-    external_id    TEXT NOT NULL,        -- order id from provider
+    provider       TEXT NOT NULL,        -- 'paddle'
+    external_id    TEXT NOT NULL,        -- transaction id from provider
     plan_id        TEXT NOT NULL,
     amount_minor   BIGINT NOT NULL,
     currency       TEXT NOT NULL,

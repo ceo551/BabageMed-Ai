@@ -4,11 +4,10 @@ import (
 	"testing"
 )
 
-// Regression: the Paymob webhook fires with no plan_id in the payload,
-// so MarkPaid was being called with planID="". The previous code passed
-// the argument straight to planFromPlanID, which returned "free" and
-// silently downgraded paying users to the free tier on every successful
-// payment.
+// Regression: a webhook may fire with no plan_id in the payload, so MarkPaid
+// could be called with planID="". The previous code passed the argument
+// straight to planFromPlanID, which returned "free" and silently downgraded
+// paying users to the free tier on every successful payment.
 //
 // We can't unit-test the full MarkPaid flow without a real DB, but we
 // CAN regression-test the helper that derives the user's plan from the
@@ -18,7 +17,7 @@ import (
 func TestPlanFromPlanID_EmptyArgGoesToFree_ByDesign(t *testing.T) {
 	// This is the documented behaviour for unknown / empty IDs — it
 	// MUST remain "free" so a corrupt DB row doesn't accidentally
-	// upgrade someone. The fix for the Paymob downgrade bug lives
+	// upgrade someone. The fix for the downgrade bug lives
 	// inside MarkPaid: it reads plan_id from the existing row and
 	// only falls back to the argument when the row's value is empty
 	// AND the argument is non-empty.

@@ -33,7 +33,7 @@ if (!s) { console.error(`unknown MCP id: ${id}`); process.exit(64); }
 // "X_API_KEY required" — that's fine, it proves the tool is wired.
 const NEEDS_CREDS = new Set([
   "notion","slack","kaggle","linkedin","gmail","gcalendar","gdrive",
-  "github","huggingface","ms365","hostinger","godaddy","paypal","paymob",
+  "github","huggingface","ms365","hostinger","godaddy",
   "nccn",
 ]);
 

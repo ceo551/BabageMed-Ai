@@ -11,7 +11,7 @@ import (
 )
 
 // Store records payment intents and updates them when webhooks confirm them.
-// Wired into the existing Paymob + PayPal handlers when a *db.DB is provided.
+// Wired into the Paddle handler when a *db.DB is provided.
 type Store struct{ DB *db.DB }
 
 func NewStore(d *db.DB) *Store { return &Store{DB: d} }
@@ -37,11 +37,10 @@ func (s *Store) Record(ctx context.Context, userID *string, provider, externalID
 // MarkPaid flips a payment row to "paid" and bumps the linked user's plan.
 //
 // IMPORTANT: the user's plan is derived from the persisted `plan_id` on the
-// payments row, NOT from the planID argument. The Paymob webhook is fired
-// with no planID (the upstream payload doesn't carry it), so trusting the
-// argument would downgrade every paying user to "free" via the default
-// branch of planFromPlanID(""). Looking it up RETURNING is self-healing:
-// the value was already recorded at checkout time.
+// payments row, NOT from the planID argument. A webhook may arrive with an
+// empty planID, so trusting the argument would downgrade every paying user
+// to "free" via the default branch of planFromPlanID(""). Looking it up
+// RETURNING is self-healing: the value was already recorded at checkout time.
 func (s *Store) MarkPaid(ctx context.Context, provider, externalID, planID string) error {
 	if s == nil || s.DB == nil {
 		return nil
@@ -63,7 +62,7 @@ func (s *Store) MarkPaid(ctx context.Context, provider, externalID, planID strin
 	var userID *string
 	var rowPlanID string
 	// Idempotent: only flip the row if it's NOT already paid. A replayed
-	// webhook (Paymob and PayPal both retry on 5xx) would otherwise
+	// webhook (Paddle retries on non-2xx) would otherwise
 	// re-run the plan upgrade below — harmless today because the
 	// upgrade is itself idempotent, but it stays dangerous if the plan
 	// logic ever grows side effects (credits, emails, slack pings).
