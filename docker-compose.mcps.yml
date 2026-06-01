@@ -780,19 +780,6 @@ services:
       - "6180:6180"
     restart: unless-stopped
     networks: [pervagans]
-  mcp-github:
-    build:
-      context: .
-      dockerfile: mcps/github/Dockerfile
-    image: pervagans/mcp-github:latest
-    env_file: .env
-    environment:
-      HTTP_ONLY: "1"
-      MCP_PORT: "6181"
-    ports:
-      - "6181:6181"
-    restart: unless-stopped
-    networks: [pervagans]
   mcp-huggingface:
     build:
       context: .
@@ -4236,19 +4223,6 @@ services:
       MCP_PORT: "6539"
     ports:
       - "6539:6539"
-    restart: unless-stopped
-    networks: [pervagans]
-  mcp-facebook-pages:
-    build:
-      context: .
-      dockerfile: mcps/facebook-pages/Dockerfile
-    image: pervagans/mcp-facebook-pages:latest
-    env_file: .env
-    environment:
-      HTTP_ONLY: "1"
-      MCP_PORT: "6540"
-    ports:
-      - "6540:6540"
     restart: unless-stopped
     networks: [pervagans]
   mcp-twitch:

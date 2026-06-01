@@ -90,21 +90,6 @@
       "feature": "business"
     },
     {
-      "id": "github",
-      "name": "GitHub",
-      "kind": "api",
-      "category": "productivity",
-      "port": 6181,
-      "base": "https://api.github.com",
-      "tools": [
-        "repos",
-        "issues",
-        "prs",
-        "search"
-      ],
-      "feature": "business"
-    },
-    {
       "id": "gdrive",
       "name": "Google Drive",
       "kind": "api",
@@ -134,20 +119,6 @@
         "teams"
       ],
       "feature": "business"
-    },
-    {
-      "id": "facebook-pages",
-      "name": "Facebook Pages",
-      "kind": "stub",
-      "category": "communication",
-      "feature": "writing",
-      "port": 6540,
-      "base": "",
-      "homepage": "https://www.facebook.com",
-      "tools": [
-        "search",
-        "fetch"
-      ]
     },
     {
       "id": "x-twitter",

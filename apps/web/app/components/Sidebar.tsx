@@ -91,6 +91,7 @@ export function Sidebar({
     <aside className="sidebar" aria-label={s.sidebarLabel}>
       <div className="sb-head">
         <Link className="sb-brand" href="/" onClick={() => onMobileClose?.()}>
+          <img src="/pervagans-icon.png" alt="" aria-hidden="true" className="sb-brand-icon" />
           <span className="wm">
             <span className="b1">Pervagans</span>
           </span>

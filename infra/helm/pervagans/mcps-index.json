@@ -36,12 +36,6 @@
       "name": "Google Calendar",
       "category": "productivity"
     },
-    "github": {
-      "kind": "api",
-      "port": 6181,
-      "name": "GitHub",
-      "category": "productivity"
-    },
     "gdrive": {
       "kind": "api",
       "port": 6183,
@@ -53,12 +47,6 @@
       "port": 6186,
       "name": "Microsoft 365",
       "category": "productivity"
-    },
-    "facebook-pages": {
-      "kind": "stub",
-      "port": 6540,
-      "name": "Facebook Pages",
-      "category": "communication"
     },
     "x-twitter": {
       "kind": "stub",

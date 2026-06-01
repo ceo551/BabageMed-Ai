@@ -501,10 +501,10 @@ export function FeatureChat({
             {webSearch && (
               <button
                 type="button"
-                className="model-pill"
+                className="model-pill ws-chip"
                 onClick={() => setWebSearch(false)}
                 title={s.webSearch}
-                style={{ background: "var(--cyan-soft)", color: "var(--cyan)", border: "1px solid var(--cyan-line)", display: "inline-flex", alignItems: "center", gap: 6 }}
+                style={{ background: "var(--cyan-soft)", color: "var(--cyan)", border: "1px solid var(--cyan-line)", display: "inline-flex", alignItems: "center" }}
               >
                 {I.globe}{s.webSearch} ×
               </button>

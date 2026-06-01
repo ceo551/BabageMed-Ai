@@ -17,7 +17,6 @@ images:
   - "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-pubmed:${_TAG}"
   - "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-notion:${_TAG}"
   - "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-slack:${_TAG}"
-  - "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-github:${_TAG}"
   - "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-gmail:${_TAG}"
   - "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-gcalendar:${_TAG}"
   - "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-linkedin:${_TAG}"
@@ -48,11 +47,6 @@ steps:
     name: gcr.io/cloud-builders/docker
     waitFor: ["-"]
     args: [build, -f, mcps/slack/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-slack:${_TAG}", .]
-
-  - id: mcp-github
-    name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
-    args: [build, -f, mcps/github/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-github:${_TAG}", .]
 
   - id: mcp-gmail
     name: gcr.io/cloud-builders/docker

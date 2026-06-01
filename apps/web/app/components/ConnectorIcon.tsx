@@ -63,10 +63,9 @@ const OVERRIDES: Record<string, string> = {
   healthline:      "https://logo.clearbit.com/healthline.com",
 
   // Productivity tools — vendor CDNs (or Clearbit) all serve canonical marks.
-  github:       "https://github.githubassets.com/assets/GitHub-Mark-ea2971cee799.png",
-  slack:        "https://cdn.simpleicons.org/slack",
+  slack:        "https://upload.wikimedia.org/wikipedia/commons/d/d5/Slack_icon_2019.svg",
   notion:       "https://cdn.simpleicons.org/notion/000000",
-  linkedin:     "https://cdn.simpleicons.org/linkedin",
+  linkedin:     "https://upload.wikimedia.org/wikipedia/commons/8/81/LinkedIn_icon.svg",
   huggingface:  "https://huggingface.co/front/assets/huggingface_logo-noborder.svg",
   kaggle:       "https://logo.clearbit.com/kaggle.com",
   hostinger:    "https://logo.clearbit.com/hostinger.com",
@@ -116,7 +115,6 @@ const OVERRIDES: Record<string, string> = {
   "x-twitter":                "https://cdn.simpleicons.org/x/000000",
   "youtube-data":             "https://logo.clearbit.com/youtube.com",
   "youtube-analytics":        "https://logo.clearbit.com/youtube.com",
-  "facebook-pages":           "https://cdn.simpleicons.org/facebook",
   "google-ads":               "https://logo.clearbit.com/ads.google.com",
   "google-analytics":         "https://logo.clearbit.com/analytics.google.com",
   "google-search-console":    "https://logo.clearbit.com/search.google.com",
