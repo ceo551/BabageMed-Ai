@@ -80,10 +80,10 @@ func TestEncodeDecodeBase32Roundtrip(t *testing.T) {
 }
 
 func TestOtpauthURI_FormatsForAuthenticatorApps(t *testing.T) {
-	u := OtpauthURI("Babbage AI", "user@example.com", "JBSWY3DPEHPK3PXP")
+	u := OtpauthURI("Pervagans", "user@example.com", "JBSWY3DPEHPK3PXP")
 	// Smoke check — Google Authenticator parses any URI that starts
 	// with otpauth://totp/, has a secret= query, and an issuer=.
-	for _, want := range []string{"otpauth://totp/", "secret=JBSWY3DPEHPK3PXP", "issuer=Babbage+AI", "algorithm=SHA1", "digits=6", "period=30"} {
+	for _, want := range []string{"otpauth://totp/", "secret=JBSWY3DPEHPK3PXP", "issuer=Pervagans+Space", "algorithm=SHA1", "digits=6", "period=30"} {
 		if !contains(u, want) {
 			t.Errorf("OtpauthURI missing %q: %s", want, u)
 		}

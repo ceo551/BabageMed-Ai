@@ -8,9 +8,9 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/babbage/backend/internal/audit"
-	"github.com/babbage/backend/internal/auth"
-	"github.com/babbage/backend/internal/db"
+	"github.com/pervagans/backend/internal/audit"
+	"github.com/pervagans/backend/internal/auth"
+	"github.com/pervagans/backend/internal/db"
 	"github.com/go-chi/chi/v5"
 	"github.com/jackc/pgx/v5"
 )

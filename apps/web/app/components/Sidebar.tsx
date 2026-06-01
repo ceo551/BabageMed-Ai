@@ -92,7 +92,7 @@ export function Sidebar({
       <div className="sb-head">
         <Link className="sb-brand" href="/" onClick={() => onMobileClose?.()}>
           <span className="wm">
-            <span className="b1">Babbage</span>
+            <span className="b1">Pervagans</span>
           </span>
         </Link>
         <button className="sb-collapse" onClick={toggleCollapsed} aria-label={s.collapseSidebar}>
@@ -290,7 +290,7 @@ function HistorySection({ label, feature }: { label: string; feature?: string })
   // `history.replaceState` to stamp `?c=<id>` on the URL (no real
   // navigation), so the just-created chat's title was missing from the
   // sidebar list until the next real route push. Also listen for a
-  // custom "babbage:chat-created" window event the streamer dispatches
+  // custom "pervagans:chat-created" window event the streamer dispatches
   // after the URL replacement, so the new chat surfaces immediately.
   useEffect(() => {
     if (!user) { setItems([]); return; }
@@ -305,12 +305,12 @@ function HistorySection({ label, feature }: { label: string; feature?: string })
     refetch();
     const onChatCreated = () => refetch();
     if (typeof window !== "undefined") {
-      window.addEventListener("babbage:chat-created", onChatCreated);
+      window.addEventListener("pervagans:chat-created", onChatCreated);
     }
     return () => {
       cancelled = true;
       if (typeof window !== "undefined") {
-        window.removeEventListener("babbage:chat-created", onChatCreated);
+        window.removeEventListener("pervagans:chat-created", onChatCreated);
       }
     };
   }, [user, pathname, feature]);

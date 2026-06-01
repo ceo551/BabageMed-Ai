@@ -1,6 +1,6 @@
 #!/usr/bin/env node
-// Generates infra/helm/babbage/mcps-index.json (id → {kind, port, name})
-// and infra/helm/babbage/mcps-all.txt (space-separated full id list).
+// Generates infra/helm/pervagans/mcps-index.json (id → {kind, port, name})
+// and infra/helm/pervagans/mcps-all.txt (space-separated full id list).
 // Re-run after changing scripts/mcps.manifest.json.
 import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import { join, dirname } from "node:path";
@@ -10,7 +10,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(__dirname, "..");
 const manifest = JSON.parse(readFileSync(join(__dirname, "mcps.manifest.json"), "utf8"));
 
-const chartDir = join(ROOT, "infra", "helm", "babbage");
+const chartDir = join(ROOT, "infra", "helm", "pervagans");
 mkdirSync(chartDir, { recursive: true });
 
 const byId = {};

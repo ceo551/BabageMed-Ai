@@ -26,8 +26,8 @@ export async function generateMetadata(
   const { slug } = await params;
   const label = TITLES[slug] || "Feature";
   return {
-    title: `${label} — Babbage AI`,
-    description: `Babbage AI workspace for ${label.toLowerCase()}.`,
+    title: `${label} — Pervagans`,
+    description: `Pervagans workspace for ${label.toLowerCase()}.`,
   };
 }
 

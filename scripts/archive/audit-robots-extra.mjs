@@ -42,7 +42,7 @@ for (const id of all) {
 }
 console.log(`extra scraping MCPs to audit: ${extras.length}`);
 
-const UA = "Mozilla/5.0 (compatible; BabbageBot/1.0; +https://babagemed.com)";
+const UA = "Mozilla/5.0 (compatible; PervagansBot/1.0; +https://babagemed.com)";
 function fetchOnce(url, timeout) {
   return new Promise((resolve) => {
     let u; try { u = new URL(url); } catch { return resolve({ status: 0, error: "bad-url" }); }
@@ -135,7 +135,7 @@ for (const e of extras) {
   if (!r || r.error) { verdict = "fetch_error"; reason = `robots.txt fetch failed: ${r?.error || "unknown"}`; }
   else if (r.status === 404 || r.status === 410 || (r.body || "").trim() === "") { verdict = "allowed"; reason = `no robots.txt (status ${r.status})`; }
   else if (r.status !== 200) { verdict = "fetch_error"; reason = `robots.txt returned status ${r.status}`; }
-  else { const d = isAllowed(parseRobots(r.body), urlPath, "BabbageBot"); verdict = d.allowed ? "allowed" : "blocked"; reason = d.reason; }
+  else { const d = isAllowed(parseRobots(r.body), urlPath, "PervagansBot"); verdict = d.allowed ? "allowed" : "blocked"; reason = d.reason; }
   // If the MCP is already in the report, update it; otherwise append.
   const existing = report.mcps.find((m) => m.id === e.id);
   if (existing) Object.assign(existing, { origin: e.origin, searchUrl: e.searchUrl, probePath: urlPath, verdict, reason });

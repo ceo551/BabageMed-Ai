@@ -1,7 +1,7 @@
-// Babbage AI — desktop entrypoint.
+// Pervagans AI — desktop entrypoint.
 //
 // Tauri 2.0 spawns a native window (WebView2 on Windows) pointed at the
-// hosted Babbage web app.
+// hosted Pervagans web app.
 // The Rust side exposes hardware introspection, secure-storage, native
 // dialogs, deep links, auto-updates, global shortcuts and a system tray
 // so the desktop client is more than a glorified browser.
@@ -40,19 +40,19 @@ fn main() {
             }
             // Forward CLI args (and deep-link URLs delivered as argv on
             // Windows) to the web app so it can route to the right
-            // screen — but ONLY for our own babbage:// scheme, not the
+            // screen — but ONLY for our own pervagans:// scheme, not the
             // full argv. Any process can launch the desktop binary with
             // arbitrary flags; we don't want a launcher shortcut or a
             // malicious bookmark file to deliver privileged "internal"
             // instructions to the React layer.
             let safe: Vec<&String> = argv
                 .iter()
-                .filter(|s| s.starts_with("babbage://") || s.starts_with("https://babagemed.com"))
+                .filter(|s| s.starts_with("pervagans://") || s.starts_with("https://babagemed.com"))
                 .collect();
             if let Some(w) = app.get_webview_window("main") {
                 if let Ok(json) = serde_json::to_string(&safe) {
                     let _ = w.eval(&format!(
-                        "window.dispatchEvent(new CustomEvent('babbage:cli', {{ detail: {} }}))",
+                        "window.dispatchEvent(new CustomEvent('pervagans:cli', {{ detail: {} }}))",
                         json
                     ));
                 }
@@ -93,7 +93,7 @@ fn main() {
                         let _ = w.unminimize();
                         let _ = w.show();
                         let _ = w.set_focus();
-                        let _ = w.eval("window.dispatchEvent(new CustomEvent('babbage:summon'))");
+                        let _ = w.eval("window.dispatchEvent(new CustomEvent('pervagans:summon'))");
                     }
                 }
             })
@@ -134,7 +134,7 @@ fn main() {
 
             // Surface the app version + targets to logs on every launch.
             log::info!(
-                "Babbage AI desktop {} starting on {}/{} (cores: {} physical / {} logical)",
+                "Pervagans AI desktop {} starting on {}/{} (cores: {} physical / {} logical)",
                 env!("CARGO_PKG_VERSION"),
                 std::env::consts::OS,
                 std::env::consts::ARCH,
@@ -146,5 +146,5 @@ fn main() {
 
     builder
         .run(tauri::generate_context!())
-        .expect("error while running Babbage AI desktop");
+        .expect("error while running Pervagans AI desktop");
 }

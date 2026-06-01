@@ -3,7 +3,7 @@
     <!-- Base dark theme that matches the web app's --bg / --ink palette.
          Edge-to-edge layout — Compose draws under the status & nav bars,
          WindowCompat.setDecorFitsSystemWindows(window,false) in MainActivity. -->
-    <style name="Theme.BabbageAI" parent="android:Theme.Material.NoActionBar">
+    <style name="Theme.PervagansAI" parent="android:Theme.Material.NoActionBar">
         <item name="android:windowBackground">#0A0A0C</item>
         <item name="android:statusBarColor">#00000000</item>
         <item name="android:navigationBarColor">#00000000</item>

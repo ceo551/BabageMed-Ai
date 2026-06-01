@@ -1,0 +1,86 @@
+{{- if .Values.logging.promtailSnippet.enabled }}
+{{/*
+  A drop-in scrape-config snippet for Promtail or Grafana Alloy. Mount this
+  ConfigMap into your Promtail/Alloy DaemonSet and reference it from the
+  scrape_configs section. The snippet:
+
+    1. Selects pods with label app.kubernetes.io/name=pervagans
+    2. Parses each stderr/stdout line as JSON (our logger emits JSON)
+    3. Extracts trace_id, span_id, mcp_id, lvl into Loki labels
+    4. Keeps a parsed timestamp so {time} sorts correctly in Grafana
+
+  In Grafana, add a `derivedFields` rule on your Loki datasource:
+    name: trace_id
+    matcherRegex: '"trace_id":"(\w+)"'  (or simply: trace_id="(\w+)")
+    url: '${__value.raw}'
+    datasourceUid: <your Tempo datasource UID>
+  Result: log lines become clickable into the corresponding trace.
+*/}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Values.logging.promtailSnippet.configMap }}
+  labels: {{- include "pervagans.labels" . | nindent 4 }}
+data:
+  pervagans-scrape.yaml: |
+    scrape_configs:
+      - job_name: pervagans
+        kubernetes_sd_configs:
+          - role: pod
+            namespaces:
+              names: [ {{ .Release.Namespace | quote }} ]
+        relabel_configs:
+          - source_labels: [__meta_kubernetes_pod_label_app_kubernetes_io_name]
+            regex: pervagans
+            action: keep
+          - source_labels: [__meta_kubernetes_pod_label_app_kubernetes_io_component]
+            target_label: component
+          - source_labels: [__meta_kubernetes_pod_label_pervagans_mcp_id]
+            target_label: mcp_id
+          - source_labels: [__meta_kubernetes_pod_label_pervagans_mcp_kind]
+            target_label: mcp_kind
+          - source_labels: [__meta_kubernetes_namespace]
+            target_label: namespace
+          - source_labels: [__meta_kubernetes_pod_name]
+            target_label: pod
+          - source_labels: [__meta_kubernetes_pod_container_name]
+            target_label: container
+          - source_labels: [__meta_kubernetes_pod_uid, __meta_kubernetes_pod_container_name]
+            target_label: __path__
+            separator: /
+            replacement: /var/log/pods/*$1/*.log
+        pipeline_stages:
+          - cri: {}
+          - json:
+              expressions:
+                lvl:      lvl
+                msg:      msg
+                svc:      svc
+                trace_id: trace_id
+                span_id:  span_id
+                t:        t
+          - timestamp:
+              source: t
+              format: RFC3339Nano
+          - labels:
+              lvl:
+              svc:
+              trace_id:
+              span_id:
+          - output:
+              source: msg
+
+  # Grafana datasource snippet — wire up Loki → Tempo correlation.
+  # Append the `derivedFields` block to your Loki datasource definition
+  # (or apply via the Grafana sidecar with grafana_datasource: "1" label).
+  grafana-loki-derived-fields.yaml: |
+    derivedFields:
+      - name: trace_id
+        matcherRegex: '"trace_id":"(\w+)"'
+        url: '$${__value.raw}'
+        datasourceUid: tempo
+      - name: span_id
+        matcherRegex: '"span_id":"(\w+)"'
+        url: '$${__value.raw}'
+        datasourceUid: tempo
+{{- end }}

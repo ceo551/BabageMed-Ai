@@ -1,6 +1,6 @@
 {
-  "name": "Babbage AI",
-  "short_name": "Babbage",
+  "name": "Pervagans",
+  "short_name": "Pervagans",
   "description": "Customisable AI workflows — 8 features × 540 connectors.",
   "id": "/",
   "start_url": "/",
@@ -15,13 +15,13 @@
   "categories": ["productivity", "business", "education", "medical"],
   "icons": [
     {
-      "src": "/babbage-icon.png",
+      "src": "/pervagans-icon.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/babbage-icon.png",
+      "src": "/pervagans-icon.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
@@ -49,6 +49,6 @@
   "edge_side_panel": { "preferred_width": 480 },
   "launch_handler": { "client_mode": ["focus-existing", "auto"] },
   "protocol_handlers": [
-    { "protocol": "web+babbage", "url": "/?from=%s" }
+    { "protocol": "web+pervagansspace", "url": "/?from=%s" }
   ]
 }

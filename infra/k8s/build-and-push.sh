@@ -32,7 +32,7 @@ docker buildx build --platform "$PLATFORM" --push \
 
 # MCP list
 if [ -z "${MCPS:-}" ]; then
-  MCPS="$(cat infra/helm/babbage/mcps-all.txt | tr '\n' ' ')"
+  MCPS="$(cat infra/helm/pervagans/mcps-all.txt | tr '\n' ' ')"
 fi
 
 echo "▶ building $(echo "$MCPS" | wc -w) MCP images with parallelism=$PARALLEL"

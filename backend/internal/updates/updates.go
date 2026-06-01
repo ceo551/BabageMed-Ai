@@ -16,7 +16,7 @@
 //   {
 //     "version":   "0.2.0",                    // target version (no leading 'v')
 //     "pub_date":  "2026-05-25T00:00:00Z",     // RFC3339
-//     "url":       "https://.../Babbage_0.2.0_universal.app.tar.gz",
+//     "url":       "https://.../Pervagans_0.2.0_universal.app.tar.gz",
 //     "signature": "<minisign-style signature emitted by tauri build>",
 //     "notes":     "Bug fixes and improvements"
 //   }
@@ -213,7 +213,7 @@ func (s *Service) load(ctx context.Context) ([]byte, error) {
 			return nil, err
 		}
 		req.Header.Set("Accept", "application/json")
-		req.Header.Set("User-Agent", "babbage-backend/updater")
+		req.Header.Set("User-Agent", "pervagans-backend/updater")
 		resp, err := s.httpc.Do(req)
 		if err != nil {
 			return nil, fmt.Errorf("fetch manifest: %w", err)

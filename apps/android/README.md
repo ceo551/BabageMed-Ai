@@ -1,6 +1,6 @@
-# Babbage AI — Android
+# Pervagans AI — Android
 
-Single-activity Compose + WebView shell pointed at the hosted Babbage web
+Single-activity Compose + WebView shell pointed at the hosted Pervagans web
 app (`https://babagemed.com`). Targets Android 7.0 (API 24)+ which covers
 ~96% of in-market devices.
 
@@ -29,7 +29,7 @@ overlays (file picker, voice, share intent receivers) layer in as we go.
 ```bash
 # From apps/android/
 ./gradlew :app:installDebug
-adb shell am start -n com.babbage.ai.debug/com.babbage.ai.MainActivity
+adb shell am start -n com.pervagans.ai.debug/com.pervagans.ai.MainActivity
 ```
 
 Or open `apps/android/` in Android Studio: File → Open → pick the folder,
@@ -68,7 +68,7 @@ The manifest declares an `<intent-filter android:autoVerify="true">` for
      "relation": ["delegate_permission/common.handle_all_urls"],
      "target": {
        "namespace": "android_app",
-       "package_name": "com.babbage.ai",
+       "package_name": "com.pervagans.ai",
        "sha256_cert_fingerprints": ["<paste fingerprint>"]
      }
    }]
@@ -80,8 +80,8 @@ The manifest declares an `<intent-filter android:autoVerify="true">` for
 - `settings.gradle.kts`, `build.gradle.kts` — Gradle setup
 - `app/build.gradle.kts` — module config (Compose, Material3, WebView)
 - `app/src/main/AndroidManifest.xml` — permissions, app links, theme
-- `app/src/main/java/com/babbage/ai/MainActivity.kt` — root activity
-- `app/src/main/java/com/babbage/ai/BabbageApp.kt` — Application class
+- `app/src/main/java/com/pervagans/ai/MainActivity.kt` — root activity
+- `app/src/main/java/com/pervagans/ai/PervagansApp.kt` — Application class
 - `app/src/main/res/values/{strings,themes}.xml` — name + dark theme
 - `app/src/main/res/xml/{backup_rules,data_extraction_rules}.xml` — no auto-backup
 - `app/proguard-rules.pro` — R8 keep rules

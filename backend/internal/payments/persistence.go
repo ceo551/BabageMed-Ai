@@ -6,7 +6,7 @@ import (
 	"errors"
 	"time"
 
-	"github.com/babbage/backend/internal/db"
+	"github.com/pervagans/backend/internal/db"
 	"github.com/jackc/pgx/v5"
 )
 

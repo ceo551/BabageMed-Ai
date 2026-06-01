@@ -6,7 +6,7 @@ options:
 
 substitutions:
   _REGION: us-central1
-  _REPO: babbage
+  _REPO: pervagans
   _TAG: v25
 
 # Deploy subset that fits the project's 2-node quota: backend + frontend +

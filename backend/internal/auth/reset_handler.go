@@ -6,8 +6,8 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/babbage/backend/internal/audit"
-	"github.com/babbage/backend/internal/email"
+	"github.com/pervagans/backend/internal/audit"
+	"github.com/pervagans/backend/internal/email"
 	"github.com/go-chi/chi/v5"
 )
 

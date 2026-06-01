@@ -857,7 +857,7 @@ body.modal-open .mobile-nav-btn { display: none !important; }
   .shell[data-mobile-open="true"] .mobile-nav-backdrop { display: block; }
   .mobile-nav-btn { display: inline-flex; }
   /* While the drawer is open the toggle slides to the sidebar's inner edge
-     so it stops covering the "Babbage" brand wordmark at the top of the
+     so it stops covering the "Pervagans" brand wordmark at the top of the
      sidebar. inset-inline-start resolves to the correct physical edge in
      both LTR and RTL, matching the drawer's open inner edge. */
   .shell[data-mobile-open="true"] .mobile-nav-btn {

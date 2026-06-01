@@ -119,9 +119,9 @@ function DashboardInner() {
           <Transcript messages={messages} />
         ) : (
           <h1 className="greet">
-            <img src="/babbage-icon.png" alt="" aria-hidden="true" className="brand-greet-icon" />
+            <img src="/pervagans-icon.png" alt="" aria-hidden="true" className="brand-greet-icon" />
             <span className="brand-greet">
-              <span className="b1">Babbage</span>
+              <span className="b1">Pervagans</span>
             </span>
           </h1>
         )}
@@ -186,7 +186,7 @@ function Transcript({ messages }: { messages: ChatMessage[] }) {
           return (
             <div key={m.id} className="msg msg-assistant msg-loading">
               <img
-                src="/babbage-icon.png"
+                src="/pervagans-icon.png"
                 alt=""
                 className="msg-loading-mark"
                 width={40}
@@ -467,7 +467,7 @@ function Composer({
             url.searchParams.set("c", created.id);
             url.searchParams.delete("n");
             window.history.replaceState({}, "", url.toString());
-            window.dispatchEvent(new CustomEvent("babbage:chat-created", { detail: { id: created.id } }));
+            window.dispatchEvent(new CustomEvent("pervagans:chat-created", { detail: { id: created.id } }));
           }
         } catch { /* persistence is best-effort */ }
       }

@@ -16,7 +16,7 @@ pub struct AppInfo {
 #[tauri::command]
 pub fn app_info() -> AppInfo {
     AppInfo {
-        name: "Babbage AI",
+        name: "Pervagans AI",
         version: env!("CARGO_PKG_VERSION"),
         target_os: std::env::consts::OS,
         target_arch: std::env::consts::ARCH,

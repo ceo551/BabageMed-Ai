@@ -130,7 +130,7 @@ jobs:
           # 8 shards). Parenthesize the modulus so the round-robin actually spans
           # exactly 8 shards.
           # `_shared/` was removed in round 8 (helper folded into
-          # @babbage/mcp-base); the grep -v is kept as a no-op safety
+          # @pervagans/mcp-base); the grep -v is kept as a no-op safety
           # net so a future re-introduction doesn't break the sharder.
           ids=$(ls -d mcps/*/ | xargs -n1 basename | grep -v '^_shared$' | awk -v s="${{ matrix.shard }}" '((NR - 1) % 8) + 1 == s')
           echo "shard ${{ matrix.shard }} → $(echo "$ids" | wc -w) packages"
@@ -158,10 +158,10 @@ jobs:
         with:
           version: v3.16.3
       - name: helm lint
-        run: helm lint infra/helm/babbage
+        run: helm lint infra/helm/pervagans
       - name: helm template (smoke render)
         run: |
-          helm template babbage infra/helm/babbage \
+          helm template pervagans infra/helm/pervagans \
             --set image.registry=ghcr.io/ci \
             --set ingress.host=ci.example \
             --set monitoring.serviceMonitor.enabled=true \

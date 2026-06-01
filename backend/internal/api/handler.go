@@ -13,11 +13,11 @@ import (
 	"sync"
 	"time"
 
-	"github.com/babbage/backend/internal/auth"
-	"github.com/babbage/backend/internal/cache"
-	"github.com/babbage/backend/internal/llm"
-	"github.com/babbage/backend/internal/mcp"
-	"github.com/babbage/backend/internal/metrics"
+	"github.com/pervagans/backend/internal/auth"
+	"github.com/pervagans/backend/internal/cache"
+	"github.com/pervagans/backend/internal/llm"
+	"github.com/pervagans/backend/internal/mcp"
+	"github.com/pervagans/backend/internal/metrics"
 	"github.com/go-chi/chi/v5"
 	"golang.org/x/sync/errgroup"
 )
@@ -586,7 +586,7 @@ func isVisualModel(id string) bool {
 
 func buildSystem(mode, locale string, citations []map[string]any, useMcps []string, spaceCtx []map[string]any, spaceName, feature, featureInstructions string) string {
 	var b strings.Builder
-	b.WriteString("You are Babbage AI — a careful, source-aware assistant. State uncertainty plainly and never invent facts. If retrieved sources don't cover the question, say so explicitly.\n")
+	b.WriteString("You are Pervagans — a careful, source-aware assistant. State uncertainty plainly and never invent facts. If retrieved sources don't cover the question, say so explicitly.\n")
 	// Feature workspace context. When the user is chatting from a feature
 	// page (e.g. /features/healthcare), their custom instructions for that
 	// workflow are appended here so every turn in that feature inherits

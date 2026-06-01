@@ -1,7 +1,7 @@
 export default function Loading() {
   return (
-    <div className="bb-loading">
-      <span className="bb-spinner" aria-hidden="true" />
+    <div className="ps-loading">
+      <span className="ps-spinner" aria-hidden="true" />
       <span>Loading…</span>
     </div>
   );

@@ -45,7 +45,7 @@ jobs:
           set -e
           input='${{ github.event.inputs.mcps }}'
           shards=${{ github.event.inputs.shards || '8' }}
-          if [ -n "$input" ]; then ids="$input"; else ids="$(cat infra/helm/babbage/mcps-all.txt)"; fi
+          if [ -n "$input" ]; then ids="$input"; else ids="$(cat infra/helm/pervagans/mcps-all.txt)"; fi
           json=$(node -e "
             const all = process.argv[1].trim().split(/\s+/).filter(Boolean);
             const n = Number(process.argv[2]);

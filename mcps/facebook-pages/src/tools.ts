@@ -8,9 +8,9 @@
 //
 // To turn this into a real MCP, replace this file with an actual
 // implementation that imports ApiClient / Scraper from
-// @babbage/mcp-base and call `server.tool({ name, ... })` properly.
+// @pervagans/mcp-base and call `server.tool({ name, ... })` properly.
 
-import { z, McpServer } from "@babbage/mcp-base";
+import { z, McpServer } from "@pervagans/mcp-base";
 
 // Note: we use `connector` (not `name`) here on purpose — the manifest
 // validator scans `name: "…"` after `server.tool({` to verify the

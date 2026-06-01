@@ -26,7 +26,7 @@ export function ServiceWorker() {
       .then((reg) => {
         if (cancelled) return;
         // Auto-update on tab focus instead of waiting for the browser's
-        // 24h heuristic — Babbage ships multiple times a day. The previous
+        // 24h heuristic — Pervagans ships multiple times a day. The previous
         // implementation returned the cleanup from inside .then() — but
         // Promise.then's return value is the next promise, not a hook
         // cleanup, so the listener leaked across hot reloads and unmounts.

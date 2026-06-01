@@ -17,8 +17,8 @@ import (
 
 	"golang.org/x/sync/singleflight"
 
-	"github.com/babbage/backend/internal/metrics"
-	"github.com/babbage/backend/internal/tracing"
+	"github.com/pervagans/backend/internal/metrics"
+	"github.com/pervagans/backend/internal/tracing"
 )
 
 type Server struct {

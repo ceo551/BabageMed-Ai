@@ -1,10 +1,10 @@
 [package]
-name = "babbage-desktop"
+name = "pervagans-desktop"
 version = "0.1.0"
-description = "Babbage AI desktop client"
-authors = ["Babbage AI"]
+description = "Pervagans AI desktop client"
+authors = ["Pervagans AI"]
 license = "Proprietary"
-repository = "https://github.com/ceo551/Babbage-Ai"
+repository = "https://github.com/ceo551/Pervagans-Ai"
 edition = "2021"
 rust-version = "1.77"
 

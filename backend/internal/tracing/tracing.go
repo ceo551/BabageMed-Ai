@@ -66,7 +66,7 @@ func Init(ctx context.Context, serviceName, serviceVersion string) (func(context
 		resource.WithAttributes(
 			semconv.ServiceName(serviceName),
 			semconv.ServiceVersion(serviceVersion),
-			attribute.String("service.namespace", "babbage"),
+			attribute.String("service.namespace", "pervagans"),
 		),
 	)
 	if err != nil {
@@ -135,7 +135,7 @@ func (PgxQueryTracer) TraceQueryStart(ctx context.Context, _ *pgx.Conn, data pgx
 	if !Enabled() {
 		return ctx
 	}
-	ctx, span := otel.Tracer("babbage/backend/pgx").Start(ctx, "pgx.query")
+	ctx, span := otel.Tracer("pervagans/backend/pgx").Start(ctx, "pgx.query")
 	span.SetAttributes(
 		attribute.String("db.system", "postgresql"),
 		attribute.String("db.statement", truncate(data.SQL, 1024)),

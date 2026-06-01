@@ -6,16 +6,16 @@ import { ServiceWorker } from "./components/ServiceWorker";
 import { NavProgress } from "./components/NavProgress";
 
 export const metadata = {
-  title: "Babbage AI",
-  description: "Babbage AI — instructions, files, skills and connectors per workflow.",
-  applicationName: "Babbage AI",
+  title: "Pervagans",
+  description: "Pervagans — instructions, files, skills and connectors per workflow.",
+  applicationName: "Pervagans",
   manifest: "/manifest.webmanifest",
   formatDetection: { telephone: false, address: false, email: false },
   // Point every favicon size at the brand asset shipped in /public so the
   // browser tab gets the disc mark instead of the default globe.
   icons: {
-    icon:     "/babbage-icon.png",
-    shortcut: "/babbage-icon.png",
+    icon:     "/pervagans-icon.png",
+    shortcut: "/pervagans-icon.png",
   },
 };
 
@@ -40,13 +40,13 @@ export const viewport = {
 const PRE_PAINT_SCRIPT = `(function(){
   try {
     // Locale + theme are persisted as raw strings under their own keys by
-    // ui-context.tsx (LS_LOCALE="babbage:locale", LS_THEME="babbage:theme").
-    // The previous version read them off the "babbage:prefs" JSON object
+    // ui-context.tsx (LS_LOCALE="pervagans:locale", LS_THEME="pervagans:theme").
+    // The previous version read them off the "pervagans:prefs" JSON object
     // (which only holds model/mode/draft) → p.locale/p.theme were always
     // undefined, so this script silently did nothing and the RTL/theme
     // flash it exists to prevent persisted on every load.
-    var locale = localStorage.getItem("babbage:locale") || "en";
-    var theme = localStorage.getItem("babbage:theme") || "system";
+    var locale = localStorage.getItem("pervagans:locale") || "en";
+    var theme = localStorage.getItem("pervagans:theme") || "system";
     if (theme === "system") {
       theme = window.matchMedia && window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
     }

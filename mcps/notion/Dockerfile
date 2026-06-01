@@ -13,7 +13,7 @@ RUN \
 WORKDIR /build/mcps/notion
 COPY mcps/notion/package.json mcps/notion/tsconfig.json ./
 COPY mcps/notion/src ./src
-# Google OAuth helper now lives in @babbage/mcp-base — copied above.
+# Google OAuth helper now lives in @pervagans/mcp-base — copied above.
 RUN \
     npm install --no-audit --no-fund --ignore-scripts && npx tsc -p tsconfig.json
 
@@ -21,7 +21,7 @@ FROM node:20-bookworm-slim
 WORKDIR /app
 ENV NODE_ENV=production HTTP_ONLY=1
 COPY --from=build /build/mcps/notion /app
-COPY --from=build /build/packages/mcp-base /app/node_modules/@babbage/mcp-base
+COPY --from=build /build/packages/mcp-base /app/node_modules/@pervagans/mcp-base
 EXPOSE 6172
 USER node
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \

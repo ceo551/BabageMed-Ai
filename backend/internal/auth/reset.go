@@ -12,7 +12,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/babbage/backend/internal/email"
+	"github.com/pervagans/backend/internal/email"
 	"github.com/jackc/pgx/v5"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -100,14 +100,14 @@ func (s *Service) SendPasswordResetEmail(ctx context.Context, sender email.Sende
 
 	link := buildLink("/reset-password", map[string]string{"token": token, "email": normalised})
 	body := fmt.Sprintf(
-		"You (or someone using your email) asked to reset your Babbage AI password.\n\n"+
+		"You (or someone using your email) asked to reset your Pervagans password.\n\n"+
 			"Open this link within %d minutes to choose a new password:\n%s\n\n"+
 			"If you didn't request this, you can ignore the message — nothing changes until the link is used.",
 		int(resetTokenTTL.Minutes()), link,
 	)
 	return sender.Send(ctx, email.Message{
 		To:      normalised,
-		Subject: "Reset your Babbage AI password",
+		Subject: "Reset your Pervagans password",
 		Body:    body,
 	})
 }
@@ -248,7 +248,7 @@ func (s *Service) SendVerificationEmail(ctx context.Context, sender email.Sender
 	)
 	return sender.Send(ctx, email.Message{
 		To:      dbEmail,
-		Subject: "Verify your Babbage AI email",
+		Subject: "Verify your Pervagans email",
 		Body:    body,
 	})
 }

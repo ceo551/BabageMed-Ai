@@ -1,9 +1,9 @@
 {
-  "name": "babbage-desktop",
+  "name": "pervagans-desktop",
   "private": true,
   "version": "0.1.0",
   "type": "module",
-  "description": "Babbage AI desktop client (Tauri 2.0 — Windows).",
+  "description": "Pervagans AI desktop client (Tauri 2.0 — Windows).",
   "scripts": {
     "dev":      "tauri dev",
     "build":    "tauri build",

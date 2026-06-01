@@ -1,5 +1,5 @@
 {
-  "$comment": "Single source of truth for all Babbage-AI MCP servers. Each entry produces one Dockerized TypeScript MCP server. `kind`: api | scrape | hybrid. Ports are assigned 6101..6186.",
+  "$comment": "Single source of truth for all Pervagans-AI MCP servers. Each entry produces one Dockerized TypeScript MCP server. `kind`: api | scrape | hybrid. Ports are assigned 6101..6186.",
   "servers": [
     {
       "id": "pubmed",

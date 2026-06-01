@@ -1,4 +1,4 @@
-# Babbage AI
+# Pervagans AI
 
 Customisable AI workflows — Next.js dashboard + Go backend + 262 Dockerized
 TypeScript MCP servers + native shells for **Android and Desktop
@@ -66,7 +66,7 @@ cd apps/desktop && npm install && npm run dev
 
 ```bash
 cd apps/android && ./gradlew :app:installDebug
-adb shell am start -n com.babbage.ai.debug/com.babbage.ai.MainActivity
+adb shell am start -n com.pervagans.ai.debug/com.pervagans.ai.MainActivity
 ```
 
 Or open `apps/android/` in Android Studio Iguana+.
@@ -97,9 +97,9 @@ parallel runners, ~12 min total cold build).
 
 ## Deploy
 
-The Helm chart in `infra/helm/babbage/` deploys the whole stack to any
+The Helm chart in `infra/helm/pervagans/` deploys the whole stack to any
 Kubernetes cluster. See the chart's `values.yaml` for the full surface
-and `infra/helm/babbage/values-gke-test.yaml` for a known-working GKE Autopilot
+and `infra/helm/pervagans/values-gke-test.yaml` for a known-working GKE Autopilot
 overlay.
 
 GitOps overlays in `infra/gitops/` keep ArgoCD or Flux in sync with the
@@ -117,4 +117,4 @@ chart. The CI workflow auto-bumps the image tag on every push to `main`.
 
 ## License
 
-Proprietary — © 2026 Babbage AI. All rights reserved.
+Proprietary — © 2026 Pervagans AI. All rights reserved.

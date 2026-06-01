@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/babbage/backend/internal/auth"
+	"github.com/pervagans/backend/internal/auth"
 	"github.com/go-chi/chi/v5"
 )
 

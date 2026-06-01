@@ -1,5 +1,5 @@
 // @hand-edited — do not regenerate via write-real-tools.mjs
-import { z, McpServer, ApiClient } from "@babbage/mcp-base";
+import { z, McpServer, ApiClient } from "@pervagans/mcp-base";
 
 let cached: { v: string; exp: number } | null = null;
 

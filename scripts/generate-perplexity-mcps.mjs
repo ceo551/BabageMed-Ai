@@ -2,7 +2,7 @@
 // Scaffolds the 223 Perplexity-style connector MCPs from
 // scripts/perplexity-connectors.json. Each new entry gets:
 //   - mcps/<id>/Dockerfile     (mirrors the pubmed/pattern, swapped name+port)
-//   - mcps/<id>/package.json   (npm scope @babbage/mcp-<id>)
+//   - mcps/<id>/package.json   (npm scope @pervagans/mcp-<id>)
 //   - mcps/<id>/tsconfig.json  (identical)
 //   - mcps/<id>/src/index.ts   (registers tools, runs on assigned port)
 //   - mcps/<id>/src/tools.ts   (stub `search` + `fetch` that report "not yet
@@ -11,16 +11,16 @@
 //                              a network error so the LLM stays grounded)
 // and appends entries to:
 //   - scripts/mcps.manifest.json
-//   - infra/helm/babbage/mcps-all.txt
-//   - infra/helm/babbage/mcps-index.json
+//   - infra/helm/pervagans/mcps-all.txt
+//   - infra/helm/pervagans/mcps-index.json
 //   - docker-compose-style YAML is not regenerated (the compose files were
 //     deleted by Phase A — the helm chart is now the only deploy path).
 import fs from "node:fs"; import path from "node:path";
 const ROOT = process.cwd();
 const cat  = JSON.parse(fs.readFileSync(path.join(ROOT, "scripts/perplexity-connectors.json"), "utf8"));
 const manPath = path.join(ROOT, "scripts/mcps.manifest.json");
-const idxPath = path.join(ROOT, "infra/helm/babbage/mcps-index.json");
-const allPath = path.join(ROOT, "infra/helm/babbage/mcps-all.txt");
+const idxPath = path.join(ROOT, "infra/helm/pervagans/mcps-index.json");
+const allPath = path.join(ROOT, "infra/helm/pervagans/mcps-all.txt");
 const man = JSON.parse(fs.readFileSync(manPath, "utf8"));
 const idx = JSON.parse(fs.readFileSync(idxPath, "utf8"));
 const allTokens = fs.readFileSync(allPath, "utf8").split(/\s+/).filter(Boolean);
@@ -40,7 +40,7 @@ const TS_CONFIG = JSON.stringify({
 
 function pkgJSON(id) {
   return JSON.stringify({
-    name: `@babbage/mcp-${id}`,
+    name: `@pervagans/mcp-${id}`,
     version: "0.1.0",
     private: true,
     type: "module",
@@ -51,7 +51,7 @@ function pkgJSON(id) {
       dev:   "tsx src/index.ts",
     },
     dependencies: {
-      "@babbage/mcp-base": "file:../../packages/mcp-base",
+      "@pervagans/mcp-base": "file:../../packages/mcp-base",
       zod:    "^3.23.8",
       undici: "^6.21.0",
     },
@@ -79,7 +79,7 @@ FROM node:20-bookworm-slim
 WORKDIR /app
 ENV NODE_ENV=production HTTP_ONLY=1
 COPY --from=build /build/mcps/${id} /app
-COPY --from=build /build/packages/mcp-base /app/node_modules/@babbage/mcp-base
+COPY --from=build /build/packages/mcp-base /app/node_modules/@pervagans/mcp-base
 EXPOSE ${port}
 USER node
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \\
@@ -89,7 +89,7 @@ CMD ["node", "dist/index.js"]
 }
 
 function indexTS(id, name, category, port) {
-  return `import { McpServer } from "@babbage/mcp-base";
+  return `import { McpServer } from "@pervagans/mcp-base";
 import { registerTools } from "./tools.js";
 
 const server = new McpServer({
@@ -112,7 +112,7 @@ function toolsTS(name, homepage) {
   // LLM has a clear, untruncated, citation-shaped object to render. Once the
   // user wires the real OAuth/API key, the handler body can be replaced.
   const safeName = name.replace(/"/g, '\\"');
-  return `import { z, McpServer } from "@babbage/mcp-base";
+  return `import { z, McpServer } from "@pervagans/mcp-base";
 
 // ${safeName} — connector observed in the Perplexity Computer Connectors
 // catalogue. Stub implementation: returns a "not yet configured" object so

@@ -3,13 +3,13 @@
 // them to the OS credential store so nothing sensitive sits in plaintext
 // under the user's profile dir.
 //
-// Keys are namespaced under "babbage:<key>" so JS can't accidentally
+// Keys are namespaced under "pervagans:<key>" so JS can't accidentally
 // (or deliberately) overwrite or read keychain entries created by other
 // software stored under the same service identifier.
 
 use keyring::Entry;
 
-const SERVICE: &str = "com.babbage.ai.desktop";
+const SERVICE: &str = "com.pervagans.ai.desktop";
 const MAX_KEY_LEN: usize = 128;
 const MAX_VALUE_LEN: usize = 64 * 1024; // 64 KiB
 
@@ -23,7 +23,7 @@ fn validate_key(key: &str) -> Result<String, String> {
     if !key.chars().all(|c| c.is_ascii_alphanumeric() || matches!(c, '_' | '.' | '-' | ':')) {
         return Err("invalid key characters".into());
     }
-    Ok(format!("babbage:{key}"))
+    Ok(format!("pervagans:{key}"))
 }
 
 fn entry(key: &str) -> Result<Entry, String> {

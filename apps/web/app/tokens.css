@@ -131,16 +131,16 @@
 .nav-progress[data-phase="idle"] { width: 0;    opacity: 0; }
 
 /* ── Reusable spinner + route loading state (used by per-route loading.tsx) ── */
-@keyframes bb-spin { to { transform: rotate(360deg); } }
-.bb-spinner {
+@keyframes ps-spin { to { transform: rotate(360deg); } }
+.ps-spinner {
   width: 24px;
   height: 24px;
   border: 2.5px solid var(--border-strong);
   border-top-color: var(--cyan);
   border-radius: 50%;
-  animation: bb-spin 0.7s linear infinite;
+  animation: ps-spin 0.7s linear infinite;
 }
-.bb-loading {
+.ps-loading {
   min-height: 55vh;
   display: flex;
   align-items: center;

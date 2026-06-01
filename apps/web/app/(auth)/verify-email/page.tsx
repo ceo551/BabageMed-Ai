@@ -52,7 +52,7 @@ function VerifyInner() {
           <>
             <h1>Email verified</h1>
             <p className="lead">Your email address is now confirmed.</p>
-            <p className="auth-foot"><Link href="/">Continue to Babbage</Link></p>
+            <p className="auth-foot"><Link href="/">Continue to Pervagans</Link></p>
           </>
         )}
         {state === "err" && (

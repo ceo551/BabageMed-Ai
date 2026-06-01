@@ -1,6 +1,6 @@
 name: desktop
 
-# Build native Babbage AI installers for Windows on each push to main +
+# Build native Pervagans AI installers for Windows on each push to main +
 # every tag prefixed with `desktop-v`. Tag pushes also draft a GitHub
 # release with the binaries attached so the Tauri updater can advertise
 # them.
@@ -91,7 +91,7 @@ jobs:
         if: ${{ !startsWith(github.ref, 'refs/tags/desktop-v') }}
         uses: actions/upload-artifact@v4
         with:
-          name: babbage-${{ env.TARGET }}
+          name: pervagans-${{ env.TARGET }}
           path: |
             apps/desktop/src-tauri/target/${{ env.TARGET }}/release/bundle/**/*.msi
             apps/desktop/src-tauri/target/${{ env.TARGET }}/release/bundle/**/*.exe

@@ -13,7 +13,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/babbage/backend/internal/db"
+	"github.com/pervagans/backend/internal/db"
 	"github.com/jackc/pgx/v5"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -52,13 +52,13 @@ type Service struct {
 }
 
 // New constructs the service. issuer is the brand name shown inside
-// the authenticator app (e.g. "Babbage AI"). The MFA_ENCRYPTION_KEY
+// the authenticator app (e.g. "Pervagans"). The MFA_ENCRYPTION_KEY
 // env var must contain a base64-encoded 32-byte key — without it, MFA
 // endpoints return ErrMFAEncKeyMissing rather than silently storing
 // secrets in plaintext.
 func New(d *db.DB, issuer string) (*Service, error) {
 	if issuer == "" {
-		issuer = "Babbage AI"
+		issuer = "Pervagans"
 	}
 	keyB64 := strings.TrimSpace(os.Getenv("MFA_ENCRYPTION_KEY"))
 	if keyB64 == "" {

@@ -1,0 +1,19 @@
+apiVersion: v2
+name: pervagans
+description: Pervagans AI — Next.js dashboard, Go backend, Postgres, and Dockerized MCP connectors.
+type: application
+version: 0.1.0
+appVersion: "0.1.0"
+icon: https://babagemed.com/icon.png
+sources:
+  - https://github.com/ceo551/Pervagans-Ai
+maintainers:
+  - name: Pervagans
+    email: ceo@babagemed.com
+keywords:
+  - ai
+  - llm
+  - mcp
+  - connectors
+  - nextjs
+  - golang

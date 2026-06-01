@@ -1,5 +1,5 @@
 // @generated-by write-real-tools.mjs (preserved by generate-mcps.mjs)
-import { z, McpServer, ApiClient } from "@babbage/mcp-base";
+import { z, McpServer, ApiClient } from "@pervagans/mcp-base";
 
 const api = new ApiClient({
   base: "https://eutils.ncbi.nlm.nih.gov/entrez/eutils",
@@ -8,7 +8,7 @@ const api = new ApiClient({
 });
 
 const KEY = process.env.NCBI_API_KEY;
-const TOOL = process.env.NCBI_TOOL || "BabbageAI";
+const TOOL = process.env.NCBI_TOOL || "PervagansAI";
 // NCBI's terms ask for a contact email on every E-utilities call so they
 // can reach the operator if a script misbehaves. We require it via env
 // rather than baking a personal/corporate address into source — burning

@@ -1,6 +1,6 @@
-# Babbage AI — desktop client
+# Pervagans AI — desktop client
 
-Tauri 2.0 wrapper around the Babbage web app. Produces a native Windows
+Tauri 2.0 wrapper around the Pervagans web app. Produces a native Windows
 binary (~6 MB stripped on release builds).
 
 ## Why Tauri (vs Electron)?
@@ -14,7 +14,7 @@ binary (~6 MB stripped on release builds).
 
 Tauri uses WebView2 (the OS-native Chromium-based WebView shipped with
 Windows 10+), so we ship one tiny Rust binary that loads the hosted
-Babbage web app at `https://babagemed.com`.
+Pervagans web app at `https://babagemed.com`.
 
 ## Prerequisites
 
@@ -40,8 +40,8 @@ The Tauri window auto-reloads on Rust changes.
 ```bash
 npm run build
 # outputs land in src-tauri/target/release/bundle/
-#   ├─ msi/   Babbage AI_0.1.0_x64.msi      (Windows installer, .msi)
-#   └─ nsis/  Babbage AI_0.1.0_x64-setup.exe (Windows installer, .exe)
+#   ├─ msi/   Pervagans AI_0.1.0_x64.msi      (Windows installer, .msi)
+#   └─ nsis/  Pervagans AI_0.1.0_x64-setup.exe (Windows installer, .exe)
 ```
 
 CI builds run on `windows-latest` — see `.github/workflows/desktop.yml`.
@@ -113,13 +113,13 @@ Enable with `npx tauri build -- --features gpu-probe,battery`.
 
 The app installs a tray icon on launch (right-click for menu, left-click
 to focus the main window) and registers `Ctrl + Shift + Space` as a
-global summon shortcut. The React app listens for `babbage:summon` /
-`babbage:new-chat` / `babbage:cli` window events.
+global summon shortcut. The React app listens for `pervagans:summon` /
+`pervagans:new-chat` / `pervagans:cli` window events.
 
 ### Deep links
 
-The `babbage://` URL scheme is registered with the OS. OAuth flows can
-redirect to `babbage://oauth/callback?...` and the desktop window will
+The `pervagans://` URL scheme is registered with the OS. OAuth flows can
+redirect to `pervagans://oauth/callback?...` and the desktop window will
 focus + dispatch the URL to the React app via the `deep-link` plugin.
 
 ### Native credential store
@@ -134,7 +134,7 @@ should preferentially read from the store when `isDesktop()` is true
 - [x] Native system tray
 - [x] Auto-updater (wired; needs signing key + endpoint)
 - [x] Single-instance lock
-- [x] Deep links: `babbage://`
+- [x] Deep links: `pervagans://`
 - [ ] Native menu bar with web-mirrored keyboard shortcuts
 - [ ] Push notifications (background channel)
 - [ ] Code-signing CI secrets actually filled in

@@ -2,7 +2,7 @@
 
 ## Reporting a Vulnerability
 
-If you believe you've found a security vulnerability in Babbage AI,
+If you believe you've found a security vulnerability in Pervagans AI,
 please report it privately rather than opening a public issue.
 
 **Email:** security@babagemed.com (or ceo@babagemed.com)

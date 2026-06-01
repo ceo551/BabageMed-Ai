@@ -7,8 +7,8 @@ import { usePrefs, prefs } from "./store";
 // Persisted in localStorage so a reload keeps the user's pick. Without this
 // setLocale("ar") would update state, then window.location.reload() would
 // drop the state and useState would re-init back to the "en" default.
-const LS_LOCALE = "babbage:locale";
-const LS_THEME  = "babbage:theme";
+const LS_LOCALE = "pervagans:locale";
+const LS_THEME  = "pervagans:theme";
 
 function readLocale(): Locale {
   if (typeof window === "undefined") return "en";

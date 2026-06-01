@@ -44,7 +44,7 @@ console.log(`[1/4] enumerated ${mcps.length} scraping-driven MCPs`);
 const origins = [...new Set(mcps.map((m) => m.origin))];
 console.log(`[2/4] ${origins.length} distinct origins to query`);
 
-const UA = "BabbageBot/1.0 (+https://babagemed.com)";
+const UA = "PervagansBot/1.0 (+https://babagemed.com)";
 const TIMEOUT_MS = 12000;
 
 function fetchRobots(origin) {
@@ -216,7 +216,7 @@ for (const mcp of mcps) {
     errorCount++;
   } else {
     const groups = parseRobots(r.body);
-    const decision = isAllowed(groups, urlPath, "BabbageBot");
+    const decision = isAllowed(groups, urlPath, "PervagansBot");
     verdict = decision.allowed ? "allowed" : "blocked";
     reason  = decision.reason;
     if (decision.allowed) allowedCount++; else blockedCount++;

@@ -1,5 +1,5 @@
 // @generated-by write-real-tools.mjs (preserved by generate-mcps.mjs)
-import { z, McpServer, ApiClient } from "@babbage/mcp-base";
+import { z, McpServer, ApiClient } from "@pervagans/mcp-base";
 const TOKEN = process.env.SLACK_BOT_TOKEN || "";
 const api = new ApiClient({ base: "https://slack.com/api", rps: 3, defaultHeaders: { Authorization: `Bearer ${TOKEN}`, "Content-Type": "application/x-www-form-urlencoded" } });
 function need() { if (!TOKEN) throw new Error("SLACK_BOT_TOKEN not configured"); }

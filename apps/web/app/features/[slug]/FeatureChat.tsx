@@ -202,7 +202,7 @@ export function FeatureChat({
             // Same custom event as the home page so the sub-sidebar
             // history list surfaces the new chat without waiting for
             // the next route push.
-            window.dispatchEvent(new CustomEvent("babbage:chat-created", { detail: { id: created.id } }));
+            window.dispatchEvent(new CustomEvent("pervagans:chat-created", { detail: { id: created.id } }));
           }
         } catch { /* persistence is best-effort */ }
       }
@@ -327,7 +327,7 @@ export function FeatureChat({
         chatsApi.append(activeChatId, { role: "assistant", content: finalContent, citations: cites ?? [] }).catch(() => {});
       }
       // Sub-sidebar history refresh is now driven by the
-      // `babbage:chat-created` window event the create branch above
+      // `pervagans:chat-created` window event the create branch above
       // dispatches (round 27) — pathname doesn't change on
       // replaceState so the previous pathname-keyed effect couldn't
       // see the new chat until the next real route push.
@@ -651,7 +651,7 @@ function Transcript({ messages, endRef }: { messages: Msg[]; endRef: React.RefOb
         if (m.role === "loading") {
           return (
             <div key={m.id} className="msg msg-assistant msg-loading">
-              <img src="/babbage-icon.png" alt="" className="msg-loading-mark" width={40} height={40} aria-hidden="true" />
+              <img src="/pervagans-icon.png" alt="" className="msg-loading-mark" width={40} height={40} aria-hidden="true" />
               <span className="msg-loading-dots" aria-label={s.generating}><span /><span /><span /></span>
             </div>
           );

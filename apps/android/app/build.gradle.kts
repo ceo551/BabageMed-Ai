@@ -5,11 +5,11 @@ plugins {
 }
 
 android {
-    namespace  = "com.babbage.ai"
+    namespace  = "com.pervagans.ai"
     compileSdk = 34
 
     defaultConfig {
-        applicationId = "com.babbage.ai"
+        applicationId = "com.pervagans.ai"
         minSdk        = 24      // Android 7.0 (covers ~96% of devices, Oct 2025 statcounter)
         targetSdk     = 34
         versionCode   = 1

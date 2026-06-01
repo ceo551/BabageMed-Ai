@@ -12,14 +12,14 @@ import (
 	"strings"
 	"time"
 
-	"github.com/babbage/backend/internal/db"
+	"github.com/pervagans/backend/internal/db"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	"golang.org/x/crypto/bcrypt"
 )
 
 const (
-	CookieName    = "babbage_session"
+	CookieName    = "pervagans_session"
 	SessionTTL    = 30 * 24 * time.Hour
 	BcryptCost    = 12
 	tokenByteSize = 32

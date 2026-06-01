@@ -3,16 +3,16 @@
 apiVersion: source.toolkit.fluxcd.io/v1
 kind: GitRepository
 metadata:
-  name: babbage
+  name: pervagans
   namespace: flux-system
 spec:
   interval: 1m
-  url: https://github.com/ceo551/babbage-ai
+  url: https://github.com/ceo551/pervagans-ai
   ref:
     branch: main
   # For private repos:
   # secretRef:
-  #   name: babbage-git-creds   # kubernetes.io/basic-auth or SSH key Secret
+  #   name: pervagans-git-creds   # kubernetes.io/basic-auth or SSH key Secret
   ignore: |
     # Don't pull these into the working copy Flux clones.
     /node_modules

@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://babagemed.com/schemas/mcps.manifest.json",
-  "title": "Babbage AI MCP Manifest",
+  "title": "Pervagans AI MCP Manifest",
   "description": "Single source of truth for the 540 MCP servers in the fleet. Used by scripts/generate-mcps.mjs to scaffold per-MCP directories, by the Helm chart to render deployments, and by the catalog UI to surface tools.",
   "type": "object",
   "required": ["servers"],

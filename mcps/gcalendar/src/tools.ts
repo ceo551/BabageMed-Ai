@@ -1,5 +1,5 @@
 // @hand-edited — do not regenerate via write-real-tools.mjs
-import { z, McpServer, ApiClient, googleAccessToken } from "@babbage/mcp-base";
+import { z, McpServer, ApiClient, googleAccessToken } from "@pervagans/mcp-base";
 // Lazy, persistent client — see mcps/gmail for the rationale (per-call
 // construction reset the rate-limit slot to 0 every call).
 let _client: ApiClient | null = null;

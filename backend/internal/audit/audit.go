@@ -13,7 +13,7 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/babbage/backend/internal/db"
+	"github.com/pervagans/backend/internal/db"
 )
 
 type Service struct {

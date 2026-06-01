@@ -11,25 +11,25 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/babbage/backend/internal/admin"
-	"github.com/babbage/backend/internal/api"
-	"github.com/babbage/backend/internal/audit"
-	"github.com/babbage/backend/internal/auth"
-	"github.com/babbage/backend/internal/cache"
-	"github.com/babbage/backend/internal/email"
-	"github.com/babbage/backend/internal/chats"
-	"github.com/babbage/backend/internal/connectors"
-	"github.com/babbage/backend/internal/db"
-	"github.com/babbage/backend/internal/llm"
-	"github.com/babbage/backend/internal/mcp"
-	"github.com/babbage/backend/internal/metrics"
-	"github.com/babbage/backend/internal/payments"
-	"github.com/babbage/backend/internal/features"
-	"github.com/babbage/backend/internal/mfa"
-	"github.com/babbage/backend/internal/ratelimit"
-	"github.com/babbage/backend/internal/spaces"
-	"github.com/babbage/backend/internal/tracing"
-	"github.com/babbage/backend/internal/updates"
+	"github.com/pervagans/backend/internal/admin"
+	"github.com/pervagans/backend/internal/api"
+	"github.com/pervagans/backend/internal/audit"
+	"github.com/pervagans/backend/internal/auth"
+	"github.com/pervagans/backend/internal/cache"
+	"github.com/pervagans/backend/internal/email"
+	"github.com/pervagans/backend/internal/chats"
+	"github.com/pervagans/backend/internal/connectors"
+	"github.com/pervagans/backend/internal/db"
+	"github.com/pervagans/backend/internal/llm"
+	"github.com/pervagans/backend/internal/mcp"
+	"github.com/pervagans/backend/internal/metrics"
+	"github.com/pervagans/backend/internal/payments"
+	"github.com/pervagans/backend/internal/features"
+	"github.com/pervagans/backend/internal/mfa"
+	"github.com/pervagans/backend/internal/ratelimit"
+	"github.com/pervagans/backend/internal/spaces"
+	"github.com/pervagans/backend/internal/tracing"
+	"github.com/pervagans/backend/internal/updates"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
@@ -41,7 +41,7 @@ func main() {
 	_ = godotenv.Load()
 
 	// Tracing — picks up OTEL_EXPORTER_OTLP_ENDPOINT etc. or stays a no-op.
-	shutdownTracing, err := tracing.Init(context.Background(), "babbage-backend", "0.1.0")
+	shutdownTracing, err := tracing.Init(context.Background(), "pervagans-backend", "0.1.0")
 	if err != nil {
 		log.Printf("tracing init: %v", err)
 	}
@@ -148,7 +148,7 @@ func main() {
 	r.Use(middleware.RequestID)
 	r.Use(middleware.RealIP)
 	if tracing.Enabled() {
-		r.Use(otelchi.Middleware("babbage-backend", otelchi.WithChiRoutes(r)))
+		r.Use(otelchi.Middleware("pervagans-backend", otelchi.WithChiRoutes(r)))
 	}
 	r.Use(tracing.TraceIDHeader)
 	r.Use(middleware.Logger)
@@ -265,7 +265,7 @@ func main() {
 		// 503 with "mfa not configured" rather than silently storing
 		// plaintext secrets, and Login() skips the second-factor gate
 		// entirely (treats every user as MFA-disabled).
-		mfaSvc, mfaErr := mfa.New(dbConn, "Babbage AI")
+		mfaSvc, mfaErr := mfa.New(dbConn, "Pervagans")
 		if mfaErr != nil {
 			log.Fatalf("mfa init: %v", mfaErr)
 		}

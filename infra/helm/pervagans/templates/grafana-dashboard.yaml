@@ -1,0 +1,17 @@
+{{- if .Values.monitoring.grafanaDashboard.enabled }}
+{{/*
+  ConfigMap with the standard grafana_dashboard sidecar label so
+  Grafana auto-imports it without further config. Works with the
+  kube-prometheus-stack and bitnami/grafana chart defaults.
+*/}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Release.Name }}-dashboards
+  labels:
+    {{- include "pervagans.labels" . | nindent 4 }}
+    {{ .Values.monitoring.grafanaDashboard.label }}: {{ .Values.monitoring.grafanaDashboard.labelValue | quote }}
+data:
+  pervagans-overview.json: |-
+    {{- .Files.Get "dashboards/pervagans-overview.json" | nindent 4 }}
+{{- end }}

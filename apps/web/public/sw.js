@@ -1,4 +1,4 @@
-// Babbage AI service worker.
+// Pervagans service worker.
 //
 // Strategy: stale-while-revalidate for static assets, network-with-
 // offline-fallback for HTML navigations (NOT cached — see below).
@@ -13,11 +13,11 @@
 // never re-ran across deploys.
 const swParams = new URLSearchParams(self.location.search);
 const VERSION = swParams.get("v") || "dev";
-const STATIC_CACHE = `babbage-static-${VERSION}`;
-const RUNTIME_CACHE = `babbage-runtime-${VERSION}`;
+const STATIC_CACHE = `pervagans-static-${VERSION}`;
+const RUNTIME_CACHE = `pervagans-runtime-${VERSION}`;
 const OFFLINE_URL = "/offline.html";
 
-const PRECACHE = [OFFLINE_URL, "/babbage-icon.png", "/manifest.webmanifest"];
+const PRECACHE = [OFFLINE_URL, "/pervagans-icon.png", "/manifest.webmanifest"];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(

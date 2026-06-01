@@ -32,8 +32,8 @@ export function startTracing(serviceName: string, serviceVersion = "0.1.0"): voi
         resource: new Resource({
           [ATTR_SERVICE_NAME]: process.env.OTEL_SERVICE_NAME || serviceName,
           [ATTR_SERVICE_VERSION]: serviceVersion,
-          "service.namespace": "babbage",
-          "mcp.id": serviceName.replace(/^babbage-mcp-/, ""),
+          "service.namespace": "pervagans",
+          "mcp.id": serviceName.replace(/^pervagans-mcp-/, ""),
         }),
         traceExporter: new OTLPTraceExporter(),
         instrumentations: [
@@ -70,7 +70,7 @@ export function currentSpanIds(): { trace_id?: string; span_id?: string } {
 
 /** Run `fn` inside a new span with the given name + attributes. */
 export async function withSpan<T>(name: string, attrs: Record<string, string | number | boolean | undefined>, fn: (span: Span) => Promise<T>): Promise<T> {
-  const tracer = trace.getTracer("babbage/mcp-base");
+  const tracer = trace.getTracer("pervagans/mcp-base");
   return tracer.startActiveSpan(name, async (span) => {
     for (const [k, v] of Object.entries(attrs)) if (v !== undefined) span.setAttribute(k, v as any);
     try {

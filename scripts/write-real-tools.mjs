@@ -57,7 +57,7 @@ function w(id, body) {
 }
 
 // ─── PubMed (NCBI E-utilities) ────────────────────────────────────────────
-w("pubmed", `import { z, McpServer, ApiClient } from "@babbage/mcp-base";
+w("pubmed", `import { z, McpServer, ApiClient } from "@pervagans/mcp-base";
 
 const api = new ApiClient({
   base: "https://eutils.ncbi.nlm.nih.gov/entrez/eutils",
@@ -66,7 +66,7 @@ const api = new ApiClient({
 });
 
 const KEY = process.env.NCBI_API_KEY;
-const TOOL = process.env.NCBI_TOOL || "BabbageAI";
+const TOOL = process.env.NCBI_TOOL || "PervagansAI";
 const EMAIL = process.env.NCBI_EMAIL || "ceo@babagemed.com";
 
 function baseQuery() {
@@ -155,7 +155,7 @@ export function registerTools(server: McpServer) {
 `);
 
 // ─── ICD-10 (NLM Clinical Tables) ─────────────────────────────────────────
-w("icd10", `import { z, McpServer, ApiClient } from "@babbage/mcp-base";
+w("icd10", `import { z, McpServer, ApiClient } from "@pervagans/mcp-base";
 const api = new ApiClient({ base: "https://clinicaltables.nlm.nih.gov/api/icd10cm/v3", rps: 4 });
 export function registerTools(server: McpServer) {
   server.tool({
@@ -181,7 +181,7 @@ export function registerTools(server: McpServer) {
 `);
 
 // ─── ClinicalTrials.gov v2 ─────────────────────────────────────────────────
-w("clinicaltrials", `import { z, McpServer, ApiClient } from "@babbage/mcp-base";
+w("clinicaltrials", `import { z, McpServer, ApiClient } from "@pervagans/mcp-base";
 const api = new ApiClient({ base: "https://clinicaltrials.gov/api/v2", rps: 4 });
 export function registerTools(server: McpServer) {
   server.tool({
@@ -218,7 +218,7 @@ export function registerTools(server: McpServer) {
 `);
 
 // ─── openFDA (drugs/devices/food/events/labels) ────────────────────────────
-w("fda", `import { z, McpServer, ApiClient } from "@babbage/mcp-base";
+w("fda", `import { z, McpServer, ApiClient } from "@pervagans/mcp-base";
 const api = new ApiClient({ base: "https://api.fda.gov", rps: 4 });
 const KEY = process.env.OPENFDA_API_KEY;
 function withKey(q: Record<string, any>) { return KEY ? { ...q, api_key: KEY } : q; }
@@ -246,7 +246,7 @@ export function registerTools(server: McpServer) {
 `);
 
 // ─── DailyMed ──────────────────────────────────────────────────────────────
-w("dailymed", `import { z, McpServer, ApiClient } from "@babbage/mcp-base";
+w("dailymed", `import { z, McpServer, ApiClient } from "@pervagans/mcp-base";
 const api = new ApiClient({ base: "https://dailymed.nlm.nih.gov/dailymed/services/v2", rps: 3 });
 export function registerTools(server: McpServer) {
   server.tool({
@@ -271,7 +271,7 @@ export function registerTools(server: McpServer) {
 `);
 
 // ─── MedlinePlus Connect / Health Topics ───────────────────────────────────
-w("medlineplus", `import { z, McpServer, ApiClient } from "@babbage/mcp-base";
+w("medlineplus", `import { z, McpServer, ApiClient } from "@pervagans/mcp-base";
 const api = new ApiClient({ base: "https://wsearch.nlm.nih.gov", rps: 3 });
 export function registerTools(server: McpServer) {
   server.tool({
@@ -305,7 +305,7 @@ export function registerTools(server: McpServer) {
 `);
 
 // ─── PubChem PUG REST ──────────────────────────────────────────────────────
-w("pubchem", `import { z, McpServer, ApiClient } from "@babbage/mcp-base";
+w("pubchem", `import { z, McpServer, ApiClient } from "@pervagans/mcp-base";
 const api = new ApiClient({ base: "https://pubchem.ncbi.nlm.nih.gov/rest/pug", rps: 4 });
 export function registerTools(server: McpServer) {
   server.tool({
@@ -336,7 +336,7 @@ export function registerTools(server: McpServer) {
 `);
 
 // ─── ChEMBL ────────────────────────────────────────────────────────────────
-w("chembl", `import { z, McpServer, ApiClient } from "@babbage/mcp-base";
+w("chembl", `import { z, McpServer, ApiClient } from "@pervagans/mcp-base";
 const api = new ApiClient({ base: "https://www.ebi.ac.uk/chembl/api/data", rps: 3 });
 export function registerTools(server: McpServer) {
   server.tool({
@@ -361,7 +361,7 @@ export function registerTools(server: McpServer) {
 `);
 
 // ─── WHO GHO OData ────────────────────────────────────────────────────────
-w("who", `import { z, McpServer, ApiClient } from "@babbage/mcp-base";
+w("who", `import { z, McpServer, ApiClient } from "@pervagans/mcp-base";
 const api = new ApiClient({ base: "https://ghoapi.azureedge.net/api", rps: 3 });
 export function registerTools(server: McpServer) {
   server.tool({
@@ -391,7 +391,7 @@ export function registerTools(server: McpServer) {
 `);
 
 // ─── CDC Socrata ──────────────────────────────────────────────────────────
-w("cdc", `import { z, McpServer, ApiClient } from "@babbage/mcp-base";
+w("cdc", `import { z, McpServer, ApiClient } from "@pervagans/mcp-base";
 const TOKEN = process.env.SOCRATA_APP_TOKEN;
 const api = new ApiClient({
   base: "https://data.cdc.gov/resource",
@@ -431,7 +431,7 @@ export function registerTools(server: McpServer) {
 `);
 
 // ─── NPI Registry ─────────────────────────────────────────────────────────
-w("npi", `import { z, McpServer, ApiClient } from "@babbage/mcp-base";
+w("npi", `import { z, McpServer, ApiClient } from "@pervagans/mcp-base";
 const api = new ApiClient({ base: "https://npiregistry.cms.hhs.gov/api", rps: 3 });
 export function registerTools(server: McpServer) {
   server.tool({
@@ -459,7 +459,7 @@ export function registerTools(server: McpServer) {
 `);
 
 // ─── NCI EVS ──────────────────────────────────────────────────────────────
-w("nci", `import { z, McpServer, ApiClient } from "@babbage/mcp-base";
+w("nci", `import { z, McpServer, ApiClient } from "@pervagans/mcp-base";
 const api = new ApiClient({ base: "https://api-evsrest.nci.nih.gov/api/v1", rps: 3 });
 export function registerTools(server: McpServer) {
   server.tool({
@@ -492,7 +492,7 @@ export function registerTools(server: McpServer) {
 
 // ─── medRxiv / bioRxiv ────────────────────────────────────────────────────
 function rxivTools(server, channel) {
-  return `import { z, McpServer, ApiClient } from "@babbage/mcp-base";
+  return `import { z, McpServer, ApiClient } from "@pervagans/mcp-base";
 const api = new ApiClient({ base: "https://api.biorxiv.org", rps: 2 });
 const CHANNEL = "${channel}";
 export function registerTools(server: McpServer) {
@@ -523,7 +523,7 @@ w("medrxiv", rxivTools("medrxiv", "medrxiv"));
 w("biorxiv", rxivTools("biorxiv", "biorxiv"));
 
 // ─── NHS ──────────────────────────────────────────────────────────────────
-w("nhs", `import { z, McpServer, ApiClient } from "@babbage/mcp-base";
+w("nhs", `import { z, McpServer, ApiClient } from "@pervagans/mcp-base";
 const KEY = process.env.NHS_API_KEY || "";
 const api = new ApiClient({
   base: "https://api.nhs.uk",
@@ -552,7 +552,7 @@ export function registerTools(server: McpServer) {
 }
 `);
 // nhs2 mirrors nhs — keep an independent copy (re-export across rootDir boundaries breaks TS)
-w("nhs2", `import { z, McpServer, ApiClient } from "@babbage/mcp-base";
+w("nhs2", `import { z, McpServer, ApiClient } from "@pervagans/mcp-base";
 const KEY = process.env.NHS_API_KEY || "";
 const api = new ApiClient({ base: "https://api.nhs.uk", rps: 2, defaultHeaders: KEY ? { "subscription-key": KEY, apikey: KEY } : {} });
 export function registerTools(server: McpServer) {
@@ -563,10 +563,10 @@ export function registerTools(server: McpServer) {
 `);
 
 // ─── NCBI E-utilities (general) ───────────────────────────────────────────
-w("ncbi", `import { z, McpServer, ApiClient } from "@babbage/mcp-base";
+w("ncbi", `import { z, McpServer, ApiClient } from "@pervagans/mcp-base";
 const api = new ApiClient({ base: "https://eutils.ncbi.nlm.nih.gov/entrez/eutils", rps: process.env.NCBI_API_KEY ? 9 : 2 });
 const KEY = process.env.NCBI_API_KEY;
-function base() { const q: Record<string,string> = { tool: "BabbageAI", email: process.env.NCBI_EMAIL || "ceo@babagemed.com", retmode: "json" }; if (KEY) q.api_key = KEY; return q; }
+function base() { const q: Record<string,string> = { tool: "PervagansAI", email: process.env.NCBI_EMAIL || "ceo@babagemed.com", retmode: "json" }; if (KEY) q.api_key = KEY; return q; }
 export function registerTools(server: McpServer) {
   server.tool({ name: "einfo", description: "List NCBI databases or describe one.", input: z.object({ db: z.string().optional() }), handler: async ({ db }) => api.get<any>("einfo.fcgi", { ...base(), db }) });
   server.tool({ name: "esearch", description: "Search any NCBI DB.", input: z.object({ db: z.string(), term: z.string(), retmax: z.number().int().min(1).max(500).optional() }), handler: async ({ db, term, retmax = 20 }) => api.get<any>("esearch.fcgi", { ...base(), db, term, retmax }) });
@@ -577,10 +577,10 @@ export function registerTools(server: McpServer) {
 `);
 
 // ─── Endotext via NCBI Bookshelf E-utilities ──────────────────────────────
-w("endotext", `import { z, McpServer, ApiClient } from "@babbage/mcp-base";
+w("endotext", `import { z, McpServer, ApiClient } from "@pervagans/mcp-base";
 const api = new ApiClient({ base: "https://eutils.ncbi.nlm.nih.gov/entrez/eutils", rps: 3 });
 const KEY = process.env.NCBI_API_KEY;
-function base() { const q: Record<string,string> = { tool: "BabbageAI", email: process.env.NCBI_EMAIL || "ceo@babagemed.com", db: "books", retmode: "json" }; if (KEY) q.api_key = KEY; return q; }
+function base() { const q: Record<string,string> = { tool: "PervagansAI", email: process.env.NCBI_EMAIL || "ceo@babagemed.com", db: "books", retmode: "json" }; if (KEY) q.api_key = KEY; return q; }
 export function registerTools(server: McpServer) {
   server.tool({
     name: "search",
@@ -602,7 +602,7 @@ export function registerTools(server: McpServer) {
 
 // ─── WikEM / EyeWiki (MediaWiki) ──────────────────────────────────────────
 function mediawikiTools(api) {
-  return `import { z, McpServer, ApiClient } from "@babbage/mcp-base";
+  return `import { z, McpServer, ApiClient } from "@pervagans/mcp-base";
 const api = new ApiClient({ base: "${api}", rps: 2 });
 export function registerTools(server: McpServer) {
   server.tool({
@@ -628,7 +628,7 @@ w("wikem", mediawikiTools("https://wikem.org/w/api.php"));
 w("eyewiki", mediawikiTools("https://eyewiki.org/w/api.php"));
 
 // ─── CMS data ──────────────────────────────────────────────────────────────
-w("cms", `import { z, McpServer, ApiClient } from "@babbage/mcp-base";
+w("cms", `import { z, McpServer, ApiClient } from "@pervagans/mcp-base";
 const api = new ApiClient({ base: "https://data.cms.gov", rps: 3 });
 export function registerTools(server: McpServer) {
   server.tool({
@@ -663,8 +663,8 @@ export function registerTools(server: McpServer) {
 
 // ─── Crossref-backed journal MCPs (NEJM, BMJ, Frontiers, RMD Open, Cochrane) ─
 function crossrefTools(label, container) {
-  return `import { z, McpServer, ApiClient } from "@babbage/mcp-base";
-const cr = new ApiClient({ base: "https://api.crossref.org", rps: 2, defaultHeaders: { "User-Agent": \`BabbageAI (mailto:\${process.env.CROSSREF_MAILTO || "ceo@babagemed.com"})\` } });
+  return `import { z, McpServer, ApiClient } from "@pervagans/mcp-base";
+const cr = new ApiClient({ base: "https://api.crossref.org", rps: 2, defaultHeaders: { "User-Agent": \`PervagansAI (mailto:\${process.env.CROSSREF_MAILTO || "ceo@babagemed.com"})\` } });
 export function registerTools(server: McpServer) {
   server.tool({
     name: "search",
@@ -699,7 +699,7 @@ w("rmopen",    crossrefTools("RMD Open",  "RMD Open"));
 w("cochrane",  crossrefTools("Cochrane",  "Cochrane Database of Systematic Reviews"));
 
 // ─── Notion ───────────────────────────────────────────────────────────────
-w("notion", `import { z, McpServer, ApiClient } from "@babbage/mcp-base";
+w("notion", `import { z, McpServer, ApiClient } from "@pervagans/mcp-base";
 const TOKEN = process.env.NOTION_TOKEN || "";
 const api = new ApiClient({
   base: "https://api.notion.com/v1",
@@ -716,7 +716,7 @@ export function registerTools(server: McpServer) {
 `);
 
 // ─── Slack ────────────────────────────────────────────────────────────────
-w("slack", `import { z, McpServer, ApiClient } from "@babbage/mcp-base";
+w("slack", `import { z, McpServer, ApiClient } from "@pervagans/mcp-base";
 const TOKEN = process.env.SLACK_BOT_TOKEN || "";
 const api = new ApiClient({ base: "https://slack.com/api", rps: 3, defaultHeaders: { Authorization: \`Bearer \${TOKEN}\`, "Content-Type": "application/x-www-form-urlencoded" } });
 function need() { if (!TOKEN) throw new Error("SLACK_BOT_TOKEN not configured"); }
@@ -728,7 +728,7 @@ export function registerTools(server: McpServer) {
 `);
 
 // ─── Kaggle ───────────────────────────────────────────────────────────────
-w("kaggle", `import { z, McpServer, ApiClient } from "@babbage/mcp-base";
+w("kaggle", `import { z, McpServer, ApiClient } from "@pervagans/mcp-base";
 const USER = process.env.KAGGLE_USERNAME || "";
 const KEY = process.env.KAGGLE_KEY || "";
 const auth = "Basic " + Buffer.from(\`\${USER}:\${KEY}\`).toString("base64");
@@ -742,7 +742,7 @@ export function registerTools(server: McpServer) {
 `);
 
 // ─── LinkedIn (limited official API) ─────────────────────────────────────
-w("linkedin", `import { z, McpServer, ApiClient } from "@babbage/mcp-base";
+w("linkedin", `import { z, McpServer, ApiClient } from "@pervagans/mcp-base";
 const TOKEN = process.env.LINKEDIN_ACCESS_TOKEN || "";
 const api = new ApiClient({ base: "https://api.linkedin.com/v2", rps: 1, defaultHeaders: { Authorization: \`Bearer \${TOKEN}\`, "X-Restli-Protocol-Version": "2.0.0" } });
 function need() { if (!TOKEN) throw new Error("LINKEDIN_ACCESS_TOKEN required"); }
@@ -756,10 +756,10 @@ export function registerTools(server: McpServer) {
 // ─── Google APIs share an OAuth refresh-token helper ──────────────────
 // The helper used to be copied per-MCP under mcps/<id>/src/google.ts
 // (and a fourth copy in mcps/_shared/). It now lives in
-// @babbage/mcp-base — see packages/mcp-base/src/google.ts — so
+// @pervagans/mcp-base — see packages/mcp-base/src/google.ts — so
 // every Google MCP imports it from a single source of truth.
 
-w("gmail", `import { z, McpServer, ApiClient, googleAccessToken } from "@babbage/mcp-base";
+w("gmail", `import { z, McpServer, ApiClient, googleAccessToken } from "@pervagans/mcp-base";
 async function client() { const t = await googleAccessToken(); return new ApiClient({ base: "https://gmail.googleapis.com/gmail/v1", rps: 3, defaultHeaders: { Authorization: \`Bearer \${t}\` } }); }
 export function registerTools(server: McpServer) {
   server.tool({ name: "list", description: "List Gmail messages.", input: z.object({ q: z.string().optional(), maxResults: z.number().int().min(1).max(500).optional() }), handler: async ({ q, maxResults = 20 }) => (await client()).get<any>("users/me/messages", { q, maxResults }) });
@@ -773,7 +773,7 @@ export function registerTools(server: McpServer) {
 }
 `);
 
-w("gcalendar", `import { z, McpServer, ApiClient, googleAccessToken } from "@babbage/mcp-base";
+w("gcalendar", `import { z, McpServer, ApiClient, googleAccessToken } from "@pervagans/mcp-base";
 async function client() { const t = await googleAccessToken(); return new ApiClient({ base: "https://www.googleapis.com/calendar/v3", rps: 3, defaultHeaders: { Authorization: \`Bearer \${t}\` } }); }
 export function registerTools(server: McpServer) {
   server.tool({ name: "list", description: "List upcoming events.", input: z.object({ calendarId: z.string().optional(), maxResults: z.number().int().min(1).max(2500).optional(), timeMin: z.string().optional() }), handler: async ({ calendarId = "primary", maxResults = 20, timeMin }) => (await client()).get<any>(\`calendars/\${calendarId}/events\`, { maxResults, timeMin: timeMin || new Date().toISOString(), singleEvents: true, orderBy: "startTime" }) });
@@ -783,7 +783,7 @@ export function registerTools(server: McpServer) {
 }
 `);
 
-w("gdrive", `import { z, McpServer, ApiClient, googleAccessToken } from "@babbage/mcp-base";
+w("gdrive", `import { z, McpServer, ApiClient, googleAccessToken } from "@pervagans/mcp-base";
 async function client() { const t = await googleAccessToken(); return new ApiClient({ base: "https://www.googleapis.com/drive/v3", rps: 3, defaultHeaders: { Authorization: \`Bearer \${t}\` } }); }
 export function registerTools(server: McpServer) {
   server.tool({ name: "list", description: "List files.", input: z.object({ q: z.string().optional(), pageSize: z.number().int().min(1).max(1000).optional() }), handler: async ({ q, pageSize = 20 }) => (await client()).get<any>("files", { q, pageSize, fields: "files(id,name,mimeType,modifiedTime,size,webViewLink)" }) });
@@ -800,7 +800,7 @@ export function registerTools(server: McpServer) {
 `);
 
 // ─── GitHub ───────────────────────────────────────────────────────────────
-w("github", `import { z, McpServer, ApiClient } from "@babbage/mcp-base";
+w("github", `import { z, McpServer, ApiClient } from "@pervagans/mcp-base";
 const TOKEN = process.env.GITHUB_TOKEN || "";
 const api = new ApiClient({ base: "https://api.github.com", rps: 4, defaultHeaders: TOKEN ? { Authorization: \`Bearer \${TOKEN}\`, "X-GitHub-Api-Version": "2022-11-28" } : {} });
 export function registerTools(server: McpServer) {
@@ -812,7 +812,7 @@ export function registerTools(server: McpServer) {
 `);
 
 // ─── Hugging Face ─────────────────────────────────────────────────────────
-w("huggingface", `import { z, McpServer, ApiClient } from "@babbage/mcp-base";
+w("huggingface", `import { z, McpServer, ApiClient } from "@pervagans/mcp-base";
 const TOKEN = process.env.HF_API_TOKEN || "";
 const api = new ApiClient({ base: "https://huggingface.co/api", rps: 3, defaultHeaders: TOKEN ? { Authorization: \`Bearer \${TOKEN}\` } : {} });
 export function registerTools(server: McpServer) {
@@ -827,7 +827,7 @@ export function registerTools(server: McpServer) {
 `);
 
 // ─── Microsoft Graph (Microsoft 365) ──────────────────────────────────────
-w("ms365", `import { z, McpServer, ApiClient } from "@babbage/mcp-base";
+w("ms365", `import { z, McpServer, ApiClient } from "@pervagans/mcp-base";
 let cached: { v: string; exp: number } | null = null;
 async function token() {
   const cid = process.env.MS365_CLIENT_ID;
@@ -852,7 +852,7 @@ export function registerTools(server: McpServer) {
 `);
 
 // ─── Hostinger ────────────────────────────────────────────────────────────
-w("hostinger", `import { z, McpServer, ApiClient } from "@babbage/mcp-base";
+w("hostinger", `import { z, McpServer, ApiClient } from "@pervagans/mcp-base";
 const T = process.env.HOSTINGER_API_TOKEN || "";
 const api = new ApiClient({ base: "https://developers.hostinger.com/api", rps: 2, defaultHeaders: T ? { Authorization: \`Bearer \${T}\` } : {} });
 function need(){ if(!T) throw new Error("HOSTINGER_API_TOKEN required"); }
@@ -864,7 +864,7 @@ export function registerTools(server: McpServer) {
 `);
 
 // ─── GoDaddy ──────────────────────────────────────────────────────────────
-w("godaddy", `import { z, McpServer, ApiClient } from "@babbage/mcp-base";
+w("godaddy", `import { z, McpServer, ApiClient } from "@pervagans/mcp-base";
 const K = process.env.GODADDY_API_KEY || "";
 const S = process.env.GODADDY_API_SECRET || "";
 const api = new ApiClient({ base: "https://api.godaddy.com/v1", rps: 2, defaultHeaders: K && S ? { Authorization: \`sso-key \${K}:\${S}\` } : {} });
@@ -877,7 +877,7 @@ export function registerTools(server: McpServer) {
 `);
 
 // ─── Our World in Data ────────────────────────────────────────────────────
-w("ourworldindata", `import { z, McpServer, ApiClient } from "@babbage/mcp-base";
+w("ourworldindata", `import { z, McpServer, ApiClient } from "@pervagans/mcp-base";
 const api = new ApiClient({ base: "https://ourworldindata.org", rps: 2 });
 export function registerTools(server: McpServer) {
   server.tool({
@@ -900,7 +900,7 @@ export function registerTools(server: McpServer) {
 `);
 
 // ─── Chrome / browser MCP (Playwright) ────────────────────────────────────
-w("chrome", `import { z, McpServer, Scraper } from "@babbage/mcp-base";
+w("chrome", `import { z, McpServer, Scraper } from "@pervagans/mcp-base";
 const scraper = new Scraper({
   base: "about:blank",
   rps: 2,
@@ -967,7 +967,7 @@ export function registerTools(server: McpServer) {
 `);
 
 // ─── Google Scholar (scrape) ──────────────────────────────────────────────
-w("googlescholar", `import { z, McpServer, Scraper } from "@babbage/mcp-base";
+w("googlescholar", `import { z, McpServer, Scraper } from "@pervagans/mcp-base";
 const scraper = new Scraper({
   base: "https://scholar.google.com",
   rps: 0.5,
@@ -1029,7 +1029,7 @@ export function registerTools(server: McpServer) {
 function richScrape(id, base, querySearch, parsers) {
   const sBase = JSON.stringify(base);
   const sOrigin = JSON.stringify(new URL(base).origin);
-  return `import { z, McpServer, Scraper } from "@babbage/mcp-base";
+  return `import { z, McpServer, Scraper } from "@pervagans/mcp-base";
 const scraper = new Scraper({
   base: ${sBase},
   userAgent: process.env.SCRAPER_USER_AGENT,

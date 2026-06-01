@@ -14,5 +14,5 @@ dependencyResolutionManagement {
         mavenCentral()
     }
 }
-rootProject.name = "BabbageAI"
+rootProject.name = "PervagansAI"
 include(":app")

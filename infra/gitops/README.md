@@ -1,6 +1,6 @@
 # GitOps deployment — ArgoCD or Flux
 
-Two thin wrappers around the same Helm chart in `../helm/babbage`. Pick one.
+Two thin wrappers around the same Helm chart in `../helm/pervagans`. Pick one.
 
 ## ArgoCD
 
@@ -26,11 +26,11 @@ ArgoCD reconciles on every git push. The `automated: { prune: true, selfHeal: tr
 flux install
 
 # 2. Apply the GitRepository + HelmRelease
-kubectl create namespace babbage
+kubectl create namespace pervagans
 kubectl apply -k infra/gitops/flux/
 ```
 
-Flux watches `infra/helm/babbage/` and re-runs `helm upgrade --install` on every change to the chart or its values. Edit `helmrelease.yaml` to pick a cloud overlay or to point `chart.spec.chart` at a packaged version.
+Flux watches `infra/helm/pervagans/` and re-runs `helm upgrade --install` on every change to the chart or its values. Edit `helmrelease.yaml` to pick a cloud overlay or to point `chart.spec.chart` at a packaged version.
 
 ## Secret handling — do NOT commit raw secrets
 
@@ -40,7 +40,7 @@ Both ArgoCD and Flux assume secrets are managed out-of-band:
 - **External Secrets Operator** — pull from GCP Secret Manager / AWS Secrets Manager / Azure Key Vault / HashiCorp Vault on-demand.
 - **SOPS + kustomize/Flux integration** — `flux create kustomization … --decryption-provider=sops`.
 
-Then set `secrets.existingSecret: babbage-env` in your `values.yaml` overlay and the chart skips creating its own.
+Then set `secrets.existingSecret: pervagans-env` in your `values.yaml` overlay and the chart skips creating its own.
 
 ## Image promotion
 

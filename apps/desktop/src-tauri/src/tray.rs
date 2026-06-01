@@ -9,7 +9,7 @@ use tauri::{
 };
 
 pub fn install(app: &AppHandle) -> tauri::Result<()> {
-    let show = MenuItem::with_id(app, "show", "Open Babbage AI", true, None::<&str>)?;
+    let show = MenuItem::with_id(app, "show", "Open Pervagans AI", true, None::<&str>)?;
     let new_chat = MenuItem::with_id(app, "new_chat", "New chat", true, Some("CmdOrCtrl+N"))?;
     let sep = PredefinedMenuItem::separator(app)?;
     let quit = MenuItem::with_id(app, "quit", "Quit", true, Some("CmdOrCtrl+Q"))?;
@@ -24,10 +24,10 @@ pub fn install(app: &AppHandle) -> tauri::Result<()> {
         Image::new_owned(vec![0u8; 4], 1, 1)
     });
 
-    TrayIconBuilder::with_id("babbage-tray")
+    TrayIconBuilder::with_id("pervagans-tray")
         .icon(icon)
         .icon_as_template(false)
-        .tooltip("Babbage AI")
+        .tooltip("Pervagans AI")
         .menu(&menu)
         .show_menu_on_left_click(false)
         .on_menu_event(|app, ev| match ev.id.as_ref() {
@@ -35,7 +35,7 @@ pub fn install(app: &AppHandle) -> tauri::Result<()> {
             "new_chat" => {
                 focus_main(app);
                 if let Some(w) = app.get_webview_window("main") {
-                    let _ = w.eval("window.dispatchEvent(new CustomEvent('babbage:new-chat'))");
+                    let _ = w.eval("window.dispatchEvent(new CustomEvent('pervagans:new-chat'))");
                 }
             }
             "quit" => app.exit(0),

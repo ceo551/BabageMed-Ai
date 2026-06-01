@@ -71,7 +71,7 @@ export class ApiClient {
         const res = await request(url, {
           method: options.method ?? "GET",
           headers: {
-            "user-agent": this.opts.userAgent || "Babbage-AI/0.1",
+            "user-agent": this.opts.userAgent || "Pervagans-AI/0.1",
             accept: "application/json,text/xml,*/*",
             ...this.opts.defaultHeaders,
             ...options.headers,

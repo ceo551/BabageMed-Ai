@@ -1,4 +1,4 @@
-module github.com/babbage/backend
+module github.com/pervagans/backend
 
 go 1.24.1
 

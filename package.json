@@ -1,5 +1,5 @@
 {
-  "name": "babbage-ai",
+  "name": "pervagans-ai",
   "version": "0.1.0",
   "private": true,
   "workspaces": ["packages/*", "mcps/*", "apps/web", "apps/desktop"],

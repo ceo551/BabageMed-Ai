@@ -1,22 +1,22 @@
-# ArgoCD AppProject — scopes what the Babbage application can deploy.
+# ArgoCD AppProject — scopes what the Pervagans application can deploy.
 # Apply once: `kubectl apply -f infra/gitops/argocd/project.yaml -n argocd`
 apiVersion: argoproj.io/v1alpha1
 kind: AppProject
 metadata:
-  name: babbage
+  name: pervagans
   namespace: argocd
   finalizers:
     - resources-finalizer.argocd.argoproj.io
 spec:
-  description: Babbage AI — Next.js + Go + Postgres + 262 MCPs
+  description: Pervagans AI — Next.js + Go + Postgres + 262 MCPs
   sourceRepos:
     # Pin to your fork / private mirror in production.
-    - https://github.com/ceo551/babbage-ai
-    - https://github.com/ceo551/babbage-ai.git
+    - https://github.com/ceo551/pervagans-ai
+    - https://github.com/ceo551/pervagans-ai.git
   destinations:
-    - namespace: babbage
+    - namespace: pervagans
       server: https://kubernetes.default.svc
-    - namespace: babbage-staging
+    - namespace: pervagans-staging
       server: https://kubernetes.default.svc
   clusterResourceWhitelist:
     - group: "*"

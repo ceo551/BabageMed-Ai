@@ -62,7 +62,7 @@ const SUBSIDEBAR_MIN = 200, SUBSIDEBAR_MAX = 340;
 const RAIL_MIN = 260, RAIL_MAX = 480;
 function clampN(v: number, lo: number, hi: number) { return Math.max(lo, Math.min(hi, v)); }
 
-const PREFS_KEY = "babbage:prefs";
+const PREFS_KEY = "pervagans:prefs";
 
 // Validate each field after parse so a corrupt or tampered localStorage
 // entry can't push `sidebarWidth: "oops"` into clamp() math. Anything

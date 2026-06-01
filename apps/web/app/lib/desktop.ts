@@ -106,11 +106,11 @@ export const isDesktop = (): boolean => {
 // Detect the Android shell by probing the actual JS bridge rather than
 // the user-agent string — UA can be spoofed by browser devtools or
 // extensions, so any code that grants extra capability based on it
-// would be bypassable. The native shell injects window.BabbageNative
+// would be bypassable. The native shell injects window.PervagansNative
 // with a typed `platform` field that's not present in browsers.
 export const isMobileNative = (): "android" | null => {
   if (typeof window === "undefined") return null;
-  const bridge = (window as unknown as { BabbageNative?: { platform?: string } }).BabbageNative;
+  const bridge = (window as unknown as { PervagansNative?: { platform?: string } }).PervagansNative;
   if (!bridge || typeof bridge.platform !== "string") return null;
   if (bridge.platform === "android") return "android";
   return null;
@@ -135,7 +135,7 @@ export const secretSet = (key: string, value: string) =>
 export const secretGet = (key: string) => invoke<string | null>("secret_get", { key });
 export const secretDelete = (key: string) => invoke<void>("secret_delete", { key });
 
-// Native bridge for Android. The shell injects a `BabbageNative`
+// Native bridge for Android. The shell injects a `PervagansNative`
 // global on the window so the React app can call into Kotlin.
 type NativeBridge = {
   shareText?: (text: string) => void;
@@ -147,5 +147,5 @@ type NativeBridge = {
 
 export const native = (): NativeBridge | null => {
   if (typeof window === "undefined") return null;
-  return ((window as unknown as { BabbageNative?: NativeBridge }).BabbageNative) ?? null;
+  return ((window as unknown as { PervagansNative?: NativeBridge }).PervagansNative) ?? null;
 };

@@ -3,7 +3,7 @@ package api
 import (
 	"testing"
 
-	"github.com/babbage/backend/internal/llm"
+	"github.com/pervagans/backend/internal/llm"
 )
 
 // Image / video model ids must be rejected by the text chat stream

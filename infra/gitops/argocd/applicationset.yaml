@@ -4,7 +4,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: ApplicationSet
 metadata:
-  name: babbage
+  name: pervagans
   namespace: argocd
 spec:
   generators:
@@ -12,29 +12,29 @@ spec:
         elements:
           - env: staging
             cluster: https://kubernetes.default.svc
-            namespace: babbage-staging
+            namespace: pervagans-staging
             valueFile: values.yaml
-            host: app.staging.babbage.example
+            host: app.staging.pervagans.example
             issuer: letsencrypt-staging
             registry: ghcr.io/ceo551
           - env: prod-gke
             cluster: https://kubernetes.default.svc
-            namespace: babbage
+            namespace: pervagans
             valueFile: values-gke.yaml
-            host: app.babbage.example
+            host: app.pervagans.example
             issuer: letsencrypt-prod
             registry: gcr.io/your-project
           # Add prod-aks, prod-eks similarly.
   template:
     metadata:
-      name: 'babbage-{{env}}'
+      name: 'pervagans-{{env}}'
       finalizers: [resources-finalizer.argocd.argoproj.io]
     spec:
-      project: babbage
+      project: pervagans
       source:
-        repoURL: https://github.com/ceo551/babbage-ai
+        repoURL: https://github.com/ceo551/pervagans-ai
         targetRevision: main
-        path: infra/helm/babbage
+        path: infra/helm/pervagans
         helm:
           valueFiles:
             - '{{valueFile}}'

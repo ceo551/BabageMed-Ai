@@ -5,7 +5,7 @@
 // mcps/<name>/src/google.ts AND there was a fourth copy in
 // mcps/_shared/. Four files drift; this consolidates them into the
 // one place where shared MCP runtime helpers already live
-// (@babbage/mcp-base), so a refresh-token fix lands in one commit.
+// (@pervagans/mcp-base), so a refresh-token fix lands in one commit.
 //
 // Reads GOOGLE_CLIENT_ID / SECRET / REFRESH_TOKEN from env and
 // trades them at the token endpoint. Caches the resulting access

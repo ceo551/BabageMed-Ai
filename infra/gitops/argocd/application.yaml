@@ -9,18 +9,18 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: babbage
+  name: pervagans
   namespace: argocd
   finalizers:
     - resources-finalizer.argocd.argoproj.io
   labels:
-    app.kubernetes.io/name: babbage
+    app.kubernetes.io/name: pervagans
 spec:
-  project: babbage
+  project: pervagans
   source:
-    repoURL: https://github.com/ceo551/babbage-ai
+    repoURL: https://github.com/ceo551/pervagans-ai
     targetRevision: main
-    path: infra/helm/babbage
+    path: infra/helm/pervagans
     helm:
       # Pick the cloud overlay that matches your cluster, then layer
       # release-specific overrides in `parameters` or `valuesObject`.
@@ -34,7 +34,7 @@ spec:
         - name: image.registry
           value: ghcr.io/ceo551
         - name: ingress.host
-          value: app.babbage.example
+          value: app.pervagans.example
         - name: ingress.tls.issuer
           value: letsencrypt-prod
         # Sensitive values: prefer `valuesFrom` with a Kubernetes Secret
@@ -43,7 +43,7 @@ spec:
         #   value: sk-ant-…   # ← do not do this in git
   destination:
     server: https://kubernetes.default.svc
-    namespace: babbage
+    namespace: pervagans
   syncPolicy:
     automated:
       prune: true

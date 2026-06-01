@@ -4,7 +4,7 @@
 # file outright). Instead: 3 steps — backend, frontend, and a single loop
 # step that builds every MCP image with bounded parallelism (xargs -P6).
 # The top-level images: list makes Cloud Build push them all at the end.
-# Generated from infra/helm/babbage/mcps-all.txt.
+# Generated from infra/helm/pervagans/mcps-all.txt.
 timeout: 7200s
 options:
   # E2_HIGHCPU_8 (8 vCPU / 8 GB). The MCP loop is bounded to 6 concurrent
@@ -18,7 +18,7 @@ options:
 
 substitutions:
   _REGION: us-central1
-  _REPO: babbage
+  _REPO: pervagans
   _TAG: v20
 
 images:
@@ -63,5 +63,5 @@ steps:
       - -c
       - |
         set -euo pipefail
-        echo "building $$(wc -w < infra/helm/babbage/mcps-all.txt) MCP images with -P6 parallelism"
-        tr ' ' '\n' < infra/helm/babbage/mcps-all.txt | grep -v '^$$' | xargs -P 6 -I {} bash -c 'docker build -q -f "mcps/{}/Dockerfile" -t "$$REG/mcp-{}:$$TAG" .'
+        echo "building $$(wc -w < infra/helm/pervagans/mcps-all.txt) MCP images with -P6 parallelism"
+        tr ' ' '\n' < infra/helm/pervagans/mcps-all.txt | grep -v '^$$' | xargs -P 6 -I {} bash -c 'docker build -q -f "mcps/{}/Dockerfile" -t "$$REG/mcp-{}:$$TAG" .'
