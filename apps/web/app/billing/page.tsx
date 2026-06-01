@@ -120,11 +120,6 @@ export default function BillingPage() {
       <h1 style={{ fontFamily: "var(--serif)", fontSize: 48, margin: 0, color: "var(--ink)" }}>
         {locale === "ar" ? "الخطط والفوترة" : "Plans & Billing"}
       </h1>
-      <p style={{ color: "var(--muted)", margin: 0, textAlign: "center", maxWidth: 560 }}>
-        {locale === "ar"
-          ? "ادفع بأمان عبر Paddle — تُحتسب الضرائب تلقائيًا. كل الخطط تتضمن وصولاً كاملاً إلى كل الموصّلات (Connectors)."
-          : "Secure checkout by Paddle — taxes handled automatically. Every plan includes full access to all connectors."}
-      </p>
 
       {error && (
         <div style={{ background: "var(--purple-soft)", border: "1px solid var(--purple-line)", color: "var(--purple)", padding: 12, borderRadius: 10, maxWidth: 600 }}>

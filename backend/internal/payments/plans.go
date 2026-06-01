@@ -21,8 +21,8 @@ var Plans = map[string]Plan{
 	"go_monthly": {
 		ID:            "go_monthly",
 		Name:          "GO",
-		DescriptionEN: "Everyday AI · all connectors · standard speed",
-		DescriptionAR: "ذكاء اصطناعي يومي · كل الموصّلات · سرعة قياسية",
+		DescriptionEN: "Best models, connectors, features",
+		DescriptionAR: "أفضل النماذج، الموصّلات، الميزات",
 		EGP:           85000, // 850 EGP
 		USD:           1700,  // $17
 		Interval:      "month",
@@ -30,8 +30,8 @@ var Plans = map[string]Plan{
 	"plus_monthly": {
 		ID:            "plus_monthly",
 		Name:          "Plus",
-		DescriptionEN: "Higher limits · all features · faster responses",
-		DescriptionAR: "حدود أعلى · كل الميزات · ردود أسرع",
+		DescriptionEN: "Everything in GO, higher limits",
+		DescriptionAR: "كل مزايا GO، حدود أعلى",
 		EGP:           150000, // 1500 EGP
 		USD:           3000,   // $30
 		Interval:      "month",
@@ -39,8 +39,8 @@ var Plans = map[string]Plan{
 	"pro_monthly": {
 		ID:            "pro_monthly",
 		Name:          "Pro",
-		DescriptionEN: "Unlimited chats · all connectors · cited + deep modes",
-		DescriptionAR: "محادثات غير محدودة · كل الموصّلات · أوضاع الاستشهاد والتعمّق",
+		DescriptionEN: "Higher limits, Claude Opus 4.8 and GPT 5.5",
+		DescriptionAR: "حدود أعلى، Claude Opus 4.8 و GPT 5.5",
 		EGP:           250000, // 2500 EGP
 		USD:           5000,   // $50
 		Interval:      "month",
@@ -48,8 +48,8 @@ var Plans = map[string]Plan{
 	"max_monthly": {
 		ID:            "max_monthly",
 		Name:          "Max",
-		DescriptionEN: "Team seats · priority compute · everything in Pro",
-		DescriptionAR: "مقاعد للفريق · حوسبة بأولوية · كل مزايا Pro",
+		DescriptionEN: "Every text & image model, and more",
+		DescriptionAR: "كل نماذج النصوص والصور، والمزيد",
 		EGP:           500000, // 5000 EGP
 		USD:           10000,  // $100
 		Interval:      "month",

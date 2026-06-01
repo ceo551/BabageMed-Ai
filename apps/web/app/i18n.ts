@@ -42,6 +42,7 @@ export type LocaleStrings = {
   noChatsYet: string;
   loadingChats: string;
   featureChatEmpty: string;
+  featureChatEmptyVisual: string;
   imageGroup: string;
   videoGroup: string;
   // ── Common actions / dialogs (used by recent UI additions) ───────────────
@@ -205,6 +206,7 @@ export const STR: Record<Locale, LocaleStrings> = {
     noChatsYet: "No chats yet",
     loadingChats: "Loading…",
     featureChatEmpty: "Start a new chat in this feature. Its instructions, files, skills and connectors are applied automatically.",
+    featureChatEmptyVisual: "Start a new chat in this feature. Its instructions, files and skills are applied automatically.",
     imageGroup: "Image",
     videoGroup: "Video",
     cancel: "Cancel",
@@ -327,6 +329,7 @@ export const STR: Record<Locale, LocaleStrings> = {
     noChatsYet: "لا توجد محادثات بعد",
     loadingChats: "جارٍ التحميل…",
     featureChatEmpty: "ابدأ محادثة جديدة فى هذه الميزة. التعليمات والملفات والمهارات والموصّلات الخاصة بها ستُستخدم تلقائيًا.",
+    featureChatEmptyVisual: "ابدأ محادثة جديدة فى هذه الميزة. التعليمات والملفات والمهارات الخاصة بها ستُستخدم تلقائيًا.",
     imageGroup: "صور",
     videoGroup: "فيديو",
     cancel: "إلغاء",

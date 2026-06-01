@@ -360,7 +360,7 @@ export function FeatureChat({
           <div className="feat-chat-empty">
             <span className="feat-chat-empty-emoji" aria-hidden="true">{featureIcon(meta.slug, meta.emoji)}</span>
             <h2>{meta.label}</h2>
-            <p>{s.featureChatEmpty}</p>
+            <p>{meta.modality === "visual" ? s.featureChatEmptyVisual : s.featureChatEmpty}</p>
           </div>
         )}
       </div>
