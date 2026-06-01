@@ -24,7 +24,6 @@ substitutions:
 images:
   - "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/backend:${_TAG}"
   - "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/frontend:${_TAG}"
-  - "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-pubmed:${_TAG}"
   - "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-notion:${_TAG}"
   - "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-slack:${_TAG}"
   - "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-linkedin:${_TAG}"
@@ -32,7 +31,6 @@ images:
   - "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-gcalendar:${_TAG}"
   - "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-gdrive:${_TAG}"
   - "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-ms365:${_TAG}"
-  - "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-x-twitter:${_TAG}"
 
 steps:
   - id: backend

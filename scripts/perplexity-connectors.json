@@ -38,7 +38,6 @@
     { "id": "youtube-data",           "name": "YouTube Data",                     "category": "creative",      "feature": "writing",      "homepage": "https://developers.google.com/youtube/v3" },
 
     { "id": "intercom",               "name": "Intercom",                         "category": "communication", "feature": "business",     "homepage": "https://www.intercom.com" },
-    { "id": "x-twitter",              "name": "X (Twitter)",                      "category": "communication", "feature": "writing",      "homepage": "https://x.com" },
     { "id": "smstools",               "name": "SMSTools",                         "category": "communication", "feature": "business",     "homepage": "https://www.smstools.com" },
     { "id": "z-api",                  "name": "Z-API (WhatsApp)",                 "category": "communication", "feature": "business",     "homepage": "https://z-api.io" },
     { "id": "zoom-admin",             "name": "Zoom Admin",                       "category": "communication", "feature": "business",     "homepage": "https://zoom.us" },

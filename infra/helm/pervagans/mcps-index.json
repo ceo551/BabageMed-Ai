@@ -1,11 +1,5 @@
 {
   "byId": {
-    "pubmed": {
-      "kind": "api",
-      "port": 6101,
-      "name": "PubMed",
-      "category": "literature"
-    },
     "notion": {
       "kind": "api",
       "port": 6172,
@@ -47,12 +41,6 @@
       "port": 6186,
       "name": "Microsoft 365",
       "category": "productivity"
-    },
-    "x-twitter": {
-      "kind": "stub",
-      "port": 6565,
-      "name": "X (Twitter)",
-      "category": "communication"
     }
   }
 }

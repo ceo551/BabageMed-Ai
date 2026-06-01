@@ -2,21 +2,6 @@
   "$comment": "Single source of truth for all Pervagans-AI MCP servers. Each entry produces one Dockerized TypeScript MCP server. `kind`: api | scrape | hybrid. Ports are assigned 6101..6186.",
   "servers": [
     {
-      "id": "pubmed",
-      "name": "PubMed",
-      "kind": "api",
-      "category": "literature",
-      "port": 6101,
-      "base": "https://eutils.ncbi.nlm.nih.gov/entrez/eutils",
-      "tools": [
-        "search",
-        "fetch",
-        "summary",
-        "related"
-      ],
-      "feature": "education"
-    },
-    {
       "id": "notion",
       "name": "Notion",
       "kind": "api",
@@ -119,20 +104,6 @@
         "teams"
       ],
       "feature": "business"
-    },
-    {
-      "id": "x-twitter",
-      "name": "X (Twitter)",
-      "kind": "stub",
-      "category": "communication",
-      "feature": "writing",
-      "port": 6565,
-      "base": "",
-      "homepage": "https://x.com",
-      "tools": [
-        "search",
-        "fetch"
-      ]
     }
   ]
 }

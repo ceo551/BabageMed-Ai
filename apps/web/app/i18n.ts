@@ -33,7 +33,7 @@ export type LocaleStrings = {
   skillsPanel: string; skillsPanelDesc: string;
   connectorsPanel: string; connectorsPanelDesc: string;
   // ── chat extras ───────────────────────────────────────────────────────────
-  epic: string; pubmed: string; kdigo: string;
+  epic: string; kdigo: string;
   modelHeader: string; modeHeader: string;
   modes: ReadonlyArray<{ id: string; label: string; color: string }>;
   // ── feature workspace strings ────────────────────────────────────────────
@@ -192,7 +192,6 @@ export const STR: Record<Locale, LocaleStrings> = {
     connectorsPanel: "Connectors",
     connectorsPanelDesc: "MCP servers Pervagans may call for this feature.",
     epic: "Epic",
-    pubmed: "PubMed library",
     kdigo: "KDIGO guidelines",
     modelHeader: "Reasoning engine",
     modeHeader: "Mode",
@@ -315,7 +314,6 @@ export const STR: Record<Locale, LocaleStrings> = {
     connectorsPanel: "الموصّلات",
     connectorsPanelDesc: "خوادم MCP التى يستدعيها Pervagans لهذه الميزة.",
     epic: "Epic",
-    pubmed: "مكتبة PubMed",
     kdigo: "إرشادات KDIGO",
     modelHeader: "محرّك الاستدلال",
     modeHeader: "الوضع",

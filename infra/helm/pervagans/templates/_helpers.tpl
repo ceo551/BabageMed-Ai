@@ -153,7 +153,7 @@ nginx.ingress.kubernetes.io/configuration-snippet: |
   handful of Deployments. Keep this list small and authoritative; for
   the full catalog use preset=all.
 */}}
-pubmed notion slack github gmail gcalendar gdrive linkedin huggingface stripe shopify google-sheets google-docs trello calendly zoom
+notion slack github gmail gcalendar gdrive linkedin huggingface stripe shopify google-sheets google-docs trello calendly zoom
 {{- else -}}
 {{ join " " .Values.mcps.enabled }}
 {{- end -}}

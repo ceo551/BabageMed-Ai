@@ -141,13 +141,6 @@
       "link": ".mw-search-result-heading a",
       "snippet": ".searchresult"
     },
-    "pubmed": {
-      "search": "https://pubmed.ncbi.nlm.nih.gov/?term={q}",
-      "result": ".docsum-content",
-      "title": ".docsum-title",
-      "link": ".docsum-title",
-      "snippet": ".full-view-snippet"
-    },
     "ahajournals": {
       "$alias": "_aha"
     },

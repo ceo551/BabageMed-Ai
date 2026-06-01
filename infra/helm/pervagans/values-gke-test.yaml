@@ -31,7 +31,6 @@ postgres:
 mcps:
   preset: custom
   enabled:
-    - pubmed
     - icd10
     - mayoclinic
     - who
@@ -104,7 +103,6 @@ mcps:
     - mux
     - youtube-data
     - intercom
-    - x-twitter
     - smstools
     - z-api
     - zoom-admin

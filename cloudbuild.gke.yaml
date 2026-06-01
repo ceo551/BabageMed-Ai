@@ -14,7 +14,6 @@ substitutions:
 images:
   - "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/backend:${_TAG}"
   - "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/frontend:${_TAG}"
-  - "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-pubmed:${_TAG}"
   - "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-notion:${_TAG}"
   - "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-slack:${_TAG}"
   - "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-gmail:${_TAG}"
@@ -32,11 +31,6 @@ steps:
     waitFor: ["-"]
     dir: apps/web
     args: [build, -f, Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/frontend:${_TAG}", .]
-
-  - id: mcp-pubmed
-    name: gcr.io/cloud-builders/docker
-    waitFor: ["-"]
-    args: [build, -f, mcps/pubmed/Dockerfile, -t, "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/mcp-pubmed:${_TAG}", .]
 
   - id: mcp-notion
     name: gcr.io/cloud-builders/docker
