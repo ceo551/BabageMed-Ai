@@ -1,10 +1,10 @@
 // Per-feature model registry.
 //
 // Two modalities:
-//   - text   → 7 features (Education, Writing, Translation,
-//              Data Analysis, Business, Financial, Consulting). Composer
+//   - text   → 6 features (Education, Writing, Translation,
+//              Data Analysis, Business, Financial). Composer
 //              shows TEXT_MODELS.
-//   - visual → 2 features (Image & Video, Advertisements). Composer
+//   - visual → 1 feature (Image & Video). Composer
 //              shows IMAGE_MODELS + VIDEO_MODELS as two groups.
 //
 // The feature → modality mapping lives in apps/web/app/i18n.ts

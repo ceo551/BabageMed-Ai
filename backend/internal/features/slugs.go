@@ -15,9 +15,7 @@ var ValidSlugs = []string{
 	"data-analysis",
 	"business",
 	"financial",
-	"consulting",
 	"image-video",
-	"advertisements",
 }
 
 // IsValidSlug reports whether s is one of the canonical feature slugs.

@@ -1,6 +1,6 @@
-// Package features — per-user workspaces tied to the 9 fixed sidebar
+// Package features — per-user workspaces tied to the 7 fixed sidebar
 // categories (Education, Writing, Translation, Data Analysis, Business,
-// Financial, Consulting, Image & Video, Advertisements). Each feature stores:
+// Financial, Image & Video). Each feature stores:
 //   - custom instructions appended to the system prompt for that workflow
 //   - selected skill ids (toggles from a curated catalog)
 //   - selected connector ids (mcp servers used for grounding)

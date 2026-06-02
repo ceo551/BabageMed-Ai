@@ -316,9 +316,7 @@ export const FEATURE_ICONS: Record<string, React.ReactNode> = {
   "data-analysis": featureSvg("M3 3v18h18|M7 16V9|M12 16V5|M17 16v-7"),
   business:        featureSvg("M3 7h18v13H3z|M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2|M3 13h18"),
   financial:       featureSvg("M3 17l6-6 4 4 8-8|M14 7h7v7"),
-  consulting:      featureSvg("M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z|M17 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6z|M2 21v-2a4 4 0 0 1 4-4h6a4 4 0 0 1 4 4v2|M22 21v-2a4 4 0 0 0-3-3.87"),
   "image-video":   featureSvg("M3 5h18v14H3z|M3 9h18|M7 5v4|M11 5v4|M15 5v4|M19 5v4"),
-  advertisements:  featureSvg("M3 11v2a3 3 0 0 0 3 3l4 5v-3l9 4V4l-9 4H6a3 3 0 0 0-3 3z"),
 };
 
 export function featureIcon(slug: string, fallback?: string): React.ReactNode {

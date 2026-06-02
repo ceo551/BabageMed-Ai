@@ -157,7 +157,6 @@ function GeneralTab({ user, refresh }: { user: User; refresh: () => Promise<void
               <option value="translator">Translator / Linguist</option>
               <option value="business">Business / Operations</option>
               <option value="finance">Financial</option>
-              <option value="consultant">Consultant / Professional services</option>
               <option value="researcher">Researcher / Scientist</option>
               <option value="educator">Educator</option>
               <option value="student">Student</option>

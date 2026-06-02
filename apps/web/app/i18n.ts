@@ -111,7 +111,7 @@ export type LocaleStrings = {
 //
 // Two MODALITIES exist:
 //   - text:   8 features that compose against TEXT_MODELS (chat).
-//   - visual: 2 features (image-video, advertisements) that compose
+//   - visual: 1 feature (image-video) that composes
 //             against IMAGE_MODELS + VIDEO_MODELS.
 // `modality` is what apps/web/app/lib/models.ts maps from a slug to
 // the right model list.
@@ -122,9 +122,7 @@ const FEATURES_EN: ReadonlyArray<FeatureMeta> = [
   { slug: "data-analysis",  label: "Data Analysis",                       emoji: "📊", color: "teal",   modality: "text"   },
   { slug: "business",       label: "Business",                            emoji: "💼", color: "yellow", modality: "text"   },
   { slug: "financial",      label: "Financial Services",                  emoji: "💹", color: "green",  modality: "text"   },
-  { slug: "consulting",     label: "Consulting & Professional Services",  emoji: "🤝", color: "orange", modality: "text"   },
   { slug: "image-video",    label: "Image & Video",                       emoji: "🎬", color: "pink",   modality: "visual" },
-  { slug: "advertisements", label: "Advertisements",                      emoji: "📣", color: "fuchsia",modality: "visual" },
 ];
 
 const FEATURES_AR: ReadonlyArray<FeatureMeta> = [
@@ -134,9 +132,7 @@ const FEATURES_AR: ReadonlyArray<FeatureMeta> = [
   { slug: "data-analysis",  label: "تحليل البيانات",                       emoji: "📊", color: "teal",   modality: "text"   },
   { slug: "business",       label: "الأعمال",                              emoji: "💼", color: "yellow", modality: "text"   },
   { slug: "financial",      label: "الخدمات المالية",                      emoji: "💹", color: "green",  modality: "text"   },
-  { slug: "consulting",     label: "الاستشارات والخدمات المهنية",          emoji: "🤝", color: "orange", modality: "text"   },
   { slug: "image-video",    label: "الصور والفيديو",                       emoji: "🎬", color: "pink",   modality: "visual" },
-  { slug: "advertisements", label: "الإعلانات",                            emoji: "📣", color: "fuchsia",modality: "visual" },
 ];
 
 export const STR: Record<Locale, LocaleStrings> = {

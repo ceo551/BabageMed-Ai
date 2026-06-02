@@ -14,9 +14,7 @@ const TITLES: Record<string, string> = {
   "data-analysis":  "Data Analysis",
   "business":       "Business",
   "financial":      "Financial Services",
-  "consulting":     "Consulting & Professional Services",
   "image-video":    "Image & Video",
-  "advertisements": "Advertisements",
 };
 
 export async function generateMetadata(

@@ -34,8 +34,8 @@
         "feature":  {
           "enum": [
             "education", "writing", "translation",
-            "data-analysis", "business", "financial", "consulting",
-            "image-video", "advertisements"
+            "data-analysis", "business", "financial",
+            "image-video"
           ]
         },
         "homepage": { "type": "string" }

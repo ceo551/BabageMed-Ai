@@ -11,9 +11,7 @@ const FEATURE_SLUGS = [
   "data-analysis",
   "business",
   "financial",
-  "consulting",
   "image-video",
-  "advertisements",
 ] as const;
 
 export default function sitemap(): MetadataRoute.Sitemap {
