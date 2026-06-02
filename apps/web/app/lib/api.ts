@@ -396,7 +396,7 @@ export const spaces = {
 };
 
 // ── Features ─────────────────────────────────────────────────────────────
-// Per-feature workspace (Healthcare, Education, Writing, Translation, Data
+// Per-feature workspace (Education, Writing, Translation, Data
 // Analysis, Business, Financial, Consulting, Image & Video, Advertisements).
 // The backend upserts on first GET so the frontend never has to handle a
 // 404 for one of the 10 fixed slugs. Each feature stores instructions,

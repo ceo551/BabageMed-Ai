@@ -310,7 +310,6 @@ function featureSvg(d: string): React.ReactNode {
 }
 
 export const FEATURE_ICONS: Record<string, React.ReactNode> = {
-  healthcare:      featureSvg("M4 4v6a6 6 0 0 0 12 0V4|M4 4h3|M13 4h3|M16 10v3a4 4 0 0 0 4 4|M20 17a2 2 0 1 0 0 4 2 2 0 0 0 0-4z"),
   education:       featureSvg("M3 9l9-5 9 5-9 5-9-5z|M7 11v5c2 2 8 2 10 0v-5|M21 9v6"),
   writing:         featureSvg("M12 19l7-7 3 3-7 7-3-3z|M18 13l-1.5-1.5|M2 2l7.586 7.586|M11 11l-4 4 2 2 4-4"),
   translation:     featureSvg("M5 8h7|M9 4v4|M5 12c2 4 8 6 11 6|M14 21l4-9 4 9|M16 17h4"),

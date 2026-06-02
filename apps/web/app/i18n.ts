@@ -33,7 +33,6 @@ export type LocaleStrings = {
   skillsPanel: string; skillsPanelDesc: string;
   connectorsPanel: string; connectorsPanelDesc: string;
   // ── chat extras ───────────────────────────────────────────────────────────
-  epic: string; kdigo: string;
   modelHeader: string; modeHeader: string;
   modes: ReadonlyArray<{ id: string; label: string; color: string }>;
   // ── feature workspace strings ────────────────────────────────────────────
@@ -124,7 +123,6 @@ const FEATURES_EN: ReadonlyArray<FeatureMeta> = [
   { slug: "business",       label: "Business",                            emoji: "💼", color: "yellow", modality: "text"   },
   { slug: "financial",      label: "Financial Services",                  emoji: "💹", color: "green",  modality: "text"   },
   { slug: "consulting",     label: "Consulting & Professional Services",  emoji: "🤝", color: "orange", modality: "text"   },
-  { slug: "healthcare",     label: "Healthcare & Life sciences",          emoji: "🩺", color: "cyan",   modality: "text"   },
   { slug: "image-video",    label: "Image & Video",                       emoji: "🎬", color: "pink",   modality: "visual" },
   { slug: "advertisements", label: "Advertisements",                      emoji: "📣", color: "fuchsia",modality: "visual" },
 ];
@@ -137,7 +135,6 @@ const FEATURES_AR: ReadonlyArray<FeatureMeta> = [
   { slug: "business",       label: "الأعمال",                              emoji: "💼", color: "yellow", modality: "text"   },
   { slug: "financial",      label: "الخدمات المالية",                      emoji: "💹", color: "green",  modality: "text"   },
   { slug: "consulting",     label: "الاستشارات والخدمات المهنية",          emoji: "🤝", color: "orange", modality: "text"   },
-  { slug: "healthcare",     label: "الصحة وعلوم الحياة",                   emoji: "🩺", color: "cyan",   modality: "text"   },
   { slug: "image-video",    label: "الصور والفيديو",                       emoji: "🎬", color: "pink",   modality: "visual" },
   { slug: "advertisements", label: "الإعلانات",                            emoji: "📣", color: "fuchsia",modality: "visual" },
 ];
@@ -191,8 +188,6 @@ export const STR: Record<Locale, LocaleStrings> = {
     skillsPanelDesc: "Reusable instructions Pervagans applies for tasks in this feature.",
     connectorsPanel: "Connectors",
     connectorsPanelDesc: "MCP servers Pervagans may call for this feature.",
-    epic: "Epic",
-    kdigo: "KDIGO guidelines",
     modelHeader: "Reasoning engine",
     modeHeader: "Mode",
     modes: [
@@ -313,8 +308,6 @@ export const STR: Record<Locale, LocaleStrings> = {
     skillsPanelDesc: "تعليمات قابلة لإعادة الاستخدام يستخدمها Pervagans لمهام هذه الميزة.",
     connectorsPanel: "الموصّلات",
     connectorsPanelDesc: "خوادم MCP التى يستدعيها Pervagans لهذه الميزة.",
-    epic: "Epic",
-    kdigo: "إرشادات KDIGO",
     modelHeader: "محرّك الاستدلال",
     modeHeader: "الوضع",
     modes: [

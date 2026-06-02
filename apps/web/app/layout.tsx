@@ -1,3 +1,4 @@
+import type { Metadata, Viewport } from "next";
 import "./tokens.css";
 import "./dashboard.css";
 import { AuthProvider } from "./lib/auth-context";
@@ -5,10 +6,36 @@ import { AppShell } from "./components/AppShell";
 import { ServiceWorker } from "./components/ServiceWorker";
 import { NavProgress } from "./components/NavProgress";
 
-export const metadata = {
-  title: "Pervagans",
-  description: "Pervagans — instructions, files, skills and connectors per workflow.",
+const SITE_URL = "https://pervagans.com";
+const SITE_TITLE =
+  "Pervagans — AI workspace with instructions, files, skills & connectors";
+const SITE_DESCRIPTION =
+  "Pervagans is a bilingual (EN/AR) AI assistant and workspace. Give each workflow its own instructions, files, skills and MCP connectors, then chat to get work done.";
+
+export const metadata: Metadata = {
+  metadataBase: new URL(SITE_URL),
+  title: {
+    default: SITE_TITLE,
+    template: "%s · Pervagans",
+  },
+  description: SITE_DESCRIPTION,
+  keywords: [
+    "Pervagans",
+    "AI assistant",
+    "AI workspace",
+    "MCP connectors",
+    "Model Context Protocol",
+    "productivity AI",
+    "AI workflows",
+    "AI agent",
+    "bilingual AI",
+    "Arabic AI",
+  ],
   applicationName: "Pervagans",
+  authors: [{ name: "Pervagans", url: SITE_URL }],
+  creator: "Pervagans",
+  publisher: "Pervagans",
+  category: "technology",
   manifest: "/manifest.webmanifest",
   formatDetection: { telephone: false, address: false, email: false },
   // Point every favicon size at the brand asset shipped in /public so the
@@ -17,9 +44,51 @@ export const metadata = {
     icon:     "/pervagans-icon.png",
     shortcut: "/pervagans-icon.png",
   },
+  alternates: {
+    canonical: "/",
+    languages: {
+      en: "/",
+      ar: "/",
+      "x-default": "/",
+    },
+  },
+  openGraph: {
+    type: "website",
+    siteName: "Pervagans",
+    url: SITE_URL,
+    title: SITE_TITLE,
+    description: SITE_DESCRIPTION,
+    locale: "en_US",
+    alternateLocale: ["ar_AR"],
+    images: [
+      {
+        url: "/pervagans-icon.png",
+        width: 512,
+        height: 512,
+        alt: "Pervagans",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: SITE_TITLE,
+    description: SITE_DESCRIPTION,
+    images: ["/pervagans-icon.png"],
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+      "max-video-preview": -1,
+    },
+  },
 };
 
-export const viewport = {
+export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover" as const,
@@ -57,6 +126,31 @@ const PRE_PAINT_SCRIPT = `(function(){
   } catch (e) { /* incognito / disabled storage → defaults stand */ }
 })();`;
 
+// schema.org structured data (Organization + WebSite). Rendered server-side
+// from the root layout so crawlers see it in the initial HTML. The WebSite
+// SearchAction wires Google's sitelinks search box to the MCP catalog search.
+const JSON_LD = {
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "Organization",
+      name: "Pervagans",
+      url: "https://pervagans.com",
+      logo: "https://pervagans.com/pervagans-icon.png",
+    },
+    {
+      "@type": "WebSite",
+      name: "Pervagans",
+      url: "https://pervagans.com",
+      potentialAction: {
+        "@type": "SearchAction",
+        target: "https://pervagans.com/mcps?q={search_term_string}",
+        "query-input": "required name=search_term_string",
+      },
+    },
+  ],
+};
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   // suppressHydrationWarning on <html> tells React it's expected for
   // the pre-paint script to have mutated lang/dir/data-theme before
@@ -74,6 +168,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         />
       </head>
       <body>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(JSON_LD) }}
+        />
         <NavProgress />
         <AuthProvider>
           <AppShell>{children}</AppShell>

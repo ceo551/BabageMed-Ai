@@ -2,13 +2,13 @@ package features
 
 import "testing"
 
-// Guards against silent drift between the 10 canonical feature slugs
+// Guards against silent drift between the 9 canonical feature slugs
 // here, in apps/web/app/i18n.ts, and in scripts/mcps.manifest.json. If
 // you add or rename a feature, update all three at once and update this
 // test's expected list.
 func TestValidSlugs(t *testing.T) {
 	want := []string{
-		"healthcare", "education", "writing", "translation",
+		"education", "writing", "translation",
 		"data-analysis", "business", "financial", "consulting",
 		"image-video", "advertisements",
 	}

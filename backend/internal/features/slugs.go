@@ -9,7 +9,6 @@ package features
 // feature). Keep aligned with apps/web/app/i18n.ts and
 // scripts/mcps.manifest.json `feature` enum.
 var ValidSlugs = []string{
-	"healthcare",
 	"education",
 	"writing",
 	"translation",

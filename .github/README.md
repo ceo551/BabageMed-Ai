@@ -11,7 +11,7 @@ Runs on every PR and push to `main` / `develop` / `claude/**`. Jobs:
 - **`mcp-base`** — `tsc --noEmit` on the shared package
 - **`mcps-typecheck`** — 8-shard parallel `tsc --noEmit` over all 416 MCP packages. Shards are round-robin so each one mixes light + heavy packages.
 - **`helm`** — `helm lint` + `helm template` smoke render with feature flags on, then a Python YAML parse to catch any structural breakage early.
-- **`generators`** — re-runs `append-medical-mcps.mjs`, `generate-mcps.mjs`, `write-real-tools.mjs`, `generate-helm-index.mjs` and fails if the working tree is dirty. Keeps `mcps.manifest.json`, `mcps-index.json`, and the per-MCP scaffolds honest.
+- **`generators`** — re-runs `generate-mcps.mjs`, `write-real-tools.mjs`, `generate-helm-index.mjs` and fails if the working tree is dirty. Keeps `mcps.manifest.json`, `mcps-index.json`, and the per-MCP scaffolds honest.
 
 ## `build-images.yml` — Build + push + GitOps bump
 

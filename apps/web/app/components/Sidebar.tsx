@@ -216,8 +216,8 @@ export function Sidebar({
 }
 
 // ─── Features section ─────────────────────────────────────────────────────
-// Renders one row per fixed feature category. The 10 categories are:
-// Healthcare, Education, Writing, Translation, Data Analysis, Business,
+// Renders one row per fixed feature category. The 9 categories are:
+// Education, Writing, Translation, Data Analysis, Business,
 // Financial Services, Consulting, Image & Video, Advertisements. Active
 // row is highlighted via data-active so the user always knows which
 // workflow's context (instructions/files/skills/connectors) is in use.

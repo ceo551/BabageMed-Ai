@@ -153,7 +153,6 @@ function GeneralTab({ user, refresh }: { user: User; refresh: () => Promise<void
           <div className="control">
             <select value={profession} onChange={(e) => setProfession(e.target.value)}>
               <option value="">Select…</option>
-              <option value="healthcare">Healthcare &amp; life sciences</option>
               <option value="writer">Writer / Content creator</option>
               <option value="translator">Translator / Linguist</option>
               <option value="business">Business / Operations</option>

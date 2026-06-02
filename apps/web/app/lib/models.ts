@@ -1,7 +1,7 @@
 // Per-feature model registry.
 //
 // Two modalities:
-//   - text   → 8 features (Healthcare, Education, Writing, Translation,
+//   - text   → 7 features (Education, Writing, Translation,
 //              Data Analysis, Business, Financial, Consulting). Composer
 //              shows TEXT_MODELS.
 //   - visual → 2 features (Image & Video, Advertisements). Composer

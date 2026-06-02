@@ -1,6 +1,0 @@
-{
-  "$comment": "Medical/healthcare scraping targets. Each row produces one Dockerized scrape-driven MCP server appended to the master manifest. Ports start at 6201.",
-  "startPort": 6201,
-  "kind": "scrape",
-  "sites": []
-}

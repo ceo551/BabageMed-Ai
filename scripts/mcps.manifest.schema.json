@@ -33,7 +33,7 @@
         },
         "feature":  {
           "enum": [
-            "healthcare", "education", "writing", "translation",
+            "education", "writing", "translation",
             "data-analysis", "business", "financial", "consulting",
             "image-video", "advertisements"
           ]

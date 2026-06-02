@@ -18,8 +18,9 @@ spec:
       {{- end }}
   {{- end }}
   rules:
-    - host: {{ .Values.ingress.host | quote }}
-      http:
+      # When ingress.host is empty the rule is host-less (catch-all), so the
+      # same Cloud LB serves the apex AND www (and any host pointed at its IP).
+    - http:
         paths:
           # All paths — including /api/backend/* — go to the Next.js frontend.
           # The frontend has an App Router route at app/api/backend/[...path]/route.ts
@@ -33,4 +34,7 @@ spec:
               service:
                 name: {{ .Release.Name }}-frontend
                 port: { number: {{ .Values.frontend.service.port }} }
+      {{- if .Values.ingress.host }}
+      host: {{ .Values.ingress.host | quote }}
+      {{- end }}
 {{- end -}}

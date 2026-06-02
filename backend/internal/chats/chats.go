@@ -29,7 +29,7 @@ type Chat struct {
 	Model     string    `json:"model"`
 	Mode      string    `json:"mode"`
 	// Feature is the slug of the feature page the chat was opened from
-	// ("healthcare", "writing", …) — empty string means a "general" chat
+	// ("business", "writing", …) — empty string means a "general" chat
 	// started from the dashboard root. The list endpoint partitions on
 	// this so the general History sidebar row and each feature page's
 	// sub-sidebar see disjoint sets.

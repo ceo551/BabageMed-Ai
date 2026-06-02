@@ -8,7 +8,6 @@
 import type { Metadata } from "next";
 
 const TITLES: Record<string, string> = {
-  "healthcare":     "Healthcare & Life sciences",
   "education":      "Education & Academic & Research",
   "writing":        "Writing & Content creation",
   "translation":    "Translation & Languages",

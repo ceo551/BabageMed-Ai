@@ -27,8 +27,8 @@ type Server struct {
 	Kind     string `json:"kind"`
 	Category string `json:"category"`
 	// Feature is the broader user-facing bucket the connector belongs to
-	// (one of the FEATURES_EN slugs in apps/web/app/i18n.ts: healthcare,
-	// education, writing, business, …). The frontend mcps page uses this
+	// (one of the FEATURES_EN slugs in apps/web/app/i18n.ts: education,
+	// writing, business, …). The frontend mcps page uses this
 	// to group all 539 connectors into Perplexity-style feature sections;
 	// missing it makes every card fall into a single "Other" bucket.
 	// The field has always been present in mcps.manifest.json — it just
