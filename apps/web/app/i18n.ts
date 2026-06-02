@@ -47,6 +47,10 @@ export type LocaleStrings = {
   clearSearch: string;
   newThread: string;
   deleteSpaceConfirm: string;
+  spaceNotFound: string;
+  createFailed: string;
+  send: string;
+  errorPrefix: string;
   instructions: string; instructionsDesc: string;
   filesFolders: string; filesFoldersDesc: string;
   skillsPanel: string; skillsPanelDesc: string;
@@ -213,6 +217,10 @@ export const STR: Record<Locale, LocaleStrings> = {
     clearSearch: "Clear search",
     newThread: "New thread",
     deleteSpaceConfirm: "Delete this space and all its threads, files and instructions? This can't be undone.",
+    spaceNotFound: "Space not found",
+    createFailed: "Couldn't create the space. Please try again.",
+    send: "Send",
+    errorPrefix: "Error: ",
     instructions: "Instructions",
     instructionsDesc: "Custom system prompt that runs on every chat in this feature.",
     filesFolders: "Files & folders",
@@ -351,6 +359,10 @@ export const STR: Record<Locale, LocaleStrings> = {
     clearSearch: "مسح البحث",
     newThread: "محادثة جديدة",
     deleteSpaceConfirm: "حذف هذه المساحة وكل محادثاتها وملفاتها وتعليماتها؟ لا يمكن التراجع.",
+    spaceNotFound: "المساحة غير موجودة",
+    createFailed: "تعذّر إنشاء المساحة. حاول مرة أخرى.",
+    send: "إرسال",
+    errorPrefix: "خطأ: ",
     instructions: "التعليمات",
     instructionsDesc: "نص توجيه يُطبَّق على كل محادثة فى هذه الميزة.",
     filesFolders: "الملفات والمجلدات",

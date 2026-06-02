@@ -103,28 +103,28 @@ func (s *Service) handleList(w http.ResponseWriter, r *http.Request) {
 		}
 		rows, err = s.db.Pool.Query(r.Context(), `
 			SELECT id, COALESCE(title, ''), COALESCE(model, ''), COALESCE(mode, ''),
-			       COALESCE(feature_slug, ''), created_at, updated_at
+			       COALESCE(feature_slug, ''), COALESCE(space_id::text, ''), created_at, updated_at
 			FROM chats WHERE user_id = $1 AND deleted_at IS NULL AND space_id = $2::uuid
 			ORDER BY updated_at DESC LIMIT 200
 		`, u.ID, space)
 	case feature == "":
 		rows, err = s.db.Pool.Query(r.Context(), `
 			SELECT id, COALESCE(title, ''), COALESCE(model, ''), COALESCE(mode, ''),
-			       COALESCE(feature_slug, ''), created_at, updated_at
+			       COALESCE(feature_slug, ''), COALESCE(space_id::text, ''), created_at, updated_at
 			FROM chats WHERE user_id = $1 AND deleted_at IS NULL
 			ORDER BY updated_at DESC LIMIT 200
 		`, u.ID)
 	case feature == "general":
 		rows, err = s.db.Pool.Query(r.Context(), `
 			SELECT id, COALESCE(title, ''), COALESCE(model, ''), COALESCE(mode, ''),
-			       COALESCE(feature_slug, ''), created_at, updated_at
+			       COALESCE(feature_slug, ''), COALESCE(space_id::text, ''), created_at, updated_at
 			FROM chats WHERE user_id = $1 AND deleted_at IS NULL AND feature_slug IS NULL AND space_id IS NULL
 			ORDER BY updated_at DESC LIMIT 200
 		`, u.ID)
 	default:
 		rows, err = s.db.Pool.Query(r.Context(), `
 			SELECT id, COALESCE(title, ''), COALESCE(model, ''), COALESCE(mode, ''),
-			       COALESCE(feature_slug, ''), created_at, updated_at
+			       COALESCE(feature_slug, ''), COALESCE(space_id::text, ''), created_at, updated_at
 			FROM chats WHERE user_id = $1 AND deleted_at IS NULL AND feature_slug = $2
 			ORDER BY updated_at DESC LIMIT 200
 		`, u.ID, feature)
@@ -137,7 +137,7 @@ func (s *Service) handleList(w http.ResponseWriter, r *http.Request) {
 	out := []Chat{}
 	for rows.Next() {
 		var c Chat
-		if err := rows.Scan(&c.ID, &c.Title, &c.Model, &c.Mode, &c.Feature, &c.CreatedAt, &c.UpdatedAt); err != nil {
+		if err := rows.Scan(&c.ID, &c.Title, &c.Model, &c.Mode, &c.Feature, &c.SpaceID, &c.CreatedAt, &c.UpdatedAt); err != nil {
 			internalServerError(w, err)
 			return
 		}
@@ -261,9 +261,9 @@ func (s *Service) handleUpdate(w http.ResponseWriter, r *http.Request) {
 		    updated_at = now()
 		WHERE id = $1 AND user_id = $2 AND deleted_at IS NULL
 		RETURNING id, COALESCE(title, ''), COALESCE(model, ''), COALESCE(mode, ''),
-		          COALESCE(feature_slug, ''), created_at, updated_at
+		          COALESCE(feature_slug, ''), COALESCE(space_id::text, ''), created_at, updated_at
 	`, chi.URLParam(r, "id"), u.ID, patch.Title, patch.Model, patch.Mode).
-		Scan(&c.ID, &c.Title, &c.Model, &c.Mode, &c.Feature, &c.CreatedAt, &c.UpdatedAt)
+		Scan(&c.ID, &c.Title, &c.Model, &c.Mode, &c.Feature, &c.SpaceID, &c.CreatedAt, &c.UpdatedAt)
 	if errors.Is(err, pgx.ErrNoRows) {
 		http.Error(w, "not found", 404)
 		return
@@ -311,6 +311,12 @@ func (s *Service) handleListMessages(w http.ResponseWriter, r *http.Request) {
 	// older than that message. Returns the most recent maxMessages
 	// rows ordered ASC so the frontend can append on append.
 	beforeID := r.URL.Query().Get("before")
+	// A malformed cursor would otherwise blow up on the anchor.id ::uuid
+	// comparison and surface a 500; reject it cleanly as a client bug.
+	if beforeID != "" && !looksLikeUUID(beforeID) {
+		http.Error(w, "invalid cursor", http.StatusBadRequest)
+		return
+	}
 	chatID := chi.URLParam(r, "id")
 	// Two SQL shapes so the planner uses the right index:
 	//   - no cursor → newest N (DESC LIMIT) then we reverse to ASC

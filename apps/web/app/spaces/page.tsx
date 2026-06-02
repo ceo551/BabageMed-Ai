@@ -41,6 +41,18 @@ export default function SpacesIndexPage() {
     return () => { cancelled = true; };
   }, [authLoading, user]);
 
+  // Refetch when the tab regains focus so a space deleted elsewhere (another
+  // tab, or this space's own detail page) doesn't linger as a stale "ghost"
+  // card that 404s on click. Silent — no full-screen spinner toggle.
+  useEffect(() => {
+    if (!user) return;
+    function onFocus() {
+      spacesApi.list().then(setItems).catch(() => { /* keep current list */ });
+    }
+    window.addEventListener("focus", onFocus);
+    return () => window.removeEventListener("focus", onFocus);
+  }, [user]);
+
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     if (!q) return items;
@@ -107,7 +119,7 @@ export default function SpacesIndexPage() {
     const id = renaming.id;
     try {
       const updated = await spacesApi.update(id, { name });
-      setItems((cur) => cur.map((sp) => (sp.id === id ? { ...sp, name: updated.name } : sp)));
+      setItems((cur) => cur.map((sp) => (sp.id === id ? { ...sp, ...updated } : sp)));
       setRenaming(null);
     } catch { /* keep the dialog open to retry */ }
     finally { setSavingRename(false); }

@@ -18,6 +18,7 @@ import (
 	"log"
 	"net/http"
 	"path/filepath"
+	"sort"
 	"strings"
 	"time"
 	"unicode/utf8"
@@ -406,6 +407,9 @@ func (s *Service) DeleteFile(ctx context.Context, userID, spaceID, fileID string
 	if tag.RowsAffected() == 0 {
 		return errors.New("not found")
 	}
+	// Mirror UploadFile: bump the space's updated_at so its "last activity"
+	// and list ordering stay correct after a file is removed.
+	_, _ = s.db.Pool.Exec(ctx, `UPDATE spaces SET updated_at = now() WHERE id = $1 AND user_id = $2`, spaceID, userID)
 	return nil
 }
 
@@ -431,12 +435,12 @@ func (s *Service) Context(ctx context.Context, userID, spaceID, q string) ([]Chu
 	// plainto_tsquery is tolerant of free-form input (no need to escape).
 	rows, err := s.db.Pool.Query(ctx, `
         SELECT c.id, c.file_id, f.name, c.idx, c.content,
-               ts_rank(c.tsv, plainto_tsquery('simple', $2)) AS score
+               ts_rank(c.tsv, plainto_tsquery('english', $2)) AS score
         FROM space_chunks c
         JOIN space_files f ON f.id = c.file_id
         WHERE c.space_id = $1
-          AND c.tsv @@ plainto_tsquery('simple', $2)
-        ORDER BY score DESC
+          AND c.tsv @@ plainto_tsquery('english', $2)
+        ORDER BY score DESC, c.file_id, c.idx
         LIMIT $3
     `, spaceID, q, maxContextHits)
 	if err != nil {
@@ -451,7 +455,19 @@ func (s *Service) Context(ctx context.Context, userID, spaceID, q string) ([]Chu
 		}
 		out = append(out, c)
 	}
-	return out, rows.Err()
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	// Re-order the selected top hits into document order (filename, then chunk
+	// index) so multi-chunk passages read coherently in the prompt instead of
+	// being interleaved purely by relevance score.
+	sort.SliceStable(out, func(i, j int) bool {
+		if out[i].FileName != out[j].FileName {
+			return out[i].FileName < out[j].FileName
+		}
+		return out[i].Idx < out[j].Idx
+	})
+	return out, nil
 }
 
 // ─── HTTP layer ────────────────────────────────────────────────────────────

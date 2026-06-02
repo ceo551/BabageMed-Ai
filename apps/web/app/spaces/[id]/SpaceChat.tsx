@@ -75,6 +75,7 @@ export function SpaceChat({ space }: { space: Space }) {
         })
         .then((rows) => {
           if (!rows || requestedId !== liveLoadRef.current) return;
+          stickRef.current = true;
           setMessages(rows.map((r) => {
             if (r.role === "user") return { id: r.id, role: "user", content: r.content } as Msg;
             const cs = Array.isArray(r.citations) ? (r.citations as Citation[]) : undefined;
@@ -83,6 +84,13 @@ export function SpaceChat({ space }: { space: Space }) {
         })
         .catch(() => { /* leave transcript empty on 401/404 */ });
     } else {
+      // Navigated back to the space home (no ?c=) — kill any in-flight stream,
+      // invalidate any pending load so a late .then() can't repopulate the
+      // transcript, and re-pin scroll so the next thread opens at its latest
+      // message.
+      streamAbortRef.current?.abort();
+      liveLoadRef.current = "";
+      stickRef.current = true;
       setChatId("");
       setMessages([]);
     }
@@ -224,6 +232,9 @@ export function SpaceChat({ space }: { space: Space }) {
       let buffer = "";
       let cites: Citation[] | undefined;
       let finalContent = "";
+      // Tracks whether finalContent is a synthetic placeholder (stream error
+      // or empty-response fallback) so we never persist it as real history.
+      let synthetic = false;
 
       while (true) {
         const { done, value: chunk } = await reader.read();
@@ -269,16 +280,19 @@ export function SpaceChat({ space }: { space: Space }) {
             }
           } else if (event === "error" && parsed?.error) {
             setMessages((cur) =>
-              cur.map((m) => m.id === assistantId && m.role === "assistant" ? { ...m, content: "Error: " + parsed.error } : m),
+              cur.map((m) => m.id === assistantId && m.role === "assistant" ? { ...m, content: s.errorPrefix + parsed.error } : m),
             );
-            finalContent = "Error: " + parsed.error;
+            finalContent = s.errorPrefix + parsed.error;
+            synthetic = true;
           }
         }
       }
 
       if (finalContent === "") {
         // Stream ended with no content (e.g. no model API key configured for
-        // this space) — show a clear message instead of a blank bubble.
+        // this space) — show a clear message instead of a blank bubble. This
+        // is a synthetic placeholder, so it must NOT be persisted to history.
+        synthetic = true;
         finalContent = locale === "ar"
           ? "لا توجد استجابة — تأكد من إعداد مفتاح الموديل لهذه المساحة."
           : "No response — check this space's model configuration.";
@@ -287,7 +301,10 @@ export function SpaceChat({ space }: { space: Space }) {
           cur.map((m) => (m.id === assistantId && m.role === "assistant" ? { ...m, content: fc } : m)),
         );
       }
-      if (activeChatId && finalContent !== "") {
+      // Persist only genuine model output — synthetic fallbacks and stream
+      // errors must not pollute the saved transcript (they would reload as
+      // fake assistant history on the next visit).
+      if (activeChatId && finalContent !== "" && !synthetic) {
         chatsApi.append(activeChatId, { role: "assistant", content: finalContent, citations: cites ?? [] }).catch(() => {});
       }
     } catch (e: unknown) {
@@ -297,7 +314,7 @@ export function SpaceChat({ space }: { space: Space }) {
       } else {
         setMessages((cur) =>
           cur.filter((m) => m.id !== loadingId)
-            .concat({ id: `a-${newId()}`, role: "assistant", content: "Error: " + (err?.message || String(e)) })
+            .concat({ id: `a-${newId()}`, role: "assistant", content: s.errorPrefix + (err?.message || String(e)) })
         );
       }
     } finally {
@@ -382,7 +399,7 @@ export function SpaceChat({ space }: { space: Space }) {
           type="button"
           className="cmpr-icon"
           onClick={send}
-          aria-label={sending ? "Sending" : "Send"}
+          aria-label={sending ? s.generating : s.send}
           disabled={sending || value.trim() === ""}
           style={{
             width: "auto",

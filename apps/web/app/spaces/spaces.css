@@ -251,7 +251,8 @@
   border: 1px solid transparent; border-radius: 8px; background: transparent;
   color: var(--muted); cursor: pointer; opacity: 0; transition: opacity .12s, background .12s;
 }
-.sp-card:hover .sp-card-menu-btn, .sp-card-menu-btn[data-open="true"] { opacity: 1; }
+.sp-card:hover .sp-card-menu-btn, .sp-card-menu-btn[data-open="true"],
+.sp-card:focus-within .sp-card-menu-btn, .sp-card-menu-btn:focus-visible { opacity: 1; }
 .sp-card-menu-btn:hover { background: var(--bg-2); color: var(--ink); }
 .sp-card-menu {
   position: absolute; inset-block-start: 44px; inset-inline-end: 12px; z-index: 20;
@@ -267,8 +268,12 @@
 .sp-card-menu-item:hover { background: var(--bg-2); }
 .sp-card-menu-item.is-danger { color: var(--rose); }
 .sp-card-menu-item svg { width: 15px; height: 15px; }
-/* Kebab reachable on touch devices (no hover state). */
-@media (hover: none) { .sp-card-menu-btn { opacity: 1; } }
+/* Kebab reachable on touch devices (no hover state), and all the small
+   icon-buttons get a 44px hit area so they meet the touch-target minimum. */
+@media (hover: none) {
+  .sp-card-menu-btn { opacity: 1; }
+  .sp-card-menu-btn, .sp-row-del, .sp-rail-add { min-width: 44px; min-height: 44px; }
+}
 
 /* Map the shared --hue-* vars on the space surface so feature.css's chat /
    empty-state classes (e.g. .feat-chat-empty-emoji, the send button) regain
@@ -663,6 +668,10 @@
 .sp-add-dashed:hover { border-color: var(--sp-hue-line); color: var(--sp-hue); background: var(--sp-hue-soft); }
 .sp-add-dashed:disabled { opacity: 0.6; cursor: progress; }
 .sp-add-dashed svg { width: 16px; height: 16px; }
+
+/* Skills card: type-a-label input stacked above its add button. */
+.sp-skill-add { margin-top: 12px; }
+.sp-skill-add .feat-modal-input { width: 100%; }
 
 /* Empty drop-zone box shown when a card has no items. */
 .sp-dropzone {

@@ -111,7 +111,9 @@ function SpacePageInner() {
     setSavingRename(true);
     try {
       const updated = await spacesApi.update(id, { name });
-      setSpace(updated);
+      // Merge, don't replace — the update response may omit derived fields
+      // (e.g. fileCount) that we already hold.
+      setSpace((sp) => (sp ? { ...sp, ...updated } : updated));
       setRenaming(false);
     } catch {
       // Leave the dialog open so the user can retry.
@@ -148,7 +150,7 @@ function SpacePageInner() {
   if (notFound) {
     return (
       <div className="sp-gate">
-        <h1>{s.noSpacesYet}</h1>
+        <h1>{s.spaceNotFound}</h1>
         <p><Link href="/spaces" className="sp-back">{s.allSpaces}</Link></p>
       </div>
     );
@@ -167,7 +169,7 @@ function SpacePageInner() {
   }
 
   return (
-    <div className="space-page" data-color="cyan">
+    <div className="space-page">
       <header className="sp-head">
         <Link href="/spaces" className="sp-back">
           <span className="sp-back-arrow" aria-hidden="true">←</span>
@@ -224,8 +226,16 @@ function SpacePageInner() {
           <InstructionsCard
             value={space.instructions || ""}
             onSave={async (v) => {
-              const updated = await spacesApi.update(id, { instructions: v });
-              setSpace(updated);
+              // Surface failures (and re-throw) so the card stays in edit mode
+              // for a retry instead of silently swallowing the error.
+              try {
+                const updated = await spacesApi.update(id, { instructions: v });
+                setSpace((sp) => (sp ? { ...sp, ...updated } : updated));
+                setError(null);
+              } catch (e) {
+                setError((e as { error?: string })?.error || s.save);
+                throw e;
+              }
             }}
           />
           <FilesCard
@@ -250,8 +260,14 @@ function SpacePageInner() {
           <SkillsCard
             skills={space.skills || []}
             onChange={async (skills) => {
-              const updated = await spacesApi.update(id, { skills });
-              setSpace(updated);
+              try {
+                const updated = await spacesApi.update(id, { skills });
+                setSpace((sp) => (sp ? { ...sp, ...updated } : updated));
+                setError(null);
+              } catch (e) {
+                setError((e as { error?: string })?.error || s.save);
+                throw e;
+              }
             }}
           />
         </aside>
@@ -299,11 +315,15 @@ function InstructionsCard({
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(value);
   const [saving, setSaving] = useState(false);
-  useEffect(() => { setDraft(value); }, [value]);
+  // Only sync the draft from the prop while NOT editing — otherwise a parent
+  // re-render (e.g. right after a save resolves) would clobber in-progress edits.
+  useEffect(() => { if (!editing) setDraft(value); }, [value, editing]);
 
   async function save() {
     setSaving(true);
+    // onSave re-throws on failure; keep the editor open so the user can retry.
     try { await onSave(draft); setEditing(false); }
+    catch { /* error already surfaced by the parent */ }
     finally { setSaving(false); }
   }
 
@@ -447,23 +467,24 @@ function SkillsCard({
 }) {
   const { s } = useUI();
   const [local, setLocal] = useState<string[]>(skills);
+  const [draft, setDraft] = useState("");
   const [busy, setBusy] = useState(false);
-  const inputRef = useRef<HTMLInputElement>(null);
   useEffect(() => { setLocal(skills); }, [skills]);
 
-  async function onFiles(e: React.ChangeEvent<HTMLInputElement>) {
-    const fl = e.target.files;
-    if (!fl || fl.length === 0) return;
+  // Skills are plain text labels passed to the model as enabled capabilities
+  // for this space — they are NOT files. (The old file-picker stored only the
+  // filename and silently discarded the content, which was misleading.)
+  async function add() {
+    const name = draft.trim();
+    if (!name || local.includes(name)) { setDraft(""); return; }
+    const prev = local;
+    const next = [...local, name];
+    setLocal(next);
+    setDraft("");
     setBusy(true);
-    try {
-      const names = Array.from(fl).map((f) => f.name);
-      const merged = Array.from(new Set([...local, ...names]));
-      await onChange(merged);
-      setLocal(merged);
-    } finally {
-      setBusy(false);
-      if (inputRef.current) inputRef.current.value = "";
-    }
+    try { await onChange(next); }
+    catch { setLocal(prev); }
+    finally { setBusy(false); }
   }
 
   async function remove(name: string) {
@@ -479,23 +500,7 @@ function SkillsCard({
       <div className="sp-rail-head">
         <span className="sp-rail-icon" aria-hidden="true">{I.skills}</span>
         <span className="sp-rail-title">{s.skillsPanel}</span>
-        <button
-          type="button"
-          className="sp-rail-add"
-          onClick={() => inputRef.current?.click()}
-          aria-label={s.addSkill}
-          title={s.addSkill}
-          disabled={busy}
-        >{I.plus}</button>
       </div>
-      <input
-        ref={inputRef}
-        type="file"
-        multiple
-        hidden
-        accept=".md,.txt,.json,.yaml,.yml,.prompt"
-        onChange={onFiles}
-      />
 
       {local.length === 0 ? (
         <div className="sp-dropzone">{s.skillsHint}</div>
@@ -516,14 +521,25 @@ function SkillsCard({
         </div>
       )}
 
-      <button
-        type="button"
-        className="sp-add-dashed"
-        onClick={() => inputRef.current?.click()}
-        disabled={busy}
-      >
-        {I.plus}<span>{busy ? s.saving : s.addSkill}</span>
-      </button>
+      <div className="sp-skill-add">
+        <input
+          type="text"
+          className="feat-modal-input"
+          placeholder={s.addSkill}
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); add(); } }}
+          disabled={busy}
+        />
+        <button
+          type="button"
+          className="sp-add-dashed"
+          onClick={add}
+          disabled={busy || !draft.trim()}
+        >
+          {I.plus}<span>{busy ? s.saving : s.addSkill}</span>
+        </button>
+      </div>
     </div>
   );
 }

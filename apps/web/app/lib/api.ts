@@ -71,6 +71,30 @@ export const api = {
   post: <T = unknown>(p: string, body?: unknown) => call<T>(p, { method: "POST", body: body ? JSON.stringify(body) : undefined }),
 };
 
+// Shared response handler for the hand-rolled fetch() wrappers below.
+// File uploads use FormData and DELETEs have no JSON body, so they can't go
+// through call()'s always-JSON path — but they still need its two guarantees:
+//   1. Read the body BEFORE throwing, so the error message is meaningful even
+//      under HTTP/2 (which leaves res.statusText blank — the old wrappers that
+//      threw `{ error: r.statusText }` produced an EMPTY error string).
+//   2. Fire the global 401 watchdog so an expired session is handled
+//      identically to the call()-based endpoints (none of these are auth
+//      endpoints, so firing unconditionally on 401 is safe).
+async function handle<T>(r: Response): Promise<T> {
+  const text = await r.text();
+  let body: any = null;
+  try { body = text ? JSON.parse(text) : null; } catch { body = text; }
+  if (!r.ok) {
+    if (r.status === 401 && on401) on401();
+    throw {
+      ...(body && typeof body === "object" ? body : {}),
+      error: (body && body.error) || (typeof body === "string" ? body : "") || text || r.statusText || `HTTP ${r.status}`,
+      status: r.status,
+    } as ApiError;
+  }
+  return body as T;
+}
+
 // ── auth ──
 export type User = {
   id: string;
@@ -190,9 +214,7 @@ export const connectors = {
     fetch(`/api/backend/api/connectors/${encodeURIComponent(mcpId)}`, {
       method: "DELETE",
       credentials: "include",
-    }).then((r) => {
-      if (!r.ok) throw { error: r.statusText, status: r.status } as ApiError;
-    }),
+    }).then((r) => handle<void>(r)),
 };
 
 export type McpToolSchema = {
@@ -297,18 +319,12 @@ export const chats = {
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ title }),
     });
-    const text = await r.text();
-    let body: any = null;
-    try { body = text ? JSON.parse(text) : null; } catch { body = text; }
-    if (!r.ok) throw { error: (body && body.error) || text || r.statusText, status: r.status } as ApiError;
-    return body;
+    return handle<Chat>(r);
   },
   remove:      (id: string) =>
     fetch(`/api/backend/api/chats/${encodeURIComponent(id)}`, {
       method: "DELETE", credentials: "include",
-    }).then((r) => {
-      if (!r.ok) throw { error: r.statusText, status: r.status } as ApiError;
-    }),
+    }).then((r) => handle<void>(r)),
 };
 
 // ── Spaces ──
@@ -318,7 +334,7 @@ export type Space = {
   description: string;
   icon: string;          // emoji glyph picked at create time, "" if unset
   instructions: string;  // custom system-prompt prefix for the agent
-  skills: string[];      // reusable skill "files" (tracked by filename) applied to this space
+  skills: string[];      // skill labels (capabilities) enabled for this space
   fileCount: number;
   createdAt: string;
   updatedAt: string;
@@ -368,16 +384,11 @@ export const spaces = {
       headers: { "content-type": "application/json" },
       body: JSON.stringify(patch),
     });
-    const text = await r.text();
-    let body: any = null;
-    try { body = text ? JSON.parse(text) : null; } catch { body = text; }
-    if (!r.ok) throw { error: (body && body.error) || text || r.statusText, status: r.status } as ApiError;
-    return body;
+    return handle<Space>(r);
   },
   remove: (id: string) =>
-    fetch(`/api/backend/api/spaces/${encodeURIComponent(id)}`, { method: "DELETE", credentials: "include" }).then((r) => {
-      if (!r.ok) throw { error: r.statusText, status: r.status } as ApiError;
-    }),
+    fetch(`/api/backend/api/spaces/${encodeURIComponent(id)}`, { method: "DELETE", credentials: "include" })
+      .then((r) => handle<void>(r)),
   files:  (id: string) => api.get<SpaceFile[]>(`/api/spaces/${encodeURIComponent(id)}/files`),
   upload: async (id: string, file: File): Promise<SpaceFile> => {
     const fd = new FormData();
@@ -387,19 +398,13 @@ export const spaces = {
       credentials: "include",
       body: fd,
     });
-    const text = await r.text();
-    let body: any = null;
-    try { body = text ? JSON.parse(text) : null; } catch { body = text; }
-    if (!r.ok) throw { error: (body && body.error) || text || r.statusText, status: r.status } as ApiError;
-    return body;
+    return handle<SpaceFile>(r);
   },
   removeFile: (spaceId: string, fileId: string) =>
     fetch(`/api/backend/api/spaces/${encodeURIComponent(spaceId)}/files/${encodeURIComponent(fileId)}`, {
       method: "DELETE",
       credentials: "include",
-    }).then((r) => {
-      if (!r.ok) throw { error: r.statusText, status: r.status } as ApiError;
-    }),
+    }).then((r) => handle<void>(r)),
   context: (id: string, q: string) =>
     api.get<SpaceChunk[]>(`/api/spaces/${encodeURIComponent(id)}/context?q=${encodeURIComponent(q)}`),
 };
