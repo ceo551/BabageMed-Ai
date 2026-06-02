@@ -28,6 +28,15 @@ export type LocaleStrings = {
   // ── features (replaces spaces) ────────────────────────────────────────────
   featuresHeader: string;
   features: ReadonlyArray<FeatureMeta>;
+  // ── Spaces (Claude Projects / Perplexity Spaces analogue) ────────────────
+  spacesHeader: string;
+  newSpace: string;
+  createSpace: string;
+  spaceNameLabel: string;
+  spaceNamePlaceholder: string;
+  noSpacesYet: string;
+  deleteSpace: string;
+  spaceChatPlaceholder: string;
   instructions: string; instructionsDesc: string;
   filesFolders: string; filesFoldersDesc: string;
   skillsPanel: string; skillsPanelDesc: string;
@@ -176,6 +185,14 @@ export const STR: Record<Locale, LocaleStrings> = {
     langAR: "العربية",
     featuresHeader: "Features",
     features: FEATURES_EN,
+    spacesHeader: "Spaces",
+    newSpace: "New space",
+    createSpace: "Create space",
+    spaceNameLabel: "Space name",
+    spaceNamePlaceholder: "e.g. Research, Client X, Thesis",
+    noSpacesYet: "No spaces yet",
+    deleteSpace: "Delete space",
+    spaceChatPlaceholder: "Ask anything in this space…",
     instructions: "Instructions",
     instructionsDesc: "Custom system prompt that runs on every chat in this feature.",
     filesFolders: "Files & folders",
@@ -296,6 +313,14 @@ export const STR: Record<Locale, LocaleStrings> = {
     langAR: "العربية",
     featuresHeader: "الميزات",
     features: FEATURES_AR,
+    spacesHeader: "المساحات",
+    newSpace: "مساحة جديدة",
+    createSpace: "إنشاء مساحة",
+    spaceNameLabel: "اسم المساحة",
+    spaceNamePlaceholder: "مثال: بحث، عميل X، الرسالة",
+    noSpacesYet: "لا توجد مساحات بعد",
+    deleteSpace: "حذف المساحة",
+    spaceChatPlaceholder: "اسأل أي شيء في هذه المساحة…",
     instructions: "التعليمات",
     instructionsDesc: "نص توجيه يُطبَّق على كل محادثة فى هذه الميزة.",
     filesFolders: "الملفات والمجلدات",

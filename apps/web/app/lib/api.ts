@@ -312,6 +312,7 @@ export type Space = {
   description: string;
   icon: string;          // emoji glyph picked at create time, "" if unset
   instructions: string;  // custom system-prompt prefix for the agent
+  skills: string[];      // reusable skill "files" (tracked by filename) applied to this space
   fileCount: number;
   createdAt: string;
   updatedAt: string;
@@ -321,6 +322,7 @@ export type CreateSpaceInput = {
   description?: string;
   icon?: string;
   instructions?: string;
+  skills?: string[];
 };
 export type SpaceFile = {
   id: string;
@@ -350,9 +352,10 @@ export const spaces = {
       description: input.description || "",
       icon: input.icon || "",
       instructions: input.instructions || "",
+      skills: input.skills || [],
     }),
   get:    (id: string) => api.get<Space>(`/api/spaces/${encodeURIComponent(id)}`),
-  update: async (id: string, patch: Partial<Pick<Space, "name"|"description"|"icon"|"instructions">>): Promise<Space> => {
+  update: async (id: string, patch: Partial<Pick<Space, "name"|"description"|"icon"|"instructions"|"skills">>): Promise<Space> => {
     const r = await fetch(`/api/backend/api/spaces/${encodeURIComponent(id)}`, {
       method: "PATCH",
       credentials: "include",
