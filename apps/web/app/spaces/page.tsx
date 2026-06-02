@@ -8,6 +8,7 @@ import { useAuth } from "../lib/auth-context";
 import { spaces as spacesApi, type Space } from "../lib/api";
 import { I } from "../icons";
 import { CreateSpaceModal } from "./CreateSpaceModal";
+import { Modal } from "../components/Modal";
 import { relativeTime } from "./relative-time";
 import "./spaces.css";
 
@@ -23,6 +24,10 @@ export default function SpacesIndexPage() {
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState("");
   const [creating, setCreating] = useState(false);
+  const [menuOpenId, setMenuOpenId] = useState("");
+  const [renaming, setRenaming] = useState<Space | null>(null);
+  const [renameDraft, setRenameDraft] = useState("");
+  const [savingRename, setSavingRename] = useState(false);
 
   useEffect(() => {
     if (authLoading) return;
@@ -49,6 +54,44 @@ export default function SpacesIndexPage() {
   async function handleCreate(name: string, icon: string) {
     const created = await spacesApi.create({ name, icon });
     router.push(`/spaces/${encodeURIComponent(created.id)}`);
+  }
+
+  // Close the open card menu on outside click / Escape.
+  useEffect(() => {
+    if (!menuOpenId) return;
+    function onDoc(e: MouseEvent) {
+      const t = e.target as HTMLElement;
+      if (!t.closest?.(".sp-card-menu") && !t.closest?.(".sp-card-menu-btn")) setMenuOpenId("");
+    }
+    function onKey(e: KeyboardEvent) { if (e.key === "Escape") setMenuOpenId(""); }
+    document.addEventListener("mousedown", onDoc);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onDoc);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [menuOpenId]);
+
+  async function removeSpace(id: string) {
+    setMenuOpenId("");
+    const prev = items;
+    setItems((cur) => cur.filter((sp) => sp.id !== id));
+    try { await spacesApi.remove(id); }
+    catch { setItems(prev); }
+  }
+  function openRename(sp: Space) { setMenuOpenId(""); setRenaming(sp); setRenameDraft(sp.name); }
+  async function submitRename() {
+    if (!renaming) return;
+    const name = renameDraft.trim();
+    if (!name || name === renaming.name) { setRenaming(null); return; }
+    setSavingRename(true);
+    const id = renaming.id;
+    try {
+      const updated = await spacesApi.update(id, { name });
+      setItems((cur) => cur.map((sp) => (sp.id === id ? { ...sp, name: updated.name } : sp)));
+      setRenaming(null);
+    } catch { /* keep the dialog open to retry */ }
+    finally { setSavingRename(false); }
   }
 
   if (authLoading) {
@@ -115,6 +158,30 @@ export default function SpacesIndexPage() {
               href={`/spaces/${encodeURIComponent(sp.id)}`}
               className="sp-card"
             >
+              <button
+                type="button"
+                className="sp-card-menu-btn"
+                data-open={menuOpenId === sp.id}
+                aria-label={s.more}
+                title={s.more}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setMenuOpenId((cur) => (cur === sp.id ? "" : sp.id));
+                }}
+              >
+                {I.dotsV}
+              </button>
+              {menuOpenId === sp.id && (
+                <div className="sp-card-menu" role="menu" onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}>
+                  <button type="button" className="sp-card-menu-item" onClick={(e) => { e.preventDefault(); openRename(sp); }}>
+                    {I.edit}<span>{s.rename}</span>
+                  </button>
+                  <button type="button" className="sp-card-menu-item is-danger" onClick={(e) => { e.preventDefault(); removeSpace(sp.id); }}>
+                    {I.trash}<span>{s.delete}</span>
+                  </button>
+                </div>
+              )}
               <div className="sp-card-top">
                 <span className="sp-card-emoji" aria-hidden="true">{sp.icon || "📁"}</span>
                 <span className="sp-card-name" title={sp.name}>{sp.name}</span>
@@ -133,6 +200,22 @@ export default function SpacesIndexPage() {
         onClose={() => setCreating(false)}
         onCreate={handleCreate}
       />
+
+      <Modal open={renaming !== null} onClose={() => setRenaming(null)} title={s.rename} width={420}>
+        <input
+          type="text"
+          className="feat-modal-input"
+          placeholder={s.spaceNameLabel}
+          value={renameDraft}
+          onChange={(e) => setRenameDraft(e.target.value)}
+          onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); submitRename(); } }}
+          autoFocus
+        />
+        <div className="feat-modal-foot">
+          <button type="button" className="feat-btn-secondary" onClick={() => setRenaming(null)} disabled={savingRename}>{s.cancel}</button>
+          <button type="button" className="feat-btn-primary" onClick={submitRename} disabled={savingRename || !renameDraft.trim()}>{savingRename ? s.saving : s.save}</button>
+        </div>
+      </Modal>
     </div>
   );
 }

@@ -45,20 +45,11 @@ export function CreateSpaceModal({
 
   return (
     <Modal open={open} onClose={onClose} title={s.createSpace} width={460}>
-      <div className="sp-form">
-        <div className="sp-field">
-          <label className="sp-field-label" htmlFor="sp-emoji">{s.spacesHeader}</label>
-          <input
-            id="sp-emoji"
-            type="text"
-            className="feat-modal-input sp-emoji-input"
-            value={icon}
-            onChange={(e) => setIcon(e.target.value)}
-            aria-label="Icon"
-            maxLength={4}
-          />
-        </div>
-        <div className="sp-field">
+      <div className="sp-create-row">
+        {/* Fixed, non-interactive space icon — purely decorative so a click
+            never turns it into an editable text field. */}
+        <div className="sp-icon-tile" aria-hidden="true">{icon}</div>
+        <div className="sp-field" style={{ flex: 1, minWidth: 0 }}>
           <label className="sp-field-label" htmlFor="sp-name">{s.spaceNameLabel}</label>
           <input
             id="sp-name"

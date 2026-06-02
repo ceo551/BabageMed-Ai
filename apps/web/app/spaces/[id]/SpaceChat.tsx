@@ -1,11 +1,11 @@
 "use client";
 
 import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { I } from "../../icons";
 import { useUI } from "../../lib/ui-context";
 import { usePrefs } from "../../lib/store";
-import { chats as chatsApi, spaces as spacesApi, type Space } from "../../lib/api";
+import { chats as chatsApi, spaces as spacesApi, type Space, type Chat } from "../../lib/api";
 import { AssistantMessage, type Citation } from "../../components/AssistantMessage";
 import { TEXT_MODELS, type ModelBrand } from "../../lib/models";
 
@@ -31,6 +31,7 @@ function newId(): string {
 
 export function SpaceChat({ space }: { space: Space }) {
   const params = useSearchParams();
+  const router = useRouter();
   const { s, locale } = useUI();
   const chatIdParam = params?.get("c") || "";
   const nonceParam  = params?.get("n") || "";
@@ -142,13 +143,13 @@ export function SpaceChat({ space }: { space: Space }) {
     setSending(true);
 
     try {
-      // Lazily create the persisted chat row on first turn. Tagged with
-      // feature "general" so it groups with the main history (spaces don't
-      // have a dedicated per-space history rail).
+      // Lazily create the persisted chat row on first turn, tagged with THIS
+      // space so it shows up in the space's own threads list and is kept out
+      // of the general sidebar history.
       let activeChatId = chatId;
       if (!activeChatId) {
         try {
-          const created = await chatsApi.create(text, model, mode || "bedside", "general");
+          const created = await chatsApi.create(text, model, mode || "bedside", undefined, space.id);
           activeChatId = created.id;
           setChatId(created.id);
           if (typeof window !== "undefined") {
@@ -278,112 +279,163 @@ export function SpaceChat({ space }: { space: Space }) {
     }
   }
 
+  function openThread(id: string) {
+    router.push(`/spaces/${encodeURIComponent(space.id)}?c=${encodeURIComponent(id)}`);
+  }
+
+  const composerInner = (
+    <div className="composer">
+      <textarea
+        ref={taRef}
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
+        placeholder={s.spaceChatPlaceholder}
+        rows={1}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" && !e.shiftKey && !(e.nativeEvent as any).isComposing) {
+            e.preventDefault();
+            if (!sending) send();
+          }
+        }}
+      />
+      <div className="composer-bar">
+        <button
+          type="button"
+          className="model-pill ws-chip"
+          aria-pressed={webSearch}
+          onClick={() => setWebSearch((v) => !v)}
+          title={s.webSearch}
+          style={webSearch ? {
+            background: "var(--cyan-soft)", color: "var(--cyan)",
+            border: "1px solid var(--cyan-line)", display: "inline-flex", alignItems: "center",
+          } : { display: "inline-flex", alignItems: "center" }}
+        >
+          {I.globe}{s.webSearch}{webSearch ? " ×" : ""}
+        </button>
+        <span className="spacer" />
+        {/* Model picker — spaces are text-only, so the 8 chat LLMs. */}
+        <div className="feat-model-wrap">
+          <button
+            type="button"
+            className="model-pill"
+            data-open={modelOpen}
+            onClick={() => setModelOpen((v) => !v)}
+          >
+            <span className="brand-mark">{brandMark(currentModel.brand)}</span>
+            <span>{currentModel.short}</span>
+            {I.chev}
+          </button>
+          {modelOpen && (
+            <div className="model-pop feat-model-pop" role="menu">
+              <div className="pop-header">{s.modelHeader}</div>
+              {TEXT_MODELS.map((m) => (
+                <button
+                  key={m.id}
+                  type="button"
+                  className="model-row"
+                  data-active={model === m.id}
+                  onClick={() => { setModel(m.id); setModelOpen(false); }}
+                >
+                  <span className="brand-mark">{brandMark(m.brand)}</span>
+                  <span className="col">
+                    <span className="nm">{m.name}</span>
+                    <span className="meta-row">
+                      {m.pills[locale].map((p, i) => <span key={i} className="pill">{p}</span>)}
+                    </span>
+                  </span>
+                  <span className="check">{I.check}</span>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <button className="cmpr-icon" type="button" aria-label={s.voiceComingSoon} title={s.voiceComingSoon}>{I.mic}</button>
+        <button
+          type="button"
+          className="cmpr-icon"
+          onClick={send}
+          aria-label={sending ? "Sending" : "Send"}
+          disabled={sending || value.trim() === ""}
+          style={{
+            width: "auto",
+            padding: "0 10px",
+            color: sending || value.trim() === "" ? "var(--muted)" : "var(--hue-ink, var(--cyan))",
+            borderColor: sending || value.trim() === "" ? "var(--border)" : "var(--hue-line, var(--cyan-line))",
+            background: sending || value.trim() === "" ? "var(--panel)" : "var(--hue-bg, var(--cyan-soft))",
+            opacity: sending || value.trim() === "" ? 0.6 : 1,
+            cursor: sending ? "progress" : value.trim() === "" ? "not-allowed" : "pointer",
+            transition: "color .12s, background .12s, opacity .12s",
+          }}
+        >
+          {sending ? "…" : "↵"}
+        </button>
+      </div>
+    </div>
+  );
+
   const isChatting = messages.length > 0;
 
   return (
     <div className="feat-chat" data-chat={isChatting}>
-      <div className="feat-chat-scroll">
-        {isChatting ? (
-          <Transcript messages={messages} endRef={transcriptEndRef} />
-        ) : (
-          <div className="feat-chat-empty">
-            <span className="feat-chat-empty-emoji" aria-hidden="true">{space.icon || "🗂"}</span>
-            <h2>{space.name}</h2>
-            <p>{space.description || s.featureChatEmpty}</p>
+      {isChatting ? (
+        <>
+          <div className="feat-chat-scroll">
+            <Transcript messages={messages} endRef={transcriptEndRef} />
           </div>
-        )}
-      </div>
-
-      <div className="feat-composer" ref={composerRef}>
-        <div className="composer">
-          <textarea
-            ref={taRef}
-            value={value}
-            onChange={(e) => setValue(e.target.value)}
-            placeholder={s.spaceChatPlaceholder}
-            rows={1}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && !e.shiftKey && !(e.nativeEvent as any).isComposing) {
-                e.preventDefault();
-                if (!sending) send();
-              }
-            }}
-          />
-          <div className="composer-bar">
-            <button
-              type="button"
-              className="model-pill ws-chip"
-              aria-pressed={webSearch}
-              onClick={() => setWebSearch((v) => !v)}
-              title={s.webSearch}
-              style={webSearch ? {
-                background: "var(--cyan-soft)", color: "var(--cyan)",
-                border: "1px solid var(--cyan-line)", display: "inline-flex", alignItems: "center",
-              } : { display: "inline-flex", alignItems: "center" }}
-            >
-              {I.globe}{s.webSearch}{webSearch ? " ×" : ""}
-            </button>
-            <span className="spacer" />
-            {/* Model picker — spaces are text-only, so the 8 chat LLMs. */}
-            <div className="feat-model-wrap">
-              <button
-                type="button"
-                className="model-pill"
-                data-open={modelOpen}
-                onClick={() => setModelOpen((v) => !v)}
-              >
-                <span className="brand-mark">{brandMark(currentModel.brand)}</span>
-                <span>{currentModel.short}</span>
-                {I.chev}
-              </button>
-              {modelOpen && (
-                <div className="model-pop feat-model-pop" role="menu">
-                  <div className="pop-header">{s.modelHeader}</div>
-                  {TEXT_MODELS.map((m) => (
-                    <button
-                      key={m.id}
-                      type="button"
-                      className="model-row"
-                      data-active={model === m.id}
-                      onClick={() => { setModel(m.id); setModelOpen(false); }}
-                    >
-                      <span className="brand-mark">{brandMark(m.brand)}</span>
-                      <span className="col">
-                        <span className="nm">{m.name}</span>
-                        <span className="meta-row">
-                          {m.pills[locale].map((p, i) => <span key={i} className="pill">{p}</span>)}
-                        </span>
-                      </span>
-                      <span className="check">{I.check}</span>
-                    </button>
-                  ))}
-                </div>
-              )}
+          <div className="feat-composer" ref={composerRef}>{composerInner}</div>
+        </>
+      ) : (
+        <div className="feat-chat-scroll">
+          {/* Space home: hero, a centered composer, then this space's threads. */}
+          <div className="space-home">
+            <div className="feat-chat-empty">
+              <span className="feat-chat-empty-emoji" aria-hidden="true">{space.icon || "📁"}</span>
+              <h2>{space.name}</h2>
+              <p>{space.description || s.featureChatEmpty}</p>
             </div>
-
-            <button className="cmpr-icon" type="button" aria-label={s.voiceComingSoon} title={s.voiceComingSoon}>{I.mic}</button>
-            <button
-              type="button"
-              className="cmpr-icon"
-              onClick={send}
-              aria-label={sending ? "Sending" : "Send"}
-              disabled={sending || value.trim() === ""}
-              style={{
-                width: "auto",
-                padding: "0 10px",
-                color: sending || value.trim() === "" ? "var(--muted)" : "var(--hue-ink, var(--cyan))",
-                borderColor: sending || value.trim() === "" ? "var(--border)" : "var(--hue-line, var(--cyan-line))",
-                background: sending || value.trim() === "" ? "var(--panel)" : "var(--hue-bg, var(--cyan-soft))",
-                opacity: sending || value.trim() === "" ? 0.6 : 1,
-                cursor: sending ? "progress" : value.trim() === "" ? "not-allowed" : "pointer",
-                transition: "color .12s, background .12s, opacity .12s",
-              }}
-            >
-              {sending ? "…" : "↵"}
-            </button>
+            <div className="space-home-composer" ref={composerRef}>{composerInner}</div>
+            <SpaceThreads spaceId={space.id} onOpen={openThread} />
           </div>
         </div>
-      </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Threads list (this space's recorded chats, shown under the composer) ────
+function SpaceThreads({ spaceId, onOpen }: { spaceId: string; onOpen: (id: string) => void }) {
+  const { s } = useUI();
+  const [items, setItems] = useState<Chat[]>([]);
+  useEffect(() => {
+    let cancelled = false;
+    const load = () =>
+      chatsApi.list(undefined, spaceId)
+        .then((rows) => { if (!cancelled) setItems(rows); })
+        .catch(() => { if (!cancelled) setItems([]); });
+    load();
+    const onCreated = () => load();
+    if (typeof window !== "undefined") window.addEventListener("pervagans:chat-created", onCreated);
+    return () => {
+      cancelled = true;
+      if (typeof window !== "undefined") window.removeEventListener("pervagans:chat-created", onCreated);
+    };
+  }, [spaceId]);
+
+  if (items.length === 0) return null;
+  return (
+    <div className="space-threads">
+      <div className="space-threads-label">{s.recent}</div>
+      <ul className="space-threads-list">
+        {items.map((c) => (
+          <li key={c.id}>
+            <button type="button" className="space-thread-row" onClick={() => onOpen(c.id)} title={c.title || s.untitledChat}>
+              <span className="space-thread-icon" aria-hidden="true">{I.chatBubble}</span>
+              <span className="space-thread-title">{c.title || s.untitledChat}</span>
+            </button>
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }

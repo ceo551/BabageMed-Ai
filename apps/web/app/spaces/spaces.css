@@ -201,6 +201,72 @@
   color: var(--cyan);
 }
 .sp-empty-emoji .ico { width: 34px; height: 34px; }
+
+/* ── Space home: hero, a centered composer, then this space's threads ─────── */
+.space-home {
+  width: 100%;
+  max-width: 720px;
+  margin-inline: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 16px;
+}
+.space-home .feat-chat-empty { max-width: none; padding-block: 8px; }
+.space-home-composer { width: 100%; }
+.space-home-composer .composer { width: 100%; max-width: none; }
+
+/* ── Threads: this space's recorded chats, listed under the composer ─────── */
+.space-threads { width: 100%; }
+.space-threads-label {
+  font-size: 12px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase;
+  color: var(--muted); margin-block: 2px 8px; padding-inline: 4px;
+}
+.space-threads-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.space-thread-row {
+  display: flex; align-items: center; gap: 10px; width: 100%;
+  padding: 9px 11px; border: 1px solid var(--border); border-radius: 10px;
+  background: var(--panel-solid); color: inherit; text-align: start; cursor: pointer;
+  transition: background .12s, border-color .12s;
+}
+.space-thread-row:hover { background: var(--bg-2); border-color: var(--cyan-line); }
+.space-thread-icon { display: inline-flex; color: var(--muted); flex: 0 0 auto; }
+.space-thread-icon svg { width: 16px; height: 16px; }
+.space-thread-title { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 14px; }
+
+/* ── Create dialog: fixed (non-editable) icon tile + name field ───────────── */
+.sp-create-row { display: flex; align-items: flex-end; gap: 12px; }
+.sp-icon-tile {
+  width: 52px; height: 52px; flex: 0 0 auto;
+  border-radius: 14px; background: var(--cyan-soft); border: 1px solid var(--cyan-line);
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: 26px; line-height: 1; user-select: none;
+}
+
+/* ── Index card: 3-dot menu (Rename / Delete) ────────────────────────────── */
+.sp-card { position: relative; }
+.sp-card-menu-btn {
+  position: absolute; inset-block-start: 12px; inset-inline-end: 12px;
+  width: 30px; height: 30px; display: inline-flex; align-items: center; justify-content: center;
+  border: 1px solid transparent; border-radius: 8px; background: transparent;
+  color: var(--muted); cursor: pointer; opacity: 0; transition: opacity .12s, background .12s;
+}
+.sp-card:hover .sp-card-menu-btn, .sp-card-menu-btn[data-open="true"] { opacity: 1; }
+.sp-card-menu-btn:hover { background: var(--bg-2); color: var(--ink); }
+.sp-card-menu {
+  position: absolute; inset-block-start: 44px; inset-inline-end: 12px; z-index: 20;
+  min-width: 150px; padding: 4px; border: 1px solid var(--border); border-radius: 10px;
+  background: var(--panel-solid); box-shadow: var(--shadow);
+  display: flex; flex-direction: column; gap: 2px;
+}
+.sp-card-menu-item {
+  display: flex; align-items: center; gap: 8px; width: 100%;
+  padding: 8px 10px; border: 0; border-radius: 7px; background: transparent;
+  color: var(--ink); text-align: start; cursor: pointer; font-size: 13px;
+}
+.sp-card-menu-item:hover { background: var(--bg-2); }
+.sp-card-menu-item.is-danger { color: var(--rose); }
+.sp-card-menu-item svg { width: 15px; height: 15px; }
 .sp-empty-title {
   font-size: 18px;
   font-weight: 600;

@@ -81,33 +81,40 @@ func (s *Service) Register(r chi.Router) {
 func (s *Service) handleList(w http.ResponseWriter, r *http.Request) {
 	u := auth.FromContext(r.Context())
 	feature := r.URL.Query().Get("feature")
+	space := r.URL.Query().Get("space")
 
-	// Three modes:
-	//   feature missing entirely → list ALL chats (legacy path, kept
-	//     for the admin/debug views that want everything).
-	//   feature=general → just NULL slugs.
-	//   feature=<slug> → that slug only.
 	var (
 		rows pgx.Rows
 		err  error
 	)
-	switch feature {
-	// All list paths filter `deleted_at IS NULL` so soft-deleted chats
-	// disappear from the sidebar history but stay recoverable until a
-	// background purge job (future) hard-deletes them. The
-	// chats_user_active_idx partial index covers these queries.
-	case "":
+	// All list paths filter `deleted_at IS NULL` so soft-deleted chats stay
+	// recoverable. A ?space=<uuid> filter returns that space's threads (shown
+	// on the space page); feature=general now ALSO excludes space chats so
+	// space threads never leak into the general sidebar history.
+	switch {
+	case space != "":
+		if !looksLikeUUID(space) {
+			writeJSON(w, []Chat{})
+			return
+		}
+		rows, err = s.db.Pool.Query(r.Context(), `
+			SELECT id, COALESCE(title, ''), COALESCE(model, ''), COALESCE(mode, ''),
+			       COALESCE(feature_slug, ''), created_at, updated_at
+			FROM chats WHERE user_id = $1 AND deleted_at IS NULL AND space_id = $2::uuid
+			ORDER BY updated_at DESC LIMIT 200
+		`, u.ID, space)
+	case feature == "":
 		rows, err = s.db.Pool.Query(r.Context(), `
 			SELECT id, COALESCE(title, ''), COALESCE(model, ''), COALESCE(mode, ''),
 			       COALESCE(feature_slug, ''), created_at, updated_at
 			FROM chats WHERE user_id = $1 AND deleted_at IS NULL
 			ORDER BY updated_at DESC LIMIT 200
 		`, u.ID)
-	case "general":
+	case feature == "general":
 		rows, err = s.db.Pool.Query(r.Context(), `
 			SELECT id, COALESCE(title, ''), COALESCE(model, ''), COALESCE(mode, ''),
 			       COALESCE(feature_slug, ''), created_at, updated_at
-			FROM chats WHERE user_id = $1 AND deleted_at IS NULL AND feature_slug IS NULL
+			FROM chats WHERE user_id = $1 AND deleted_at IS NULL AND feature_slug IS NULL AND space_id IS NULL
 			ORDER BY updated_at DESC LIMIT 200
 		`, u.ID)
 	default:
@@ -141,7 +148,10 @@ func (s *Service) handleList(w http.ResponseWriter, r *http.Request) {
 
 func (s *Service) handleCreate(w http.ResponseWriter, r *http.Request) {
 	u := auth.FromContext(r.Context())
-	var body struct{ Title, Model, Mode, Feature string }
+	var body struct {
+		Title, Model, Mode, Feature string
+		SpaceID                     string `json:"spaceId"`
+	}
 	if r.ContentLength != 0 {
 		if err := json.NewDecoder(io.LimitReader(r.Body, 1<<20)).Decode(&body); err != nil {
 			http.Error(w, "invalid json", http.StatusBadRequest)
@@ -155,14 +165,20 @@ func (s *Service) handleCreate(w http.ResponseWriter, r *http.Request) {
 	if !validFeatureSlug(body.Feature) {
 		body.Feature = ""
 	}
+	// A chat belongs to at most one space. Drop a malformed id rather than
+	// 500 on the ::uuid cast; a space + a feature are mutually exclusive
+	// in the UI, but storing both is harmless.
+	if !looksLikeUUID(body.SpaceID) {
+		body.SpaceID = ""
+	}
 
 	var c Chat
 	err := s.db.Pool.QueryRow(r.Context(), `
-		INSERT INTO chats (user_id, title, model, mode, feature_slug)
-		VALUES ($1, NULLIF($2, ''), NULLIF($3, ''), NULLIF($4, ''), NULLIF($5, ''))
+		INSERT INTO chats (user_id, title, model, mode, feature_slug, space_id)
+		VALUES ($1, NULLIF($2, ''), NULLIF($3, ''), NULLIF($4, ''), NULLIF($5, ''), NULLIF($6, '')::uuid)
 		RETURNING id, COALESCE(title, ''), COALESCE(model, ''), COALESCE(mode, ''),
 		          COALESCE(feature_slug, ''), created_at, updated_at
-	`, u.ID, body.Title, body.Model, body.Mode, body.Feature).
+	`, u.ID, body.Title, body.Model, body.Mode, body.Feature, body.SpaceID).
 		Scan(&c.ID, &c.Title, &c.Model, &c.Mode, &c.Feature, &c.CreatedAt, &c.UpdatedAt)
 	if err != nil {
 		internalServerError(w, err)
@@ -176,6 +192,27 @@ func (s *Service) handleCreate(w http.ResponseWriter, r *http.Request) {
 // internal/features/slugs.go).
 func validFeatureSlug(s string) bool {
 	return features.IsValidSlug(s)
+}
+
+// looksLikeUUID is a cheap 8-4-4-4-12 hex shape check so a malformed space
+// id is treated as "no space" instead of erroring the Postgres ::uuid cast.
+func looksLikeUUID(s string) bool {
+	if len(s) != 36 {
+		return false
+	}
+	for i := 0; i < len(s); i++ {
+		c := s[i]
+		if i == 8 || i == 13 || i == 18 || i == 23 {
+			if c != '-' {
+				return false
+			}
+			continue
+		}
+		if !((c >= '0' && c <= '9') || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F')) {
+			return false
+		}
+	}
+	return true
 }
 
 // ─── Get + update + delete ────────────────────────────────────────────────

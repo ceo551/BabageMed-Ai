@@ -274,12 +274,17 @@ export const chats = {
   //   undefined          → every chat the user has (admin/debug only)
   //   "general"          → only main-dashboard chats (feature_slug IS NULL)
   //   <slug>             → only chats started from /features/<slug>
-  list:        (feature?: string) => {
-    const qs = feature ? `?feature=${encodeURIComponent(feature)}` : "";
-    return api.get<Chat[]>(`/api/chats${qs}`);
+  // Pass `space` (a space id) to list that space's threads; otherwise
+  // `feature` partitions general vs per-feature chats.
+  list:        (feature?: string, space?: string) => {
+    const p = new URLSearchParams();
+    if (space) p.set("space", space);
+    else if (feature) p.set("feature", feature);
+    const qs = p.toString();
+    return api.get<Chat[]>(`/api/chats${qs ? `?${qs}` : ""}`);
   },
-  create:      (title: string, model: string, mode: string, feature?: string) =>
-    api.post<Chat>("/api/chats", { title, model, mode, feature }),
+  create:      (title: string, model: string, mode: string, feature?: string, spaceId?: string) =>
+    api.post<Chat>("/api/chats", { title, model, mode, feature, spaceId }),
   get:         (id: string) => api.get<Chat>(`/api/chats/${encodeURIComponent(id)}`),
   messages:    (id: string) => api.get<ChatMessageRow[]>(`/api/chats/${encodeURIComponent(id)}/messages`),
   append:      (id: string, body: { role: string; content: string; citations?: unknown; meta?: unknown }) =>

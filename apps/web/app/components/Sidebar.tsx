@@ -160,16 +160,7 @@ export function Sidebar({
           <span className="trail-chev">{I.chevR}</span>
         </Link>
 
-        {/* Features — fixed 10-category nav. Order matches the mockup:
-            10 feature rows → Connectors row → general History.
-            Per-feature chat history lives on each feature's sub-sidebar,
-            not here. */}
-        <FeaturesSection
-          label={s.featuresHeader}
-          items={s.features}
-          activeSlug={featureSlugFromPath(pathname)}
-        />
-
+        {/* Connectors sits directly under Spaces (both are primary nav). */}
         <Link
           href="/mcps"
           className="sb-row"
@@ -180,6 +171,13 @@ export function Sidebar({
           <span className="lbl">{s.connectors}</span>
           <span className="trail-chev">{I.chevR}</span>
         </Link>
+
+        {/* Fixed feature categories (Education … Image & Video). */}
+        <FeaturesSection
+          label={s.featuresHeader}
+          items={s.features}
+          activeSlug={featureSlugFromPath(pathname)}
+        />
 
         <HistorySection label={s.recent} feature="general" />
       </div>
