@@ -106,14 +106,14 @@ WORKDIR /build
 COPY packages/mcp-base/package.json packages/mcp-base/tsconfig.json /build/packages/mcp-base/
 COPY packages/mcp-base/src /build/packages/mcp-base/src
 RUN \\
-    cd /build/packages/mcp-base && npm install --no-audit --no-fund && npx tsc -p tsconfig.json
+    cd /build/packages/mcp-base && npm install --no-audit --no-fund --ignore-scripts && npx tsc -p tsconfig.json
 # This MCP — placed at /build/mcps/${s.id}/ so file:../../packages/mcp-base resolves
 WORKDIR /build/mcps/${s.id}
 COPY mcps/${s.id}/package.json mcps/${s.id}/tsconfig.json ./
 COPY mcps/${s.id}/src ./src
 # Google OAuth helper now lives in @pervagans/mcp-base — copied above.
 RUN \\
-    npm install --no-audit --no-fund && npx tsc -p tsconfig.json
+    npm install --no-audit --no-fund --ignore-scripts && npx tsc -p tsconfig.json
 `;
   return needsBrowser
     ? `${common}
