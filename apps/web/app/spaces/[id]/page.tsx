@@ -1,27 +1,30 @@
 "use client";
 
-import { useParams } from "next/navigation";
+import Link from "next/link";
+import { useParams, useRouter } from "next/navigation";
 import React, { Suspense, useEffect, useRef, useState } from "react";
 import { useUI } from "../../lib/ui-context";
 import { useAuth } from "../../lib/auth-context";
-import { usePrefs, prefs } from "../../lib/store";
 import { spaces as spacesApi, type Space, type SpaceFile } from "../../lib/api";
 import { I } from "../../icons";
 import { Modal } from "../../components/Modal";
 import { SpaceChat } from "./SpaceChat";
-import "../../features/[slug]/feature.css";
+import "../spaces.css";
 
-// Per-space workspace page — adapted from features/[slug]/page.tsx.
+// Per-space workspace — Perplexity Spaces / Claude project-detail layout:
 //
-//   ┌─────────────────────────────┬──────────────────────────────────┐
-//   │ sub-sidebar                 │ composer + transcript            │
-//   │ • space name (emoji)        │ • central prompt box             │
-//   │ • Instructions / Files /    │ • chat grounded on this space's  │
-//   │   Skills pill rows          │   instructions + retrieved files │
-//   └─────────────────────────────┴──────────────────────────────────┘
+//   ┌──────────────────────────────────────────────────────────────────┐
+//   │ ← All spaces   🗂  Space name + description            ⋮          │
+//   ├───────────────────────────────────────────┬──────────────────────┤
+//   │ SpaceChat (composer + transcript)          │  Instructions card   │
+//   │                                            │  Files card          │
+//   │                                            │  Skills card         │
+//   └───────────────────────────────────────────┴──────────────────────┘
+//
+// The right rail stacks below the chat under ~1000px.
 export default function SpacePage() {
   return (
-    <Suspense fallback={<div className="feat-shell"><p className="lead">Loading…</p></div>}>
+    <Suspense fallback={<div className="sp-loading"><span className="ps-spinner" />Loading…</div>}>
       <SpacePageInner />
     </Suspense>
   );
@@ -29,24 +32,21 @@ export default function SpacePage() {
 
 function SpacePageInner() {
   const { id } = useParams<{ id: string }>();
+  const router = useRouter();
   const { s, locale } = useUI();
   const { user, loading: authLoading } = useAuth();
-  const { subSidebarWidth, subSidebarCollapsed } = usePrefs();
 
   const [space, setSpace] = useState<Space | null>(null);
   const [files, setFiles] = useState<SpaceFile[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [notFound, setNotFound] = useState(false);
-  // Mobile-only drawer state for the sub-sidebar — mirrors the feature page.
-  const [subDrawerOpen, setSubDrawerOpen] = useState(false);
-  useEffect(() => { setSubDrawerOpen(false); }, [id]);
-  useEffect(() => {
-    if (!subDrawerOpen) return;
-    function onKey(e: KeyboardEvent) { if (e.key === "Escape") setSubDrawerOpen(false); }
-    document.addEventListener("keydown", onKey);
-    return () => document.removeEventListener("keydown", onKey);
-  }, [subDrawerOpen]);
+
+  // Header overflow menu + rename dialog state.
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [renaming, setRenaming] = useState(false);
+  const [renameDraft, setRenameDraft] = useState("");
+  const [savingRename, setSavingRename] = useState(false);
 
   // Fetch the space + its files. 404 / empty → friendly message.
   useEffect(() => {
@@ -73,16 +73,65 @@ function SpacePageInner() {
     return () => { cancelled = true; };
   }, [authLoading, user, id]);
 
+  // Close the header overflow menu on outside click / Escape.
+  useEffect(() => {
+    if (!menuOpen) return;
+    function onDoc(e: MouseEvent) {
+      const t = e.target as HTMLElement;
+      if (!t.closest?.(".sp-menu-wrap")) setMenuOpen(false);
+    }
+    function onKey(e: KeyboardEvent) { if (e.key === "Escape") setMenuOpen(false); }
+    document.addEventListener("mousedown", onDoc);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onDoc);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [menuOpen]);
+
   async function refreshFiles() {
     try { setFiles(await spacesApi.files(id)); } catch { /* keep current */ }
   }
 
-  if (authLoading) return <div className="feat-shell"><p className="lead">Loading…</p></div>;
+  function openRename() {
+    if (!space) return;
+    setMenuOpen(false);
+    setRenameDraft(space.name || "");
+    setRenaming(true);
+  }
+  async function submitRename() {
+    if (!space) return;
+    const name = renameDraft.trim();
+    if (!name || name === space.name) { setRenaming(false); return; }
+    setSavingRename(true);
+    try {
+      const updated = await spacesApi.update(id, { name });
+      setSpace(updated);
+      setRenaming(false);
+    } catch {
+      // Leave the dialog open so the user can retry.
+    } finally {
+      setSavingRename(false);
+    }
+  }
+  async function deleteSpace() {
+    setMenuOpen(false);
+    try {
+      await spacesApi.remove(id);
+      router.push("/spaces");
+    } catch {
+      // No-op: surface nothing destructive on failure.
+    }
+  }
+
+  if (authLoading) {
+    return <div className="sp-loading"><span className="ps-spinner" />{s.loadingChats}</div>;
+  }
   if (!user) {
     return (
-      <div className="feat-shell">
+      <div className="sp-gate">
         <h1>{s.spacesHeader}</h1>
-        <p className="lead">
+        <p>
           {locale === "ar"
             ? "سجّل الدخول لاستخدام المساحات وإدارة تعليماتها وملفاتها ومهاراتها."
             : "Sign in to use spaces and customise their instructions, files and skills."}
@@ -92,227 +141,214 @@ function SpacePageInner() {
   }
   if (notFound) {
     return (
-      <div className="feat-shell">
-        <h1>{s.spacesHeader}</h1>
-        <p className="lead">{s.noSpacesYet}</p>
+      <div className="sp-gate">
+        <h1>{s.noSpacesYet}</h1>
+        <p><Link href="/spaces" className="sp-back">{s.allSpaces}</Link></p>
       </div>
     );
   }
-  if (loading && !space) return <div className="feat-shell"><p className="lead">Loading…</p></div>;
+  if (loading && !space) {
+    return <div className="sp-loading"><span className="ps-spinner" />{s.loadingChats}</div>;
+  }
   if (!space) {
     return (
-      <div className="feat-shell">
-        {error && <div className="feat-err">{error}</div>}
-        <p className="lead">{s.noSpacesYet}</p>
+      <div className="sp-gate">
+        <h1>{s.noSpacesYet}</h1>
+        {error && <p>{error}</p>}
+        <p><Link href="/spaces" className="sp-back">{s.allSpaces}</Link></p>
       </div>
     );
   }
 
-  // Compact pill-style config rows — same shapes as the feature page, wired
-  // to the spaces API.
-  const panels = (
-    <>
-      <InstructionsRow
-        loading={loading}
-        value={space.instructions || ""}
-        onSave={async (v) => {
-          const updated = await spacesApi.update(id, { instructions: v });
-          setSpace(updated);
-        }}
-      />
-      <FilesRow
-        loading={loading}
-        files={files}
-        onUpload={async (fl) => {
-          // Backend upload takes ONE file — loop over the FileList.
-          for (const f of Array.from(fl)) {
-            await spacesApi.upload(id, f);
-          }
-          await refreshFiles();
-        }}
-        onRemove={async (fileId) => {
-          await spacesApi.removeFile(id, fileId);
-          await refreshFiles();
-        }}
-      />
-      <SkillsRow
-        loading={loading}
-        selected={space.skills || []}
-        onChange={async (skills) => {
-          const updated = await spacesApi.update(id, { skills });
-          setSpace(updated);
-        }}
-      />
-    </>
-  );
-
   return (
-    <div
-      className="feat-shell feat-shell-2col"
-      data-color="cyan"
-      data-subsb-collapsed={subSidebarCollapsed}
-      data-subsb-mobile-open={subDrawerOpen}
-      style={{
-        "--subsb-w": `${subSidebarCollapsed ? 56 : subSidebarWidth}px`,
-      } as React.CSSProperties}
-    >
-      {/* Mobile-only second hamburger — opens this space's sub-sidebar. */}
-      <button
-        type="button"
-        className="feat-mobile-subsb-btn"
-        aria-label={space.name}
-        aria-expanded={subDrawerOpen}
-        onClick={() => setSubDrawerOpen((v) => !v)}
-      >
-        <span aria-hidden="true">{space.icon || "🗂"}</span>
-      </button>
-
-      <SpaceSubSidebar space={space} panels={panels} />
-
-      {/* Tap-to-close backdrop for the sub-sidebar drawer. */}
-      <div
-        className="feat-subsb-backdrop"
-        onClick={() => setSubDrawerOpen(false)}
-        aria-hidden="true"
-      />
-
-      <section className="feat-main">
-        {error && <div className="feat-err">{error}</div>}
-        <SpaceChat space={space} />
-      </section>
-    </div>
-  );
-}
-
-// ─── Sub-sidebar (inline rail) ─────────────────────────────────────────────
-// A trimmed version of FeatureSubSidebar: space name + the config panels.
-// No per-space chat-history list (spaces share the general history), so the
-// rail is just the header + panels.
-function SpaceSubSidebar({ space, panels }: { space: Space; panels: React.ReactNode }) {
-  const { s } = useUI();
-  const { subSidebarCollapsed } = usePrefs();
-  return (
-    <aside
-      className="feat-subsb"
-      aria-label={space.name}
-      data-color="cyan"
-      data-collapsed={subSidebarCollapsed}
-    >
-      <header className="feat-subsb-head">
-        <span className="feat-subsb-emoji" aria-hidden="true">{space.icon || "🗂"}</span>
-        <div className="feat-subsb-title">
-          <span className="t">{space.name}</span>
-          <span className="sub">{s.workspace}</span>
+    <div className="space-page" data-color="cyan">
+      <header className="sp-head">
+        <Link href="/spaces" className="sp-back">
+          <span className="sp-back-arrow" aria-hidden="true">←</span>
+          <span>{s.allSpaces}</span>
+        </Link>
+        <div className="sp-head-main">
+          <span className="sp-head-emoji" aria-hidden="true">{space.icon || "🗂"}</span>
+          <div className="sp-head-text">
+            <h1 className="sp-head-name" title={space.name}>{space.name}</h1>
+            {space.description ? (
+              <p className="sp-head-desc" title={space.description}>{space.description}</p>
+            ) : null}
+          </div>
+          <div className="sp-menu-wrap">
+            <button
+              type="button"
+              className="sp-menu-btn"
+              aria-label={s.more}
+              aria-haspopup="menu"
+              aria-expanded={menuOpen}
+              onClick={() => setMenuOpen((v) => !v)}
+            >
+              {I.dotsV}
+            </button>
+            {menuOpen && (
+              <div className="sp-menu" role="menu">
+                <button type="button" className="sp-menu-item" onClick={openRename}>
+                  {I.edit}<span>{s.rename}</span>
+                </button>
+                <button type="button" className="sp-menu-item is-danger" onClick={deleteSpace}>
+                  {I.trash}<span>{s.deleteSpace}</span>
+                </button>
+              </div>
+            )}
+          </div>
         </div>
-        <button
-          type="button"
-          className="feat-subsb-collapse"
-          onClick={prefs.toggleSubSidebar}
-          aria-label={subSidebarCollapsed ? s.expandSidebar : s.collapseSidebar}
-          title={subSidebarCollapsed ? s.expandSidebar : s.collapseSidebar}
-        >
-          {I.sidebar}
-        </button>
       </header>
 
-      {panels && !subSidebarCollapsed && (
-        <div className="feat-subsb-panels">{panels}</div>
-      )}
-    </aside>
-  );
-}
+      <div className="sp-body">
+        <section className="sp-chat-col">
+          {error && <div className="feat-err" style={{ margin: "12px 24px 0" }}>{error}</div>}
+          <SpaceChat space={space} />
+        </section>
 
-// ─── Instructions row ─────────────────────────────────────────────────────
-function InstructionsRow({
-  loading,
-  value,
-  onSave,
-}: {
-  loading: boolean;
-  value: string;
-  onSave: (v: string) => Promise<void>;
-}) {
-  const { s } = useUI();
-  const [open, setOpen] = useState(false);
-  const [draft, setDraft] = useState(value);
-  const [saving, setSaving] = useState(false);
-  useEffect(() => { setDraft(value); }, [value]);
-
-  async function onSubmit() {
-    setSaving(true);
-    try { await onSave(draft); setOpen(false); }
-    finally { setSaving(false); }
-  }
-
-  return (
-    <>
-      <div className="feat-subsb-row" data-disabled={loading}>
-        <button
-          type="button"
-          className="feat-subsb-row-label"
-          onClick={() => { setDraft(value); setOpen(true); }}
-          disabled={loading}
-        >
-          {s.instructions}
-        </button>
-        <button
-          type="button"
-          className="feat-subsb-row-add"
-          onClick={() => { setDraft(value); setOpen(true); }}
-          disabled={loading}
-          aria-label={s.instructions}
-          title={s.instructions}
-        >
-          {I.plus}
-        </button>
+        <aside className="sp-rail" aria-label={s.spacesHeader}>
+          <InstructionsCard
+            value={space.instructions || ""}
+            onSave={async (v) => {
+              const updated = await spacesApi.update(id, { instructions: v });
+              setSpace(updated);
+            }}
+          />
+          <FilesCard
+            files={files}
+            onUpload={async (fl) => {
+              // Backend upload takes ONE file — loop over the chosen files.
+              for (const f of Array.from(fl)) await spacesApi.upload(id, f);
+              await refreshFiles();
+            }}
+            onRemove={async (fileId) => {
+              await spacesApi.removeFile(id, fileId);
+              await refreshFiles();
+            }}
+          />
+          <SkillsCard
+            skills={space.skills || []}
+            onChange={async (skills) => {
+              const updated = await spacesApi.update(id, { skills });
+              setSpace(updated);
+            }}
+          />
+        </aside>
       </div>
-      <Modal
-        open={open}
-        onClose={() => setOpen(false)}
-        title={s.instructions}
-        width={620}
-      >
-        <textarea
-          className="feat-instr-input feat-instr-input-modal"
-          placeholder={s.instructionsDesc}
-          value={draft}
-          onChange={(e) => setDraft(e.target.value)}
-          rows={10}
+
+      {/* Rename dialog */}
+      <Modal open={renaming} onClose={() => setRenaming(false)} title={s.rename} width={420}>
+        <input
+          type="text"
+          className="feat-modal-input"
+          placeholder={s.spaceNameLabel}
+          value={renameDraft}
+          onChange={(e) => setRenameDraft(e.target.value)}
+          onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); submitRename(); } }}
           autoFocus
         />
         <div className="feat-modal-foot">
           <button
             type="button"
             className="feat-btn-secondary"
-            onClick={() => setOpen(false)}
-            disabled={saving}
+            onClick={() => setRenaming(false)}
+            disabled={savingRename}
           >{s.cancel}</button>
           <button
             type="button"
             className="feat-btn-primary"
-            onClick={onSubmit}
-            disabled={saving}
-          >{saving ? s.saving : s.saveInstructions}</button>
+            onClick={submitRename}
+            disabled={savingRename || !renameDraft.trim()}
+          >{savingRename ? s.saving : s.save}</button>
         </div>
       </Modal>
-    </>
+    </div>
   );
 }
 
-// ─── Files row ────────────────────────────────────────────────────────────
-function FilesRow({
-  loading,
+// ─── Instructions card (inline editing, Perplexity-style) ─────────────────
+function InstructionsCard({
+  value,
+  onSave,
+}: {
+  value: string;
+  onSave: (v: string) => Promise<void>;
+}) {
+  const { s } = useUI();
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(value);
+  const [saving, setSaving] = useState(false);
+  useEffect(() => { setDraft(value); }, [value]);
+
+  async function save() {
+    setSaving(true);
+    try { await onSave(draft); setEditing(false); }
+    finally { setSaving(false); }
+  }
+
+  return (
+    <div className="sp-rail-card">
+      <div className="sp-rail-head">
+        <span className="sp-rail-icon" aria-hidden="true">{I.doc}</span>
+        <span className="sp-rail-title">{s.instructions}</span>
+        <button
+          type="button"
+          className="sp-rail-add"
+          onClick={() => { setDraft(value); setEditing(true); }}
+          aria-label={s.instructions}
+          title={s.instructions}
+        >{I.edit}</button>
+      </div>
+
+      {editing ? (
+        <>
+          <textarea
+            className="sp-instr-textarea"
+            placeholder={s.instructionsTellHint}
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            rows={6}
+            autoFocus
+          />
+          <div className="sp-edit-foot">
+            <button
+              type="button"
+              className="feat-btn-secondary"
+              onClick={() => { setDraft(value); setEditing(false); }}
+              disabled={saving}
+            >{s.cancel}</button>
+            <button
+              type="button"
+              className="feat-btn-primary"
+              onClick={save}
+              disabled={saving}
+            >{saving ? s.saving : s.save}</button>
+          </div>
+        </>
+      ) : value ? (
+        <button
+          type="button"
+          className="sp-instr-preview"
+          onClick={() => { setDraft(value); setEditing(true); }}
+        >{value}</button>
+      ) : (
+        <p className="sp-rail-desc">{s.instructionsTellHint}</p>
+      )}
+    </div>
+  );
+}
+
+// ─── Files card ───────────────────────────────────────────────────────────
+function FilesCard({
   files,
   onUpload,
   onRemove,
 }: {
-  loading: boolean;
   files: SpaceFile[];
   onUpload: (fl: FileList) => Promise<void>;
   onRemove: (id: string) => Promise<void>;
 }) {
   const { s } = useUI();
-  const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -325,18 +361,19 @@ function FilesRow({
   }
 
   return (
-    <>
-      <button
-        type="button"
-        className="feat-subsb-row feat-subsb-row-button"
-        onClick={() => setOpen(true)}
-        disabled={loading}
-      >
-        <span className="feat-subsb-row-icon" aria-hidden="true">{I.folder}</span>
-        <span className="feat-subsb-row-label as-text">{s.filesFolders}</span>
-        {files.length > 0 && <span className="feat-subsb-row-count">{files.length}</span>}
-        <span className="feat-subsb-row-chev" aria-hidden="true">{I.chevR}</span>
-      </button>
+    <div className="sp-rail-card">
+      <div className="sp-rail-head">
+        <span className="sp-rail-icon" aria-hidden="true">{I.folder}</span>
+        <span className="sp-rail-title">{s.filesFolders}</span>
+        <button
+          type="button"
+          className="sp-rail-add"
+          onClick={() => inputRef.current?.click()}
+          aria-label={s.addFile}
+          title={s.addFile}
+          disabled={busy}
+        >{I.plus}</button>
+      </div>
       <input
         ref={inputRef}
         type="file"
@@ -345,66 +382,53 @@ function FilesRow({
         accept=".pdf,.txt,.md,.csv,.json,.docx,.html"
         onChange={onFiles}
       />
-      <Modal
-        open={open}
-        onClose={() => setOpen(false)}
-        title={s.filesFolders}
-        width={520}
+
+      {files.length === 0 ? (
+        <div className="sp-dropzone">{s.filesHint}</div>
+      ) : (
+        <ul className="sp-file-list">
+          {files.map((f) => (
+            <li key={f.id} className="sp-file-row">
+              <span className="sp-file-icon" aria-hidden="true">{I.doc}</span>
+              <span className="sp-file-name" title={f.name}>{f.name}</span>
+              <span className="sp-file-size">{prettyBytes(f.sizeBytes)}</span>
+              <button
+                type="button"
+                className="sp-row-del"
+                onClick={() => onRemove(f.id)}
+                aria-label={s.remove}
+                title={s.remove}
+              >×</button>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      <button
+        type="button"
+        className="sp-add-dashed"
+        onClick={() => inputRef.current?.click()}
+        disabled={busy}
       >
-        {files.length === 0 ? (
-          <div className="feat-card-empty">{s.filesFoldersDesc}</div>
-        ) : (
-          <ul className="feat-files feat-files-modal">
-            {files.map((f) => (
-              <li key={f.id} className="feat-file-row">
-                <span className="feat-file-icon">{I.folder}</span>
-                <span className="feat-file-name" title={f.name}>{f.name}</span>
-                <span className="feat-file-size">{prettyBytes(f.sizeBytes)}</span>
-                <button
-                  type="button"
-                  className="feat-file-del"
-                  onClick={() => onRemove(f.id)}
-                  aria-label={s.remove}
-                  title={s.remove}
-                >×</button>
-              </li>
-            ))}
-          </ul>
-        )}
-        <div className="feat-modal-foot">
-          <button
-            type="button"
-            className="feat-btn-secondary"
-            onClick={() => setOpen(false)}
-          >{s.cancel}</button>
-          <button
-            type="button"
-            className="feat-btn-primary"
-            onClick={() => inputRef.current?.click()}
-            disabled={busy}
-          >{busy ? s.saving : s.addFile}</button>
-        </div>
-      </Modal>
-    </>
+        {I.plus}<span>{busy ? s.saving : s.addFile}</span>
+      </button>
+    </div>
   );
 }
 
-// ─── Skills row ───────────────────────────────────────────────────────────
-function SkillsRow({
-  loading,
-  selected,
+// ─── Skills card ──────────────────────────────────────────────────────────
+function SkillsCard({
+  skills,
   onChange,
 }: {
-  loading: boolean;
-  selected: string[];
-  onChange: (s: string[]) => Promise<void>;
+  skills: string[];
+  onChange: (skills: string[]) => Promise<void>;
 }) {
   const { s } = useUI();
-  const [open, setOpen] = useState(false);
-  const [local, setLocal] = useState<string[]>(selected);
+  const [local, setLocal] = useState<string[]>(skills);
   const [busy, setBusy] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
-  useEffect(() => { setLocal(selected); }, [selected]);
+  useEffect(() => { setLocal(skills); }, [skills]);
 
   async function onFiles(e: React.ChangeEvent<HTMLInputElement>) {
     const fl = e.target.files;
@@ -422,25 +446,27 @@ function SkillsRow({
   }
 
   async function remove(name: string) {
+    const prev = local;
     const next = local.filter((x) => x !== name);
     setLocal(next);
     try { await onChange(next); }
-    catch { setLocal(local); }
+    catch { setLocal(prev); }
   }
 
   return (
-    <>
-      <button
-        type="button"
-        className="feat-subsb-row feat-subsb-row-button"
-        onClick={() => setOpen(true)}
-        disabled={loading}
-      >
-        <span className="feat-subsb-row-icon" aria-hidden="true">{I.skills}</span>
-        <span className="feat-subsb-row-label as-text">{s.skillsPanel}</span>
-        {local.length > 0 && <span className="feat-subsb-row-count">{local.length}</span>}
-        <span className="feat-subsb-row-chev" aria-hidden="true">{I.chevR}</span>
-      </button>
+    <div className="sp-rail-card">
+      <div className="sp-rail-head">
+        <span className="sp-rail-icon" aria-hidden="true">{I.skills}</span>
+        <span className="sp-rail-title">{s.skillsPanel}</span>
+        <button
+          type="button"
+          className="sp-rail-add"
+          onClick={() => inputRef.current?.click()}
+          aria-label={s.addSkill}
+          title={s.addSkill}
+          disabled={busy}
+        >{I.plus}</button>
+      </div>
       <input
         ref={inputRef}
         type="file"
@@ -449,46 +475,35 @@ function SkillsRow({
         accept=".md,.txt,.json,.yaml,.yml,.prompt"
         onChange={onFiles}
       />
-      <Modal
-        open={open}
-        onClose={() => setOpen(false)}
-        title={s.skillsPanel}
-        width={520}
-      >
-        {local.length === 0 ? (
-          <div className="feat-card-empty">{s.skillsPanelDesc}</div>
-        ) : (
-          <ul className="feat-files feat-files-modal">
-            {local.map((name) => (
-              <li key={name} className="feat-file-row">
-                <span className="feat-file-icon">{I.doc}</span>
-                <span className="feat-file-name" title={name}>{name}</span>
-                <button
-                  type="button"
-                  className="feat-file-del"
-                  onClick={() => remove(name)}
-                  aria-label={s.remove}
-                  title={s.remove}
-                >×</button>
-              </li>
-            ))}
-          </ul>
-        )}
-        <div className="feat-modal-foot">
-          <button
-            type="button"
-            className="feat-btn-secondary"
-            onClick={() => setOpen(false)}
-          >{s.cancel}</button>
-          <button
-            type="button"
-            className="feat-btn-primary"
-            onClick={() => inputRef.current?.click()}
-            disabled={busy}
-          >{busy ? s.saving : s.addSkill}</button>
+
+      {local.length === 0 ? (
+        <div className="sp-dropzone">{s.skillsHint}</div>
+      ) : (
+        <div className="sp-chips">
+          {local.map((name) => (
+            <span key={name} className="sp-chip">
+              <span className="sp-chip-name" title={name}>{name}</span>
+              <button
+                type="button"
+                className="sp-row-del"
+                onClick={() => remove(name)}
+                aria-label={s.remove}
+                title={s.remove}
+              >×</button>
+            </span>
+          ))}
         </div>
-      </Modal>
-    </>
+      )}
+
+      <button
+        type="button"
+        className="sp-add-dashed"
+        onClick={() => inputRef.current?.click()}
+        disabled={busy}
+      >
+        {I.plus}<span>{busy ? s.saving : s.addSkill}</span>
+      </button>
+    </div>
   );
 }
 

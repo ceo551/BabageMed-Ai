@@ -37,6 +37,12 @@ export type LocaleStrings = {
   noSpacesYet: string;
   deleteSpace: string;
   spaceChatPlaceholder: string;
+  allSpaces: string;
+  searchSpaces: string;
+  instructionsTellHint: string;
+  filesHint: string;
+  skillsHint: string;
+  updatedAgo: string;
   instructions: string; instructionsDesc: string;
   filesFolders: string; filesFoldersDesc: string;
   skillsPanel: string; skillsPanelDesc: string;
@@ -193,6 +199,12 @@ export const STR: Record<Locale, LocaleStrings> = {
     noSpacesYet: "No spaces yet",
     deleteSpace: "Delete space",
     spaceChatPlaceholder: "Ask anything in this space…",
+    allSpaces: "All spaces",
+    searchSpaces: "Search spaces…",
+    instructionsTellHint: "Tell the assistant how it should work in this space.",
+    filesHint: "Add reference docs the assistant should use as context.",
+    skillsHint: "Reusable capabilities the assistant applies automatically.",
+    updatedAgo: "Updated",
     instructions: "Instructions",
     instructionsDesc: "Custom system prompt that runs on every chat in this feature.",
     filesFolders: "Files & folders",
@@ -321,6 +333,12 @@ export const STR: Record<Locale, LocaleStrings> = {
     noSpacesYet: "لا توجد مساحات بعد",
     deleteSpace: "حذف المساحة",
     spaceChatPlaceholder: "اسأل أي شيء في هذه المساحة…",
+    allSpaces: "كل المساحات",
+    searchSpaces: "ابحث في المساحات…",
+    instructionsTellHint: "أخبر المساعد كيف يعمل في هذه المساحة.",
+    filesHint: "أضف مستندات مرجعية يستخدمها المساعد كسياق.",
+    skillsHint: "قدرات قابلة لإعادة الاستخدام يطبّقها المساعد تلقائيًا.",
+    updatedAgo: "آخر تحديث",
     instructions: "التعليمات",
     instructionsDesc: "نص توجيه يُطبَّق على كل محادثة فى هذه الميزة.",
     filesFolders: "الملفات والمجلدات",

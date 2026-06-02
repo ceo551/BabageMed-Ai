@@ -10,6 +10,7 @@ import { useUI } from "../lib/ui-context";
 import { chats as chatsApi, spaces as spacesApi, type Chat, type Space } from "../lib/api";
 import type { FeatureMeta } from "../i18n";
 import { Modal } from "./Modal";
+import { CreateSpaceModal } from "../spaces/CreateSpaceModal";
 
 // Pull the feature slug out of the current pathname so the matching sidebar
 // row gets the active treatment. Returns "" outside the /features/* routes.
@@ -276,11 +277,9 @@ function SpacesSection() {
   const [renaming, setRenaming] = useState<Space | null>(null);
   const [renameDraft, setRenameDraft] = useState("");
   const [savingRename, setSavingRename] = useState(false);
-  // Create dialog state.
+  // Create dialog state. The form itself (stacked emoji + name) lives in the
+  // shared CreateSpaceModal so the sidebar and the /spaces index stay in sync.
   const [creating, setCreating] = useState(false);
-  const [createName, setCreateName] = useState("");
-  const [createIcon, setCreateIcon] = useState("🗂");
-  const [savingCreate, setSavingCreate] = useState(false);
 
   // Which space (if any) is the active route — highlight the row whose id
   // the pathname begins with (so /spaces/<id> and any nested route match).
@@ -372,30 +371,22 @@ function SpacesSection() {
   }
 
   function openCreate() {
-    setCreateName("");
-    setCreateIcon("🗂");
     setCreating(true);
   }
-  async function submitCreate() {
-    const name = createName.trim();
-    if (!name) return;
-    setSavingCreate(true);
-    try {
-      const created = await spacesApi.create({ name, icon: createIcon.trim() || "🗂" });
-      setItems((cur) => [created, ...cur]);
-      setCreating(false);
-      router.push(`/spaces/${encodeURIComponent(created.id)}`);
-    } catch {
-      // Leave the modal open so the user can retry.
-    } finally {
-      setSavingCreate(false);
-    }
+  async function submitCreate(name: string, icon: string) {
+    const created = await spacesApi.create({ name, icon });
+    setItems((cur) => [created, ...cur]);
+    router.push(`/spaces/${encodeURIComponent(created.id)}`);
   }
 
   if (!user) {
     return (
       <div className="sb-history">
-        <div className="sb-section-label">{s.spacesHeader}</div>
+        <Link
+          href="/spaces"
+          className="sb-section-label"
+          style={{ display: "block", textDecoration: "none" }}
+        >{s.spacesHeader}</Link>
         <div className="sb-row" style={{ opacity: 0.6, cursor: "not-allowed" }}>
           {I.spaces}
           <span className="lbl">{s.spacesHeader}</span>
@@ -406,7 +397,12 @@ function SpacesSection() {
 
   return (
     <div className="sb-history">
-      <div className="sb-section-label">{s.spacesHeader}</div>
+      <Link
+        href="/spaces"
+        className="sb-section-label"
+        style={{ display: "block", textDecoration: "none" }}
+        data-active={pathname === "/spaces"}
+      >{s.spacesHeader}</Link>
       <button
         type="button"
         className="sb-row"
@@ -509,49 +505,12 @@ function SpacesSection() {
         </div>
       </Modal>
 
-      {/* Create dialog */}
-      <Modal
+      {/* Create dialog — shared stacked-form component, also used on /spaces. */}
+      <CreateSpaceModal
         open={creating}
         onClose={() => setCreating(false)}
-        title={s.createSpace}
-        width={460}
-      >
-        <div style={{ display: "flex", gap: 10, alignItems: "stretch" }}>
-          <input
-            type="text"
-            className="feat-modal-input"
-            value={createIcon}
-            onChange={(e) => setCreateIcon(e.target.value)}
-            aria-label="Icon"
-            maxLength={4}
-            style={{ width: 56, textAlign: "center", flex: "0 0 auto" }}
-          />
-          <input
-            type="text"
-            className="feat-modal-input"
-            placeholder={s.spaceNamePlaceholder}
-            value={createName}
-            onChange={(e) => setCreateName(e.target.value)}
-            onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); submitCreate(); } }}
-            autoFocus
-            style={{ flex: 1 }}
-          />
-        </div>
-        <div className="feat-modal-foot">
-          <button
-            type="button"
-            className="feat-btn-secondary"
-            onClick={() => setCreating(false)}
-            disabled={savingCreate}
-          >{s.cancel}</button>
-          <button
-            type="button"
-            className="feat-btn-primary"
-            onClick={submitCreate}
-            disabled={savingCreate || !createName.trim()}
-          >{savingCreate ? s.saving : s.createSpace}</button>
-        </div>
-      </Modal>
+        onCreate={submitCreate}
+      />
     </div>
   );
 }

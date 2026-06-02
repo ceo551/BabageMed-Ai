@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useEffect, useId, useRef } from "react";
+import React, { useEffect, useId, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { useUI } from "../lib/ui-context";
 
 // Modal — minimal dialog primitive used by the New-Space form (and any
@@ -36,6 +37,13 @@ export function Modal({ open, onClose, title, width = 540, children }: ModalProp
   // clicked).
   const titleId = useId();
   const { s } = useUI();
+  // Render into document.body via a portal so the fixed-position backdrop
+  // escapes any ancestor that establishes a containing block for fixed
+  // elements (the sidebar uses backdrop-filter, which would otherwise trap
+  // and shrink the modal into the sidebar's corner — the New-space dialog
+  // bug). Gate on mount so SSR/first paint doesn't touch document.body.
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { setMounted(true); }, []);
 
   useEffect(() => {
     if (!open) return;
@@ -96,7 +104,7 @@ export function Modal({ open, onClose, title, width = 540, children }: ModalProp
     };
   }, [open, onClose]);
 
-  if (!open) return null;
+  if (!open || !mounted) return null;
 
   // Stable id for aria-labelledby — screen readers announce the dialog
   // with its title text instead of just "dialog". When `title` is a non-
@@ -108,7 +116,7 @@ export function Modal({ open, onClose, title, width = 540, children }: ModalProp
         ? { "aria-label": title }
         : { "aria-labelledby": titleId })
     : { "aria-label": "Dialog" };
-  return (
+  return createPortal((
     <div
       className="modal-backdrop"
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
@@ -133,5 +141,5 @@ export function Modal({ open, onClose, title, width = 540, children }: ModalProp
         <div className="modal-body">{children}</div>
       </div>
     </div>
-  );
+  ), document.body);
 }
