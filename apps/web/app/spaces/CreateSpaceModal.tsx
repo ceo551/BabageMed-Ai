@@ -21,12 +21,12 @@ export function CreateSpaceModal({
 }) {
   const { s } = useUI();
   const [name, setName] = useState("");
-  const [icon, setIcon] = useState("🗂");
+  const [icon, setIcon] = useState("📁");
   const [saving, setSaving] = useState(false);
 
   // Reset the form whenever the dialog (re)opens.
   useEffect(() => {
-    if (open) { setName(""); setIcon("🗂"); setSaving(false); }
+    if (open) { setName(""); setIcon("📁"); setSaving(false); }
   }, [open]);
 
   async function submit() {
@@ -34,7 +34,7 @@ export function CreateSpaceModal({
     if (!n || saving) return;
     setSaving(true);
     try {
-      await onCreate(n, icon.trim() || "🗂");
+      await onCreate(n, icon.trim() || "📁");
       onClose();
     } catch {
       // Leave the dialog open so the user can retry.

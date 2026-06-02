@@ -7,10 +7,9 @@ import { createPortal } from "react-dom";
 import { I, featureIcon } from "../icons";
 import { useAuth } from "../lib/auth-context";
 import { useUI } from "../lib/ui-context";
-import { chats as chatsApi, spaces as spacesApi, type Chat, type Space } from "../lib/api";
+import { chats as chatsApi, type Chat } from "../lib/api";
 import type { FeatureMeta } from "../i18n";
 import { Modal } from "./Modal";
-import { CreateSpaceModal } from "../spaces/CreateSpaceModal";
 
 // Pull the feature slug out of the current pathname so the matching sidebar
 // row gets the active treatment. Returns "" outside the /features/* routes.
@@ -150,7 +149,16 @@ export function Sidebar({
           <span className="kbd">⌘ K</span>
         </button>
 
-        <SpacesSection />
+        <Link
+          href="/spaces"
+          className="sb-row"
+          data-active={pathname?.startsWith("/spaces") ?? false}
+          style={{ textDecoration: "none" }}
+        >
+          {I.spaces}
+          <span className="lbl">{s.spacesHeader}</span>
+          <span className="trail-chev">{I.chevR}</span>
+        </Link>
 
         {/* Features — fixed 10-category nav. Order matches the mockup:
             10 feature rows → Connectors row → general History.
@@ -256,261 +264,6 @@ function FeaturesSection({
           </li>
         ))}
       </ul>
-    </div>
-  );
-}
-
-// ─── Spaces section (inline, Claude Projects / Perplexity Spaces) ──────────
-// Modeled on HistorySection: fetch the user's spaces on mount, render a
-// "+ New space" button + one row per space (emoji + name, linking to
-// /spaces/<id>), each with a 3-dot Rename / Delete overflow menu. Anonymous
-// users see a single disabled row, same as HistorySection's signed-out branch.
-function SpacesSection() {
-  const router = useRouter();
-  const pathname = usePathname();
-  const { user } = useAuth();
-  const { s } = useUI();
-  const [items, setItems] = useState<Space[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [menuOpenId, setMenuOpenId] = useState<string>("");
-  // Rename dialog state.
-  const [renaming, setRenaming] = useState<Space | null>(null);
-  const [renameDraft, setRenameDraft] = useState("");
-  const [savingRename, setSavingRename] = useState(false);
-  // Create dialog state. The form itself (stacked emoji + name) lives in the
-  // shared CreateSpaceModal so the sidebar and the /spaces index stay in sync.
-  const [creating, setCreating] = useState(false);
-
-  // Which space (if any) is the active route — highlight the row whose id
-  // the pathname begins with (so /spaces/<id> and any nested route match).
-  const activeSpaceId = (() => {
-    if (!pathname) return "";
-    const m = pathname.match(/^\/spaces\/([^/?#]+)/);
-    return m ? decodeURIComponent(m[1]) : "";
-  })();
-
-  // Fetch on mount + whenever the route changes. Skip for anonymous users —
-  // /api/spaces requires auth.
-  useEffect(() => {
-    if (!user) { setItems([]); return; }
-    let cancelled = false;
-    setLoading(true);
-    spacesApi.list()
-      .then((list) => { if (!cancelled) setItems(list); })
-      .catch(() => { if (!cancelled) setItems([]); })
-      .finally(() => { if (!cancelled) setLoading(false); });
-    return () => { cancelled = true; };
-  }, [user, pathname]);
-
-  // Close the overflow menu on outside click / Escape.
-  useEffect(() => {
-    if (!menuOpenId) return;
-    function onDoc(e: MouseEvent) {
-      const t = e.target as HTMLElement;
-      if (!t.closest?.(".sb-history-row-menu") && !t.closest?.(".sb-history-menu-btn")) {
-        setMenuOpenId("");
-      }
-    }
-    function onKey(e: KeyboardEvent) { if (e.key === "Escape") setMenuOpenId(""); }
-    document.addEventListener("mousedown", onDoc);
-    document.addEventListener("keydown", onKey);
-    return () => {
-      document.removeEventListener("mousedown", onDoc);
-      document.removeEventListener("keydown", onKey);
-    };
-  }, [menuOpenId]);
-
-  async function removeSpace(id: string) {
-    setMenuOpenId("");
-    // Optimistic delete with index-preserving rollback, mirroring
-    // HistorySection.removeChat.
-    let removed: Space | undefined;
-    let removedIdx = -1;
-    setItems((cur) => {
-      removedIdx = cur.findIndex((sp) => sp.id === id);
-      removed = removedIdx >= 0 ? cur[removedIdx] : undefined;
-      return cur.filter((sp) => sp.id !== id);
-    });
-    try {
-      await spacesApi.remove(id);
-      if (id === activeSpaceId) router.push("/");
-    } catch {
-      if (removed) {
-        const r = removed;
-        const idx = removedIdx;
-        setItems((cur) => {
-          if (cur.some((sp) => sp.id === r.id)) return cur;
-          const next = cur.slice();
-          next.splice(Math.min(idx, next.length), 0, r);
-          return next;
-        });
-      }
-    }
-  }
-
-  function openRename(sp: Space) {
-    setMenuOpenId("");
-    setRenaming(sp);
-    setRenameDraft(sp.name || "");
-  }
-  async function submitRename() {
-    if (!renaming) return;
-    const name = renameDraft.trim();
-    if (!name || name === renaming.name) { setRenaming(null); return; }
-    setSavingRename(true);
-    const id = renaming.id;
-    try {
-      const updated = await spacesApi.update(id, { name });
-      setItems((cur) => cur.map((sp) => (sp.id === id ? { ...sp, name: updated.name } : sp)));
-      setRenaming(null);
-    } catch {
-      // Leave the modal open so the user can retry.
-    } finally {
-      setSavingRename(false);
-    }
-  }
-
-  function openCreate() {
-    setCreating(true);
-  }
-  async function submitCreate(name: string, icon: string) {
-    const created = await spacesApi.create({ name, icon });
-    setItems((cur) => [created, ...cur]);
-    router.push(`/spaces/${encodeURIComponent(created.id)}`);
-  }
-
-  if (!user) {
-    return (
-      <div className="sb-history">
-        <Link
-          href="/spaces"
-          className="sb-section-label"
-          style={{ display: "block", textDecoration: "none" }}
-        >{s.spacesHeader}</Link>
-        <div className="sb-row" style={{ opacity: 0.6, cursor: "not-allowed" }}>
-          {I.spaces}
-          <span className="lbl">{s.spacesHeader}</span>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="sb-history">
-      <Link
-        href="/spaces"
-        className="sb-section-label"
-        style={{ display: "block", textDecoration: "none" }}
-        data-active={pathname === "/spaces"}
-      >{s.spacesHeader}</Link>
-      <button
-        type="button"
-        className="sb-row"
-        onClick={openCreate}
-        title={s.newSpace}
-        style={{ width: "100%", border: 0, background: "transparent", cursor: "pointer", textAlign: "start" }}
-      >
-        {I.plus}
-        <span className="lbl">{s.newSpace}</span>
-      </button>
-
-      {loading && items.length === 0 ? (
-        <div className="sb-history-empty">{s.loadingChats}</div>
-      ) : items.length === 0 ? (
-        <div className="sb-history-empty">{s.noSpacesYet}</div>
-      ) : (
-        <ul className="sb-history-list">
-          {items.slice(0, 40).map((sp) => (
-            <li key={sp.id} className="sb-history-li">
-              <button
-                type="button"
-                className="sb-history-item"
-                data-active={sp.id === activeSpaceId}
-                onClick={() => router.push(`/spaces/${encodeURIComponent(sp.id)}`)}
-                title={sp.name}
-              >
-                <span className="sb-history-icon" aria-hidden="true">{sp.icon || "🗂"}</span>
-                <span className="sb-history-title">{sp.name}</span>
-              </button>
-              <button
-                type="button"
-                className="sb-history-menu-btn"
-                aria-label={s.more}
-                title={s.more}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setMenuOpenId((cur) => (cur === sp.id ? "" : sp.id));
-                }}
-              >
-                {I.dotsV}
-              </button>
-              {menuOpenId === sp.id && (
-                <div
-                  className="sb-history-row-menu"
-                  role="menu"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <button
-                    type="button"
-                    className="sb-history-row-menu-item"
-                    onClick={() => openRename(sp)}
-                  >
-                    {I.edit}
-                    <span>{s.rename}</span>
-                  </button>
-                  <button
-                    type="button"
-                    className="sb-history-row-menu-item is-danger"
-                    onClick={() => removeSpace(sp.id)}
-                  >
-                    {I.trash}
-                    <span>{s.delete}</span>
-                  </button>
-                </div>
-              )}
-            </li>
-          ))}
-        </ul>
-      )}
-
-      {/* Rename dialog */}
-      <Modal
-        open={renaming !== null}
-        onClose={() => setRenaming(null)}
-        title={s.rename}
-        width={420}
-      >
-        <input
-          type="text"
-          className="feat-modal-input"
-          placeholder={s.spaceNameLabel}
-          value={renameDraft}
-          onChange={(e) => setRenameDraft(e.target.value)}
-          onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); submitRename(); } }}
-          autoFocus
-        />
-        <div className="feat-modal-foot">
-          <button
-            type="button"
-            className="feat-btn-secondary"
-            onClick={() => setRenaming(null)}
-            disabled={savingRename}
-          >{s.cancel}</button>
-          <button
-            type="button"
-            className="feat-btn-primary"
-            onClick={submitRename}
-            disabled={savingRename || !renameDraft.trim()}
-          >{savingRename ? s.saving : s.save}</button>
-        </div>
-      </Modal>
-
-      {/* Create dialog — shared stacked-form component, also used on /spaces. */}
-      <CreateSpaceModal
-        open={creating}
-        onClose={() => setCreating(false)}
-        onCreate={submitCreate}
-      />
     </div>
   );
 }

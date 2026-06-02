@@ -95,7 +95,7 @@ export default function SpacesIndexPage() {
         <div className="sp-loading"><span className="ps-spinner" />{s.loadingChats}</div>
       ) : items.length === 0 ? (
         <div className="sp-empty">
-          <span className="sp-empty-emoji" aria-hidden="true">🗂</span>
+          <span className="sp-empty-emoji" aria-hidden="true">{I.spaces}</span>
           <span className="sp-empty-title">{s.noSpacesYet}</span>
           <button type="button" className="sp-new-btn" onClick={() => setCreating(true)}>
             {I.plus}
@@ -116,7 +116,7 @@ export default function SpacesIndexPage() {
               className="sp-card"
             >
               <div className="sp-card-top">
-                <span className="sp-card-emoji" aria-hidden="true">{sp.icon || "🗂"}</span>
+                <span className="sp-card-emoji" aria-hidden="true">{sp.icon || "📁"}</span>
                 <span className="sp-card-name" title={sp.name}>{sp.name}</span>
               </div>
               {sp.description ? <p className="sp-card-desc">{sp.description}</p> : null}

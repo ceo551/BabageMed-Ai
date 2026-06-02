@@ -198,7 +198,9 @@
   justify-content: center;
   font-size: 34px;
   line-height: 1;
+  color: var(--cyan);
 }
+.sp-empty-emoji .ico { width: 34px; height: 34px; }
 .sp-empty-title {
   font-size: 18px;
   font-weight: 600;
