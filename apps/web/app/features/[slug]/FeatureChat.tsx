@@ -464,8 +464,8 @@ export function FeatureChat({
                   </span>
                 </button>
                 {/* Web search + connectors aren't useful on the visual
-                    (Image & Video / Advertisements) features — their
-                    generations don't ground on text sources — so hide them. */}
+                    (Image & Video) feature — its generations don't ground
+                    on text sources — so hide them. */}
                 {meta.modality !== "visual" && (
                   <button
                     type="button"
@@ -511,7 +511,7 @@ export function FeatureChat({
             )}
             <span className="spacer" />
           {/* Model picker — text features show one list of 8 chat LLMs;
-              visual features (image & video, advertisements) show two
+              the visual feature (image & video) shows two
               grouped lists (Image · Video). */}
           <div className="feat-model-wrap">
             <button

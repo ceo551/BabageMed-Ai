@@ -177,8 +177,8 @@ func (h *Handler) ChatStream(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Connection", "keep-alive")
 	w.Header().Set("X-Accel-Buffering", "no")
 	flush, _ := w.(http.Flusher)
-	// Image / video model ids belong to the visual modality (Image &
-	// Video / Advertisements features) and aren't supported by the text
+	// Image / video model ids belong to the visual modality (the Image &
+	// Video feature) and aren't supported by the text
 	// streaming endpoint. Surface a clear error instead of silently
 	// falling back to a text model the user didn't pick.
 	if isVisualModel(req.Model) {
