@@ -414,7 +414,12 @@ func (s *Service) DeleteFile(ctx context.Context, userID, spaceID, fileID string
 func (s *Service) Context(ctx context.Context, userID, spaceID, q string) ([]Chunk, error) {
 	q = strings.TrimSpace(q)
 	if q == "" {
-		return nil, nil
+		return []Chunk{}, nil
+	}
+	// FTS needs only a handful of terms; cap so a huge ?q= can't amplify the
+	// plainto_tsquery parse cost on every retrieval.
+	if len(q) > 1000 {
+		q = q[:1000]
 	}
 	// Ownership gate.
 	// Ownership gate: Get returns pgx.ErrNoRows when the space doesn't

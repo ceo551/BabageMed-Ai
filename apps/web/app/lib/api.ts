@@ -257,6 +257,7 @@ export type Chat = {
   model: string;
   mode: string;
   feature?: string;
+  spaceId?: string;
   createdAt: string;
   updatedAt: string;
 };

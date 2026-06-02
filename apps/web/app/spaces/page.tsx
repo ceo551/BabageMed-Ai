@@ -74,10 +74,29 @@ export default function SpacesIndexPage() {
 
   async function removeSpace(id: string) {
     setMenuOpenId("");
-    const prev = items;
-    setItems((cur) => cur.filter((sp) => sp.id !== id));
+    if (typeof window !== "undefined" && !window.confirm(s.deleteSpaceConfirm)) return;
+    // Capture the removed row + its index so a failed delete re-inserts only
+    // that row at its original position (not a stale whole-list snapshot that
+    // would clobber any concurrent rename/delete).
+    let removed: Space | undefined;
+    let at = -1;
+    setItems((cur) => {
+      at = cur.findIndex((sp) => sp.id === id);
+      removed = at >= 0 ? cur[at] : undefined;
+      return cur.filter((sp) => sp.id !== id);
+    });
     try { await spacesApi.remove(id); }
-    catch { setItems(prev); }
+    catch {
+      if (removed) {
+        const r = removed, idx = at;
+        setItems((cur) => {
+          if (cur.some((sp) => sp.id === r.id)) return cur;
+          const n = cur.slice();
+          n.splice(Math.min(idx, n.length), 0, r);
+          return n;
+        });
+      }
+    }
   }
   function openRename(sp: Space) { setMenuOpenId(""); setRenaming(sp); setRenameDraft(sp.name); }
   async function submitRename() {
@@ -148,7 +167,8 @@ export default function SpacesIndexPage() {
       ) : filtered.length === 0 ? (
         <div className="sp-empty">
           <span className="sp-empty-emoji" aria-hidden="true">🔍</span>
-          <span className="sp-empty-title">{s.noSpacesYet}</span>
+          <span className="sp-empty-title">{s.noSpacesMatch}</span>
+          <button type="button" className="sp-new-btn" onClick={() => setQuery("")}>{s.clearSearch}</button>
         </div>
       ) : (
         <div className="sp-grid">

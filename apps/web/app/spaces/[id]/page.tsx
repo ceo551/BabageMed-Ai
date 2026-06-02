@@ -90,7 +90,12 @@ function SpacePageInner() {
   }, [menuOpen]);
 
   async function refreshFiles() {
-    try { setFiles(await spacesApi.files(id)); } catch { /* keep current */ }
+    try {
+      const fl = await spacesApi.files(id);
+      setFiles(fl);
+      // Keep the header/index file count in sync after add/remove.
+      setSpace((sp) => (sp ? { ...sp, fileCount: fl.length } : sp));
+    } catch { /* keep current */ }
   }
 
   function openRename() {
@@ -116,11 +121,12 @@ function SpacePageInner() {
   }
   async function deleteSpace() {
     setMenuOpen(false);
+    if (typeof window !== "undefined" && !window.confirm(s.deleteSpaceConfirm)) return;
     try {
       await spacesApi.remove(id);
       router.push("/spaces");
-    } catch {
-      // No-op: surface nothing destructive on failure.
+    } catch (e) {
+      setError((e as { error?: string })?.error || s.deleteSpace);
     }
   }
 
@@ -168,13 +174,21 @@ function SpacePageInner() {
           <span>{s.allSpaces}</span>
         </Link>
         <div className="sp-head-main">
-          <span className="sp-head-emoji" aria-hidden="true">{space.icon || "🗂"}</span>
+          <span className="sp-head-emoji" aria-hidden="true">{space.icon || "📁"}</span>
           <div className="sp-head-text">
             <h1 className="sp-head-name" title={space.name}>{space.name}</h1>
             {space.description ? (
               <p className="sp-head-desc" title={space.description}>{space.description}</p>
             ) : null}
           </div>
+          <button
+            type="button"
+            className="sp-newthread-btn"
+            onClick={() => router.push(`/spaces/${encodeURIComponent(id)}?n=${Date.now()}`)}
+            title={s.newThread}
+          >
+            {I.plus}<span>{s.newThread}</span>
+          </button>
           <div className="sp-menu-wrap">
             <button
               type="button"
@@ -217,13 +231,20 @@ function SpacePageInner() {
           <FilesCard
             files={files}
             onUpload={async (fl) => {
-              // Backend upload takes ONE file — loop over the chosen files.
-              for (const f of Array.from(fl)) await spacesApi.upload(id, f);
+              // Backend takes ONE file per call — loop, isolating per-file
+              // failures so a single bad file doesn't silently drop the rest.
+              const errs: string[] = [];
+              for (const f of Array.from(fl)) {
+                try { await spacesApi.upload(id, f); }
+                catch (e) { errs.push(`${f.name}: ${(e as { error?: string })?.error || "failed"}`); }
+              }
               await refreshFiles();
+              setError(errs.length ? errs.join("; ") : null);
             }}
             onRemove={async (fileId) => {
-              await spacesApi.removeFile(id, fileId);
-              await refreshFiles();
+              try { await spacesApi.removeFile(id, fileId); setError(null); }
+              catch (e) { setError((e as { error?: string })?.error || s.remove); }
+              finally { await refreshFiles(); }
             }}
           />
           <SkillsCard

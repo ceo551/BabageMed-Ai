@@ -37,6 +37,7 @@ export function SpaceChat({ space }: { space: Space }) {
   const nonceParam  = params?.get("n") || "";
 
   const [messages, setMessages] = useState<Msg[]>([]);
+  const isChatting = messages.length > 0;
   const [chatId, setChatId] = useState<string>("");
   const [value, setValue] = useState("");
   const [sending, setSending] = useState(false);
@@ -60,9 +61,20 @@ export function SpaceChat({ space }: { space: Space }) {
       setChatId(chatIdParam);
       const requestedId = chatIdParam;
       liveLoadRef.current = requestedId;
-      chatsApi.messages(requestedId)
+      // Verify the chat belongs to THIS space before loading it — a stale or
+      // hand-edited ?c=<id> must not load another space's (or a general/
+      // feature) conversation into this space.
+      chatsApi.get(requestedId)
+        .then((chat) => {
+          if (requestedId !== liveLoadRef.current) return null;
+          if ((chat.spaceId || "") !== space.id) {
+            router.replace(`/spaces/${encodeURIComponent(space.id)}`);
+            return null;
+          }
+          return chatsApi.messages(requestedId);
+        })
         .then((rows) => {
-          if (requestedId !== liveLoadRef.current) return;
+          if (!rows || requestedId !== liveLoadRef.current) return;
           setMessages(rows.map((r) => {
             if (r.role === "user") return { id: r.id, role: "user", content: r.content } as Msg;
             const cs = Array.isArray(r.citations) ? (r.citations as Citation[]) : undefined;
@@ -101,7 +113,10 @@ export function SpaceChat({ space }: { space: Space }) {
     }
     scroller.addEventListener("scroll", onScroll, { passive: true });
     return () => scroller.removeEventListener("scroll", onScroll);
-  }, []);
+    // Re-bind once the chatting branch mounts .feat-chat-scroll with the
+    // transcript (on the home screen it isn't present, so the listener would
+    // otherwise never attach).
+  }, [isChatting]);
   useLayoutEffect(() => {
     if (!stickRef.current) return;
     transcriptEndRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
@@ -176,6 +191,7 @@ export function SpaceChat({ space }: { space: Space }) {
         locale,
         featureInstructions: space.instructions || "",
         spaceName: space.name,
+        spaceSkills: space.skills || [],
         spaceContext: chunks,
         messages: [
           ...messages
@@ -260,6 +276,17 @@ export function SpaceChat({ space }: { space: Space }) {
         }
       }
 
+      if (finalContent === "") {
+        // Stream ended with no content (e.g. no model API key configured for
+        // this space) — show a clear message instead of a blank bubble.
+        finalContent = locale === "ar"
+          ? "لا توجد استجابة — تأكد من إعداد مفتاح الموديل لهذه المساحة."
+          : "No response — check this space's model configuration.";
+        const fc = finalContent;
+        setMessages((cur) =>
+          cur.map((m) => (m.id === assistantId && m.role === "assistant" ? { ...m, content: fc } : m)),
+        );
+      }
       if (activeChatId && finalContent !== "") {
         chatsApi.append(activeChatId, { role: "assistant", content: finalContent, citations: cites ?? [] }).catch(() => {});
       }
@@ -373,8 +400,6 @@ export function SpaceChat({ space }: { space: Space }) {
       </div>
     </div>
   );
-
-  const isChatting = messages.length > 0;
 
   return (
     <div className="feat-chat" data-chat={isChatting}>

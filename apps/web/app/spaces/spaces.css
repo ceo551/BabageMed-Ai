@@ -267,6 +267,24 @@
 .sp-card-menu-item:hover { background: var(--bg-2); }
 .sp-card-menu-item.is-danger { color: var(--rose); }
 .sp-card-menu-item svg { width: 15px; height: 15px; }
+/* Kebab reachable on touch devices (no hover state). */
+@media (hover: none) { .sp-card-menu-btn { opacity: 1; } }
+
+/* Map the shared --hue-* vars on the space surface so feature.css's chat /
+   empty-state classes (e.g. .feat-chat-empty-emoji, the send button) regain
+   their cyan tile/fill instead of resolving to nothing. */
+.space-page { --hue-bg: var(--cyan-soft); --hue-line: var(--cyan-line); --hue-ink: var(--cyan); }
+
+/* Space header "New thread" button (resets to the space home). */
+.sp-newthread-btn {
+  display: inline-flex; align-items: center; gap: 6px; flex: 0 0 auto;
+  padding: 7px 12px; border: 1px solid var(--cyan-line); border-radius: 9px;
+  background: var(--cyan-soft); color: var(--cyan); cursor: pointer;
+  font-size: 13px; font-weight: 600; white-space: nowrap;
+}
+.sp-newthread-btn:hover { filter: brightness(1.05); }
+.sp-newthread-btn svg { width: 16px; height: 16px; }
+@media (max-width: 640px) { .sp-newthread-btn span { display: none; } }
 .sp-empty-title {
   font-size: 18px;
   font-weight: 600;

@@ -43,6 +43,10 @@ export type LocaleStrings = {
   filesHint: string;
   skillsHint: string;
   updatedAgo: string;
+  noSpacesMatch: string;
+  clearSearch: string;
+  newThread: string;
+  deleteSpaceConfirm: string;
   instructions: string; instructionsDesc: string;
   filesFolders: string; filesFoldersDesc: string;
   skillsPanel: string; skillsPanelDesc: string;
@@ -205,6 +209,10 @@ export const STR: Record<Locale, LocaleStrings> = {
     filesHint: "Add reference docs the assistant should use as context.",
     skillsHint: "Reusable capabilities the assistant applies automatically.",
     updatedAgo: "Updated",
+    noSpacesMatch: "No spaces match your search",
+    clearSearch: "Clear search",
+    newThread: "New thread",
+    deleteSpaceConfirm: "Delete this space and all its threads, files and instructions? This can't be undone.",
     instructions: "Instructions",
     instructionsDesc: "Custom system prompt that runs on every chat in this feature.",
     filesFolders: "Files & folders",
@@ -339,6 +347,10 @@ export const STR: Record<Locale, LocaleStrings> = {
     filesHint: "أضف مستندات مرجعية يستخدمها المساعد كسياق.",
     skillsHint: "قدرات قابلة لإعادة الاستخدام يطبّقها المساعد تلقائيًا.",
     updatedAgo: "آخر تحديث",
+    noSpacesMatch: "لا توجد مساحات مطابقة لبحثك",
+    clearSearch: "مسح البحث",
+    newThread: "محادثة جديدة",
+    deleteSpaceConfirm: "حذف هذه المساحة وكل محادثاتها وملفاتها وتعليماتها؟ لا يمكن التراجع.",
     instructions: "التعليمات",
     instructionsDesc: "نص توجيه يُطبَّق على كل محادثة فى هذه الميزة.",
     filesFolders: "الملفات والمجلدات",

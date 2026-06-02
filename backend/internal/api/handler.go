@@ -130,6 +130,9 @@ type chatRequest struct {
 	// so the assistant grounds answers in that workflow's tuning.
 	Feature             string `json:"feature,omitempty"`
 	FeatureInstructions string `json:"featureInstructions,omitempty"`
+	// Skills enabled for a Space — the space page sends space.skills so the
+	// model is told which reusable capabilities to apply (labels only).
+	SpaceSkills []string `json:"spaceSkills,omitempty"`
 	// When true (composer "Web search" toggle), the user's last message is run
 	// through Brave web search and the top results are injected as a
 	// "web-search" citation so the model answers from live web sources. No-op
@@ -221,7 +224,7 @@ func (h *Handler) ChatStream(w http.ResponseWriter, r *http.Request) {
 	// Real provider streaming: forward each text delta as a 'delta' SSE event
 	// so the frontend types in tokens as they arrive instead of waiting on a
 	// single 'content' chunk at the end.
-	system := buildSystem(req.Mode, req.Locale, citations, req.UseMcps, req.SpaceContext, req.SpaceName, req.Feature, req.FeatureInstructions)
+	system := buildSystem(req.Mode, req.Locale, citations, req.UseMcps, req.SpaceContext, req.SpaceName, req.Feature, req.FeatureInstructions, req.SpaceSkills)
 	if req.Model == "" {
 		req.Model = "opus-4.8"
 	}
@@ -433,7 +436,7 @@ func mcpSupportsSearch(s mcp.Server) bool {
 }
 
 func (h *Handler) complete(ctx context.Context, req chatRequest, citations []map[string]any) (*llm.CompletionResponse, error) {
-	system := buildSystem(req.Mode, req.Locale, citations, req.UseMcps, req.SpaceContext, req.SpaceName, req.Feature, req.FeatureInstructions)
+	system := buildSystem(req.Mode, req.Locale, citations, req.UseMcps, req.SpaceContext, req.SpaceName, req.Feature, req.FeatureInstructions, req.SpaceSkills)
 	if req.Model == "" {
 		req.Model = "opus-4.8"
 	}
@@ -584,7 +587,7 @@ func isVisualModel(id string) bool {
 	return false
 }
 
-func buildSystem(mode, locale string, citations []map[string]any, useMcps []string, spaceCtx []map[string]any, spaceName, feature, featureInstructions string) string {
+func buildSystem(mode, locale string, citations []map[string]any, useMcps []string, spaceCtx []map[string]any, spaceName, feature, featureInstructions string, spaceSkills []string) string {
 	var b strings.Builder
 	b.WriteString("You are Pervagans — a careful, source-aware assistant. State uncertainty plainly and never invent facts. If retrieved sources don't cover the question, say so explicitly.\n")
 	// Feature workspace context. When the user is chatting from a feature
@@ -608,6 +611,27 @@ func buildSystem(mode, locale string, citations []map[string]any, useMcps []stri
 		b.WriteString("---BEGIN-USER-INSTRUCTIONS---\n")
 		b.WriteString(stripFencesAndControlChars(text))
 		b.WriteString("\n---END-USER-INSTRUCTIONS---\n")
+	}
+	// Space skills — labels of reusable capabilities the user enabled for this
+	// space. Sanitised + capped; told to the model so they actually take effect.
+	if len(spaceSkills) > 0 {
+		clean := make([]string, 0, len(spaceSkills))
+		for _, sk := range spaceSkills {
+			sk = strings.TrimSpace(sk)
+			if sk == "" {
+				continue
+			}
+			if len(sk) > 128 {
+				sk = sk[:128]
+			}
+			clean = append(clean, stripFencesAndControlChars(sk))
+			if len(clean) >= 50 {
+				break
+			}
+		}
+		if len(clean) > 0 {
+			fmt.Fprintf(&b, "\nSkills enabled for this space (apply these reusable capabilities when relevant): %s.\n", strings.Join(clean, ", "))
+		}
 	}
 	now := time.Now().UTC()
 	fmt.Fprintf(&b, "Today is %s (UTC). Trust this date over anything in your training data; never invent a different year.\n",

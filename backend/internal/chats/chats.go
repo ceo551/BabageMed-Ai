@@ -34,6 +34,10 @@ type Chat struct {
 	// this so the general History sidebar row and each feature page's
 	// sub-sidebar see disjoint sets.
 	Feature   string    `json:"feature,omitempty"`
+	// SpaceID is the Space this chat belongs to (empty for general/feature
+	// chats). Surfaced so the space page can verify a ?c=<id> chat actually
+	// belongs to the open space before loading it (cross-space guard).
+	SpaceID   string    `json:"spaceId,omitempty"`
 	CreatedAt time.Time `json:"createdAt"`
 	UpdatedAt time.Time `json:"updatedAt"`
 }
@@ -175,11 +179,12 @@ func (s *Service) handleCreate(w http.ResponseWriter, r *http.Request) {
 	var c Chat
 	err := s.db.Pool.QueryRow(r.Context(), `
 		INSERT INTO chats (user_id, title, model, mode, feature_slug, space_id)
-		VALUES ($1, NULLIF($2, ''), NULLIF($3, ''), NULLIF($4, ''), NULLIF($5, ''), NULLIF($6, '')::uuid)
+		VALUES ($1, NULLIF($2, ''), NULLIF($3, ''), NULLIF($4, ''), NULLIF($5, ''),
+		        (SELECT id FROM spaces WHERE id = NULLIF($6, '')::uuid AND user_id = $1))
 		RETURNING id, COALESCE(title, ''), COALESCE(model, ''), COALESCE(mode, ''),
-		          COALESCE(feature_slug, ''), created_at, updated_at
+		          COALESCE(feature_slug, ''), COALESCE(space_id::text, ''), created_at, updated_at
 	`, u.ID, body.Title, body.Model, body.Mode, body.Feature, body.SpaceID).
-		Scan(&c.ID, &c.Title, &c.Model, &c.Mode, &c.Feature, &c.CreatedAt, &c.UpdatedAt)
+		Scan(&c.ID, &c.Title, &c.Model, &c.Mode, &c.Feature, &c.SpaceID, &c.CreatedAt, &c.UpdatedAt)
 	if err != nil {
 		internalServerError(w, err)
 		return
@@ -222,9 +227,9 @@ func (s *Service) handleGet(w http.ResponseWriter, r *http.Request) {
 	var c Chat
 	err := s.db.Pool.QueryRow(r.Context(), `
 		SELECT id, COALESCE(title, ''), COALESCE(model, ''), COALESCE(mode, ''),
-		       COALESCE(feature_slug, ''), created_at, updated_at
+		       COALESCE(feature_slug, ''), COALESCE(space_id::text, ''), created_at, updated_at
 		FROM chats WHERE id = $1 AND user_id = $2 AND deleted_at IS NULL
-	`, chi.URLParam(r, "id"), u.ID).Scan(&c.ID, &c.Title, &c.Model, &c.Mode, &c.Feature, &c.CreatedAt, &c.UpdatedAt)
+	`, chi.URLParam(r, "id"), u.ID).Scan(&c.ID, &c.Title, &c.Model, &c.Mode, &c.Feature, &c.SpaceID, &c.CreatedAt, &c.UpdatedAt)
 	if errors.Is(err, pgx.ErrNoRows) {
 		http.Error(w, "not found", 404)
 		return
