@@ -31,6 +31,11 @@ spec:
       app.kubernetes.io/component: backend
   template:
     metadata:
+      annotations:
+        # Roll the pods whenever the env Secret changes (e.g. setting the
+        # Anthropic key or the DB URL) — without this a `helm upgrade` that
+        # only mutates the Secret leaves the running pods on the old values.
+        checksum/secret: {{ include (print $.Template.BasePath "/secret.yaml") . | sha256sum }}
       labels:
         app.kubernetes.io/name: pervagans
         app.kubernetes.io/component: backend
