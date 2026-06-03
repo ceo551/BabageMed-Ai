@@ -35,6 +35,11 @@ type Config struct {
 	// Empty → defaults to us-east5 in the request builder.
 	VertexAnthropicLocation string
 	OpenAIKey               string
+	// DashScope (Alibaba Cloud Model Studio) — one key drives Qwen / GLM /
+	// DeepSeek text, Qwen-Image / Wan image, and Happy-Horse video. Base URL
+	// defaults to the Singapore (international) endpoint; see dashscope.go.
+	DashScopeKey     string
+	DashScopeBaseURL string
 }
 
 type Client struct {
@@ -162,18 +167,13 @@ func (c *Client) CompleteStream(ctx context.Context, req CompletionRequest, onDe
 		provider = "openai"
 		out, err = c.streamOpenAI(ctx, req, onDelta)
 	case strings.HasPrefix(req.Model, "glm"),
-		strings.HasPrefix(req.Model, "kimi"),
 		strings.HasPrefix(req.Model, "qwen"),
-		strings.HasPrefix(req.Model, "deepseek"),
-		strings.HasPrefix(req.Model, "grok"):
-		// Models advertised in the UI picker but not yet wired to a real
-		// provider client. Returning an explicit "model not yet
-		// supported" error is honest — the previous default branch
-		// silently routed them to Claude, so the user thought "GLM"
-		// gave them a Zhipu answer when it was actually Anthropic.
-		provider = req.Model
-		err = fmt.Errorf("model %q is on the roadmap but not yet supported by this backend", req.Model)
-		out = nil
+		strings.HasPrefix(req.Model, "deepseek"):
+		// Alibaba Cloud Model Studio (DashScope) — Qwen, GLM and DeepSeek via
+		// the OpenAI-compatible streaming endpoint. One DASHSCOPE_API_KEY,
+		// Singapore region by default (see dashscope.go).
+		provider = "dashscope"
+		out, err = c.streamDashScope(ctx, req, onDelta)
 	default:
 		// Unrecognized model id — fail closed instead of silently
 		// routing to a fallback the user didn't choose.
@@ -222,18 +222,12 @@ func (c *Client) Complete(ctx context.Context, req CompletionRequest) (*Completi
 		provider = "openai"
 		out, err = c.callOpenAI(ctx, req)
 	case strings.HasPrefix(req.Model, "glm"),
-		strings.HasPrefix(req.Model, "kimi"),
 		strings.HasPrefix(req.Model, "qwen"),
-		strings.HasPrefix(req.Model, "deepseek"),
-		strings.HasPrefix(req.Model, "grok"):
-		// Mirror CompleteStream: roadmap models advertised in the picker
-		// but not yet wired to a provider client fail with an explicit,
-		// honest error rather than silently being answered by Claude (the
-		// old default branch routed every unknown id to Anthropic, so a
-		// user picking "GLM" got a Claude answer labelled GLM).
-		provider = req.Model
-		err = fmt.Errorf("model %q is on the roadmap but not yet supported by this backend", req.Model)
-		out = nil
+		strings.HasPrefix(req.Model, "deepseek"):
+		// Mirror CompleteStream: Qwen / GLM / DeepSeek route to Alibaba Model
+		// Studio (DashScope) via the OpenAI-compatible endpoint.
+		provider = "dashscope"
+		out, err = c.callDashScope(ctx, req)
 	default:
 		// Empty id → opus default (matches resolveAnthropicModel); any
 		// other unrecognized id fails closed instead of mis-routing.

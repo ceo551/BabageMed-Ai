@@ -239,12 +239,6 @@ export const I = {
       <path d="M12 3a9 9 0 1 0 5.6 16l2 2 1.4-1.4-2-2A9 9 0 0 0 12 3zm0 3a6 6 0 1 1 0 12 6 6 0 0 1 0-12z" fill="#615CED" />
     </svg>
   ),
-  // Moonshot Kimi mark — crescent moon in soft purple.
-  moonshotMark: (
-    <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
-      <path d="M20 14a8 8 0 1 1-9-9 6 6 0 0 0 9 9z" fill="#6B5BFF" />
-    </svg>
-  ),
   // Zhipu GLM mark — geometric Z in cyan.
   zhipuMark: (
     <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">

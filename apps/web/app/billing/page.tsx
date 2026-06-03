@@ -19,8 +19,8 @@ type Providers = { paddle: boolean };
 // tier>" so the cumulative value is obvious.
 const PLAN_FEATURES: Record<string, { en: string[]; ar: string[] }> = {
   go: {
-    en: ["DeepSeek V4 Pro", "Kimi K2.6", "GLM 5.1", "Qwen 3.7 Max"],
-    ar: ["DeepSeek V4 Pro", "Kimi K2.6", "GLM 5.1", "Qwen 3.7 Max"],
+    en: ["DeepSeek V4 Pro", "GLM 5.1", "Qwen 3.7 Max"],
+    ar: ["DeepSeek V4 Pro", "GLM 5.1", "Qwen 3.7 Max"],
   },
   plus: {
     en: ["Up to 2× more usage than GO", "Everything in GO", "Gemini Pro 3.1", "Grok Imagine"],

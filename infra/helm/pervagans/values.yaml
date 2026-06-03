@@ -288,6 +288,10 @@ secrets:
   anthropicApiKey: ""
   googleApiKey: ""
   openaiApiKey: ""
+  # Alibaba Cloud Model Studio (DashScope) — Qwen/GLM/DeepSeek + image + video.
+  # Base URL optional; backend defaults to the Singapore intl endpoint.
+  dashscopeApiKey: ""
+  dashscopeBaseUrl: ""
   # Postgres password (only used when postgres.internal=true)
   postgresPassword: "change-me-in-prod"
   postgresUser: "pervagans"

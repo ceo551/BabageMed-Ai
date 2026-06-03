@@ -394,7 +394,6 @@ function Composer({
       case "xai":        return I.xaiMark;
       case "deepseek":   return I.deepseekMark;
       case "alibaba":    return I.alibabaMark;
-      case "moonshot":   return I.moonshotMark;
       case "zhipu":      return I.zhipuMark;
       case "kling":      return I.klingMark;
       case "bytedance":  return I.bytedanceMark;

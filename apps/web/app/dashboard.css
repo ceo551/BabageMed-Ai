@@ -700,6 +700,35 @@ button.msg-citation[data-open="true"] {
   40%           { transform: translateY(-4px); opacity: 1; }
 }
 
+/* Inline hint next to the loading dots (e.g. "Generating video — this can
+   take a minute…") shown while a visual generation is in flight. */
+.msg-loading-hint {
+  margin-inline-start: 10px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+/* Generated media (Image & Video feature) rendered as an assistant bubble. */
+.msg-media { display: flex; flex-direction: column; gap: 8px; max-width: min(520px, 100%); }
+.msg-media-img,
+.msg-media-video {
+  width: 100%;
+  max-width: 512px;
+  height: auto;
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  background: var(--panel);
+  display: block;
+}
+.msg-media-dl {
+  align-self: start;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--hue-ink, var(--cyan));
+  text-decoration: none;
+}
+.msg-media-dl:hover { text-decoration: underline; }
+
 /* The plus glyph inside the New button used to inherit no size constraint
  * (its SVG has no explicit width/height), so it grew to fill its line-height
  * box and the button rendered ~80px tall. Lock both icon and button to a

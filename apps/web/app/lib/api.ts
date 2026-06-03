@@ -409,6 +409,19 @@ export const spaces = {
     api.get<SpaceChunk[]>(`/api/spaces/${encodeURIComponent(id)}/context?q=${encodeURIComponent(q)}`),
 };
 
+// ── Media generation (Alibaba Model Studio / DashScope) ────────────────────
+// Image is synchronous (one call → url). Video is async: submit returns a
+// task id the caller polls until status is SUCCEEDED (url ready) or FAILED.
+export type VideoTaskStatus = "PENDING" | "RUNNING" | "SUCCEEDED" | "FAILED" | string;
+export const media = {
+  image:       (model: string, prompt: string) =>
+    api.post<{ url: string }>("/api/generate/image", { model, prompt }),
+  videoSubmit: (model: string, prompt: string) =>
+    api.post<{ taskId: string }>("/api/generate/video", { model, prompt }),
+  videoPoll:   (taskId: string) =>
+    api.get<{ status: VideoTaskStatus; url: string }>(`/api/generate/video/${encodeURIComponent(taskId)}`),
+};
+
 // ── Features ─────────────────────────────────────────────────────────────
 // Per-feature workspace (Education, Writing, Translation, Data
 // Analysis, Business, Financial, Image & Video).

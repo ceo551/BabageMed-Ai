@@ -67,6 +67,10 @@ export type LocaleStrings = {
   featureChatEmptyVisual: string;
   imageGroup: string;
   videoGroup: string;
+  generatingImage: string;
+  generatingVideo: string;
+  mediaFailed: string;
+  download: string;
   // ── Common actions / dialogs (used by recent UI additions) ───────────────
   cancel: string;
   save: string;
@@ -244,6 +248,10 @@ export const STR: Record<Locale, LocaleStrings> = {
     featureChatEmptyVisual: "Start a new chat in this feature. Its instructions, files and skills are applied automatically.",
     imageGroup: "Image",
     videoGroup: "Video",
+    generatingImage: "Generating image…",
+    generatingVideo: "Generating video — this can take a minute…",
+    mediaFailed: "Generation failed. Please try again.",
+    download: "Download",
     cancel: "Cancel",
     save: "Save",
     saving: "Saving…",
@@ -386,6 +394,10 @@ export const STR: Record<Locale, LocaleStrings> = {
     featureChatEmptyVisual: "ابدأ محادثة جديدة فى هذه الميزة. التعليمات والملفات والمهارات الخاصة بها ستُستخدم تلقائيًا.",
     imageGroup: "صور",
     videoGroup: "فيديو",
+    generatingImage: "جارٍ توليد الصورة…",
+    generatingVideo: "جارٍ توليد الفيديو — قد يستغرق دقيقة…",
+    mediaFailed: "فشل التوليد. حاول مرة أخرى.",
+    download: "تنزيل",
     cancel: "إلغاء",
     save: "حفظ",
     saving: "جارٍ الحفظ…",

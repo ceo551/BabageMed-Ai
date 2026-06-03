@@ -6,7 +6,7 @@ import { useSearchParams } from "next/navigation";
 import { I, featureIcon } from "../../icons";
 import { useUI } from "../../lib/ui-context";
 import { usePrefs } from "../../lib/store";
-import { chats as chatsApi, features as featuresApi, type Feature as FeatureRow } from "../../lib/api";
+import { chats as chatsApi, features as featuresApi, media as mediaApi, type Feature as FeatureRow } from "../../lib/api";
 import { AssistantMessage, type Citation } from "../../components/AssistantMessage";
 import type { FeatureMeta } from "../../i18n";
 import {
@@ -29,7 +29,8 @@ import {
 type Msg =
   | { id: string; role: "user"; content: string }
   | { id: string; role: "assistant"; content: string; citations?: Citation[] }
-  | { id: string; role: "loading" };
+  | { id: string; role: "media"; mkind: "image" | "video"; url: string }
+  | { id: string; role: "loading"; hint?: string };
 
 function newId(): string {
   if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
@@ -37,6 +38,8 @@ function newId(): string {
   }
   return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
 }
+
+const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 
 export function FeatureChat({
   meta,
@@ -71,6 +74,8 @@ export function FeatureChat({
 
   const liveLoadRef = useRef<string>("");
   const streamAbortRef = useRef<AbortController | null>(null);
+  // Set true to cancel an in-flight video poll loop (unmount / chat switch).
+  const mediaAbortRef = useRef(false);
   const taRef = useRef<HTMLTextAreaElement>(null);
   const composerRef = useRef<HTMLDivElement>(null);
   const transcriptEndRef = useRef<HTMLDivElement>(null);
@@ -85,6 +90,9 @@ export function FeatureChat({
 
   // Load chat messages on URL change.
   useEffect(() => {
+    // Switching threads cancels any in-flight video poll loop from the
+    // previous one (it would otherwise resolve into the wrong transcript).
+    mediaAbortRef.current = true;
     if (chatIdParam) {
       if (chatIdParam === chatId) return;
       // Abort any in-flight stream from the chat we're switching AWAY from,
@@ -112,8 +120,8 @@ export function FeatureChat({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [chatIdParam, nonceParam]);
 
-  // Abort any in-flight stream when the chat changes or the page unmounts.
-  useEffect(() => () => { streamAbortRef.current?.abort(); }, []);
+  // Abort any in-flight stream / video poll when the page unmounts.
+  useEffect(() => () => { streamAbortRef.current?.abort(); mediaAbortRef.current = true; }, []);
 
   // Auto-grow textarea.
   useEffect(() => {
@@ -208,6 +216,16 @@ export function FeatureChat({
       }
       if (activeChatId) {
         chatsApi.append(activeChatId, { role: "user", content: text }).catch(() => {});
+      }
+
+      // Visual feature (Image & Video): generate media instead of streaming
+      // text. Image is one synchronous call; video submits an async job and
+      // polls until ready. The result URL isn't persisted (DashScope's OSS
+      // links expire), but the prompt above is, so the thread still reads
+      // sensibly on reload.
+      if (group.kind === "media") {
+        await generateMedia(text, loadingId);
+        return;
       }
 
       // Ground the assistant against this feature's instructions / files
@@ -346,6 +364,55 @@ export function FeatureChat({
     } finally {
       setSending(false);
       streamAbortRef.current = null;
+    }
+  }
+
+  // generateMedia drives the visual (Image & Video) feature: a synchronous
+  // image call, or an async video submit + poll. It swaps the generic dots
+  // loader for a modality-specific hint, then replaces it with the rendered
+  // media (or a localized error). Its own try/catch keeps it off send()'s
+  // text-stream error path.
+  async function generateMedia(prompt: string, loadingId: string) {
+    mediaAbortRef.current = false;
+    const isVideo = group.kind === "media" && group.video.some((m) => m.id === model);
+    setMessages((cur) =>
+      cur.map((m) => (m.id === loadingId && m.role === "loading"
+        ? { ...m, hint: isVideo ? s.generatingVideo : s.generatingImage } : m)),
+    );
+    try {
+      let url = "";
+      const mkind: "image" | "video" = isVideo ? "video" : "image";
+      if (isVideo) {
+        const { taskId } = await mediaApi.videoSubmit(model, prompt);
+        // Poll every 4 s up to ~10 min — video generation is typically 1-3 min.
+        for (let i = 0; i < 150; i++) {
+          if (mediaAbortRef.current) throw new DOMException("aborted", "AbortError");
+          await sleep(4000);
+          if (mediaAbortRef.current) throw new DOMException("aborted", "AbortError");
+          const st = await mediaApi.videoPoll(taskId);
+          if (st.status === "SUCCEEDED") { url = st.url || ""; break; }
+          if (st.status === "FAILED") throw new Error(s.mediaFailed);
+        }
+        if (!url) throw new Error(s.mediaFailed);
+      } else {
+        const res = await mediaApi.image(model, prompt);
+        url = res.url;
+      }
+      const finalUrl = url;
+      setMessages((cur) =>
+        cur.filter((m) => m.id !== loadingId)
+          .concat({ id: `m-${newId()}`, role: "media", mkind, url: finalUrl }),
+      );
+    } catch (e: unknown) {
+      const err = e as { name?: string; message?: string };
+      if (err?.name === "AbortError") {
+        setMessages((cur) => cur.filter((m) => m.id !== loadingId));
+      } else {
+        setMessages((cur) =>
+          cur.filter((m) => m.id !== loadingId)
+            .concat({ id: `a-${newId()}`, role: "assistant", content: s.errorPrefix + (err?.message || String(e)) }),
+        );
+      }
     }
   }
 
@@ -600,7 +667,7 @@ export function FeatureChat({
               type="button"
               className="cmpr-icon"
               onClick={send}
-              aria-label={sending ? "Sending" : "Send"}
+              aria-label={sending ? s.generating : s.send}
               disabled={sending || value.trim() === ""}
               style={{
                 width: "auto",
@@ -630,7 +697,6 @@ function brandMark(brand: ModelBrand): React.ReactNode {
     case "xai":        return I.xaiMark;
     case "deepseek":   return I.deepseekMark;
     case "alibaba":    return I.alibabaMark;
-    case "moonshot":   return I.moonshotMark;
     case "zhipu":      return I.zhipuMark;
     case "kling":      return I.klingMark;
     case "bytedance":  return I.bytedanceMark;
@@ -653,6 +719,7 @@ function Transcript({ messages, endRef }: { messages: Msg[]; endRef: React.RefOb
             <div key={m.id} className="msg msg-assistant msg-loading">
               <img src="/pervagans-icon.png" alt="" className="msg-loading-mark" width={40} height={40} aria-hidden="true" />
               <span className="msg-loading-dots" aria-label={s.generating}><span /><span /><span /></span>
+              {m.hint ? <span className="msg-loading-hint">{m.hint}</span> : null}
             </div>
           );
         }
@@ -660,6 +727,21 @@ function Transcript({ messages, endRef }: { messages: Msg[]; endRef: React.RefOb
           return (
             <div key={m.id} className="msg-row msg-row-user">
               <div className="msg msg-user" dir="auto">{m.content}</div>
+            </div>
+          );
+        }
+        if (m.role === "media") {
+          return (
+            <div key={m.id} className="msg-row">
+              <div className="msg msg-assistant msg-media">
+                {m.mkind === "image" ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={m.url} alt="" className="msg-media-img" loading="lazy" />
+                ) : (
+                  <video src={m.url} className="msg-media-video" controls playsInline />
+                )}
+                <a className="msg-media-dl" href={m.url} target="_blank" rel="noopener noreferrer">{s.download}</a>
+              </div>
             </div>
           );
         }

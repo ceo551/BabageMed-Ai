@@ -136,6 +136,11 @@ func main() {
 		// us-east5 is the canonical one. Empty → llm client defaults to that.
 		VertexAnthropicLocation: os.Getenv("VERTEX_ANTHROPIC_LOCATION"),
 		OpenAIKey:               os.Getenv("OPENAI_API_KEY"),
+		// Alibaba Cloud Model Studio (DashScope) — Qwen/GLM/DeepSeek text +
+		// Qwen-Image/Wan image + Happy-Horse video. Base URL optional
+		// (defaults to the Singapore international endpoint).
+		DashScopeKey:     os.Getenv("DASHSCOPE_API_KEY"),
+		DashScopeBaseURL: os.Getenv("DASHSCOPE_BASE_URL"),
 	})
 
 	// Redis cache wrapper — gathers MCP search results so identical queries
@@ -257,6 +262,13 @@ func main() {
 	// Chat — usable anonymously, but if auth is on we'll persist messages.
 	r.With(chatLimiter.Middleware).Post("/api/chat", apiH.Chat)
 	r.With(chatLimiter.Middleware).Post("/api/chat/stream", apiH.ChatStream)
+
+	// Media generation (Alibaba Model Studio / DashScope). Image is
+	// synchronous; video is async (submit → client polls the task). Same
+	// anonymous-but-rate-limited posture as chat.
+	r.With(chatLimiter.Middleware).Post("/api/generate/image", apiH.GenerateImage)
+	r.With(chatLimiter.Middleware).Post("/api/generate/video", apiH.SubmitVideo)
+	r.With(chatLimiter.Middleware).Get("/api/generate/video/{taskId}", apiH.PollVideo)
 
 	// Auth + persistence (DB-backed)
 	if authSvc != nil {

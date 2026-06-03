@@ -579,9 +579,9 @@ func stripPromptControlChars(s string) string {
 // route it, but a new "gpt-5.6" text model doesn't false-positive.
 func isVisualModel(id string) bool {
 	switch id {
-	case "gpt-image-2", "qwen-image-2.0",
-		"sora-2", "kling-o3", "kling-3.0", "grok-imagine",
-		"veo-3.1", "seedance-2.0", "happy-horse-1.0":
+	// Image + video models served by the /api/generate/* endpoints
+	// (DashScope). They must NOT reach the text chat stream.
+	case "qwen-image-2.0-pro", "wan2.7-image-pro", "happy-horse-1.0":
 		return true
 	}
 	return false

@@ -13,7 +13,7 @@
 // what to render.
 
 export type ModelBrand =
-  | "anthropic" | "openai" | "google" | "zhipu" | "moonshot"
+  | "anthropic" | "openai" | "google" | "zhipu"
   | "deepseek" | "alibaba" | "xai" | "kling" | "bytedance" | "happyhorse";
 
 export type TextModel = {
@@ -45,30 +45,24 @@ export const TEXT_MODELS: ReadonlyArray<TextModel> = [
     pills: { en: ["LONG CTX", "IMAGING"], ar: ["سياق طويل", "تصوير"] } },
   { id: "glm-5.1",       name: "GLM 5.1",         brand: "zhipu",     short: "GLM 5.1",
     pills: { en: ["CHINESE", "AGENT"], ar: ["صينى", "وكيل"] } },
-  { id: "kimi-k2.6",     name: "Kimi K2.6",       brand: "moonshot",  short: "Kimi K2.6",
-    pills: { en: ["LONG CTX"], ar: ["سياق طويل"] } },
   { id: "deepseek-v4-pro", name: "DeepSeek V4 Pro", brand: "deepseek", short: "DeepSeek V4 Pro",
     pills: { en: ["CODE", "REASONING"], ar: ["كود", "استدلال"] } },
   { id: "qwen-3.7-max",  name: "Qwen 3.7 Max",    brand: "alibaba",   short: "Qwen 3.7 Max",
     pills: { en: ["MULTILINGUAL"], ar: ["متعدد اللغات"] } },
 ];
 
-// ── Image models ────────────────────────────────────────────────────
+// ── Image models (Alibaba Model Studio / DashScope — synchronous) ────
 export const IMAGE_MODELS: ReadonlyArray<MediaModel> = [
-  { id: "gpt-image-2",   name: "GPT Image 2",   brand: "openai",  kind: "image", short: "GPT Image 2",
+  { id: "qwen-image-2.0-pro", name: "Qwen Image 2.0 Pro", brand: "alibaba", kind: "image", short: "Qwen Image 2.0",
     pills: { en: ["PHOTO", "DESIGN"], ar: ["صورة", "تصميم"] } },
-  { id: "qwen-image-2.0", name: "Qwen Image 2.0", brand: "alibaba", kind: "image", short: "Qwen Image 2.0",
+  { id: "wan2.7-image-pro", name: "Wan 2.7 Image Pro", brand: "alibaba", kind: "image", short: "Wan 2.7 Image",
     pills: { en: ["FAST"], ar: ["سريع"] } },
 ];
 
-// ── Video models ────────────────────────────────────────────────────
+// ── Video models (Alibaba Model Studio / DashScope — async + poll) ───
 export const VIDEO_MODELS: ReadonlyArray<MediaModel> = [
-  { id: "grok-imagine",  name: "Grok Imagine",  brand: "xai",         kind: "video", short: "Grok Imagine",
-    pills: { en: ["CREATIVE"], ar: ["إبداعى"] } },
-  { id: "veo-3.1",       name: "Veo 3.1",       brand: "google",      kind: "video", short: "Veo 3.1",
-    pills: { en: ["CINEMATIC"], ar: ["سينمائى"] } },
   { id: "happy-horse-1.0", name: "Happy Horse 1.0", brand: "happyhorse", kind: "video", short: "Happy Horse 1.0",
-    pills: { en: ["FAST", "STYLISED"], ar: ["سريع"] } },
+    pills: { en: ["TEXT→VIDEO"], ar: ["نص→فيديو"] } },
 ];
 
 // ── Convenience: feature slug → models to show ──────────────────────
