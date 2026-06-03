@@ -152,10 +152,19 @@ func (h *Handler) PaddleWebhook(w http.ResponseWriter, r *http.Request) {
 	case "transaction.completed", "transaction.paid":
 		if h.store != nil {
 			// MarkPaid flips the pending row (recorded at checkout) to paid and
-			// upgrades the linked user's plan, reading plan_id from the row and
-			// only falling back to the webhook's custom_data when the row is
-			// empty (self-healing — see persistence.go).
-			_ = h.store.MarkPaid(r.Context(), "paddle", env.Data.ID, env.Data.CustomData.PlanID)
+			// upgrades the linked user's plan; on a renewal txn id it has never
+			// seen it self-heals by inserting a paid row from custom_data, so
+			// recurring revenue after month one isn't lost (see persistence.go).
+			_ = h.store.MarkPaid(r.Context(), "paddle", env.Data.ID, env.Data.CustomData.UserID, env.Data.CustomData.PlanID)
+		}
+	case "subscription.canceled", "subscription.paused", "subscription.past_due",
+		"transaction.refunded", "transaction.canceled", "transaction.payment_failed":
+		// Billing stopped / reversed → drop the user back to free so paid access
+		// doesn't persist forever (the revenue leak). custom_data is propagated
+		// by Paddle onto subscription + transaction events. A later
+		// transaction.completed re-upgrades if they recover (e.g. past_due).
+		if h.store != nil && env.Data.CustomData.UserID != "" {
+			_ = h.store.SetPlanFree(r.Context(), env.Data.CustomData.UserID)
 		}
 	}
 	writeJSON(w, 200, map[string]any{"ok": true})

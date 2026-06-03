@@ -41,7 +41,7 @@ func (s *Store) Record(ctx context.Context, userID *string, provider, externalID
 // empty planID, so trusting the argument would downgrade every paying user
 // to "free" via the default branch of planFromPlanID(""). Looking it up
 // RETURNING is self-healing: the value was already recorded at checkout time.
-func (s *Store) MarkPaid(ctx context.Context, provider, externalID, planID string) error {
+func (s *Store) MarkPaid(ctx context.Context, provider, externalID, userID, planID string) error {
 	if s == nil || s.DB == nil {
 		return nil
 	}
@@ -59,40 +59,72 @@ func (s *Store) MarkPaid(ctx context.Context, provider, externalID, planID strin
 		_ = tx.Rollback(rbCtx)
 	}()
 
-	var userID *string
+	var uidPtr *string
+	if userID != "" {
+		uidPtr = &userID
+	}
+
+	var rowUser *string
 	var rowPlanID string
-	// Idempotent: only flip the row if it's NOT already paid. A replayed
-	// webhook (Paddle retries on non-2xx) would otherwise
-	// re-run the plan upgrade below — harmless today because the
-	// upgrade is itself idempotent, but it stays dangerous if the plan
-	// logic ever grows side effects (credits, emails, slack pings).
+	// Flip an existing (pending) row to paid if present. Idempotent: the
+	// `status IS DISTINCT FROM 'paid'` guard means a replayed webhook doesn't
+	// re-run the upgrade.
 	err = tx.QueryRow(ctx, `
         UPDATE payments SET status = 'paid'
         WHERE provider = $1 AND external_id = $2
           AND status IS DISTINCT FROM 'paid'
         RETURNING user_id, COALESCE(plan_id, '')
-    `, provider, externalID).Scan(&userID, &rowPlanID)
-	if errors.Is(err, pgx.ErrNoRows) {
-		// Already paid (or row doesn't exist). Commit the empty tx and
-		// return cleanly so the webhook handler responds 200 — without
-		// a 200, the provider will keep retrying.
-		return tx.Commit(ctx)
-	}
-	if err != nil {
+    `, provider, externalID).Scan(&rowUser, &rowPlanID)
+	switch {
+	case errors.Is(err, pgx.ErrNoRows):
+		// No pending row: either already paid (replay) OR a recurring renewal
+		// whose transaction id we've never seen (each month is a new id). Insert
+		// a paid ledger row so renewals after month one aren't silently lost;
+		// ON CONFLICT keeps the replay case a clean no-op.
+		var amount int64
+		if p, ok := GetPlan(planID); ok {
+			amount = p.USD
+		}
+		if _, ierr := tx.Exec(ctx, `
+            INSERT INTO payments (user_id, provider, external_id, plan_id, amount_minor, currency, status)
+            VALUES ($1, $2, $3, NULLIF($4, ''), $5, 'USD', 'paid')
+            ON CONFLICT (provider, external_id) DO NOTHING
+        `, uidPtr, provider, externalID, planID, amount); ierr != nil {
+			return ierr
+		}
+		rowUser = uidPtr
+		rowPlanID = planID
+	case err != nil:
 		return err
 	}
-	// Fall back to the argument only if the persisted value is empty
-	// (legacy rows from before this column was populated).
-	effective := rowPlanID
-	if effective == "" {
-		effective = planID
+
+	// Upgrade the user's plan — prefer the persisted plan_id, fall back to the
+	// webhook's custom_data plan id (renewals / legacy rows).
+	effUser := rowUser
+	if effUser == nil {
+		effUser = uidPtr
 	}
-	if userID != nil && effective != "" {
-		if _, err := tx.Exec(ctx, `UPDATE users SET plan = $1 WHERE id = $2`, planFromPlanID(effective), *userID); err != nil {
+	effPlan := rowPlanID
+	if effPlan == "" {
+		effPlan = planID
+	}
+	if effUser != nil && effPlan != "" {
+		if _, err := tx.Exec(ctx, `UPDATE users SET plan = $1 WHERE id = $2`, planFromPlanID(effPlan), *effUser); err != nil {
 			return err
 		}
 	}
 	return tx.Commit(ctx)
+}
+
+// SetPlanFree downgrades a user to the free plan. Called on
+// cancel/refund/past-due/payment-failed webhooks so paid access doesn't persist
+// indefinitely after billing stops (the revenue-leak fix). Idempotent.
+func (s *Store) SetPlanFree(ctx context.Context, userID string) error {
+	if s == nil || s.DB == nil || userID == "" {
+		return nil
+	}
+	_, err := s.DB.Pool.Exec(ctx, `UPDATE users SET plan = 'free' WHERE id = $1`, userID)
+	return err
 }
 
 func planFromPlanID(planID string) string {

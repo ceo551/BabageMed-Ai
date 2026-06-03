@@ -188,7 +188,40 @@ func (s *Service) Register(r chi.Router) {
 func (s *Service) handleList(w http.ResponseWriter, r *http.Request) {
 	u := auth.FromContext(r.Context())
 	out, err := s.List(r.Context(), u.ID)
+	for i := range out {
+		out[i].Config = redactConfig(out[i].Config)
+	}
 	writeJSON(w, out, err)
+}
+
+// redactConfig masks secret-looking values before a connector config blob is
+// returned over the API, so a stored API key / token / password isn't echoed
+// back to the client. Non-secret settings pass through so the UI can still show
+// benign config. (At-rest confidentiality is covered by Cloud SQL disk
+// encryption; this closes the application-level echo.)
+func redactConfig(cfg map[string]any) map[string]any {
+	if cfg == nil {
+		return map[string]any{}
+	}
+	out := make(map[string]any, len(cfg))
+	for k, v := range cfg {
+		if sv, ok := v.(string); ok && sv != "" && isSecretKey(k) {
+			out[k] = "••••••"
+			continue
+		}
+		out[k] = v
+	}
+	return out
+}
+
+func isSecretKey(k string) bool {
+	lk := strings.ToLower(k)
+	for _, needle := range []string{"key", "token", "secret", "password", "passwd", "auth", "credential"} {
+		if strings.Contains(lk, needle) {
+			return true
+		}
+	}
+	return false
 }
 
 // maxConnectorConfigBytes — caps the JSONB config blob a single
@@ -214,6 +247,9 @@ func (s *Service) handleConnect(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	out, err := s.Connect(r.Context(), u.ID, chi.URLParam(r, "mcpID"), body.Config)
+	if out != nil {
+		out.Config = redactConfig(out.Config)
+	}
 	writeJSON(w, out, err)
 }
 
@@ -223,6 +259,9 @@ func (s *Service) handleGet(w http.ResponseWriter, r *http.Request) {
 	if err == nil && out == nil {
 		http.Error(w, "not connected", http.StatusNotFound)
 		return
+	}
+	if out != nil {
+		out.Config = redactConfig(out.Config)
 	}
 	writeJSON(w, out, err)
 }
