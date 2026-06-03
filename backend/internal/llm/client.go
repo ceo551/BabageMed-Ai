@@ -153,8 +153,14 @@ func (c *Client) CompleteStream(ctx context.Context, req CompletionRequest, onDe
 		// against the same $300 GCP free credit. Falls back to the direct
 		// Anthropic API on error if AnthropicKey is also configured.
 		if c.cfg.VertexProject != "" {
-			out, err = c.streamVertexAnthropic(ctx, req, onDelta)
-			if err != nil && c.cfg.AnthropicKey != "" {
+			// Count emitted deltas so we only fall back when the Vertex attempt
+			// produced NOTHING — otherwise streamAnthropic would re-stream a
+			// duplicate of the text the user already saw (and we'd persist it
+			// twice) when Vertex fails MID-stream.
+			emitted := 0
+			wrapped := func(s string) { emitted++; onDelta(s) }
+			out, err = c.streamVertexAnthropic(ctx, req, wrapped)
+			if err != nil && emitted == 0 && c.cfg.AnthropicKey != "" {
 				out, err = c.streamAnthropic(ctx, req, onDelta)
 			}
 		} else {

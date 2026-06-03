@@ -100,6 +100,14 @@ async function proxy(
   // x-client-ip was stripped, so this can't be spoofed through the proxy.
   const clientIp = realClientIp(req);
   if (clientIp) forwardHeaders.set("x-client-ip", clientIp);
+  // Forward a single trusted X-Forwarded-Proto so the backend issues session +
+  // CSRF cookies with the Secure flag on HTTPS (auth.isSecure reads this; the
+  // proxy→backend hop itself is plain HTTP). The inbound value is set by the
+  // GCP load balancer (https for real traffic); fall back to the request's own
+  // protocol so local-dev http doesn't get Secure cookies the browser rejects.
+  const fwdProto = req.headers.get("x-forwarded-proto")
+    || (req.nextUrl.protocol === "https:" ? "https" : "http");
+  forwardHeaders.set("x-forwarded-proto", fwdProto);
 
   // 10-minute hard ceiling so a hung backend can't pin a Node worker
   // forever. SSE streams (chat) legitimately run several minutes; a
@@ -110,7 +118,11 @@ async function proxy(
     method: req.method,
     headers: forwardHeaders,
     redirect: "manual",
-    signal: AbortSignal.timeout(10 * 60 * 1000),
+    // Abort the upstream call when EITHER the client disconnects (req.signal)
+    // OR the 10-min ceiling hits. Without req.signal, a user navigating away
+    // mid-stream left the backend → LLM generation running (and billing) for
+    // the full 10 minutes.
+    signal: AbortSignal.any([req.signal, AbortSignal.timeout(10 * 60 * 1000)]),
   };
   if (req.method !== "GET" && req.method !== "HEAD") {
     init.body = await req.arrayBuffer();

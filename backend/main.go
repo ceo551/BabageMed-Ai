@@ -241,6 +241,10 @@ func main() {
 	// per call. A single client looping 100 uploads/sec can starve
 	// CPU. 10-burst tolerates a multi-file drop; +1/5s sustains 12/min.
 	uploadLimiter := ratelimit.New(10, 5*time.Second)
+	// Agent bucket — ONE /api/agent/stream request fans out to several
+	// max-tier LLM rounds + many paid MCP calls, so it must be far tighter than
+	// the chat bucket it used to share. 2 burst, +1 every 30 s ≈ 2/min sustained.
+	agentLimiter := ratelimit.New(2, 30*time.Second)
 
 	// MCP browse — anonymous-readable. The /call endpoint, however, runs
 	// real upstream queries (paid APIs, scrape jobs) so we gate it behind
@@ -304,7 +308,7 @@ func main() {
 		})
 		admin.NewHandler(dbConn, authSvc).Register(r)
 		media.New(dbConn, authSvc, llmClient).Register(r, toolsLimiter.Middleware)
-		agent.New(llmClient, registry, authSvc).Register(r, chatLimiter.Middleware)
+		agent.New(llmClient, registry, authSvc).Register(r, agentLimiter.Middleware)
 		spaces.New(dbConn, authSvc).Register(r, uploadLimiter.Middleware)
 		features.New(dbConn, authSvc).Register(r, uploadLimiter.Middleware)
 		connectors.New(dbConn, authSvc, registry).Register(r)

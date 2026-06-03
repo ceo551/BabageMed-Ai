@@ -61,7 +61,10 @@ func braveSearch(ctx context.Context, apiKey, query string, count int) ([]BraveR
 		return nil, err
 	}
 	req.Header.Set("Accept", "application/json")
-	req.Header.Set("Accept-Encoding", "gzip")
+	// Do NOT set Accept-Encoding manually: when the caller sets it, Go's
+	// transport stops transparently decompressing the response and hands back
+	// raw gzip bytes, so json.Unmarshal always failed and web search silently
+	// returned nothing. Leaving it unset lets the transport gzip + auto-inflate.
 	req.Header.Set("X-Subscription-Token", apiKey)
 
 	res, err := braveHTTP.Do(req)

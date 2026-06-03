@@ -157,6 +157,12 @@ func (h *Handler) Chat(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	sanitiseChatRequest(&req)
+	// Same visual-model guard as ChatStream — an image/video id on the text
+	// endpoint would otherwise mis-route to the DashScope text completion API.
+	if isVisualModel(req.Model) {
+		writeJSON(w, 400, map[string]string{"error": "image/video models are not supported on the chat endpoint; pick a text model"})
+		return
+	}
 	res, err := h.run(r.Context(), req)
 	if err != nil {
 		upstreamErr(w, 502, err, "chat backend failed")
@@ -526,6 +532,21 @@ const (
 	maxFeatureInstrLen    = 8 << 10
 )
 
+// validMcpID matches the manifest id shape (lowercase alnum + dash, ≤64). Used
+// to drop crafted useMcps entries before they reach the system prompt / Call().
+func validMcpID(s string) bool {
+	if len(s) == 0 || len(s) > 64 {
+		return false
+	}
+	for i := 0; i < len(s); i++ {
+		c := s[i]
+		if !((c >= '0' && c <= '9') || (c >= 'a' && c <= 'z') || c == '-') {
+			return false
+		}
+	}
+	return true
+}
+
 // validModelID allows only URL-safe model identifiers (empty is fine — the
 // caller defaults it). Keeps a crafted id out of provider URLs that embed the
 // model in the path.
@@ -591,7 +612,11 @@ func sanitiseChatRequest(req *chatRequest) {
 		dedup := req.UseMcps[:0]
 		for _, id := range req.UseMcps {
 			id = strings.TrimSpace(id)
-			if id == "" || seen[id] {
+			// Charset-guard the id: it's later interpolated verbatim into the
+			// system prompt ("connected sources: ...") and used as a Call() arg /
+			// cache key. Restricting to MCP-id shape stops a crafted entry from
+			// injecting a fake "SYSTEM:"/"USER:" directive or a newline.
+			if id == "" || seen[id] || !validMcpID(id) {
 				continue
 			}
 			seen[id] = true
