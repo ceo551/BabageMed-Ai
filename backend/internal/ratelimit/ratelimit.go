@@ -135,23 +135,23 @@ func itoa(n int) string {
 	return string(buf[i:])
 }
 
-// clientIP pulls the caller's IP from X-Forwarded-For (set by our
-// trusted nginx/ingress) or falls back to the TCP RemoteAddr. The
-// rightmost element in XFF is the closest hop, the leftmost is the
-// claimed origin; we take the leftmost-trusted one — i.e. the first
-// non-private address from the right. For the in-process happy path
-// behind a single proxy, that's just the first comma-separated value.
+// clientIP resolves the caller's real IP. In production EVERY request reaches
+// the backend through the Next.js proxy, which is the trust boundary: it strips
+// any client-supplied X-Forwarded-For / X-Real-IP / X-Client-IP and sets a
+// single X-Client-IP derived from the GCP load balancer's verified value
+// (see apps/web/app/api/backend/[...path]/route.ts). So we trust X-Client-IP
+// first.
+//
+// We deliberately do NOT read X-Forwarded-For here. Its leftmost element is
+// attacker-controllable on any direct-to-backend path; trusting it previously
+// (a) let an attacker mint a fresh rate-limit bucket per request by rotating
+// the header, defeating brute-force/spray limits, and (b) let them forge audit
+// source IPs. Worse, because the proxy actually STRIPS XFF, the old code fell
+// through to RemoteAddr — the single frontend-pod IP — collapsing every
+// per-IP limiter (auth, MFA, chat, upload, tools) into ONE global bucket.
 func clientIP(r *http.Request) string {
-	if xff := r.Header.Get("X-Forwarded-For"); xff != "" {
-		// Take the leftmost claim. Even though it's user-controllable,
-		// our trusted ingress overwrites the header on entry so a
-		// malicious header from outside the cluster is replaced with
-		// the real source. If your ingress doesn't do that, consider
-		// using the rightmost element instead.
-		if i := strings.IndexByte(xff, ','); i >= 0 {
-			return strings.TrimSpace(xff[:i])
-		}
-		return strings.TrimSpace(xff)
+	if ip := strings.TrimSpace(r.Header.Get("X-Client-IP")); ip != "" {
+		return ip
 	}
 	addr := r.RemoteAddr
 	if i := strings.LastIndexByte(addr, ':'); i >= 0 {

@@ -470,6 +470,22 @@ const (
 	maxFeatureInstrLen    = 8 << 10
 )
 
+// validModelID allows only URL-safe model identifiers (empty is fine — the
+// caller defaults it). Keeps a crafted id out of provider URLs that embed the
+// model in the path.
+func validModelID(s string) bool {
+	if len(s) > 64 {
+		return false
+	}
+	for i := 0; i < len(s); i++ {
+		c := s[i]
+		if !((c >= '0' && c <= '9') || (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_' || c == '-' || c == '.') {
+			return false
+		}
+	}
+	return true
+}
+
 func sanitiseChatRequest(req *chatRequest) {
 	// Drop any frontend-supplied "system" turns — the system prompt is
 	// ours to build. Tools / function results are also not allowed; we
@@ -499,6 +515,16 @@ func sanitiseChatRequest(req *chatRequest) {
 	}
 	if req.Locale != "en" && req.Locale != "ar" {
 		req.Locale = "en"
+	}
+
+	// Model-id guard. The id is prefix-routed and, for several providers
+	// (Gemini/Vertex/OpenAI passthrough), interpolated into the upstream URL.
+	// Restrict to URL-safe characters so a value like "gemini-x/../y?admin=1"
+	// can't inject path/query into the provider endpoint (which carries the
+	// org's key/token). Unknown-but-safe ids still pass through to the
+	// provider's own map/validation; unsafe ids reset to the default.
+	if !validModelID(req.Model) {
+		req.Model = "opus-4.8"
 	}
 
 	// Cap fan-out lists. A client passing useMcps=[same-id]*1000 used

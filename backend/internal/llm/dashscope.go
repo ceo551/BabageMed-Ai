@@ -42,6 +42,25 @@ func (c *Client) dashScopeBase() string {
 	return dashScopeDefaultBase
 }
 
+// validTaskID guards the async-video task id before it is interpolated into the
+// upstream /api/v1/tasks/{id} URL — a URL that carries the org's DASHSCOPE
+// bearer token. Without this, a crafted id (slashes, ?, CRLF) becomes
+// path/query injection against the upstream API, and a malformed value made
+// http.NewRequest fail → nil request → panic on r.Header.Set. DashScope ids are
+// uuid-ish; restrict to a safe charset and length.
+func validTaskID(s string) bool {
+	if len(s) == 0 || len(s) > 64 {
+		return false
+	}
+	for i := 0; i < len(s); i++ {
+		c := s[i]
+		if !((c >= '0' && c <= '9') || (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '-' || c == '_') {
+			return false
+		}
+	}
+	return true
+}
+
 // dashScopeModelMap maps UI picker ids (apps/web/app/lib/models.ts) to the real
 // Model Studio text model codes. Unknown ids pass through verbatim so a power
 // user can target a freshly released code without a backend redeploy.
@@ -312,8 +331,14 @@ func (c *Client) PollVideo(ctx context.Context, taskID string) (VideoTask, error
 	if c.cfg.DashScopeKey == "" {
 		return VideoTask{}, errors.New("DASHSCOPE_API_KEY not configured")
 	}
+	if !validTaskID(taskID) {
+		return VideoTask{}, errors.New("dashscope video poll: invalid task id")
+	}
 	url := c.dashScopeBase() + "/api/v1/tasks/" + taskID
-	r, _ := http.NewRequestWithContext(ctx, "GET", url, nil)
+	r, err := http.NewRequestWithContext(ctx, "GET", url, nil)
+	if err != nil {
+		return VideoTask{}, err
+	}
 	r.Header.Set("Authorization", "Bearer "+c.cfg.DashScopeKey)
 	res, err := c.http.Do(r)
 	if err != nil {

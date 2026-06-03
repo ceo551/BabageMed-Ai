@@ -19,6 +19,10 @@ const STRIP_REQ_HEADERS = new Set([
   "host", "content-length", "connection",
   "x-forwarded-for", "x-forwarded-host", "x-forwarded-proto", "x-forwarded-port",
   "forwarded", "x-real-ip",
+  // Strip any client-supplied x-client-ip — THIS proxy is the only thing
+  // allowed to set it (from the verified LB value below). Without stripping,
+  // a client could spoof their rate-limit identity.
+  "x-client-ip",
   "authorization",
   // Strip Origin/Referer BEFORE forwarding. This proxy already enforces
   // same-origin itself (isCrossSite() below) for every state-changing
@@ -53,6 +57,24 @@ function isCrossSite(req: NextRequest): boolean {
   });
 }
 
+// realClientIp extracts the caller's true IP from the inbound X-Forwarded-For.
+// This request reached us through the GCP HTTP(S) load balancer, which appends
+// "<client-ip>, <lb-ip>" to XFF — so the trustworthy client IP is the
+// SECOND-TO-LAST element (the last is the LB itself; any value the client
+// prepended sits further left and is ignored). We forward exactly this to the
+// backend as X-Client-IP so per-IP rate limiting works per real client instead
+// of collapsing to the single frontend-pod IP.
+function realClientIp(req: NextRequest): string {
+  const xff = req.headers.get("x-forwarded-for");
+  if (xff) {
+    const parts = xff.split(",").map((s) => s.trim()).filter(Boolean);
+    if (parts.length >= 2) return parts[parts.length - 2];
+    if (parts.length === 1) return parts[0];
+  }
+  // Next may also surface a platform-resolved IP; last resort.
+  return (req as unknown as { ip?: string }).ip || "";
+}
+
 async function proxy(
   req: NextRequest,
   ctx: { params: Promise<{ path: string[] }> }
@@ -73,6 +95,11 @@ async function proxy(
   req.headers.forEach((v, k) => {
     if (!STRIP_REQ_HEADERS.has(k.toLowerCase())) forwardHeaders.set(k, v);
   });
+  // Set the ONE trusted client-IP header the backend reads for rate limiting
+  // (it ignores XFF). Computed from the LB-verified XFF above; any inbound
+  // x-client-ip was stripped, so this can't be spoofed through the proxy.
+  const clientIp = realClientIp(req);
+  if (clientIp) forwardHeaders.set("x-client-ip", clientIp);
 
   // 10-minute hard ceiling so a hung backend can't pin a Node worker
   // forever. SSE streams (chat) legitimately run several minutes; a

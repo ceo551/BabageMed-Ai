@@ -328,7 +328,7 @@ func (s *Service) handleListMessages(w http.ResponseWriter, r *http.Request) {
 			SELECT m.id, m.chat_id, m.role, m.content, m.citations, m.meta, m.created_at
 			FROM chat_messages m
 			JOIN chats c ON c.id = m.chat_id
-			WHERE c.id = $1 AND c.user_id = $2
+			WHERE c.id = $1 AND c.user_id = $2 AND c.deleted_at IS NULL
 			ORDER BY m.created_at DESC, m.id DESC
 			LIMIT $3
 		`, chatID, u.ID, maxMessagesPerList)
@@ -338,7 +338,7 @@ func (s *Service) handleListMessages(w http.ResponseWriter, r *http.Request) {
 			FROM chat_messages m
 			JOIN chats c ON c.id = m.chat_id
 			JOIN chat_messages anchor ON anchor.id = $3 AND anchor.chat_id = c.id
-			WHERE c.id = $1 AND c.user_id = $2
+			WHERE c.id = $1 AND c.user_id = $2 AND c.deleted_at IS NULL
 			  AND (m.created_at, m.id) < (anchor.created_at, anchor.id)
 			ORDER BY m.created_at DESC, m.id DESC
 			LIMIT $4

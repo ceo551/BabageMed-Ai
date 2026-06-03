@@ -47,11 +47,14 @@ func TestKeysAreIndependent(t *testing.T) {
 	}
 }
 
-func TestClientIPFromXFF(t *testing.T) {
+func TestClientIPTrustsClientIPHeaderNotXFF(t *testing.T) {
 	r := httptest.NewRequest("GET", "/", nil)
+	// Attacker-controlled XFF must be ignored; only the proxy-set X-Client-IP
+	// is trusted (else every request shares one bucket / can be spoofed).
 	r.Header.Set("X-Forwarded-For", "203.0.113.5, 10.0.0.1, 172.16.0.1")
-	if got := clientIP(r); got != "203.0.113.5" {
-		t.Errorf("clientIP = %q, want 203.0.113.5", got)
+	r.Header.Set("X-Client-IP", "198.51.100.9")
+	if got := clientIP(r); got != "198.51.100.9" {
+		t.Errorf("clientIP = %q, want 198.51.100.9 (X-Client-IP, not XFF)", got)
 	}
 }
 

@@ -78,7 +78,26 @@ func (d *DB) Close() { d.Pool.Close() }
 // Each file is wrapped in a single transaction; failures roll back cleanly.
 // A schema_migrations table records what's been applied.
 func (d *DB) Migrate(ctx context.Context) error {
-	_, err := d.Pool.Exec(ctx, `
+	// Serialize the runner across replicas with a session-level advisory lock.
+	// Every pod runs Migrate at boot; without this, two pods starting together
+	// race — duplicate schema_migrations inserts, or a non-idempotent migration
+	// applied twice. The loser blocks here, then finds everything already
+	// applied and skips. The lock is held on a dedicated pooled connection and
+	// MUST be explicitly released before the conn returns to the pool (Release
+	// does not end the session, so the lock would otherwise leak).
+	const migrationLockKey = 778921
+	lockConn, err := d.Pool.Acquire(ctx)
+	if err != nil {
+		return fmt.Errorf("acquire migration lock conn: %w", err)
+	}
+	defer lockConn.Release()
+	if _, err := lockConn.Exec(ctx, `SELECT pg_advisory_lock($1)`, migrationLockKey); err != nil {
+		return fmt.Errorf("acquire migration advisory lock: %w", err)
+	}
+	// Background ctx so the unlock still runs if the caller's ctx is cancelled.
+	defer func() { _, _ = lockConn.Exec(context.Background(), `SELECT pg_advisory_unlock($1)`, migrationLockKey) }()
+
+	_, err = d.Pool.Exec(ctx, `
         CREATE TABLE IF NOT EXISTS schema_migrations (
             filename TEXT PRIMARY KEY,
             applied_at TIMESTAMPTZ NOT NULL DEFAULT now()
@@ -121,7 +140,7 @@ func (d *DB) Migrate(ctx context.Context) error {
 			_ = tx.Rollback(ctx)
 			return fmt.Errorf("apply %s: %w", name, err)
 		}
-		if _, err := tx.Exec(ctx, `INSERT INTO schema_migrations (filename) VALUES ($1)`, name); err != nil {
+		if _, err := tx.Exec(ctx, `INSERT INTO schema_migrations (filename) VALUES ($1) ON CONFLICT (filename) DO NOTHING`, name); err != nil {
 			_ = tx.Rollback(ctx)
 			return fmt.Errorf("record %s: %w", name, err)
 		}

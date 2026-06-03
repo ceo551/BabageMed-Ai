@@ -127,3 +127,17 @@ func (r *statusRecorder) Write(b []byte) (int, error) {
 	}
 	return r.ResponseWriter.Write(b)
 }
+
+// Flush forwards to the underlying writer. This metrics middleware is the
+// innermost wrapper, so without a Flush() method the SSE handler's
+// `w.(http.Flusher)` assertion fails and EVERY chat stream buffers until the
+// handler returns (tokens, citations and the done event all arrive at once).
+func (r *statusRecorder) Flush() {
+	if f, ok := r.ResponseWriter.(http.Flusher); ok {
+		f.Flush()
+	}
+}
+
+// Unwrap exposes the wrapped writer to net/http's ResponseController and any
+// other middleware that needs the real ResponseWriter (Go 1.20+).
+func (r *statusRecorder) Unwrap() http.ResponseWriter { return r.ResponseWriter }

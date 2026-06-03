@@ -316,7 +316,17 @@ func (s *Service) Validate(ctx context.Context, userID, code string) error {
 	if matched == "" {
 		return ErrMFACodeInvalid
 	}
-	_, _ = s.db.Pool.Exec(ctx, `DELETE FROM user_mfa_backup_codes WHERE id = $1`, matched)
+	// Atomic single-use consume: only the caller whose DELETE actually removes
+	// the row wins. `AND used_at IS NULL` + RowsAffected guards against two
+	// concurrent logins both matching the same code (double-spend), and a DB
+	// error now fails CLOSED instead of being swallowed as success.
+	tag, err := s.db.Pool.Exec(ctx, `DELETE FROM user_mfa_backup_codes WHERE id = $1 AND used_at IS NULL`, matched)
+	if err != nil {
+		return err
+	}
+	if tag.RowsAffected() == 0 {
+		return ErrMFACodeInvalid
+	}
 	return nil
 }
 

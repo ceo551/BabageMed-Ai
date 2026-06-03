@@ -64,18 +64,14 @@ func (s *Service) Record(ctx context.Context, r *http.Request, actorID, targetID
 	}
 }
 
-// clientIPFromRequest mirrors ratelimit.clientIP — leftmost XFF claim
-// (overwritten by our trusted ingress on entry) or RemoteAddr.
-// Duplicated rather than depended-on so the audit package stays a leaf
-// (no circular imports if ratelimit later wants to log to audit).
+// clientIPFromRequest mirrors ratelimit.clientIP — it trusts ONLY the
+// X-Client-IP header set by the Next.js proxy (the trust boundary), never the
+// client-controllable X-Forwarded-For, so audit-log source IPs can't be forged
+// by rotating a request header. Falls back to RemoteAddr. Duplicated rather
+// than depended-on so the audit package stays a leaf (no circular import).
 func clientIPFromRequest(r *http.Request) string {
-	if xff := r.Header.Get("X-Forwarded-For"); xff != "" {
-		for i := 0; i < len(xff); i++ {
-			if xff[i] == ',' {
-				return trimSpace(xff[:i])
-			}
-		}
-		return trimSpace(xff)
+	if ip := trimSpace(r.Header.Get("X-Client-IP")); ip != "" {
+		return ip
 	}
 	addr := r.RemoteAddr
 	for i := len(addr) - 1; i >= 0; i-- {

@@ -5,14 +5,14 @@ import (
 	"testing"
 )
 
-// XFF parsing — leftmost claim wins because our trusted ingress
-// overwrites the header on entry. If the ingress ever stops doing
-// that, switch to the rightmost element.
-func TestClientIPFromRequest_XFFLeftmost(t *testing.T) {
+// Only the proxy-set X-Client-IP is trusted; a client-supplied
+// X-Forwarded-For must be ignored so audit source IPs can't be forged.
+func TestClientIPFromRequest_TrustsClientIPHeaderNotXFF(t *testing.T) {
 	r := httptest.NewRequest("GET", "/", nil)
-	r.Header.Set("X-Forwarded-For", "203.0.113.5, 10.0.0.1, 172.16.0.1")
-	if got := clientIPFromRequest(r); got != "203.0.113.5" {
-		t.Errorf("XFF leftmost = %q, want 203.0.113.5", got)
+	r.Header.Set("X-Forwarded-For", "203.0.113.5, 10.0.0.1") // attacker-controlled — ignored
+	r.Header.Set("X-Client-IP", "198.51.100.9")              // proxy-set — trusted
+	if got := clientIPFromRequest(r); got != "198.51.100.9" {
+		t.Errorf("clientIP = %q, want 198.51.100.9 (X-Client-IP, not XFF)", got)
 	}
 }
 

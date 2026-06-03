@@ -264,11 +264,28 @@ func main() {
 	r.With(chatLimiter.Middleware).Post("/api/chat/stream", apiH.ChatStream)
 
 	// Media generation (Alibaba Model Studio / DashScope). Image is
-	// synchronous; video is async (submit → client polls the task). Same
-	// anonymous-but-rate-limited posture as chat.
-	r.With(chatLimiter.Middleware).Post("/api/generate/image", apiH.GenerateImage)
-	r.With(chatLimiter.Middleware).Post("/api/generate/video", apiH.SubmitVideo)
-	r.With(chatLimiter.Middleware).Get("/api/generate/video/{taskId}", apiH.PollVideo)
+	// synchronous; video is async (submit → client polls the task). Each call
+	// hits the PAID DashScope API on the org's key, so — exactly like
+	// /api/mcp/call — it is gated behind auth (when configured) and the tools
+	// budget, NOT left anonymous like chat (anonymous access here is a direct
+	// cost-drain vector). Falls back to rate-limited-but-open only in DEV
+	// (no DATABASE_URL / auth disabled).
+	if authSvc != nil {
+		r.Group(func(pr chi.Router) {
+			pr.Use(authSvc.Required)
+			pr.Use(toolsLimiter.Middleware)
+			pr.Post("/api/generate/image", apiH.GenerateImage)
+			pr.Post("/api/generate/video", apiH.SubmitVideo)
+			pr.Get("/api/generate/video/{taskId}", apiH.PollVideo)
+		})
+	} else {
+		r.Group(func(pr chi.Router) {
+			pr.Use(toolsLimiter.Middleware)
+			pr.Post("/api/generate/image", apiH.GenerateImage)
+			pr.Post("/api/generate/video", apiH.SubmitVideo)
+			pr.Get("/api/generate/video/{taskId}", apiH.PollVideo)
+		})
+	}
 
 	// Auth + persistence (DB-backed)
 	if authSvc != nil {

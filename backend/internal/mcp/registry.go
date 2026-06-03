@@ -203,13 +203,30 @@ const maxMcpResponseBytes = 4 << 20
 func (r *Registry) Call(ctx context.Context, id, tool string, args any) (any, error) {
 	s, ok := r.Get(id)
 	if !ok {
-		metrics.MCPProxyCalls.WithLabelValues(id, tool, "unknown").Inc()
+		// Bounded labels — never echo the caller-controlled id/tool into a
+		// Prometheus label (unbounded cardinality → backend OOM).
+		metrics.MCPProxyCalls.WithLabelValues("unknown", "unknown", "unknown_server").Inc()
 		return nil, errors.New("unknown server")
+	}
+	// Validate the tool against the server's declared tool set BEFORE it is
+	// interpolated into the upstream pod URL or used as a metric label. Without
+	// this, a crafted tool ("../metrics", "x?admin=1", CRLF) is path/query
+	// injection onto the internal MCP pod, and arbitrary tool names blow up
+	// Prometheus label cardinality. Falls back to a strict charset guard for
+	// servers whose manifest declared no tool list.
+	if !serverHasTool(s, tool) {
+		metrics.MCPProxyCalls.WithLabelValues(id, "invalid", "unknown_tool").Inc()
+		return nil, errors.New("unknown tool")
 	}
 	timer := prometheusTimer(id, tool)
 	body, _ := json.Marshal(args)
 	url := fmt.Sprintf("%s/call/%s", r.hostFor(s), tool)
-	req, _ := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(body))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(body))
+	if err != nil {
+		timer()
+		metrics.MCPProxyCalls.WithLabelValues(id, tool, "request_error").Inc()
+		return nil, err
+	}
 	req.Header.Set("content-type", "application/json")
 	res, err := r.client.Do(req)
 	if err != nil {
@@ -244,6 +261,39 @@ func prometheusTimer(id, tool string) func() {
 	return func() {
 		metrics.MCPProxyDuration.WithLabelValues(id, tool).Observe(time.Since(start).Seconds())
 	}
+}
+
+// serverHasTool reports whether `tool` is a legitimate tool for server s.
+// When the manifest declared a tool list we require an exact match (bounds
+// metric cardinality + blocks URL injection). When the list is empty (older
+// manifest entries), we fall back to a strict charset guard so the call still
+// works but a path/query-injection payload is still rejected.
+func serverHasTool(s Server, tool string) bool {
+	if len(s.Tools) == 0 {
+		return validToolName(tool)
+	}
+	for _, t := range s.Tools {
+		if t == tool {
+			return true
+		}
+	}
+	return false
+}
+
+// validToolName allows only URL-path-safe tool identifiers (no "/", "?", "#",
+// "..", CRLF, spaces) so the value is safe to interpolate into the upstream
+// /call/<tool> path and to use as a bounded-ish metric label.
+func validToolName(t string) bool {
+	if len(t) == 0 || len(t) > 64 {
+		return false
+	}
+	for i := 0; i < len(t); i++ {
+		c := t[i]
+		if !((c >= '0' && c <= '9') || (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_' || c == '-' || c == '.') {
+			return false
+		}
+	}
+	return true
 }
 
 // Health pings the /health endpoint of every MCP and reports status.
