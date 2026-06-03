@@ -33,6 +33,19 @@ export function FeatureSubSidebar({ meta, panels, onMobileClose }: { meta: Featu
   const [renaming, setRenaming] = useState<Chat | null>(null);
   const [renameDraft, setRenameDraft] = useState("");
   const [savingRename, setSavingRename] = useState(false);
+  // History collapse toggle (click the "History" header) — same localStorage
+  // key as the main sidebar so the two stay in sync.
+  const [historyExpanded, setHistoryExpanded] = useState<boolean>(() => {
+    if (typeof window === "undefined") return true;
+    return window.localStorage.getItem("pervagans:history-collapsed") !== "1";
+  });
+  function toggleHistory() {
+    setHistoryExpanded((v) => {
+      const next = !v;
+      try { window.localStorage.setItem("pervagans:history-collapsed", next ? "0" : "1"); } catch { /* ignore */ }
+      return next;
+    });
+  }
   // Drag-to-resize on the inline-end edge. Mirrors the main sidebar's
   // pattern in components/Sidebar.tsx.
   const draggingRef = useRef(false);
@@ -177,8 +190,16 @@ export function FeatureSubSidebar({ meta, panels, onMobileClose }: { meta: Featu
         <div className="feat-subsb-panels">{panels}</div>
       )}
 
-      <div className="feat-subsb-section-label">{s.recent}</div>
-      {!user ? (
+      <button
+        type="button"
+        className="feat-subsb-section-label sb-sec-toggle"
+        onClick={toggleHistory}
+        aria-expanded={historyExpanded}
+      >
+        <span>{s.recent}</span>
+        <span className="sb-sec-chev" aria-hidden="true">{I.chevR}</span>
+      </button>
+      {!historyExpanded ? null : !user ? (
         <div className="feat-subsb-empty">{s.signInToKeepHistory}</div>
       ) : loading && items.length === 0 ? (
         <div className="feat-subsb-empty">{s.loadingChats}</div>

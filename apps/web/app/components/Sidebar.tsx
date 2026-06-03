@@ -317,6 +317,19 @@ function HistorySection({ label, feature }: { label: string; feature?: string })
   const [renaming, setRenaming] = useState<Chat | null>(null);
   const [renameDraft, setRenameDraft] = useState("");
   const [savingRename, setSavingRename] = useState(false);
+  // History list collapse toggle (click the "History" header). Persisted so the
+  // choice survives reloads; shared key with the feature sub-sidebar's history.
+  const [historyExpanded, setHistoryExpanded] = useState<boolean>(() => {
+    if (typeof window === "undefined") return true;
+    return window.localStorage.getItem("pervagans:history-collapsed") !== "1";
+  });
+  function toggleHistory() {
+    setHistoryExpanded((v) => {
+      const next = !v;
+      try { window.localStorage.setItem("pervagans:history-collapsed", next ? "0" : "1"); } catch { /* ignore */ }
+      return next;
+    });
+  }
 
   // Read the current chat id from the URL search params. Using the
   // useSearchParams() hook (instead of window.location) means we also
@@ -443,9 +456,17 @@ function HistorySection({ label, feature }: { label: string; feature?: string })
   }
 
   return (
-    <div className="sb-history">
-      <div className="sb-section-label">{label}</div>
-      {loading && items.length === 0 ? (
+    <div className="sb-history" data-expanded={historyExpanded}>
+      <button
+        type="button"
+        className="sb-section-label sb-sec-toggle"
+        onClick={toggleHistory}
+        aria-expanded={historyExpanded}
+      >
+        <span>{label}</span>
+        <span className="sb-sec-chev" aria-hidden="true">{I.chevR}</span>
+      </button>
+      {!historyExpanded ? null : loading && items.length === 0 ? (
         <div className="sb-history-empty">{s.loadingChats}</div>
       ) : items.length === 0 ? (
         <div className="sb-history-empty">{s.noChatsYet}</div>

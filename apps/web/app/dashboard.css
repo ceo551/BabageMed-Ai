@@ -159,6 +159,25 @@ a { color: inherit; text-decoration: none; }
 [dir="rtl"] .sb-features-chev { transform: scaleX(-1); }
 [dir="rtl"] .sb-features[data-expanded="true"] .sb-features-chev { transform: rotate(90deg); }
 .shell[data-collapsed="true"] .sb-features-chev { display: none; }
+
+/* Section-header collapse toggle (the "History" label in the main sidebar AND
+   the per-feature sub-sidebar). Keeps the small uppercase caption typography of
+   the label class it sits on; just adds the button reset + a small chevron that
+   rotates down when expanded (keyed off aria-expanded so one rule covers both
+   sidebars). */
+.sb-sec-toggle {
+  display: flex; align-items: center; gap: 6px; width: 100%;
+  border: 0; background: transparent; cursor: pointer; text-align: start;
+}
+.sb-sec-toggle > span:first-child { flex: 1; min-width: 0; }
+.sb-sec-chev { display: inline-flex; align-items: center; opacity: .6; transition: transform .15s; }
+.sb-sec-chev svg { width: 12px; height: 12px; }
+.sb-sec-toggle[aria-expanded="true"] .sb-sec-chev { transform: rotate(90deg); }
+[dir="rtl"] .sb-sec-chev { transform: scaleX(-1); }
+[dir="rtl"] .sb-sec-toggle[aria-expanded="true"] .sb-sec-chev { transform: rotate(90deg); }
+.shell[data-collapsed="true"] .sb-sec-chev,
+.feat-subsb[data-collapsed="true"] .sb-sec-chev { display: none; }
+
 .sb-history-list {
   list-style: none;
   margin: 0;
