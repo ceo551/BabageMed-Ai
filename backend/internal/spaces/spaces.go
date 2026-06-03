@@ -43,6 +43,7 @@ type Space struct {
 	Icon         string    `json:"icon"`         // emoji glyph picked at create time
 	Instructions string    `json:"instructions"` // custom system prompt prefix
 	Skills       []string  `json:"skills"`       // attached skill ids/filenames (parity with features)
+	DefaultModel string    `json:"defaultModel"` // pinned model id for this space (Projects-style)
 	CreatedAt    time.Time `json:"createdAt"`
 	UpdatedAt    time.Time `json:"updatedAt"`
 	FileCount    int       `json:"fileCount"`
@@ -110,9 +111,9 @@ func (s *Service) Create(ctx context.Context, userID string, in CreateInput) (*S
 	err := s.db.Pool.QueryRow(ctx, `
         INSERT INTO spaces (user_id, name, description, icon, instructions)
         VALUES ($1, $2, NULLIF($3, ''), $4, $5)
-        RETURNING id, name, COALESCE(description, ''), icon, instructions, created_at, updated_at, COALESCE(skills, '[]'::jsonb)
+        RETURNING id, name, COALESCE(description, ''), icon, instructions, created_at, updated_at, COALESCE(skills, '[]'::jsonb), COALESCE(default_model, '')
     `, userID, name, in.Description, icon, instr).Scan(
-		&sp.ID, &sp.Name, &sp.Description, &sp.Icon, &sp.Instructions, &sp.CreatedAt, &sp.UpdatedAt, &skillsJSON,
+		&sp.ID, &sp.Name, &sp.Description, &sp.Icon, &sp.Instructions, &sp.CreatedAt, &sp.UpdatedAt, &skillsJSON, &sp.DefaultModel,
 	)
 	if err != nil {
 		return nil, err
@@ -125,7 +126,7 @@ func (s *Service) List(ctx context.Context, userID string) ([]Space, error) {
 	rows, err := s.db.Pool.Query(ctx, `
         SELECT s.id, s.name, COALESCE(s.description, ''), s.icon, s.instructions,
                s.created_at, s.updated_at,
-               COALESCE(s.skills, '[]'::jsonb),
+               COALESCE(s.skills, '[]'::jsonb), COALESCE(s.default_model, ''),
                (SELECT count(*) FROM space_files f WHERE f.space_id = s.id)
         FROM spaces s
         WHERE s.user_id = $1
@@ -141,7 +142,7 @@ func (s *Service) List(ctx context.Context, userID string) ([]Space, error) {
 		var skillsJSON []byte
 		if err := rows.Scan(
 			&sp.ID, &sp.Name, &sp.Description, &sp.Icon, &sp.Instructions,
-			&sp.CreatedAt, &sp.UpdatedAt, &skillsJSON, &sp.FileCount,
+			&sp.CreatedAt, &sp.UpdatedAt, &skillsJSON, &sp.DefaultModel, &sp.FileCount,
 		); err != nil {
 			return nil, err
 		}
@@ -165,12 +166,12 @@ func (s *Service) Get(ctx context.Context, userID, spaceID string) (*Space, erro
 	err := s.db.Pool.QueryRow(ctx, `
         SELECT id, name, COALESCE(description, ''), icon, instructions,
                created_at, updated_at,
-               COALESCE(skills, '[]'::jsonb),
+               COALESCE(skills, '[]'::jsonb), COALESCE(default_model, ''),
                (SELECT count(*) FROM space_files f WHERE f.space_id = $1)
         FROM spaces WHERE id = $1 AND user_id = $2
     `, spaceID, userID).Scan(
 		&sp.ID, &sp.Name, &sp.Description, &sp.Icon, &sp.Instructions,
-		&sp.CreatedAt, &sp.UpdatedAt, &skillsJSON, &sp.FileCount,
+		&sp.CreatedAt, &sp.UpdatedAt, &skillsJSON, &sp.DefaultModel, &sp.FileCount,
 	)
 	if err != nil {
 		return nil, err
@@ -187,7 +188,8 @@ type UpdateInput struct {
 	Description  *string  `json:"description,omitempty"`
 	Icon         *string  `json:"icon,omitempty"`
 	Instructions *string  `json:"instructions,omitempty"`
-	Skills       []string `json:"skills,omitempty"` // nil = leave untouched
+	Skills       []string `json:"skills,omitempty"`       // nil = leave untouched
+	DefaultModel *string  `json:"defaultModel,omitempty"` // pinned model id; nil = leave untouched
 }
 
 func (s *Service) Update(ctx context.Context, userID, spaceID string, in UpdateInput) (*Space, error) {
@@ -218,6 +220,13 @@ func (s *Service) Update(ctx context.Context, userID, spaceID string, in UpdateI
 		}
 		in.Instructions = &v
 	}
+	if in.DefaultModel != nil {
+		v := strings.TrimSpace(*in.DefaultModel)
+		if len(v) > 64 {
+			v = v[:64]
+		}
+		in.DefaultModel = &v
+	}
 	// Skills: nil => leave the column untouched (COALESCE($7, skills) keeps
 	// the existing value when the param is a nil []byte). Non-nil => clamp
 	// to at most 100 items, each <=128 chars, dropping empties/over-length,
@@ -246,19 +255,20 @@ func (s *Service) Update(ctx context.Context, userID, spaceID string, in UpdateI
 	var skillsJSON []byte
 	err := s.db.Pool.QueryRow(ctx, `
         UPDATE spaces
-        SET name         = COALESCE($3, name),
-            description  = COALESCE($4, description),
-            icon         = COALESCE($5, icon),
-            instructions = COALESCE($6, instructions),
-            skills       = COALESCE($7, skills),
-            updated_at   = now()
+        SET name          = COALESCE($3, name),
+            description   = COALESCE($4, description),
+            icon          = COALESCE($5, icon),
+            instructions  = COALESCE($6, instructions),
+            skills        = COALESCE($7, skills),
+            default_model = COALESCE($8, default_model),
+            updated_at    = now()
         WHERE id = $1 AND user_id = $2
         RETURNING id, name, COALESCE(description, ''), icon, instructions, created_at, updated_at,
                   (SELECT count(*) FROM space_files f WHERE f.space_id = id),
-                  COALESCE(skills, '[]'::jsonb)
-    `, spaceID, userID, in.Name, in.Description, in.Icon, in.Instructions, skillsParam).Scan(
+                  COALESCE(skills, '[]'::jsonb), COALESCE(default_model, '')
+    `, spaceID, userID, in.Name, in.Description, in.Icon, in.Instructions, skillsParam, in.DefaultModel).Scan(
 		&sp.ID, &sp.Name, &sp.Description, &sp.Icon, &sp.Instructions,
-		&sp.CreatedAt, &sp.UpdatedAt, &sp.FileCount, &skillsJSON,
+		&sp.CreatedAt, &sp.UpdatedAt, &sp.FileCount, &skillsJSON, &sp.DefaultModel,
 	)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, errors.New("not found")

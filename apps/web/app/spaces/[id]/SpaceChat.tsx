@@ -41,7 +41,11 @@ export function SpaceChat({ space }: { space: Space }) {
   const [chatId, setChatId] = useState<string>("");
   const [value, setValue] = useState("");
   const [sending, setSending] = useState(false);
-  const [model, setModel] = useState<string>(() => TEXT_MODELS[0].id);
+  // Pinned-per-space model (Projects-style): open the space with the model you
+  // last used here; fall back to the first text model if unset/stale.
+  const [model, setModel] = useState<string>(() =>
+    TEXT_MODELS.some((m) => m.id === space.defaultModel) ? space.defaultModel : TEXT_MODELS[0].id,
+  );
   // mode comes from the global prefs store so it persists across pages.
   const { mode } = usePrefs();
   const [modelOpen, setModelOpen] = useState(false);
@@ -378,7 +382,12 @@ export function SpaceChat({ space }: { space: Space }) {
                   type="button"
                   className="model-row"
                   data-active={model === m.id}
-                  onClick={() => { setModel(m.id); setModelOpen(false); }}
+                  onClick={() => {
+                    setModel(m.id);
+                    setModelOpen(false);
+                    // Persist the choice as this space's pinned default (best-effort).
+                    spacesApi.update(space.id, { defaultModel: m.id }).catch(() => {});
+                  }}
                 >
                   <span className="brand-mark">{brandMark(m.brand)}</span>
                   <span className="col">

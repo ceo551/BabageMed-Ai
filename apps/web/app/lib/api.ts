@@ -335,6 +335,7 @@ export type Space = {
   icon: string;          // emoji glyph picked at create time, "" if unset
   instructions: string;  // custom system-prompt prefix for the agent
   skills: string[];      // skill labels (capabilities) enabled for this space
+  defaultModel: string;  // pinned model id for this space ("" → app default)
   fileCount: number;
   createdAt: string;
   updatedAt: string;
@@ -377,7 +378,7 @@ export const spaces = {
       skills: input.skills || [],
     }),
   get:    (id: string) => api.get<Space>(`/api/spaces/${encodeURIComponent(id)}`),
-  update: async (id: string, patch: Partial<Pick<Space, "name"|"description"|"icon"|"instructions"|"skills">>): Promise<Space> => {
+  update: async (id: string, patch: Partial<Pick<Space, "name"|"description"|"icon"|"instructions"|"skills"|"defaultModel">>): Promise<Space> => {
     const r = await fetch(`/api/backend/api/spaces/${encodeURIComponent(id)}`, {
       method: "PATCH",
       credentials: "include",
