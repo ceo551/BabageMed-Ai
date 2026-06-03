@@ -1,0 +1,19 @@
+# Build context = apps/web (see cloudbuild.gke.all.yaml `dir: apps/web`).
+# Keep local-only and generated files OUT of the image layer — most importantly
+# any .env*.local secrets and the stale local .next build.
+node_modules
+.next
+out
+.env
+.env.*
+!.env.example
+.git
+.gitignore
+*.log
+npm-debug.log*
+.DS_Store
+coverage
+.vscode
+.idea
+Dockerfile
+.dockerignore

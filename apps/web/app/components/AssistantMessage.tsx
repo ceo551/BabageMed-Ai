@@ -63,37 +63,130 @@ function AssistantMessageInner({
         </ReactMarkdown>
       </div>
       {citations && citations.length > 0 && (
-        <div className="msg-citations">
-          <div className="msg-citations-label">{s.sources}</div>
-          <div className="msg-citations-list">
-            {citations.map((c, i) => {
-              const isOpen = openCitation === i;
-              return (
-                <React.Fragment key={`${c.source}-${i}`}>
-                  <button
-                    type="button"
-                    className="msg-citation"
-                    data-open={isOpen}
-                    aria-expanded={isOpen}
-                    onClick={() => setOpenCitation(isOpen ? null : i)}
-                    title={isOpen ? "Hide details" : "Show raw retrieval"}
-                  >
-                    <ConnectorIcon id={c.source} name={c.source} size={14} />
-                    <span>{c.source}</span>
-                  </button>
-                  {isOpen && c.result !== undefined && (
-                    <pre className="msg-citation-detail" dir="ltr">
-                      {jsonPreview(c.result)}
-                    </pre>
-                  )}
-                </React.Fragment>
-              );
-            })}
-          </div>
-        </div>
+        <SourceCards
+          cards={normaliseCitations(citations)}
+          label={s.sources}
+          openIdx={openCitation}
+          onToggle={(i) => setOpenCitation(openCitation === i ? null : i)}
+        />
       )}
     </div>
   );
+}
+
+// ── Citations → numbered source cards ──────────────────────────────────────
+// A flat, numbered list whose `n` matches the [n] markers the model is asked
+// to emit (backend buildSystem uses the identical flattening + ordering):
+// each web result is its own card; each MCP connector is one card.
+type SourceCardData = {
+  n: number;
+  kind: "web" | "mcp";
+  source: string;        // mcp id, or domain for web
+  title?: string;
+  url?: string;
+  snippet?: string;
+  raw?: unknown;         // mcp raw retrieval (expandable)
+};
+
+function normaliseCitations(citations: Citation[]): SourceCardData[] {
+  const cards: SourceCardData[] = [];
+  let n = 0;
+  for (const c of citations) {
+    if (c.source === "web-search" && Array.isArray(c.result)) {
+      for (const w of c.result as Array<Record<string, unknown>>) {
+        const url = typeof w.url === "string" ? w.url : "";
+        n++;
+        cards.push({
+          n,
+          kind: "web",
+          source: domainOf(url) || "web",
+          title: typeof w.title === "string" ? w.title : url,
+          url,
+          snippet: typeof w.description === "string" ? w.description : undefined,
+        });
+      }
+      continue;
+    }
+    n++;
+    cards.push({ n, kind: "mcp", source: c.source, raw: c.result });
+  }
+  return cards;
+}
+
+function SourceCards({
+  cards,
+  label,
+  openIdx,
+  onToggle,
+}: {
+  cards: SourceCardData[];
+  label: string;
+  openIdx: number | null;
+  onToggle: (i: number) => void;
+}) {
+  if (cards.length === 0) return null;
+  return (
+    <div className="msg-sources">
+      <div className="msg-sources-label">{label}</div>
+      <div className="msg-sources-grid">
+        {cards.map((card, i) =>
+          card.kind === "web" ? (
+            <a
+              key={`w-${card.n}`}
+              className="src-card"
+              href={card.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              title={card.url}
+            >
+              <span className="src-card-head">
+                <span className="src-num" aria-hidden="true">{card.n}</span>
+                {card.url ? (
+                  <img
+                    className="src-fav"
+                    src={`https://www.google.com/s2/favicons?domain=${encodeURIComponent(card.source)}&sz=32`}
+                    alt=""
+                    width={14}
+                    height={14}
+                    loading="lazy"
+                  />
+                ) : null}
+                <span className="src-domain">{card.source}</span>
+              </span>
+              <span className="src-title">{card.title}</span>
+              {card.snippet ? <span className="src-snippet">{card.snippet}</span> : null}
+            </a>
+          ) : (
+            <div key={`m-${card.n}`} className="src-card src-card-mcp">
+              <button
+                type="button"
+                className="src-card-head src-card-mcp-btn"
+                aria-expanded={openIdx === i}
+                onClick={() => onToggle(i)}
+                title={openIdx === i ? "Hide raw retrieval" : "Show raw retrieval"}
+              >
+                <span className="src-num" aria-hidden="true">{card.n}</span>
+                <ConnectorIcon id={card.source} name={card.source} size={14} />
+                <span className="src-title">{card.source}</span>
+              </button>
+              {openIdx === i && card.raw !== undefined && (
+                <pre className="msg-citation-detail" dir="ltr">{jsonPreview(card.raw)}</pre>
+              )}
+            </div>
+          ),
+        )}
+      </div>
+    </div>
+  );
+}
+
+// domainOf extracts a bare host (no www.) for the favicon + label.
+function domainOf(url: string): string {
+  try {
+    return new URL(url).hostname.replace(/^www\./, "");
+  } catch {
+    return "";
+  }
 }
 
 // React.memo wrapper — primitive `content` + stable citations reference
