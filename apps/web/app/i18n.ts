@@ -71,6 +71,11 @@ export type LocaleStrings = {
   generatingVideo: string;
   mediaFailed: string;
   download: string;
+  aspectRatio: string;
+  negativePrompt: string;
+  seed: string;
+  batch: string;
+  lockSeed: string;
   // ── Common actions / dialogs (used by recent UI additions) ───────────────
   cancel: string;
   save: string;
@@ -252,6 +257,11 @@ export const STR: Record<Locale, LocaleStrings> = {
     generatingVideo: "Generating video — this can take a minute…",
     mediaFailed: "Generation failed. Please try again.",
     download: "Download",
+    aspectRatio: "Aspect ratio",
+    negativePrompt: "Negative prompt (what to avoid)",
+    seed: "Seed",
+    batch: "Count",
+    lockSeed: "Lock seed for reproducible results",
     cancel: "Cancel",
     save: "Save",
     saving: "Saving…",
@@ -398,6 +408,11 @@ export const STR: Record<Locale, LocaleStrings> = {
     generatingVideo: "جارٍ توليد الفيديو — قد يستغرق دقيقة…",
     mediaFailed: "فشل التوليد. حاول مرة أخرى.",
     download: "تنزيل",
+    aspectRatio: "نسبة الأبعاد",
+    negativePrompt: "وصف سلبي (ما يجب تجنّبه)",
+    seed: "البذرة",
+    batch: "العدد",
+    lockSeed: "تثبيت البذرة لنتائج قابلة للتكرار",
     cancel: "إلغاء",
     save: "حفظ",
     saving: "جارٍ الحفظ…",

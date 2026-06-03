@@ -6,15 +6,16 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/pervagans/backend/internal/llm"
 	"github.com/go-chi/chi/v5"
 )
 
 // Media generation endpoints backed by Alibaba Model Studio / DashScope
 // (see internal/llm/dashscope.go):
 //
-//   POST /api/generate/image          → { url }            (synchronous)
-//   POST /api/generate/video          → { taskId }         (async kick-off)
-//   GET  /api/generate/video/{taskId} → { status, url }    (client polls)
+//   POST /api/generate/image          → { images: [url...] }   (synchronous, 1..4)
+//   POST /api/generate/video          → { taskId }             (async kick-off)
+//   GET  /api/generate/video/{taskId} → { status, url }        (client polls)
 //
 // The allow-lists below MUST stay in sync with apps/web/app/lib/models.ts and
 // the dashScope*ModelMap tables in the llm package — a request for any other
@@ -23,9 +24,18 @@ import (
 
 const maxMediaPromptBytes = 4000
 
+// maxBatch caps how many images one request can ask for — each is a billed
+// DashScope render, so we bound fan-out per call (the route is also auth-gated
+// + tools-rate-limited).
+const maxBatch = 4
+
 type mediaRequest struct {
-	Model  string `json:"model"`
-	Prompt string `json:"prompt"`
+	Model          string `json:"model"`
+	Prompt         string `json:"prompt"`
+	NegativePrompt string `json:"negativePrompt"`
+	Aspect         string `json:"aspect"` // "1:1" | "16:9" | "9:16" | "4:3" | "3:4"
+	Seed           int    `json:"seed"`
+	N              int    `json:"n"`
 }
 
 var allowedImageModels = map[string]bool{
@@ -37,8 +47,33 @@ var allowedVideoModels = map[string]bool{
 	"happy-horse-1.0": true,
 }
 
-// decodeMediaRequest reads + validates the shared {model, prompt} body. It
-// writes the error response itself and returns ok=false on failure.
+// aspectToImageSize maps a UI aspect preset to a DashScope "<w>*<h>" size.
+// Server-side allow-list so a client can't push an arbitrary/abusive size.
+var aspectToImageSize = map[string]string{
+	"1:1":  "1024*1024",
+	"16:9": "1280*720",
+	"9:16": "720*1280",
+	"4:3":  "1024*768",
+	"3:4":  "768*1024",
+}
+
+func imageSizeForAspect(a string) string {
+	if s, ok := aspectToImageSize[a]; ok {
+		return s
+	}
+	return "1024*1024"
+}
+
+// videoSizeForAspect — video models support fewer sizes; default 16:9 720p.
+func videoSizeForAspect(a string) string {
+	if a == "9:16" {
+		return "720*1280"
+	}
+	return "1280*720"
+}
+
+// decodeMediaRequest reads + validates the shared body. It writes the error
+// response itself and returns ok=false on failure.
 func (h *Handler) decodeMediaRequest(w http.ResponseWriter, r *http.Request) (mediaRequest, bool) {
 	var req mediaRequest
 	r.Body = http.MaxBytesReader(w, r.Body, 1<<16)
@@ -54,10 +89,17 @@ func (h *Handler) decodeMediaRequest(w http.ResponseWriter, r *http.Request) (me
 	if len(req.Prompt) > maxMediaPromptBytes {
 		req.Prompt = req.Prompt[:maxMediaPromptBytes]
 	}
+	req.NegativePrompt = strings.TrimSpace(req.NegativePrompt)
+	if len(req.NegativePrompt) > maxMediaPromptBytes {
+		req.NegativePrompt = req.NegativePrompt[:maxMediaPromptBytes]
+	}
+	if req.Seed < 0 {
+		req.Seed = 0
+	}
 	return req, true
 }
 
-// GenerateImage renders an image synchronously and returns its URL.
+// GenerateImage renders 1..N images synchronously and returns their URLs.
 func (h *Handler) GenerateImage(w http.ResponseWriter, r *http.Request) {
 	req, ok := h.decodeMediaRequest(w, r)
 	if !ok {
@@ -67,7 +109,19 @@ func (h *Handler) GenerateImage(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, 400, map[string]string{"error": "unknown image model"})
 		return
 	}
-	url, err := h.llm.GenerateImage(r.Context(), req.Model, req.Prompt)
+	n := req.N
+	if n < 1 {
+		n = 1
+	}
+	if n > maxBatch {
+		n = maxBatch
+	}
+	urls, err := h.llm.GenerateImage(r.Context(), req.Model, req.Prompt, llm.ImageOptions{
+		NegativePrompt: req.NegativePrompt,
+		Size:           imageSizeForAspect(req.Aspect),
+		Seed:           req.Seed,
+		N:              n,
+	})
 	if err != nil {
 		// Log the upstream detail server-side; return an opaque message so
 		// DashScope error bodies / request ids don't leak to the client.
@@ -75,7 +129,7 @@ func (h *Handler) GenerateImage(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, 502, map[string]string{"error": "image generation failed"})
 		return
 	}
-	writeJSON(w, 200, map[string]string{"url": url})
+	writeJSON(w, 200, map[string]any{"images": urls})
 }
 
 // SubmitVideo kicks off an async video job and returns the task id to poll.
@@ -88,7 +142,9 @@ func (h *Handler) SubmitVideo(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, 400, map[string]string{"error": "unknown video model"})
 		return
 	}
-	taskID, err := h.llm.SubmitVideo(r.Context(), req.Model, req.Prompt)
+	taskID, err := h.llm.SubmitVideo(r.Context(), req.Model, req.Prompt, llm.VideoOptions{
+		Size: videoSizeForAspect(req.Aspect),
+	})
 	if err != nil {
 		log.Printf("media: video submit (%s) failed: %v", req.Model, err)
 		writeJSON(w, 502, map[string]string{"error": "video generation failed"})

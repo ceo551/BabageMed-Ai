@@ -210,15 +210,38 @@ func (c *Client) callDashScope(ctx context.Context, req CompletionRequest) (*Com
 
 // ─── Image (synchronous) ────────────────────────────────────────────────────
 
-// GenerateImage renders an image from a text prompt and returns the URL of the
-// first result. The multimodal-generation endpoint is synchronous, so this
-// blocks for the generation duration (~10-30 s — well within the 120 s
-// non-stream http client timeout). modelID is a UI picker id.
-func (c *Client) GenerateImage(ctx context.Context, modelID, prompt string) (string, error) {
+// ImageOptions are the user-tunable generation controls. Zero values mean
+// "model default": Seed 0 = random, empty Size = 1024*1024, N <= 0 = 1.
+type ImageOptions struct {
+	NegativePrompt string
+	Size           string // "<w>*<h>", e.g. "1280*720"
+	Seed           int
+	N              int // batch count (clamped 1..4 by the caller)
+}
+
+// GenerateImage renders 1..N images from a prompt and returns EVERY result URL.
+// The multimodal-generation endpoint is synchronous (~10-30 s, within the 120 s
+// non-stream client timeout) and accepts negative_prompt / seed / n / size
+// (validated live). modelID is a UI picker id.
+func (c *Client) GenerateImage(ctx context.Context, modelID, prompt string, opts ImageOptions) ([]string, error) {
 	if c.cfg.DashScopeKey == "" {
-		return "", errors.New("DASHSCOPE_API_KEY not configured")
+		return nil, errors.New("DASHSCOPE_API_KEY not configured")
 	}
 	model := dashScopeImageModel(modelID)
+	size := opts.Size
+	if size == "" {
+		size = "1024*1024"
+	}
+	params := map[string]any{"size": size}
+	if strings.TrimSpace(opts.NegativePrompt) != "" {
+		params["negative_prompt"] = opts.NegativePrompt
+	}
+	if opts.Seed > 0 {
+		params["seed"] = opts.Seed
+	}
+	if opts.N >= 1 {
+		params["n"] = opts.N
+	}
 	body, _ := json.Marshal(map[string]any{
 		"model": model,
 		"input": map[string]any{
@@ -226,20 +249,23 @@ func (c *Client) GenerateImage(ctx context.Context, modelID, prompt string) (str
 				{"role": "user", "content": []map[string]any{{"text": prompt}}},
 			},
 		},
-		"parameters": map[string]any{"size": "1024*1024"},
+		"parameters": params,
 	})
 	url := c.dashScopeBase() + "/api/v1/services/aigc/multimodal-generation/generation"
-	r, _ := http.NewRequestWithContext(ctx, "POST", url, bytes.NewReader(body))
+	r, err := http.NewRequestWithContext(ctx, "POST", url, bytes.NewReader(body))
+	if err != nil {
+		return nil, err
+	}
 	r.Header.Set("Authorization", "Bearer "+c.cfg.DashScopeKey)
 	r.Header.Set("content-type", "application/json")
 	res, err := c.http.Do(r)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	defer res.Body.Close()
 	raw, _ := io.ReadAll(res.Body)
 	if res.StatusCode >= 400 {
-		return "", fmt.Errorf("dashscope image: %s: %s", res.Status, truncBody(raw))
+		return nil, fmt.Errorf("dashscope image: %s: %s", res.Status, truncBody(raw))
 	}
 	var out struct {
 		Output struct {
@@ -255,20 +281,24 @@ func (c *Client) GenerateImage(ctx context.Context, modelID, prompt string) (str
 		Message string `json:"message"`
 	}
 	if err := json.Unmarshal(raw, &out); err != nil {
-		return "", fmt.Errorf("dashscope image: decode: %w", err)
+		return nil, fmt.Errorf("dashscope image: decode: %w", err)
 	}
 	// DashScope returns 200 with a top-level code/message on logical failures.
 	if out.Code != "" {
-		return "", fmt.Errorf("dashscope image: %s: %s", out.Code, out.Message)
+		return nil, fmt.Errorf("dashscope image: %s: %s", out.Code, out.Message)
 	}
+	var urls []string
 	for _, ch := range out.Output.Choices {
 		for _, part := range ch.Message.Content {
 			if part.Image != "" {
-				return part.Image, nil
+				urls = append(urls, part.Image)
 			}
 		}
 	}
-	return "", errors.New("dashscope image: no image in response")
+	if len(urls) == 0 {
+		return nil, errors.New("dashscope image: no image in response")
+	}
+	return urls, nil
 }
 
 // ─── Video (async + poll) ───────────────────────────────────────────────────
@@ -279,18 +309,27 @@ type VideoTask struct {
 	URL    string // populated only when Status == SUCCEEDED
 }
 
+// VideoOptions are the user-tunable video controls (empty Size = 1280*720).
+type VideoOptions struct {
+	Size string // "<w>*<h>", e.g. "1280*720" (16:9), "720*1280" (9:16)
+}
+
 // SubmitVideo kicks off an async text-to-video job and returns its task id.
 // The X-DashScope-Async header is REQUIRED — without it the endpoint 400s with
 // a confusing "url error". The caller polls PollVideo until the task finishes.
-func (c *Client) SubmitVideo(ctx context.Context, modelID, prompt string) (string, error) {
+func (c *Client) SubmitVideo(ctx context.Context, modelID, prompt string, opts VideoOptions) (string, error) {
 	if c.cfg.DashScopeKey == "" {
 		return "", errors.New("DASHSCOPE_API_KEY not configured")
 	}
 	model := dashScopeVideoModel(modelID)
+	size := opts.Size
+	if size == "" {
+		size = "1280*720"
+	}
 	body, _ := json.Marshal(map[string]any{
 		"model":      model,
 		"input":      map[string]any{"prompt": prompt},
-		"parameters": map[string]any{"size": "1280*720"},
+		"parameters": map[string]any{"size": size},
 	})
 	url := c.dashScopeBase() + "/api/v1/services/aigc/video-generation/video-synthesis"
 	r, _ := http.NewRequestWithContext(ctx, "POST", url, bytes.NewReader(body))

@@ -29,7 +29,7 @@ import {
 type Msg =
   | { id: string; role: "user"; content: string }
   | { id: string; role: "assistant"; content: string; citations?: Citation[] }
-  | { id: string; role: "media"; mkind: "image" | "video"; url: string }
+  | { id: string; role: "media"; mkind: "image" | "video"; urls: string[] }
   | { id: string; role: "loading"; hint?: string };
 
 function newId(): string {
@@ -71,6 +71,12 @@ export function FeatureChat({
   // Composer (+) popover — Add file / Add skill / Web search / Add connector.
   const [addOpen, setAddOpen] = useState(false);
   const [webSearch, setWebSearch] = useState(false);
+  // Visual-feature (Image & Video) generation controls.
+  const [aspect, setAspect] = useState<"1:1" | "16:9" | "9:16" | "4:3" | "3:4">("1:1");
+  const [negPrompt, setNegPrompt] = useState("");
+  const [batchN, setBatchN] = useState(1);
+  const [seed, setSeed] = useState<number>(0);
+  const [seedLocked, setSeedLocked] = useState(false);
 
   const liveLoadRef = useRef<string>("");
   const streamAbortRef = useRef<AbortController | null>(null);
@@ -177,6 +183,10 @@ export function FeatureChat({
     ? group.models
     : [...group.image, ...group.video];
   const currentModel = allModels.find((m) => m.id === model) || allModels[0];
+  // Derived visual flags for the controls panel.
+  const isVideoModel = group.kind === "media" && group.video.some((m) => m.id === model);
+  const aspectOptions: ReadonlyArray<"1:1" | "16:9" | "9:16" | "4:3" | "3:4"> =
+    isVideoModel ? ["16:9", "9:16"] : ["1:1", "16:9", "9:16", "4:3", "3:4"];
 
   async function send() {
     const text = value.trim();
@@ -380,28 +390,36 @@ export function FeatureChat({
         ? { ...m, hint: isVideo ? s.generatingVideo : s.generatingImage } : m)),
     );
     try {
-      let url = "";
+      let urls: string[] = [];
       const mkind: "image" | "video" = isVideo ? "video" : "image";
       if (isVideo) {
-        const { taskId } = await mediaApi.videoSubmit(model, prompt);
+        const { taskId } = await mediaApi.videoSubmit(model, prompt, { aspect });
         // Poll every 4 s up to ~10 min — video generation is typically 1-3 min.
+        let vurl = "";
         for (let i = 0; i < 150; i++) {
           if (mediaAbortRef.current) throw new DOMException("aborted", "AbortError");
           await sleep(4000);
           if (mediaAbortRef.current) throw new DOMException("aborted", "AbortError");
           const st = await mediaApi.videoPoll(taskId);
-          if (st.status === "SUCCEEDED") { url = st.url || ""; break; }
+          if (st.status === "SUCCEEDED") { vurl = st.url || ""; break; }
           if (st.status === "FAILED") throw new Error(s.mediaFailed);
         }
-        if (!url) throw new Error(s.mediaFailed);
+        if (!vurl) throw new Error(s.mediaFailed);
+        urls = [vurl];
       } else {
-        const res = await mediaApi.image(model, prompt);
-        url = res.url;
+        const res = await mediaApi.image(model, prompt, {
+          negativePrompt: negPrompt,
+          aspect,
+          seed: seedLocked && seed > 0 ? seed : 0,
+          n: batchN,
+        });
+        urls = res.images || [];
       }
-      const finalUrl = url;
+      if (urls.length === 0) throw new Error(s.mediaFailed);
+      const finalUrls = urls;
       setMessages((cur) =>
         cur.filter((m) => m.id !== loadingId)
-          .concat({ id: `m-${newId()}`, role: "media", mkind, url: finalUrl }),
+          .concat({ id: `m-${newId()}`, role: "media", mkind, urls: finalUrls }),
       );
     } catch (e: unknown) {
       const err = e as { name?: string; message?: string };
@@ -492,6 +510,50 @@ export function FeatureChat({
               }
             }}
           />
+          {group.kind === "media" && (
+            <div className="media-controls">
+              <div className="mc-group" role="group" aria-label={s.aspectRatio}>
+                {aspectOptions.map((a) => (
+                  <button key={a} type="button" className="mc-chip" data-active={aspect === a}
+                    onClick={() => setAspect(a)}>{a}</button>
+                ))}
+              </div>
+              {!isVideoModel && (
+                <div className="mc-group" role="group" aria-label={s.batch}>
+                  {[1, 2, 4].map((n) => (
+                    <button key={n} type="button" className="mc-chip" data-active={batchN === n}
+                      onClick={() => setBatchN(n)}>{n}×</button>
+                  ))}
+                </div>
+              )}
+              {!isVideoModel && (
+                <input
+                  type="text"
+                  className="mc-neg"
+                  placeholder={s.negativePrompt}
+                  value={negPrompt}
+                  onChange={(e) => setNegPrompt(e.target.value)}
+                />
+              )}
+              {!isVideoModel && (
+                <div className="mc-seed">
+                  <button type="button" className="mc-chip" data-active={seedLocked}
+                    aria-pressed={seedLocked} title={s.lockSeed}
+                    onClick={() => setSeedLocked((v) => !v)}>{seedLocked ? "🔒" : "🎲"}</button>
+                  <input
+                    type="number" min={1} className="mc-seed-input" placeholder={s.seed}
+                    value={seed || ""}
+                    onChange={(e) => {
+                      const v = parseInt(e.target.value, 10);
+                      const ok = Number.isFinite(v) && v > 0;
+                      setSeed(ok ? v : 0);
+                      setSeedLocked(ok);
+                    }}
+                  />
+                </div>
+              )}
+            </div>
+          )}
           <div className="composer-bar">
             <button
               type="button"
@@ -735,12 +797,21 @@ function Transcript({ messages, endRef }: { messages: Msg[]; endRef: React.RefOb
             <div key={m.id} className="msg-row">
               <div className="msg msg-assistant msg-media">
                 {m.mkind === "image" ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={m.url} alt="" className="msg-media-img" loading="lazy" />
+                  <div className="media-grid" data-count={m.urls.length}>
+                    {m.urls.map((u, i) => (
+                      <a key={i} href={u} target="_blank" rel="noopener noreferrer"
+                        className="media-grid-item" title={s.download}>
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={u} alt="" className="msg-media-img" loading="lazy" />
+                      </a>
+                    ))}
+                  </div>
                 ) : (
-                  <video src={m.url} className="msg-media-video" controls playsInline />
+                  <>
+                    <video src={m.urls[0]} className="msg-media-video" controls playsInline />
+                    <a className="msg-media-dl" href={m.urls[0]} target="_blank" rel="noopener noreferrer">{s.download}</a>
+                  </>
                 )}
-                <a className="msg-media-dl" href={m.url} target="_blank" rel="noopener noreferrer">{s.download}</a>
               </div>
             </div>
           );

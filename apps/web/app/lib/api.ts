@@ -413,11 +413,26 @@ export const spaces = {
 // Image is synchronous (one call → url). Video is async: submit returns a
 // task id the caller polls until status is SUCCEEDED (url ready) or FAILED.
 export type VideoTaskStatus = "PENDING" | "RUNNING" | "SUCCEEDED" | "FAILED" | string;
+export type AspectRatio = "1:1" | "16:9" | "9:16" | "4:3" | "3:4";
+export type ImageGenOpts = {
+  negativePrompt?: string;
+  aspect?: AspectRatio;
+  seed?: number;   // 0/undefined → random
+  n?: number;      // batch 1..4
+};
 export const media = {
-  image:       (model: string, prompt: string) =>
-    api.post<{ url: string }>("/api/generate/image", { model, prompt }),
-  videoSubmit: (model: string, prompt: string) =>
-    api.post<{ taskId: string }>("/api/generate/video", { model, prompt }),
+  image:       (model: string, prompt: string, opts: ImageGenOpts = {}) =>
+    api.post<{ images: string[] }>("/api/generate/image", {
+      model, prompt,
+      negativePrompt: opts.negativePrompt || "",
+      aspect: opts.aspect || "1:1",
+      seed: opts.seed && opts.seed > 0 ? opts.seed : 0,
+      n: opts.n && opts.n > 0 ? opts.n : 1,
+    }),
+  videoSubmit: (model: string, prompt: string, opts: { aspect?: AspectRatio } = {}) =>
+    api.post<{ taskId: string }>("/api/generate/video", {
+      model, prompt, aspect: opts.aspect || "16:9",
+    }),
   videoPoll:   (taskId: string) =>
     api.get<{ status: VideoTaskStatus; url: string }>(`/api/generate/video/${encodeURIComponent(taskId)}`),
 };
