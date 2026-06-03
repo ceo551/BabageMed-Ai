@@ -172,6 +172,18 @@ export function Sidebar({
           <span className="trail-chev">{I.chevR}</span>
         </Link>
 
+        {/* Gallery — durable library of generated images + videos. */}
+        <Link
+          href="/gallery"
+          className="sb-row"
+          data-active={pathname === "/gallery"}
+          style={{ textDecoration: "none" }}
+        >
+          {I.gallery}
+          <span className="lbl">{s.galleryTitle}</span>
+          <span className="trail-chev">{I.chevR}</span>
+        </Link>
+
         {/* Fixed feature categories (Education … Image & Video). */}
         <FeaturesSection
           label={s.featuresHeader}

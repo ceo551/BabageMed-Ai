@@ -76,6 +76,9 @@ export type LocaleStrings = {
   seed: string;
   batch: string;
   lockSeed: string;
+  galleryTitle: string;
+  galleryEmpty: string;
+  galleryDeleteConfirm: string;
   // ── Common actions / dialogs (used by recent UI additions) ───────────────
   cancel: string;
   save: string;
@@ -262,6 +265,9 @@ export const STR: Record<Locale, LocaleStrings> = {
     seed: "Seed",
     batch: "Count",
     lockSeed: "Lock seed for reproducible results",
+    galleryTitle: "Gallery",
+    galleryEmpty: "No generated media yet — create some in the Image & Video workspace.",
+    galleryDeleteConfirm: "Delete this asset? This can't be undone.",
     cancel: "Cancel",
     save: "Save",
     saving: "Saving…",
@@ -413,6 +419,9 @@ export const STR: Record<Locale, LocaleStrings> = {
     seed: "البذرة",
     batch: "العدد",
     lockSeed: "تثبيت البذرة لنتائج قابلة للتكرار",
+    galleryTitle: "المعرض",
+    galleryEmpty: "لا توجد وسائط مُنشأة بعد — أنشئ بعضها في مساحة الصور والفيديو.",
+    galleryDeleteConfirm: "حذف هذا العنصر؟ لا يمكن التراجع.",
     cancel: "إلغاء",
     save: "حفظ",
     saving: "جارٍ الحفظ…",

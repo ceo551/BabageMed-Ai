@@ -22,6 +22,7 @@ import (
 	"github.com/pervagans/backend/internal/db"
 	"github.com/pervagans/backend/internal/llm"
 	"github.com/pervagans/backend/internal/mcp"
+	"github.com/pervagans/backend/internal/media"
 	"github.com/pervagans/backend/internal/metrics"
 	"github.com/pervagans/backend/internal/payments"
 	"github.com/pervagans/backend/internal/features"
@@ -263,29 +264,10 @@ func main() {
 	r.With(chatLimiter.Middleware).Post("/api/chat", apiH.Chat)
 	r.With(chatLimiter.Middleware).Post("/api/chat/stream", apiH.ChatStream)
 
-	// Media generation (Alibaba Model Studio / DashScope). Image is
-	// synchronous; video is async (submit → client polls the task). Each call
-	// hits the PAID DashScope API on the org's key, so — exactly like
-	// /api/mcp/call — it is gated behind auth (when configured) and the tools
-	// budget, NOT left anonymous like chat (anonymous access here is a direct
-	// cost-drain vector). Falls back to rate-limited-but-open only in DEV
-	// (no DATABASE_URL / auth disabled).
-	if authSvc != nil {
-		r.Group(func(pr chi.Router) {
-			pr.Use(authSvc.Required)
-			pr.Use(toolsLimiter.Middleware)
-			pr.Post("/api/generate/image", apiH.GenerateImage)
-			pr.Post("/api/generate/video", apiH.SubmitVideo)
-			pr.Get("/api/generate/video/{taskId}", apiH.PollVideo)
-		})
-	} else {
-		r.Group(func(pr chi.Router) {
-			pr.Use(toolsLimiter.Middleware)
-			pr.Post("/api/generate/image", apiH.GenerateImage)
-			pr.Post("/api/generate/video", apiH.SubmitVideo)
-			pr.Get("/api/generate/video/{taskId}", apiH.PollVideo)
-		})
-	}
+	// Media generation + durable persistence (DashScope) lives in the media
+	// service — it needs DB + auth (results are stored as owned assets and
+	// served back from /api/media/{id}), so it is registered inside the
+	// authSvc block below alongside spaces/features/connectors.
 
 	// Auth + persistence (DB-backed)
 	if authSvc != nil {
@@ -320,6 +302,7 @@ func main() {
 			mfa.NewHandler(mfaSvc, authSvc, auditSvc).Register(pr)
 		})
 		admin.NewHandler(dbConn, authSvc).Register(r)
+		media.New(dbConn, authSvc, llmClient).Register(r, toolsLimiter.Middleware)
 		spaces.New(dbConn, authSvc).Register(r, uploadLimiter.Middleware)
 		features.New(dbConn, authSvc).Register(r, uploadLimiter.Middleware)
 		connectors.New(dbConn, authSvc, registry).Register(r)

@@ -435,6 +435,19 @@ export const media = {
     }),
   videoPoll:   (taskId: string) =>
     api.get<{ status: VideoTaskStatus; url: string }>(`/api/generate/video/${encodeURIComponent(taskId)}`),
+  // Gallery — durable, self-hosted assets (generation persists every result).
+  gallery:     () => api.get<MediaAsset[]>("/api/media"),
+  remove:      (id: string) =>
+    fetch(`/api/backend/api/media/${encodeURIComponent(id)}`, { method: "DELETE", credentials: "include" })
+      .then((r) => handle<void>(r)),
+};
+export type MediaAsset = {
+  id: string;
+  url: string;       // browser-usable, proxy-relative (/api/backend/api/media/<id>)
+  kind: "image" | "video" | string;
+  model: string;
+  prompt: string;
+  createdAt: string;
 };
 
 // ── Features ─────────────────────────────────────────────────────────────
