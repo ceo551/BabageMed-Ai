@@ -11,6 +11,7 @@ import (
 	"context"
 	"encoding/json"
 	"log"
+	"net"
 	"net/http"
 
 	"github.com/pervagans/backend/internal/db"
@@ -73,13 +74,12 @@ func clientIPFromRequest(r *http.Request) string {
 	if ip := trimSpace(r.Header.Get("X-Client-IP")); ip != "" {
 		return ip
 	}
-	addr := r.RemoteAddr
-	for i := len(addr) - 1; i >= 0; i-- {
-		if addr[i] == ':' {
-			return addr[:i]
-		}
+	// net.SplitHostPort strips port + IPv6 brackets correctly ("[::1]:5"→"::1");
+	// the old byte-scan split inside an IPv6 literal.
+	if host, _, err := net.SplitHostPort(r.RemoteAddr); err == nil {
+		return host
 	}
-	return addr
+	return r.RemoteAddr
 }
 
 func trimSpace(s string) string {

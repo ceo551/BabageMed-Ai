@@ -58,7 +58,10 @@ export function CanvasDrawer() {
             <iframe
               className="canvas-frame"
               title={s.canvasTitle}
-              sandbox="allow-scripts allow-popups allow-modals"
+              // allow-scripts only (null origin). Deliberately NOT granting
+              // allow-popups/allow-modals — untrusted model HTML could otherwise
+              // spoof native dialogs or auto-open phishing pages attributed to us.
+              sandbox="allow-scripts"
               srcDoc={srcDoc}
             />
           ) : (

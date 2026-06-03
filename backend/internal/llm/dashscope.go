@@ -475,9 +475,16 @@ func (c *Client) PollVideo(ctx context.Context, taskID string) (VideoTask, error
 			TaskStatus string `json:"task_status"`
 			VideoURL   string `json:"video_url"`
 		} `json:"output"`
+		Code    string `json:"code"`
+		Message string `json:"message"`
 	}
 	if err := json.Unmarshal(raw, &out); err != nil {
 		return VideoTask{}, fmt.Errorf("dashscope video poll: decode: %w", err)
+	}
+	// DashScope can return HTTP 200 with a top-level error envelope; surface it
+	// as an error so the caller stops polling instead of spinning forever.
+	if out.Code != "" {
+		return VideoTask{}, fmt.Errorf("dashscope video poll: %s: %s", out.Code, out.Message)
 	}
 	return VideoTask{Status: out.Output.TaskStatus, URL: out.Output.VideoURL}, nil
 }

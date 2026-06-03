@@ -16,6 +16,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	neturl "net/url"
 	"strings"
 	"time"
 
@@ -39,7 +40,12 @@ type Service struct {
 }
 
 func New(d *db.DB, a *auth.Service, l *llm.Client) *Service {
-	return &Service{db: d, auth: a, llm: l, http: &http.Client{Timeout: 60 * time.Second}}
+	return &Service{db: d, auth: a, llm: l, http: &http.Client{
+		Timeout: 60 * time.Second,
+		// Asset downloads hit a direct DashScope OSS URL — never follow a
+		// redirect (defense against SSRF / redirect-to-internal).
+		CheckRedirect: func(*http.Request, []*http.Request) error { return errors.New("redirect not allowed") },
+	}}
 }
 
 var allowedImageModels = map[string]bool{
@@ -209,10 +215,16 @@ func (s *Service) handleSubmitVideo(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	// Bind the task to its owner so PollVideo can authorize by (task_id, user).
-	_, _ = s.db.Pool.Exec(r.Context(), `
+	// If this fails the task is unpollable, so surface an error rather than
+	// returning a taskId that can never resolve (orphaned billed job).
+	if _, ierr := s.db.Pool.Exec(r.Context(), `
 		INSERT INTO media_assets (user_id, kind, model, prompt, params, task_id, status)
 		VALUES ($1, 'video', $2, $3, $4::jsonb, $5, 'pending')
-	`, u.ID, req.Model, req.Prompt, string(paramsJSON(req)), taskID)
+	`, u.ID, req.Model, req.Prompt, string(paramsJSON(req)), taskID); ierr != nil {
+		log.Printf("media: bind video task (%s) failed: %v", taskID, ierr)
+		writeJSON(w, 500, map[string]string{"error": "video generation failed"})
+		return
+	}
 	writeJSON(w, 200, map[string]string{"taskId": taskID})
 }
 
@@ -365,8 +377,14 @@ func (s *Service) handleDelete(w http.ResponseWriter, r *http.Request) {
 
 // download fetches a generated asset's bytes from the (short-lived) upstream
 // URL, capped so a single asset can't blow memory.
-func (s *Service) download(ctx context.Context, url string) ([]byte, string, error) {
-	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
+func (s *Service) download(ctx context.Context, rawURL string) ([]byte, string, error) {
+	// SSRF guard: only fetch https DashScope OSS URLs. The URL comes from the
+	// upstream response, but validating defends against a manipulated/poisoned
+	// response pointing the server-side fetch at an internal address.
+	if u, perr := neturl.Parse(rawURL); perr != nil || u.Scheme != "https" || !strings.HasSuffix(strings.ToLower(u.Hostname()), "aliyuncs.com") {
+		return nil, "", errors.New("refusing to fetch non-DashScope asset URL")
+	}
+	req, err := http.NewRequestWithContext(ctx, "GET", rawURL, nil)
 	if err != nil {
 		return nil, "", err
 	}

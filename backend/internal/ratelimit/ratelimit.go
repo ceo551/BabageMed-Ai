@@ -12,6 +12,7 @@
 package ratelimit
 
 import (
+	"net"
 	"net/http"
 	"strings"
 	"sync"
@@ -153,9 +154,12 @@ func clientIP(r *http.Request) string {
 	if ip := strings.TrimSpace(r.Header.Get("X-Client-IP")); ip != "" {
 		return ip
 	}
-	addr := r.RemoteAddr
-	if i := strings.LastIndexByte(addr, ':'); i >= 0 {
-		return addr[:i]
+	// net.SplitHostPort correctly strips the port AND the brackets from an
+	// IPv6 RemoteAddr ("[::1]:54321" → "::1"); the old LastIndexByte(':') split
+	// inside the IPv6 literal and returned a bracketed/truncated address, so
+	// every IPv6 client shared one mangled bucket.
+	if host, _, err := net.SplitHostPort(r.RemoteAddr); err == nil {
+		return host
 	}
-	return addr
+	return r.RemoteAddr
 }
