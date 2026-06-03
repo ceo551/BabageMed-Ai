@@ -21,6 +21,7 @@ export type LocaleStrings = {
   placeholder: string; placeholderHint: string; disclaim: string;
   addConnector: string; addConnectorDesc: string; addFile: string;
   webSearch: string; webSearchDesc: string;
+  deepResearch: string; deepResearchDesc: string;
   fromTools: string; settings: string; settingsDesc: string; plans: string; plansDesc: string;
   logout: string; logoutDesc: string;
   appearance: string; language: string; themeLight: string; themeDark: string; themeSystem: string;
@@ -79,6 +80,12 @@ export type LocaleStrings = {
   galleryTitle: string;
   galleryEmpty: string;
   galleryDeleteConfirm: string;
+  openInCanvas: string;
+  canvasTitle: string;
+  canvasPreview: string;
+  canvasCode: string;
+  copy: string;
+  close: string;
   // ── Common actions / dialogs (used by recent UI additions) ───────────────
   cancel: string;
   save: string;
@@ -195,6 +202,8 @@ export const STR: Record<Locale, LocaleStrings> = {
     addFile: "Add file or folder",
     webSearch: "Web search",
     webSearchDesc: "Search the live web with Brave",
+    deepResearch: "Deep research",
+    deepResearchDesc: "Plan sub-questions, search many sources, write a cited report",
     fromTools: "From connected tools",
     settings: "Settings",
     settingsDesc: "Preferences · model defaults",
@@ -268,6 +277,12 @@ export const STR: Record<Locale, LocaleStrings> = {
     galleryTitle: "Gallery",
     galleryEmpty: "No generated media yet — create some in the Image & Video workspace.",
     galleryDeleteConfirm: "Delete this asset? This can't be undone.",
+    openInCanvas: "Open in Canvas",
+    canvasTitle: "Canvas",
+    canvasPreview: "Preview",
+    canvasCode: "Code",
+    copy: "Copy",
+    close: "Close",
     cancel: "Cancel",
     save: "Save",
     saving: "Saving…",
@@ -349,6 +364,8 @@ export const STR: Record<Locale, LocaleStrings> = {
     addFile: "إضافة ملف أو مجلد",
     webSearch: "بحث في الويب",
     webSearchDesc: "ابحث في الويب مباشرةً عبر Brave",
+    deepResearch: "بحث متعمّق",
+    deepResearchDesc: "يخطّط أسئلة فرعية، يبحث في مصادر كثيرة، ويكتب تقريرًا موثّقًا",
     fromTools: "من الأدوات المتّصلة",
     settings: "الإعدادات",
     settingsDesc: "تفضيلات · إعدادات النموذج",
@@ -422,6 +439,12 @@ export const STR: Record<Locale, LocaleStrings> = {
     galleryTitle: "المعرض",
     galleryEmpty: "لا توجد وسائط مُنشأة بعد — أنشئ بعضها في مساحة الصور والفيديو.",
     galleryDeleteConfirm: "حذف هذا العنصر؟ لا يمكن التراجع.",
+    openInCanvas: "افتح في الكانفس",
+    canvasTitle: "الكانفس",
+    canvasPreview: "معاينة",
+    canvasCode: "الكود",
+    copy: "نسخ",
+    close: "إغلاق",
     cancel: "إلغاء",
     save: "حفظ",
     saving: "جارٍ الحفظ…",

@@ -138,6 +138,10 @@ type chatRequest struct {
 	// "web-search" citation so the model answers from live web sources. No-op
 	// if BRAVE_API_KEY isn't set.
 	EnableWebSearch bool `json:"enableWebSearch,omitempty"`
+	// Deep Research: expand the question into several focused sub-queries, search
+	// each on the web, merge the unique hits, and instruct the model to write a
+	// thorough, sectioned, inline-cited report. Implies web search.
+	DeepResearch bool `json:"deepResearch,omitempty"`
 }
 
 // Cap chat request bodies at 1 MB — generous for a transcript + a
@@ -224,7 +228,7 @@ func (h *Handler) ChatStream(w http.ResponseWriter, r *http.Request) {
 	// Real provider streaming: forward each text delta as a 'delta' SSE event
 	// so the frontend types in tokens as they arrive instead of waiting on a
 	// single 'content' chunk at the end.
-	system := buildSystem(req.Mode, req.Locale, citations, req.UseMcps, req.SpaceContext, req.SpaceName, req.Feature, req.FeatureInstructions, req.SpaceSkills)
+	system := buildSystem(req.Mode, req.Locale, citations, req.UseMcps, req.SpaceContext, req.SpaceName, req.Feature, req.FeatureInstructions, req.SpaceSkills, req.DeepResearch)
 	if req.Model == "" {
 		req.Model = "opus-4.8"
 	}
@@ -388,36 +392,88 @@ func (h *Handler) gather(ctx context.Context, req chatRequest) ([]map[string]any
 		out = append(out, map[string]any{"source": r.source, "result": r.value})
 	}
 
-	// Web search (Brave) — runs after the MCP fan-out and is appended as a
-	// single "web-search" citation. Cached for 5 min (web results are public,
-	// so the cache key is just the query — no per-user scoping needed).
-	if req.EnableWebSearch {
+	// Web search (Brave). Plain web search runs ONE query; Deep Research expands
+	// the question into several focused sub-queries, searches each, and merges
+	// the unique hits — all surfaced as numbered "web-search" citations. Each
+	// query is cached 5 min (web results are public; key is just the query).
+	if req.EnableWebSearch || req.DeepResearch {
 		if key := os.Getenv("BRAVE_API_KEY"); key != "" {
-			cacheKey := "web:search:" + last
-			var cached []BraveResult
-			if h.cache != nil && h.cache.GetJSON(ctx, cacheKey, &cached) {
-				if len(cached) > 0 {
-					out = append(out, map[string]any{"source": "web-search", "result": cached})
-				}
-			} else {
-				wctx, cancel := context.WithTimeout(ctx, 12*time.Second)
-				webHits, err := braveSearch(wctx, key, last, 5)
-				cancel()
-				if err != nil {
-					metrics.MCPProxyCalls.WithLabelValues("web-search", "search", "error").Inc()
-					log.Printf("web search (brave) error: %v", err)
-				} else if len(webHits) > 0 {
-					out = append(out, map[string]any{"source": "web-search", "result": webHits})
-					if h.cache != nil {
+			queries := []string{last}
+			perQuery := 5
+			if req.DeepResearch {
+				queries = h.researchQueries(ctx, last)
+				perQuery = 6
+			}
+			merged := []BraveResult{}
+			seen := map[string]bool{}
+			for _, q := range queries {
+				var hits []BraveResult
+				cacheKey := "web:search:" + q
+				if h.cache != nil && h.cache.GetJSON(ctx, cacheKey, &hits) {
+					// served from cache
+				} else {
+					wctx, cancel := context.WithTimeout(ctx, 12*time.Second)
+					got, err := braveSearch(wctx, key, q, perQuery)
+					cancel()
+					if err != nil {
+						metrics.MCPProxyCalls.WithLabelValues("web-search", "search", "error").Inc()
+						log.Printf("web search (brave) error: %v", err)
+						continue
+					}
+					hits = got
+					if h.cache != nil && len(hits) > 0 {
 						cacheCtx, cacheCancel := context.WithTimeout(context.Background(), 3*time.Second)
-						h.cache.SetJSON(cacheCtx, cacheKey, webHits, 5*time.Minute)
+						h.cache.SetJSON(cacheCtx, cacheKey, hits, 5*time.Minute)
 						cacheCancel()
 					}
 				}
+				for _, rr := range hits {
+					if rr.URL != "" && !seen[rr.URL] {
+						seen[rr.URL] = true
+						merged = append(merged, rr)
+					}
+				}
+			}
+			// Bound total sources so the prompt stays sane even with many queries.
+			const maxWebResults = 16
+			if len(merged) > maxWebResults {
+				merged = merged[:maxWebResults]
+			}
+			if len(merged) > 0 {
+				out = append(out, map[string]any{"source": "web-search", "result": merged})
 			}
 		}
 	}
 	return out, nil
+}
+
+// researchQueries expands a question into a handful of focused web-search
+// queries for Deep Research. Uses a DashScope model (reliable on this deploy
+// regardless of the answer model) and always includes the original question;
+// on any error it falls back to just the original so research still runs.
+func (h *Handler) researchQueries(ctx context.Context, question string) []string {
+	queries := []string{question}
+	qctx, cancel := context.WithTimeout(ctx, 20*time.Second)
+	defer cancel()
+	resp, err := h.llm.Complete(qctx, llm.CompletionRequest{
+		Model:    "qwen-3.7-max",
+		System:   "You are a research planner. Given the user's question, output 4-6 focused, diverse web-search queries that together cover it. One query per line. No numbering, no quotes, no extra prose.",
+		Messages: []llm.Message{{Role: "user", Content: question}},
+	})
+	if err != nil || resp == nil {
+		return queries
+	}
+	for _, line := range strings.Split(resp.Content, "\n") {
+		line = strings.TrimSpace(strings.Trim(line, "-*•0123456789.) \t\""))
+		if line == "" || len(line) > 200 {
+			continue
+		}
+		queries = append(queries, line)
+		if len(queries) >= 6 {
+			break
+		}
+	}
+	return queries
 }
 
 // mcpSupportsSearch reports whether the connector declares a "search" tool
@@ -436,7 +492,7 @@ func mcpSupportsSearch(s mcp.Server) bool {
 }
 
 func (h *Handler) complete(ctx context.Context, req chatRequest, citations []map[string]any) (*llm.CompletionResponse, error) {
-	system := buildSystem(req.Mode, req.Locale, citations, req.UseMcps, req.SpaceContext, req.SpaceName, req.Feature, req.FeatureInstructions, req.SpaceSkills)
+	system := buildSystem(req.Mode, req.Locale, citations, req.UseMcps, req.SpaceContext, req.SpaceName, req.Feature, req.FeatureInstructions, req.SpaceSkills, req.DeepResearch)
 	if req.Model == "" {
 		req.Model = "opus-4.8"
 	}
@@ -613,9 +669,12 @@ func isVisualModel(id string) bool {
 	return false
 }
 
-func buildSystem(mode, locale string, citations []map[string]any, useMcps []string, spaceCtx []map[string]any, spaceName, feature, featureInstructions string, spaceSkills []string) string {
+func buildSystem(mode, locale string, citations []map[string]any, useMcps []string, spaceCtx []map[string]any, spaceName, feature, featureInstructions string, spaceSkills []string, deepResearch bool) string {
 	var b strings.Builder
 	b.WriteString("You are Pervagans — a careful, source-aware assistant. State uncertainty plainly and never invent facts. If retrieved sources don't cover the question, say so explicitly.\n")
+	if deepResearch {
+		b.WriteString("\nDEEP RESEARCH MODE: write a thorough, well-structured report — use clear markdown section headers, synthesize across ALL the numbered sources below (compare and contrast where they disagree), put an inline [n] citation on every factual claim, and finish with a 'Sources:' list. Prefer recent, authoritative sources; state uncertainty explicitly and note gaps the sources don't cover.\n")
+	}
 	// Feature workspace context. When the user is chatting from a feature
 	// page (e.g. /features/healthcare), their custom instructions for that
 	// workflow are appended here so every turn in that feature inherits

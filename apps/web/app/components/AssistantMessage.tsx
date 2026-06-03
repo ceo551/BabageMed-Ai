@@ -6,6 +6,7 @@ import remarkGfm from "remark-gfm";
 import { ConnectorIcon } from "./ConnectorIcon";
 import { safeUrlTransform } from "../lib/url-transform";
 import { useUI } from "../lib/ui-context";
+import { useCanvas, renderableKind } from "../lib/canvas-context";
 
 // Citation as returned by the backend's /api/chat[/stream] handler. The
 // `source` field is the MCP id (e.g. "pubmed", "fda"); `result` is whatever
@@ -217,17 +218,26 @@ export const AssistantMessage = React.memo(AssistantMessageInner, (prev, next) =
 function CodeBlock({ children }: { children: React.ReactNode }) {
   const [copied, setCopied] = useState(false);
   const ref = React.useRef<HTMLPreElement>(null);
+  const { s } = useUI();
+  const canvas = useCanvas();
+
+  // Detect the fenced-code language + raw text from react-markdown's <code>
+  // child so we can offer "Open in Canvas" for renderable (html/svg) blocks.
+  const codeEl = React.isValidElement(children)
+    ? (children as React.ReactElement<{ className?: string; children?: React.ReactNode }>)
+    : null;
+  const lang = /language-([\w-]+)/.exec(codeEl?.props?.className || "")?.[1];
+  const kind = renderableKind(lang);
+  const codeText = extractText(codeEl?.props?.children);
 
   async function onCopy() {
-    const text = ref.current?.innerText ?? "";
+    const text = codeText || ref.current?.innerText || "";
     if (!text) return;
     try {
       await navigator.clipboard.writeText(text);
       setCopied(true);
       setTimeout(() => setCopied(false), 1600);
     } catch {
-      // Clipboard API blocked (insecure context, permission denied). Fall
-      // back to a manual select-all so the user can ctrl-c themselves.
       const sel = window.getSelection();
       const range = document.createRange();
       if (ref.current) {
@@ -240,17 +250,41 @@ function CodeBlock({ children }: { children: React.ReactNode }) {
 
   return (
     <pre ref={ref} className="md-code">
-      <button
-        type="button"
-        className="md-code-copy"
-        onClick={onCopy}
-        aria-label={copied ? "Copied" : "Copy code"}
-      >
-        {copied ? "Copied ✓" : "Copy"}
-      </button>
+      <span className="md-code-actions">
+        {kind && codeText ? (
+          <button
+            type="button"
+            className="md-code-canvas"
+            onClick={() => canvas.open({ code: codeText, kind })}
+          >
+            {s.openInCanvas}
+          </button>
+        ) : null}
+        <button
+          type="button"
+          className="md-code-copy"
+          onClick={onCopy}
+          aria-label={copied ? "Copied" : "Copy code"}
+        >
+          {copied ? "Copied ✓" : "Copy"}
+        </button>
+      </span>
       {children}
     </pre>
   );
+}
+
+// extractText flattens react-markdown's code children (string | string[] |
+// nested elements) into the raw source text.
+function extractText(node: React.ReactNode): string {
+  if (node == null || node === false) return "";
+  if (typeof node === "string") return node;
+  if (typeof node === "number") return String(node);
+  if (Array.isArray(node)) return node.map(extractText).join("");
+  if (React.isValidElement(node)) {
+    return extractText((node as React.ReactElement<{ children?: React.ReactNode }>).props?.children);
+  }
+  return "";
 }
 
 // Format the citation's raw result for the expand-on-click panel. Capped at

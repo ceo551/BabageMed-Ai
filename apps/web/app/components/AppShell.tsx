@@ -3,8 +3,10 @@
 import React, { Suspense, useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import { UIProvider, useUI } from "../lib/ui-context";
+import { CanvasProvider } from "../lib/canvas-context";
 import { usePrefs, prefs } from "../lib/store";
 import { Sidebar } from "./Sidebar";
+import { CanvasDrawer } from "./CanvasDrawer";
 import { ErrorBoundary } from "./ErrorBoundary";
 import { I } from "../icons";
 
@@ -20,7 +22,10 @@ import { I } from "../icons";
 export function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <UIProvider>
-      <Frame>{children}</Frame>
+      <CanvasProvider>
+        <Frame>{children}</Frame>
+        <CanvasDrawer />
+      </CanvasProvider>
     </UIProvider>
   );
 }

@@ -258,6 +258,7 @@ function Composer({
   const [addOpen, setAddOpen] = useState(false);
   const [modelOpen, setModelOpen] = useState(false);
   const [webSearch, setWebSearch] = useState(false);
+  const [deepResearch, setDeepResearch] = useState(false);
   const [voiceOn, setVoiceOn] = useState(false);
   const [sending, setSending] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -490,7 +491,8 @@ function Composer({
         ],
         useMcps, spaceContext,
         spaceName: activeSpace?.name || "",
-        enableWebSearch: webSearch,
+        enableWebSearch: webSearch || deepResearch,
+        deepResearch,
       });
 
       // Stream via /api/chat/stream — server emits SSE events
@@ -736,6 +738,17 @@ function Composer({
             {I.globe}{s.webSearch} ×
           </button>
         )}
+        {deepResearch && (
+          <button
+            type="button"
+            className="model-pill ws-chip"
+            onClick={() => setDeepResearch(false)}
+            title={s.deepResearch}
+            style={{ background: "var(--cyan-soft)", color: "var(--cyan)", border: "1px solid var(--cyan-line)", display: "inline-flex", alignItems: "center" }}
+          >
+            {I.globe}{s.deepResearch} ×
+          </button>
+        )}
 
         {addOpen && (
           <div className="popover" role="menu">
@@ -764,6 +777,20 @@ function Composer({
                 <span className="desc">{s.webSearchDesc}</span>
               </span>
               {webSearch && <span className="check" style={{ opacity: 1 }}>{I.check}</span>}
+            </button>
+            <button
+              type="button"
+              className="popover-row"
+              aria-pressed={deepResearch}
+              onClick={() => { setDeepResearch((v) => !v); setAddOpen(false); }}
+              style={{ width: "100%", textAlign: "start", border: 0, background: "transparent", cursor: "pointer" }}
+            >
+              {I.research}
+              <span className="col">
+                <span className="ttl">{s.deepResearch}</span>
+                <span className="desc">{s.deepResearchDesc}</span>
+              </span>
+              {deepResearch && <span className="check" style={{ opacity: 1 }}>{I.check}</span>}
             </button>
             <Link
               href="/mcps"
