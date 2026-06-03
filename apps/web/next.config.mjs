@@ -12,6 +12,16 @@ const nextConfig = {
   // app/api/backend/[...path]/route.ts so process.env.BACKEND_URL is read
   // per-request (rewrites here would be baked at build time and miss the
   // Kubernetes-injected env).
+  //
+  // The old combined "Image & Video" feature was split into separate /image
+  // and /video features. Permanently retire the old URL so it no longer serves
+  // a (now generic) page — old bookmarks/links land on the Image page. This is
+  // a static rule (no env), so baking it at build time is correct.
+  async redirects() {
+    return [
+      { source: "/features/image-video", destination: "/features/image", permanent: true },
+    ];
+  },
   async headers() {
     // Baseline CSP: scripts/styles same-origin (Next.js needs
     // 'unsafe-inline' on styles for the styled-jsx + dynamic theming
