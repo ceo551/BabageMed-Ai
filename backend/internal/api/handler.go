@@ -291,7 +291,10 @@ func (h *Handler) gather(ctx context.Context, req chatRequest) ([]map[string]any
 	if len(req.Messages) == 0 {
 		return nil, nil
 	}
-	if len(req.UseMcps) == 0 && !req.EnableWebSearch {
+	// Deep Research implies a web-search fan-out below, so it must NOT be
+	// short-circuited here — otherwise toggling Deep Research alone (web search
+	// off, no connectors) silently gathered nothing.
+	if len(req.UseMcps) == 0 && !req.EnableWebSearch && !req.DeepResearch {
 		return nil, nil
 	}
 	last := req.Messages[len(req.Messages)-1].Content
@@ -567,11 +570,20 @@ func sanitiseChatRequest(req *chatRequest) {
 	// Drop any frontend-supplied "system" turns — the system prompt is
 	// ours to build. Tools / function results are also not allowed; we
 	// keep only the two roles we expect to see.
+	// Per-message content cap. The 1 MiB body limit bounds the whole request,
+	// but a single giant message would still bloat the upstream payload AND the
+	// web-search Redis cache key (which is derived from the last message). Cap
+	// each turn to a sane width (~6k tokens).
+	const maxMsgContentLen = 24000
 	msgs := req.Messages[:0]
 	for _, m := range req.Messages {
-		if m.Role == "user" || m.Role == "assistant" {
-			msgs = append(msgs, m)
+		if m.Role != "user" && m.Role != "assistant" {
+			continue
 		}
+		if len(m.Content) > maxMsgContentLen {
+			m.Content = m.Content[:maxMsgContentLen]
+		}
+		msgs = append(msgs, m)
 	}
 	// Cap the transcript length. The 1 MiB body limit already caps
 	// total bytes, but a client could still send 10,000 single-char

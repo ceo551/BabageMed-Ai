@@ -77,20 +77,33 @@ func (s *Store) MarkPaid(ctx context.Context, provider, externalID, userID, plan
     `, provider, externalID).Scan(&rowUser, &rowPlanID)
 	switch {
 	case errors.Is(err, pgx.ErrNoRows):
-		// No pending row: either already paid (replay) OR a recurring renewal
-		// whose transaction id we've never seen (each month is a new id). Insert
-		// a paid ledger row so renewals after month one aren't silently lost;
-		// ON CONFLICT keeps the replay case a clean no-op.
+		// No pending row to flip. Two cases to tell apart:
+		//   (a) REPLAY of an already-paid txn id — must NOT re-upgrade, or a
+		//       replayed/out-of-order 'completed' would re-grant a user who has
+		//       since canceled/refunded.
+		//   (b) a recurring RENEWAL with a brand-new txn id — insert a paid
+		//       ledger row (so revenue after month one isn't lost) and upgrade.
+		// plan_id is NOT NULL and an empty one can't be mapped to a plan, so a
+		// renewal webhook lacking plan_id is a safe no-op (avoids the NULL-insert
+		// that used to silently drop it).
+		if planID == "" {
+			return tx.Commit(ctx)
+		}
 		var amount int64
 		if p, ok := GetPlan(planID); ok {
 			amount = p.USD
 		}
-		if _, ierr := tx.Exec(ctx, `
+		tag, ierr := tx.Exec(ctx, `
             INSERT INTO payments (user_id, provider, external_id, plan_id, amount_minor, currency, status)
-            VALUES ($1, $2, $3, NULLIF($4, ''), $5, 'USD', 'paid')
+            VALUES ($1, $2, $3, $4, $5, 'USD', 'paid')
             ON CONFLICT (provider, external_id) DO NOTHING
-        `, uidPtr, provider, externalID, planID, amount); ierr != nil {
+        `, uidPtr, provider, externalID, planID, amount)
+		if ierr != nil {
 			return ierr
+		}
+		if tag.RowsAffected() == 0 {
+			// The row already existed (already-paid replay) — DON'T re-upgrade.
+			return tx.Commit(ctx)
 		}
 		rowUser = uidPtr
 		rowPlanID = planID
