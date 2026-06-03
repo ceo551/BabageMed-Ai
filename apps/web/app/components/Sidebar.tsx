@@ -251,29 +251,52 @@ function FeaturesSection({
   items: ReadonlyArray<FeatureMeta>;
   activeSlug: string;
 }) {
+  // Collapsible: clicking the "Features" header toggles the list. Persisted in
+  // localStorage so the choice survives reloads/navigation.
+  const [expanded, setExpanded] = useState<boolean>(() => {
+    if (typeof window === "undefined") return true;
+    return window.localStorage.getItem("pervagans:features-collapsed") !== "1";
+  });
+  function toggle() {
+    setExpanded((v) => {
+      const next = !v;
+      try { window.localStorage.setItem("pervagans:features-collapsed", next ? "0" : "1"); } catch { /* ignore */ }
+      return next;
+    });
+  }
   return (
-    <div className="sb-features">
-      <div className="sb-section-label">{label}</div>
-      <ul className="sb-features-list">
-        {items.map((f) => (
-          <li key={f.slug}>
-            <Link
-              href={`/features/${f.slug}`}
-              className="sb-feature-item"
-              data-active={f.slug === activeSlug}
-              data-color={f.color}
-              title={f.label}
-              // aria-label so collapsed-mode (icons only) stays
-              // announceable for screen readers; the visible label is
-              // hidden via display:none in that mode.
-              aria-label={f.label}
-            >
-              <span className="sb-feature-emoji" aria-hidden="true">{featureIcon(f.slug, f.emoji)}</span>
-              <span className="sb-feature-label">{f.label}</span>
-            </Link>
-          </li>
-        ))}
-      </ul>
+    <div className="sb-features" data-expanded={expanded}>
+      <button
+        type="button"
+        className="sb-section-label sb-features-toggle"
+        onClick={toggle}
+        aria-expanded={expanded}
+      >
+        <span>{label}</span>
+        <span className="sb-features-chev" aria-hidden="true">{I.chevR}</span>
+      </button>
+      {expanded && (
+        <ul className="sb-features-list">
+          {items.map((f) => (
+            <li key={f.slug}>
+              <Link
+                href={`/features/${f.slug}`}
+                className="sb-feature-item"
+                data-active={f.slug === activeSlug}
+                data-color={f.color}
+                title={f.label}
+                // aria-label so collapsed-mode (icons only) stays
+                // announceable for screen readers; the visible label is
+                // hidden via display:none in that mode.
+                aria-label={f.label}
+              >
+                <span className="sb-feature-emoji" aria-hidden="true">{featureIcon(f.slug, f.emoji)}</span>
+                <span className="sb-feature-label">{f.label}</span>
+              </Link>
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }
