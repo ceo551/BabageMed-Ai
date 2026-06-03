@@ -22,6 +22,7 @@ export type LocaleStrings = {
   addConnector: string; addConnectorDesc: string; addFile: string;
   webSearch: string; webSearchDesc: string;
   deepResearch: string; deepResearchDesc: string;
+  agentMode: string; agentModeDesc: string; agentWorking: string;
   fromTools: string; settings: string; settingsDesc: string; plans: string; plansDesc: string;
   logout: string; logoutDesc: string;
   appearance: string; language: string; themeLight: string; themeDark: string; themeSystem: string;
@@ -204,6 +205,9 @@ export const STR: Record<Locale, LocaleStrings> = {
     webSearchDesc: "Search the live web with Brave",
     deepResearch: "Deep research",
     deepResearchDesc: "Plan sub-questions, search many sources, write a cited report",
+    agentMode: "Agent",
+    agentModeDesc: "Plan and act across your connectors to complete a task",
+    agentWorking: "Working…",
     fromTools: "From connected tools",
     settings: "Settings",
     settingsDesc: "Preferences · model defaults",
@@ -366,6 +370,9 @@ export const STR: Record<Locale, LocaleStrings> = {
     webSearchDesc: "ابحث في الويب مباشرةً عبر Brave",
     deepResearch: "بحث متعمّق",
     deepResearchDesc: "يخطّط أسئلة فرعية، يبحث في مصادر كثيرة، ويكتب تقريرًا موثّقًا",
+    agentMode: "وكيل",
+    agentModeDesc: "يخطّط وينفّذ عبر الموصّلات لإنجاز المهمة",
+    agentWorking: "جارٍ العمل…",
     fromTools: "من الأدوات المتّصلة",
     settings: "الإعدادات",
     settingsDesc: "تفضيلات · إعدادات النموذج",

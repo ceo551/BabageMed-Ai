@@ -259,6 +259,7 @@ function Composer({
   const [modelOpen, setModelOpen] = useState(false);
   const [webSearch, setWebSearch] = useState(false);
   const [deepResearch, setDeepResearch] = useState(false);
+  const [agentMode, setAgentMode] = useState(false);
   const [voiceOn, setVoiceOn] = useState(false);
   const [sending, setSending] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -476,6 +477,13 @@ function Composer({
         chatsApi.append(activeChatId, { role: "user", content: text }).catch(() => {});
       }
 
+      // Agent Mode: hand off to the plan→act→deliver loop over the connectors
+      // (separate SSE endpoint + step rendering), then we're done.
+      if (agentMode) {
+        await runAgent(text, loadingId, activeChatId);
+        return;
+      }
+
       const body = JSON.stringify({
         // Send the VALIDATED model id (currentModel falls back to MODELS[0]
         // when the persisted `model` is stale/unknown), so the request body
@@ -654,6 +662,69 @@ function Composer({
     }
   }
 
+  // runAgent drives Agent Mode: POST the task to /api/agent/stream and render
+  // the plan→act steps live, then the final answer, into one assistant turn.
+  async function runAgent(text: string, loadingId: string, activeChatId: string) {
+    const controller = new AbortController();
+    streamAbortRef.current?.abort();
+    streamAbortRef.current = controller;
+    const r = await fetch("/api/backend/api/agent/stream", {
+      method: "POST",
+      headers: { "content-type": "application/json", "accept": "text/event-stream" },
+      credentials: "include",
+      body: JSON.stringify({ task: text, useMcps: activeConnectorIds, locale }),
+      signal: controller.signal,
+    });
+    if (!r.ok || !r.body) throw new Error(`HTTP ${r.status}`);
+    const assistantId = `a-${newId()}`;
+    setMessages((cur) => cur.filter((m) => m.id !== loadingId).concat({ id: assistantId, role: "assistant", content: "" }));
+
+    const reader = r.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = "";
+    const steps: string[] = [];
+    let answer = "";
+    const render = () => {
+      const head = steps.length ? `**${s.agentWorking}**\n${steps.join("\n")}\n\n---\n\n` : "";
+      const tail = answer || (steps.length ? `_${s.agentWorking}_` : "");
+      const content = head + tail;
+      setMessages((cur) => cur.map((m) => (m.id === assistantId && m.role === "assistant" ? { ...m, content } : m)));
+    };
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true }).replace(/\r\n/g, "\n");
+      let idx: number;
+      while ((idx = buffer.indexOf("\n\n")) !== -1) {
+        const frame = buffer.slice(0, idx);
+        buffer = buffer.slice(idx + 2);
+        let event = "message";
+        let data = "";
+        for (const line of frame.split("\n")) {
+          if (line.startsWith("event:")) event = line.slice(line[6] === " " ? 7 : 6).trim();
+          else if (line.startsWith("data:")) data += (data ? "\n" : "") + line.slice(line[5] === " " ? 6 : 5);
+        }
+        if (!data) continue;
+        let parsed: any = null;
+        try { parsed = JSON.parse(data); } catch { /* ignore */ }
+        if (event === "step" && parsed?.phase === "action") {
+          steps.push(`- 🔧 \`${parsed.tool}\`${parsed.query ? ` — ${parsed.query}` : ""}`);
+          render();
+        } else if (event === "answer" && typeof parsed?.content === "string") {
+          answer = parsed.content;
+          render();
+        } else if (event === "error") {
+          answer = "Error: " + (parsed?.error || "agent failed");
+          render();
+        }
+      }
+    }
+    if (activeChatId && answer) {
+      const head = steps.length ? `**${s.agentWorking}**\n${steps.join("\n")}\n\n---\n\n` : "";
+      chatsApi.append(activeChatId, { role: "assistant", content: head + answer }).catch(() => {});
+    }
+  }
+
   return (
     <div className="composer" ref={composerRef}>
       {/* Hidden picker driven by the "Add file or folder" popover row. */}
@@ -749,6 +820,17 @@ function Composer({
             {I.globe}{s.deepResearch} ×
           </button>
         )}
+        {agentMode && (
+          <button
+            type="button"
+            className="model-pill ws-chip"
+            onClick={() => setAgentMode(false)}
+            title={s.agentMode}
+            style={{ background: "var(--cyan-soft)", color: "var(--cyan)", border: "1px solid var(--cyan-line)", display: "inline-flex", alignItems: "center" }}
+          >
+            {I.agent}{s.agentMode} ×
+          </button>
+        )}
 
         {addOpen && (
           <div className="popover" role="menu">
@@ -791,6 +873,20 @@ function Composer({
                 <span className="desc">{s.deepResearchDesc}</span>
               </span>
               {deepResearch && <span className="check" style={{ opacity: 1 }}>{I.check}</span>}
+            </button>
+            <button
+              type="button"
+              className="popover-row"
+              aria-pressed={agentMode}
+              onClick={() => { setAgentMode((v) => !v); setAddOpen(false); }}
+              style={{ width: "100%", textAlign: "start", border: 0, background: "transparent", cursor: "pointer" }}
+            >
+              {I.agent}
+              <span className="col">
+                <span className="ttl">{s.agentMode}</span>
+                <span className="desc">{s.agentModeDesc}</span>
+              </span>
+              {agentMode && <span className="check" style={{ opacity: 1 }}>{I.check}</span>}
             </button>
             <Link
               href="/mcps"

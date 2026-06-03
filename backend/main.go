@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/pervagans/backend/internal/admin"
+	"github.com/pervagans/backend/internal/agent"
 	"github.com/pervagans/backend/internal/api"
 	"github.com/pervagans/backend/internal/audit"
 	"github.com/pervagans/backend/internal/auth"
@@ -303,6 +304,7 @@ func main() {
 		})
 		admin.NewHandler(dbConn, authSvc).Register(r)
 		media.New(dbConn, authSvc, llmClient).Register(r, toolsLimiter.Middleware)
+		agent.New(llmClient, registry, authSvc).Register(r, chatLimiter.Middleware)
 		spaces.New(dbConn, authSvc).Register(r, uploadLimiter.Middleware)
 		features.New(dbConn, authSvc).Register(r, uploadLimiter.Middleware)
 		connectors.New(dbConn, authSvc, registry).Register(r)

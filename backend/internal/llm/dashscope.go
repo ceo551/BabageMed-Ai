@@ -208,6 +208,88 @@ func (c *Client) callDashScope(ctx context.Context, req CompletionRequest) (*Com
 	return &CompletionResponse{Provider: "dashscope", Model: model, Content: text}, nil
 }
 
+// ─── Tool use / function calling (Agent Mode) ───────────────────────────────
+
+// ToolDef is an OpenAI-compatible function tool exposed to the model.
+type ToolDef struct {
+	Name        string
+	Description string
+	Parameters  map[string]any // JSON Schema object
+}
+
+// ToolCall is the model's request to invoke a tool.
+type ToolCall struct {
+	ID        string
+	Name      string
+	Arguments string // raw JSON
+}
+
+// ChatWithTools runs ONE OpenAI-compatible chat round against DashScope with
+// function tools. `messages` is the raw OpenAI messages array — the caller owns
+// the roles (system/user/assistant-with-tool_calls/tool) so an agent loop can
+// thread state across rounds. Returns the assistant's text content and any
+// tool calls it requested. Validated live: qwen3.7-max returns tool_calls.
+func (c *Client) ChatWithTools(ctx context.Context, model string, messages []map[string]any, tools []ToolDef) (string, []ToolCall, error) {
+	if c.cfg.DashScopeKey == "" {
+		return "", nil, errors.New("DASHSCOPE_API_KEY not configured")
+	}
+	toolDefs := make([]map[string]any, 0, len(tools))
+	for _, t := range tools {
+		toolDefs = append(toolDefs, map[string]any{
+			"type":     "function",
+			"function": map[string]any{"name": t.Name, "description": t.Description, "parameters": t.Parameters},
+		})
+	}
+	payload := map[string]any{"model": dashScopeModel(model), "messages": messages}
+	if len(toolDefs) > 0 {
+		payload["tools"] = toolDefs
+		payload["tool_choice"] = "auto"
+	}
+	body, _ := json.Marshal(payload)
+	url := c.dashScopeBase() + "/compatible-mode/v1/chat/completions"
+	r, err := http.NewRequestWithContext(ctx, "POST", url, bytes.NewReader(body))
+	if err != nil {
+		return "", nil, err
+	}
+	r.Header.Set("Authorization", "Bearer "+c.cfg.DashScopeKey)
+	r.Header.Set("content-type", "application/json")
+	res, err := c.http.Do(r)
+	if err != nil {
+		return "", nil, err
+	}
+	defer res.Body.Close()
+	raw, _ := io.ReadAll(res.Body)
+	if res.StatusCode >= 400 {
+		return "", nil, fmt.Errorf("dashscope tools: %s: %s", res.Status, truncBody(raw))
+	}
+	var out struct {
+		Choices []struct {
+			Message struct {
+				Content   string `json:"content"`
+				ToolCalls []struct {
+					ID       string `json:"id"`
+					Function struct {
+						Name      string `json:"name"`
+						Arguments string `json:"arguments"`
+					} `json:"function"`
+				} `json:"tool_calls"`
+			} `json:"message"`
+		} `json:"choices"`
+	}
+	if err := json.Unmarshal(raw, &out); err != nil {
+		return "", nil, fmt.Errorf("dashscope tools: decode: %w", err)
+	}
+	if len(out.Choices) == 0 {
+		return "", nil, errors.New("dashscope tools: empty response")
+	}
+	msg := out.Choices[0].Message
+	calls := make([]ToolCall, 0, len(msg.ToolCalls))
+	for _, tc := range msg.ToolCalls {
+		calls = append(calls, ToolCall{ID: tc.ID, Name: tc.Function.Name, Arguments: tc.Function.Arguments})
+	}
+	return msg.Content, calls, nil
+}
+
 // ─── Image (synchronous) ────────────────────────────────────────────────────
 
 // ImageOptions are the user-tunable generation controls. Zero values mean
