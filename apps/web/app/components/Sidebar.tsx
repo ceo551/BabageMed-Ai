@@ -268,11 +268,12 @@ function FeaturesSection({
     <div className="sb-features" data-expanded={expanded}>
       <button
         type="button"
-        className="sb-section-label sb-features-toggle"
+        className="sb-row sb-features-toggle"
         onClick={toggle}
         aria-expanded={expanded}
       >
-        <span>{label}</span>
+        {I.features}
+        <span className="lbl">{label}</span>
         <span className="sb-features-chev" aria-hidden="true">{I.chevR}</span>
       </button>
       {expanded && (

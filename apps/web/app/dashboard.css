@@ -145,17 +145,20 @@ a { color: inherit; text-decoration: none; }
   color: var(--muted-2);
   padding: 8px 12px 4px;
 }
-/* "Features" header doubles as a collapse toggle: full-width clickable row with
-   a chevron on the right that rotates down when the list is expanded. */
-.sb-features-toggle {
-  display: flex; align-items: center; gap: 6px; width: 100%;
-  border: 0; background: transparent; cursor: pointer; text-align: start;
+/* "Features" header is now a full nav row (same size/style as Spaces /
+   Connectors) that doubles as a collapse toggle; the trailing chevron rotates
+   down when the list is expanded. It rides on .sb-row for all sizing — only the
+   <button> reset + the chevron behaviour live here. */
+.sb-features-toggle { font-family: inherit; cursor: pointer; }
+.sb-features-chev {
+  margin-inline-start: auto; color: var(--muted-2);
+  display: inline-flex; align-items: center; transition: transform .15s;
 }
-.sb-features-toggle:hover { color: var(--ink); }
-.sb-features-toggle > span:first-child { flex: 1; min-width: 0; }
-.sb-features-chev { display: inline-flex; opacity: .7; transition: transform .15s; }
-.sb-features-chev svg { width: 13px; height: 13px; }
+.sb-features-chev svg { width: 16px; height: 16px; }
 .sb-features[data-expanded="true"] .sb-features-chev { transform: rotate(90deg); }
+[dir="rtl"] .sb-features-chev { transform: scaleX(-1); }
+[dir="rtl"] .sb-features[data-expanded="true"] .sb-features-chev { transform: rotate(90deg); }
+.shell[data-collapsed="true"] .sb-features-chev { display: none; }
 .sb-history-list {
   list-style: none;
   margin: 0;
