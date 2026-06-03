@@ -9,7 +9,7 @@ export type FeatureMeta = {
   color: "cyan" | "purple" | "yellow" | "green" | "pink" | "orange" | "blue" | "red" | "teal" | "amber" | "indigo" | "rose" | "fuchsia";
   // text → composer shows the chat LLMs (Opus / GPT / Gemini / GLM / …).
   // visual → composer shows the image + video model groups instead.
-  modality: "text" | "visual";
+  modality: "text" | "image" | "video";
 };
 
 export type LocaleStrings = {
@@ -165,7 +165,8 @@ const FEATURES_EN: ReadonlyArray<FeatureMeta> = [
   { slug: "data-analysis",  label: "Data Analysis",                       emoji: "📊", color: "teal",   modality: "text"   },
   { slug: "business",       label: "Business",                            emoji: "💼", color: "yellow", modality: "text"   },
   { slug: "financial",      label: "Financial Services",                  emoji: "💹", color: "green",  modality: "text"   },
-  { slug: "image-video",    label: "Image & Video",                       emoji: "🎬", color: "pink",   modality: "visual" },
+  { slug: "image",          label: "Image generation",                    emoji: "🖼️", color: "pink",   modality: "image"  },
+  { slug: "video",          label: "Video generation",                    emoji: "🎬", color: "rose",   modality: "video"  },
 ];
 
 const FEATURES_AR: ReadonlyArray<FeatureMeta> = [
@@ -175,7 +176,8 @@ const FEATURES_AR: ReadonlyArray<FeatureMeta> = [
   { slug: "data-analysis",  label: "تحليل البيانات",                       emoji: "📊", color: "teal",   modality: "text"   },
   { slug: "business",       label: "الأعمال",                              emoji: "💼", color: "yellow", modality: "text"   },
   { slug: "financial",      label: "الخدمات المالية",                      emoji: "💹", color: "green",  modality: "text"   },
-  { slug: "image-video",    label: "الصور والفيديو",                       emoji: "🎬", color: "pink",   modality: "visual" },
+  { slug: "image",          label: "توليد الصور",                          emoji: "🖼️", color: "pink",   modality: "image"  },
+  { slug: "video",          label: "توليد الفيديو",                        emoji: "🎬", color: "rose",   modality: "video"  },
 ];
 
 export const STR: Record<Locale, LocaleStrings> = {

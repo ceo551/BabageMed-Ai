@@ -73,8 +73,13 @@ export type ModelGroup =
   | { kind: "media"; image: ReadonlyArray<MediaModel>; video: ReadonlyArray<MediaModel> };
 
 export function modelsForFeature(feature: FeatureMeta | null): ModelGroup {
-  if (feature && feature.modality === "visual") {
-    return { kind: "media", image: IMAGE_MODELS, video: VIDEO_MODELS };
+  // Image and Video are separate features now — each shows only its own model
+  // group (the picker hides an empty group).
+  if (feature && feature.modality === "image") {
+    return { kind: "media", image: IMAGE_MODELS, video: [] };
+  }
+  if (feature && feature.modality === "video") {
+    return { kind: "media", image: [], video: VIDEO_MODELS };
   }
   return { kind: "text", models: TEXT_MODELS };
 }
@@ -82,7 +87,8 @@ export function modelsForFeature(feature: FeatureMeta | null): ModelGroup {
 // Default model id picked when a feature page first loads (or when the
 // user's persisted choice isn't valid for the current modality).
 export function defaultModelId(feature: FeatureMeta | null): string {
-  if (feature && feature.modality === "visual") return IMAGE_MODELS[0].id;
+  if (feature && feature.modality === "image") return IMAGE_MODELS[0].id;
+  if (feature && feature.modality === "video") return VIDEO_MODELS[0].id;
   return TEXT_MODELS[0].id;
 }
 

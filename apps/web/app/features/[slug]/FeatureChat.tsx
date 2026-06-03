@@ -445,7 +445,7 @@ export function FeatureChat({
           <div className="feat-chat-empty">
             <span className="feat-chat-empty-emoji" aria-hidden="true">{featureIcon(meta.slug, meta.emoji)}</span>
             <h2>{meta.label}</h2>
-            <p>{meta.modality === "visual" ? s.featureChatEmptyVisual : s.featureChatEmpty}</p>
+            <p>{meta.modality !== "text" ? s.featureChatEmptyVisual : s.featureChatEmpty}</p>
           </div>
         )}
       </div>
@@ -595,7 +595,7 @@ export function FeatureChat({
                 {/* Web search + connectors aren't useful on the visual
                     (Image & Video) feature — its generations don't ground
                     on text sources — so hide them. */}
-                {meta.modality !== "visual" && (
+                {meta.modality === "text" && (
                   <button
                     type="button"
                     className="popover-row"
@@ -611,7 +611,7 @@ export function FeatureChat({
                     {webSearch && <span className="check" style={{ opacity: 1 }}>{I.check}</span>}
                   </button>
                 )}
-                {meta.modality !== "visual" && (
+                {meta.modality === "text" && (
                   <Link
                     href="/mcps"
                     className="popover-row"
@@ -679,45 +679,53 @@ export function FeatureChat({
                   </>
                 ) : (
                   <>
-                    <div className="pop-header">{s.imageGroup}</div>
-                    {group.image.map((m) => (
-                      <button
-                        key={m.id}
-                        type="button"
-                        className="model-row"
-                        data-active={model === m.id}
-                        onClick={() => { setModel(m.id); setModelOpen(false); }}
-                      >
-                        <span className="brand-mark">{brandMark(m.brand)}</span>
-                        <span className="col">
-                          <span className="nm">{m.name}</span>
-                          <span className="meta-row">
-                            {m.pills[locale].map((p, i) => <span key={i} className="pill">{p}</span>)}
-                          </span>
-                        </span>
-                        <span className="check">{I.check}</span>
-                      </button>
-                    ))}
-                    <div className="popover-sep" />
-                    <div className="pop-header">{s.videoGroup}</div>
-                    {group.video.map((m) => (
-                      <button
-                        key={m.id}
-                        type="button"
-                        className="model-row"
-                        data-active={model === m.id}
-                        onClick={() => { setModel(m.id); setModelOpen(false); }}
-                      >
-                        <span className="brand-mark">{brandMark(m.brand)}</span>
-                        <span className="col">
-                          <span className="nm">{m.name}</span>
-                          <span className="meta-row">
-                            {m.pills[locale].map((p, i) => <span key={i} className="pill">{p}</span>)}
-                          </span>
-                        </span>
-                        <span className="check">{I.check}</span>
-                      </button>
-                    ))}
+                    {group.image.length > 0 && (
+                      <>
+                        <div className="pop-header">{s.imageGroup}</div>
+                        {group.image.map((m) => (
+                          <button
+                            key={m.id}
+                            type="button"
+                            className="model-row"
+                            data-active={model === m.id}
+                            onClick={() => { setModel(m.id); setModelOpen(false); }}
+                          >
+                            <span className="brand-mark">{brandMark(m.brand)}</span>
+                            <span className="col">
+                              <span className="nm">{m.name}</span>
+                              <span className="meta-row">
+                                {m.pills[locale].map((p, i) => <span key={i} className="pill">{p}</span>)}
+                              </span>
+                            </span>
+                            <span className="check">{I.check}</span>
+                          </button>
+                        ))}
+                      </>
+                    )}
+                    {group.image.length > 0 && group.video.length > 0 && <div className="popover-sep" />}
+                    {group.video.length > 0 && (
+                      <>
+                        <div className="pop-header">{s.videoGroup}</div>
+                        {group.video.map((m) => (
+                          <button
+                            key={m.id}
+                            type="button"
+                            className="model-row"
+                            data-active={model === m.id}
+                            onClick={() => { setModel(m.id); setModelOpen(false); }}
+                          >
+                            <span className="brand-mark">{brandMark(m.brand)}</span>
+                            <span className="col">
+                              <span className="nm">{m.name}</span>
+                              <span className="meta-row">
+                                {m.pills[locale].map((p, i) => <span key={i} className="pill">{p}</span>)}
+                              </span>
+                            </span>
+                            <span className="check">{I.check}</span>
+                          </button>
+                        ))}
+                      </>
+                    )}
                   </>
                 )}
               </div>

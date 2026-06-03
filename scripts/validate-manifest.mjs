@@ -32,7 +32,7 @@ const VALID_KINDS = new Set(["api", "scrape", "hybrid", "stub"]);
 const VALID_FEATURES = new Set([
   "healthcare", "education", "writing", "translation",
   "data-analysis", "business", "financial", "consulting",
-  "image-video", "advertisements",
+  "image", "video", "image-video", "advertisements",
 ]);
 const ID_RE = /^[a-z0-9][a-z0-9-]{0,63}$/;
 const TOOL_RE = /^[a-z][a-z0-9_-]*$/;

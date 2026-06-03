@@ -2,7 +2,7 @@ package features
 
 import "testing"
 
-// Guards against silent drift between the 7 canonical feature slugs
+// Guards against silent drift between the 8 canonical feature slugs
 // here, in apps/web/app/i18n.ts, and in scripts/mcps.manifest.json. If
 // you add or rename a feature, update all three at once and update this
 // test's expected list.
@@ -10,7 +10,7 @@ func TestValidSlugs(t *testing.T) {
 	want := []string{
 		"education", "writing", "translation",
 		"data-analysis", "business", "financial",
-		"image-video",
+		"image", "video",
 	}
 	if len(ValidSlugs) != len(want) {
 		t.Fatalf("ValidSlugs has %d entries, want %d", len(ValidSlugs), len(want))

@@ -35,7 +35,7 @@
           "enum": [
             "education", "writing", "translation",
             "data-analysis", "business", "financial",
-            "image-video"
+            "image", "video", "image-video"
           ]
         },
         "homepage": { "type": "string" }
