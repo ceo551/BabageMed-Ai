@@ -43,13 +43,13 @@ type asMetadata struct {
 // server metadata. Returns the AS metadata, its issuer (for the pre-registered-
 // client lookup when there's no DCR), and the resource's supported scopes.
 func discoverOAuth(ctx context.Context, serverURL string) (meta asMetadata, issuer string, scopes []string, err error) {
-	resourceMeta := probeResourceMetadata(ctx, serverURL)
 	var as string
-	if resourceMeta != "" {
-		servers, sc := fetchProtectedResource(ctx, resourceMeta)
-		scopes = sc
+	for _, cand := range resourceMetadataCandidates(ctx, serverURL) {
+		servers, sc := fetchProtectedResource(ctx, cand)
 		if len(servers) > 0 {
 			as = servers[0]
+			scopes = sc
+			break
 		}
 	}
 	if as == "" {
@@ -63,6 +63,28 @@ func discoverOAuth(ctx context.Context, serverURL string) (meta asMetadata, issu
 	issuer = strings.TrimRight(as, "/")
 	meta, err = fetchASMetadata(ctx, as)
 	return meta, issuer, scopes, err
+}
+
+// resourceMetadataCandidates lists where an MCP server's protected-resource
+// metadata (RFC 9728) might live, best first: the WWW-Authenticate pointer,
+// then the well-known path WITH the resource's path suffix (e.g.
+// /.well-known/oauth-protected-resource/mcp/v1 — how Gmail/Calendar/Drive
+// expose it), then the bare well-known path (Notion-style). The path-aware
+// form is the spec-correct one; we missed it before, so Google servers (which
+// return 200 on initialize with no WWW-Authenticate header) failed discovery.
+func resourceMetadataCandidates(ctx context.Context, serverURL string) []string {
+	out := []string{}
+	if rm := probeWWWAuthResourceMeta(ctx, serverURL); rm != "" {
+		out = append(out, rm)
+	}
+	if u, e := url.Parse(serverURL); e == nil && u.Host != "" {
+		base := u.Scheme + "://" + u.Host
+		if p := strings.TrimRight(u.Path, "/"); p != "" {
+			out = append(out, base+"/.well-known/oauth-protected-resource"+p)
+		}
+		out = append(out, base+"/.well-known/oauth-protected-resource")
+	}
+	return out
 }
 
 // preregisteredFor returns the env var names of an OAuth client the OPERATOR
@@ -92,23 +114,20 @@ func filterScopes(scopes []string) []string {
 	return out
 }
 
-func probeResourceMetadata(ctx context.Context, serverURL string) string {
+func probeWWWAuthResourceMeta(ctx context.Context, serverURL string) string {
 	body := []byte(`{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"Pervagans","version":"1"}}}`)
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, serverURL, bytes.NewReader(body))
-	if err == nil {
-		req.Header.Set("Content-Type", "application/json")
-		req.Header.Set("Accept", "application/json, text/event-stream")
-		if res, e := oauthHTTP.Do(req); e == nil {
-			defer res.Body.Close()
-			if rm := parseResourceMetadata(res.Header.Get("WWW-Authenticate")); rm != "" {
-				return rm
-			}
-		}
+	if err != nil {
+		return ""
 	}
-	if u, e := url.Parse(serverURL); e == nil && u.Host != "" {
-		return u.Scheme + "://" + u.Host + "/.well-known/oauth-protected-resource"
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Accept", "application/json, text/event-stream")
+	res, e := oauthHTTP.Do(req)
+	if e != nil {
+		return ""
 	}
-	return ""
+	defer res.Body.Close()
+	return parseResourceMetadata(res.Header.Get("WWW-Authenticate"))
 }
 
 // parseResourceMetadata extracts resource_metadata="..." from a WWW-Authenticate
