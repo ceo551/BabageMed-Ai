@@ -2,10 +2,11 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { auth } from "../../lib/api";
 import { useAuth } from "../../lib/auth-context";
 import { useUI } from "../../lib/ui-context";
+import { readNext } from "../next-target";
 import "../auth.css";
 
 // Two-step login:
@@ -17,7 +18,7 @@ import "../auth.css";
 //      factor never gets a working session.
 export default function LoginPage() {
   const router = useRouter();
-  const { refresh } = useAuth();
+  const { user, refresh } = useAuth();
   const { s } = useUI();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -25,6 +26,14 @@ export default function LoginPage() {
   const [mfaRequired, setMfaRequired] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [next, setNext] = useState("/");
+  // Read the ?next bounce-back target on mount (client-only; avoids the
+  // useSearchParams Suspense requirement).
+  useEffect(() => { setNext(readNext()); }, []);
+  // Already authenticated and yet on /login — happens when SameSite=Strict
+  // suppressed the session cookie on a cross-site landing so middleware
+  // couldn't see it, but the /me probe in auth-context can. Skip the form.
+  useEffect(() => { if (user) router.replace(next); }, [user, next, router]);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -42,7 +51,7 @@ export default function LoginPage() {
         await auth.login(email, password);
       }
       await refresh();
-      router.push("/");
+      router.push(next);
     } catch (e: unknown) {
       const errObj = e as { error?: string; mfaRequired?: boolean; message?: string };
       if (errObj?.mfaRequired) {

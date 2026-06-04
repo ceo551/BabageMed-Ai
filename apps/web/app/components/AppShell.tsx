@@ -16,17 +16,35 @@ import { I } from "../icons";
 // shells (.spaces-shell, .mcps-shell, etc) scroll inside the main column
 // instead of pushing the sidebar off-screen.
 //
-// Mounted by app/layout.tsx for the default route group; the (auth) route
-// group has its own layout that bypasses AppShell so login/signup stay
-// chrome-free.
+// Mounted by app/layout.tsx for every route. The auth pages (login / signup
+// / password reset / email verify) render chrome-free — no sidebar, no canvas
+// drawer — because the visitor hasn't authenticated yet; showing the app
+// navigation there would be misleading and would leak feature names. The
+// route-gate in middleware.ts guarantees only signed-in users ever reach the
+// chrome'd branch.
+const AUTH_ROUTE = /^\/(login|signup|forgot-password|reset-password|verify-email)(\/|$)/;
+
 export function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <UIProvider>
       <CanvasProvider>
-        <Frame>{children}</Frame>
-        <CanvasDrawer />
+        <Shell>{children}</Shell>
       </CanvasProvider>
     </UIProvider>
+  );
+}
+
+function Shell({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname() || "";
+  if (AUTH_ROUTE.test(pathname)) {
+    // Bare: the (auth) layout's .auth-wrapper centers the card full-width.
+    return <>{children}</>;
+  }
+  return (
+    <>
+      <Frame>{children}</Frame>
+      <CanvasDrawer />
+    </>
   );
 }
 

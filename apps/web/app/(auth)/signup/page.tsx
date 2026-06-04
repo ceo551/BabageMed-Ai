@@ -2,21 +2,26 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { auth } from "../../lib/api";
 import { useAuth } from "../../lib/auth-context";
 import { useUI } from "../../lib/ui-context";
+import { readNext } from "../next-target";
 import "../auth.css";
 
 export default function SignupPage() {
   const router = useRouter();
-  const { refresh } = useAuth();
+  const { user, refresh } = useAuth();
   const { s } = useUI();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [displayName, setDisplayName] = useState("");
   const [err, setErr] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [next, setNext] = useState("/");
+  useEffect(() => { setNext(readNext()); }, []);
+  // Already signed in (cross-site Strict-cookie landing) → skip the form.
+  useEffect(() => { if (user) router.replace(next); }, [user, next, router]);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -25,7 +30,7 @@ export default function SignupPage() {
     try {
       await auth.signup(email, password, displayName);
       await refresh();
-      router.push("/");
+      router.push(next);
     } catch (e: unknown) {
       const errObj = e as { error?: string; message?: string };
       setErr(errObj?.error || errObj?.message || "Signup failed");

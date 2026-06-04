@@ -117,7 +117,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (typeof window !== "undefined") {
         const p = window.location.pathname;
         const onAuthPage = /^\/(login|signup|forgot-password|reset-password|verify-email)/.test(p);
-        if (!onAuthPage) router.replace("/login");
+        if (!onAuthPage) {
+          // Preserve where they were so login bounces them back, mirroring
+          // the middleware gate's ?next behaviour.
+          const here = p + window.location.search;
+          const q = p !== "/" ? `?next=${encodeURIComponent(here)}` : "";
+          router.replace(`/login${q}`);
+        }
       }
     });
     return () => setOn401Handler(null);
