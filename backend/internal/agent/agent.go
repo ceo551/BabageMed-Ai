@@ -36,15 +36,23 @@ type CredentialProvider interface {
 	Credential(ctx context.Context, userID, mcpID string) (string, bool)
 }
 
+// UsageMeter enforces per-plan monthly credit caps. nil-safe + fail-open.
+// An agent run is one of the most expensive operations, so it's metered.
+type UsageMeter interface {
+	Check(ctx context.Context, userID, plan, op string) (bool, int)
+	Record(userID, plan, op, model string)
+}
+
 type Service struct {
 	llm   *llm.Client
 	reg   *mcp.Registry
 	auth  *auth.Service
 	creds CredentialProvider
+	meter UsageMeter
 }
 
-func New(l *llm.Client, r *mcp.Registry, a *auth.Service, creds CredentialProvider) *Service {
-	return &Service{llm: l, reg: r, auth: a, creds: creds}
+func New(l *llm.Client, r *mcp.Registry, a *auth.Service, creds CredentialProvider, meter UsageMeter) *Service {
+	return &Service{llm: l, reg: r, auth: a, creds: creds, meter: meter}
 }
 
 func (s *Service) Register(r chi.Router, limiter func(http.Handler) http.Handler) {
@@ -75,6 +83,21 @@ func (s *Service) handleStream(w http.ResponseWriter, r *http.Request) {
 	}
 	if len(req.Task) > 8000 {
 		req.Task = req.Task[:8000]
+	}
+
+	// Per-plan monthly credit cap (BEFORE SSE headers so an over-budget user
+	// gets a normal HTTP 402). Agent runs are expensive; charged on accept.
+	if u := auth.FromContext(r.Context()); u != nil && s.meter != nil {
+		if ok, _ := s.meter.Check(r.Context(), u.ID, u.Plan, "agent"); !ok {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusPaymentRequired)
+			_ = json.NewEncoder(w).Encode(map[string]any{
+				"error": "Monthly usage limit reached for your plan — upgrade to continue.",
+				"code":  "quota_exceeded",
+			})
+			return
+		}
+		s.meter.Record(u.ID, u.Plan, "agent", agentModel)
 	}
 
 	w.Header().Set("Content-Type", "text/event-stream")

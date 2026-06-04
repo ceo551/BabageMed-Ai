@@ -529,7 +529,7 @@ function Composer({
         signal: controller.signal,
       });
       if (!r.ok || !r.body) {
-        throw new Error(`HTTP ${r.status}`);
+        throw new Error(r.status === 402 ? s.quotaReached : `HTTP ${r.status}`);
       }
 
       const assistantId = `a-${newId()}`;
@@ -684,7 +684,7 @@ function Composer({
       body: JSON.stringify({ task: text, useMcps: activeConnectorIds, locale }),
       signal: controller.signal,
     });
-    if (!r.ok || !r.body) throw new Error(`HTTP ${r.status}`);
+    if (!r.ok || !r.body) throw new Error(r.status === 402 ? s.quotaReached : `HTTP ${r.status}`);
     const assistantId = `a-${newId()}`;
     setMessages((cur) => cur.filter((m) => m.id !== loadingId).concat({ id: assistantId, role: "assistant", content: "" }));
 

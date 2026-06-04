@@ -16,6 +16,7 @@ import (
 	"github.com/pervagans/backend/internal/api"
 	"github.com/pervagans/backend/internal/audit"
 	"github.com/pervagans/backend/internal/auth"
+	"github.com/pervagans/backend/internal/billing"
 	"github.com/pervagans/backend/internal/cache"
 	"github.com/pervagans/backend/internal/email"
 	"github.com/pervagans/backend/internal/chats"
@@ -155,10 +156,14 @@ func main() {
 	// registered later in the authenticated block. nil when there's no DB —
 	// both consumers are nil-safe and fall back to the pod's shared env token.
 	var connSvc *connectors.Service
+	// Usage metering: per-plan monthly credit caps on expensive ops (wrapper
+	// economics). nil when there's no DB — Check/Record are nil-safe + fail-open.
+	var billingSvc *billing.Service
 	if dbConn != nil {
 		connSvc = connectors.New(dbConn, authSvc, registry)
+		billingSvc = billing.New(dbConn, authSvc)
 	}
-	apiH := api.NewHandler(registry, llmClient, cacheClient, connSvc)
+	apiH := api.NewHandler(registry, llmClient, cacheClient, connSvc, billingSvc)
 
 	r := chi.NewRouter()
 	r.Use(middleware.RequestID)
@@ -316,11 +321,12 @@ func main() {
 			mfa.NewHandler(mfaSvc, authSvc, auditSvc).Register(pr)
 		})
 		admin.NewHandler(dbConn, authSvc).Register(r)
-		media.New(dbConn, authSvc, llmClient).Register(r, toolsLimiter.Middleware)
-		agent.New(llmClient, registry, authSvc, connSvc).Register(r, agentLimiter.Middleware)
+		media.New(dbConn, authSvc, llmClient, billingSvc).Register(r, toolsLimiter.Middleware)
+		agent.New(llmClient, registry, authSvc, connSvc, billingSvc).Register(r, agentLimiter.Middleware)
 		spaces.New(dbConn, authSvc).Register(r, uploadLimiter.Middleware)
 		features.New(dbConn, authSvc).Register(r, uploadLimiter.Middleware)
 		connSvc.Register(r)
+		billingSvc.Register(r)
 		chats.New(dbConn, authSvc).Register(r)
 	}
 

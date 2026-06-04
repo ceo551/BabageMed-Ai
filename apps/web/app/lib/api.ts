@@ -452,6 +452,12 @@ export const spaces = {
     }).then((r) => handle<void>(r)),
 };
 
+// ── Usage metering (per-plan monthly credit caps) ──────────────────────────
+export type UsageSummary = { plan: string; used: number; limit: number; remaining: number };
+export const usage = {
+  get: () => api.get<UsageSummary>("/api/usage"),
+};
+
 // ── Media generation (Alibaba Model Studio / DashScope) ────────────────────
 // Image is synchronous (one call → url). Video is async: submit returns a
 // task id the caller polls until status is SUCCEEDED (url ready) or FAILED.

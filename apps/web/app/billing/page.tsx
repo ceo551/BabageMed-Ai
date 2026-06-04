@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { usage as usageApi, type UsageSummary } from "../lib/api";
 
 type Plan = {
   ID: string;
@@ -63,6 +64,7 @@ export default function BillingPage() {
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [locale, setLocale] = useState<"en" | "ar">("en");
+  const [usage, setUsage] = useState<UsageSummary | null>(null);
   // Paddle.Initialize must run exactly once per token; track it across clicks.
   const initialized = useRef(false);
 
@@ -77,6 +79,8 @@ export default function BillingPage() {
       })
       .catch((e) => setError(e.message));
     setLocale((document.documentElement.lang as "en" | "ar") || "en");
+    // Current-month usage vs the plan's credit allowance (best-effort).
+    usageApi.get().then(setUsage).catch(() => {});
     // Warm the Paddle.js script so the overlay opens instantly on click.
     if (typeof window !== "undefined") loadPaddle().catch(() => {});
   }, []);
@@ -120,6 +124,18 @@ export default function BillingPage() {
       <h1 style={{ fontFamily: "var(--serif)", fontSize: "clamp(32px, 6vw, 44px)", lineHeight: 1.15, letterSpacing: "-0.02em", margin: 0, color: "var(--ink)" }}>
         {locale === "ar" ? "الخطط والفوترة" : "Plans & Billing"}
       </h1>
+
+      {usage && (
+        <div style={{ width: "100%", maxWidth: 600, display: "flex", flexDirection: "column", gap: 8 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", fontSize: 13, color: "var(--ink-2)" }}>
+            <span>{locale === "ar" ? `الاستخدام هذا الشهر — باقة ${usage.plan.toUpperCase()}` : `Usage this month — ${usage.plan.toUpperCase()} plan`}</span>
+            <span style={{ fontFamily: "var(--mono)" }}>{usage.used} / {usage.limit}</span>
+          </div>
+          <div style={{ height: 8, borderRadius: 999, background: "var(--surface-2, var(--border))", overflow: "hidden" }}>
+            <div style={{ height: "100%", width: `${Math.min(100, usage.limit > 0 ? (usage.used / usage.limit) * 100 : 0)}%`, background: usage.remaining <= 0 ? "var(--error)" : "var(--cyan)", transition: "width .3s" }} />
+          </div>
+        </div>
+      )}
 
       {error && (
         <div role="alert" style={{ background: "var(--error-soft)", border: "1px solid var(--error-line)", color: "var(--error)", padding: 12, borderRadius: 10, maxWidth: 600 }}>

@@ -233,7 +233,7 @@ export function SpaceChat({ space, memory }: { space: Space; memory?: string[] }
         body,
         signal: controller.signal,
       });
-      if (!r.ok || !r.body) throw new Error(`HTTP ${r.status}`);
+      if (!r.ok || !r.body) throw new Error(r.status === 402 ? s.quotaReached : `HTTP ${r.status}`);
 
       const assistantId = `a-${newId()}`;
       setMessages((cur) =>

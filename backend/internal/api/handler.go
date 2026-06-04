@@ -29,15 +29,43 @@ type CredentialProvider interface {
 	Credential(ctx context.Context, userID, mcpID string) (string, bool)
 }
 
+// UsageMeter enforces per-plan monthly credit caps on expensive operations
+// (wrapper economics). Implemented by the billing service; nil-safe + fail-open.
+type UsageMeter interface {
+	Check(ctx context.Context, userID, plan, op string) (bool, int)
+	Record(userID, plan, op, model string)
+}
+
 type Handler struct {
 	reg   *mcp.Registry
 	llm   *llm.Client
 	cache *cache.Cache
 	creds CredentialProvider
+	meter UsageMeter
 }
 
-func NewHandler(reg *mcp.Registry, l *llm.Client, c *cache.Cache, creds CredentialProvider) *Handler {
-	return &Handler{reg: reg, llm: l, cache: c, creds: creds}
+func NewHandler(reg *mcp.Registry, l *llm.Client, c *cache.Cache, creds CredentialProvider, meter UsageMeter) *Handler {
+	return &Handler{reg: reg, llm: l, cache: c, creds: creds, meter: meter}
+}
+
+// checkQuota enforces the per-plan monthly credit cap for a logged-in user.
+// Returns false (and writes a 402) when over budget; charges the op on accept.
+// No-op for anonymous traffic (bounded by clampForAnon + the IP rate limiter)
+// and when no meter is wired.
+func (h *Handler) checkQuota(w http.ResponseWriter, r *http.Request, op, model string) bool {
+	u := auth.FromContext(r.Context())
+	if u == nil || h.meter == nil {
+		return true
+	}
+	if ok, _ := h.meter.Check(r.Context(), u.ID, u.Plan, op); !ok {
+		writeJSON(w, http.StatusPaymentRequired, map[string]any{
+			"error": "Monthly usage limit reached for your plan — upgrade to continue.",
+			"code":  "quota_exceeded",
+		})
+		return false
+	}
+	h.meter.Record(u.ID, u.Plan, op, model)
+	return true
 }
 
 // Health is the legacy /health endpoint kept for dashboards / ops:
@@ -186,6 +214,13 @@ func (h *Handler) Chat(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, 400, map[string]string{"error": "image/video models are not supported on the chat endpoint; pick a text model"})
 		return
 	}
+	op := "chat"
+	if req.DeepResearch {
+		op = "deep_research"
+	}
+	if !h.checkQuota(w, r, op, req.Model) {
+		return
+	}
 	res, err := h.run(r.Context(), req)
 	if err != nil {
 		upstreamErr(w, 502, err, "chat backend failed")
@@ -203,6 +238,18 @@ func (h *Handler) ChatStream(w http.ResponseWriter, r *http.Request) {
 	}
 	sanitiseChatRequest(&req)
 	clampForAnon(r.Context(), &req)
+	// Quota check BEFORE the SSE headers so an over-budget user gets a normal
+	// HTTP 402 the fetch detects (not a half-open event stream). Charged on
+	// accept. No-op for anonymous traffic.
+	{
+		op := "chat"
+		if req.DeepResearch {
+			op = "deep_research"
+		}
+		if !h.checkQuota(w, r, op, req.Model) {
+			return
+		}
+	}
 	// SSE response headers are set up-front — BEFORE the visual-model
 	// rejection below — so even that early-exit error is a well-formed
 	// event stream the browser's EventSource parses (correct content-type

@@ -32,15 +32,23 @@ const maxAssetBytes = 30 << 20 // 30 MiB
 const maxMediaPromptBytes = 4000
 const maxBatch = 4
 
-type Service struct {
-	db   *db.DB
-	auth *auth.Service
-	llm  *llm.Client
-	http *http.Client
+// UsageMeter enforces per-plan monthly credit caps. nil-safe + fail-open.
+// Image and (especially) video generation are among the costliest ops.
+type UsageMeter interface {
+	Check(ctx context.Context, userID, plan, op string) (bool, int)
+	Record(userID, plan, op, model string)
 }
 
-func New(d *db.DB, a *auth.Service, l *llm.Client) *Service {
-	return &Service{db: d, auth: a, llm: l, http: &http.Client{
+type Service struct {
+	db    *db.DB
+	auth  *auth.Service
+	llm   *llm.Client
+	http  *http.Client
+	meter UsageMeter
+}
+
+func New(d *db.DB, a *auth.Service, l *llm.Client, meter UsageMeter) *Service {
+	return &Service{db: d, auth: a, llm: l, meter: meter, http: &http.Client{
 		Timeout: 60 * time.Second,
 		// Asset downloads hit a direct DashScope OSS URL — never follow a
 		// redirect (defense against SSRF / redirect-to-internal).
@@ -137,6 +145,25 @@ func paramsJSON(req mediaRequest) []byte {
 	return b
 }
 
+// checkQuota enforces the per-plan monthly credit cap for media generation.
+// Writes a 402 and returns false when over budget; charges the op on accept.
+// No-op when there's no meter (these endpoints are already auth.Required).
+func (s *Service) checkQuota(w http.ResponseWriter, r *http.Request, op, model string) bool {
+	u := auth.FromContext(r.Context())
+	if u == nil || s.meter == nil {
+		return true
+	}
+	if ok, _ := s.meter.Check(r.Context(), u.ID, u.Plan, op); !ok {
+		writeJSON(w, http.StatusPaymentRequired, map[string]any{
+			"error": "Monthly usage limit reached for your plan — upgrade to continue.",
+			"code":  "quota_exceeded",
+		})
+		return false
+	}
+	s.meter.Record(u.ID, u.Plan, op, model)
+	return true
+}
+
 // ─── Image (sync) ─────────────────────────────────────────────────────────
 
 func (s *Service) handleGenerateImage(w http.ResponseWriter, r *http.Request) {
@@ -147,6 +174,9 @@ func (s *Service) handleGenerateImage(w http.ResponseWriter, r *http.Request) {
 	}
 	if !allowedImageModels[req.Model] {
 		writeJSON(w, 400, map[string]string{"error": "unknown image model"})
+		return
+	}
+	if !s.checkQuota(w, r, "image", req.Model) {
 		return
 	}
 	n := req.N
@@ -204,6 +234,9 @@ func (s *Service) handleSubmitVideo(w http.ResponseWriter, r *http.Request) {
 	}
 	if !allowedVideoModels[req.Model] {
 		writeJSON(w, 400, map[string]string{"error": "unknown video model"})
+		return
+	}
+	if !s.checkQuota(w, r, "video", req.Model) {
 		return
 	}
 	taskID, err := s.llm.SubmitVideo(r.Context(), req.Model, req.Prompt, llm.VideoOptions{

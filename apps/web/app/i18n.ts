@@ -55,6 +55,7 @@ export type LocaleStrings = {
   send: string;
   stop: string;
   errorPrefix: string;
+  quotaReached: string;
   instructions: string; instructionsDesc: string;
   filesFolders: string; filesFoldersDesc: string;
   skillsPanel: string; skillsPanelDesc: string;
@@ -255,6 +256,7 @@ export const STR: Record<Locale, LocaleStrings> = {
     send: "Send",
     stop: "Stop",
     errorPrefix: "Error: ",
+    quotaReached: "You've reached your plan's monthly usage limit. Upgrade for more.",
     instructions: "Instructions",
     instructionsDesc: "Custom system prompt that runs on every chat in this feature.",
     filesFolders: "Files & folders",
@@ -425,6 +427,7 @@ export const STR: Record<Locale, LocaleStrings> = {
     send: "إرسال",
     stop: "إيقاف",
     errorPrefix: "خطأ: ",
+    quotaReached: "وصلت إلى حد الاستخدام الشهري لباقتك. رقِّ باقتك للمزيد.",
     instructions: "التعليمات",
     instructionsDesc: "نص توجيه يُطبَّق على كل محادثة فى هذه الميزة.",
     filesFolders: "الملفات والمجلدات",
