@@ -35,7 +35,11 @@ export function Sidebar({
 } = {}) {
   const router = useRouter();
   const pathname = usePathname();
-  const { user, signOut } = useAuth();
+  const { user, loading: authLoading, signOut } = useAuth();
+  // Logged-out: the FULL nav is shown but every click is intercepted → /login
+  // (the whole sidebar acts as a sign-in prompt). authLoading guards against
+  // intercepting a signed-in user's clicks during the brief auth resolve.
+  const anon = !authLoading && !user;
   const { locale, setLocale, theme, setTheme, effectiveTheme, toggleCollapsed, s } = useUI();
   // Drag-to-resize: while a pointer is active on the handle we listen
   // for window-level move/up events. Width is updated through the
@@ -142,20 +146,21 @@ export function Sidebar({
         />
       )}
 
-      <div className="sb-body">
-        {/* Anonymous visitors (public home in trial mode) see ONLY a Sign in
-            row — no New chat / Spaces / Connectors / history. The full nav
-            appears once authenticated. */}
-        {!user ? (
-          <Link href="/login" className="sb-row" style={{ textDecoration: "none" }} onClick={() => onMobileClose?.()}>
-            <svg viewBox="0 0 24 24" width={18} height={18} fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-              <circle cx="12" cy="8" r="4" /><path d="M4 21a8 8 0 0 1 16 0" />
-            </svg>
-            <span className="lbl">{s.signInCta}</span>
-            <span className="trail-chev">{I.chevR}</span>
-          </Link>
-        ) : (
-        <>
+      {/* Logged-out visitors see the FULL nav, but a click on ANYTHING here is
+          intercepted in the capture phase and sent to /login — the whole
+          sidebar acts as a sign-in prompt (the actual Sign in button lives in
+          the foot). preventDefault stops Link navigation; stopPropagation stops
+          the item's own onClick (New chat / feature toggle / history row). */}
+      <div
+        className="sb-body"
+        onClickCapture={(e) => {
+          if (!anon) return;
+          e.preventDefault();
+          e.stopPropagation();
+          onMobileClose?.();
+          router.push("/login");
+        }}
+      >
         <button className="sb-new" type="button" title={s.new} onClick={startNewChat}>
           {I.plus}
           <span className="lbl">{s.new}</span>
@@ -217,8 +222,6 @@ export function Sidebar({
         />
 
         <HistorySection label={s.recent} feature="general" />
-        </>
-        )}
       </div>
 
       <div className="sb-foot">
@@ -237,7 +240,20 @@ export function Sidebar({
             s={s}
             onSignOut={async () => { await signOut(); router.replace("/login"); }}
           />
-        ) : null}
+        ) : (
+          // Sign in pinned to the bottom of the sidebar (the foot).
+          <Link
+            href="/login"
+            className="sb-row"
+            onClick={() => onMobileClose?.()}
+            style={{ textDecoration: "none", justifyContent: "center", border: "1px solid var(--border)" }}
+          >
+            <svg viewBox="0 0 24 24" width={18} height={18} fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <circle cx="12" cy="8" r="4" /><path d="M4 21a8 8 0 0 1 16 0" />
+            </svg>
+            <span className="lbl">{s.signInCta}</span>
+          </Link>
+        )}
       </div>
     </aside>
   );
