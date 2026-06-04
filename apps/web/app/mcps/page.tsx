@@ -16,12 +16,7 @@ export default function ConnectorsBrowsePage() {
   return (
     <div className="mcps-shell">
       <Link href="/" style={{ color: "var(--cyan)", fontSize: 13 }}>← {ar ? "الرئيسية" : "Dashboard"}</Link>
-      <h1>{ar ? "الموصِّلات" : "Connectors"}</h1>
-      <p className="lead">
-        {ar
-          ? "اربط أي خادم MCP خارجي بضغطة واحدة — بتسجّل دخول عند المزوّد، من غير أي إعداد، زي Claude. والموصّلات المتصلة بيقدر المساعد يستخدم أدواتها في وضع Agent."
-          : "Connect any external MCP server in one click — sign in at the provider, no setup, just like Claude. Connected servers' tools are available to the assistant in Agent Mode."}
-      </p>
+      <h1 style={{ marginBottom: 18 }}>{ar ? "الموصِّلات" : "Connectors"}</h1>
       <RemoteMcpSection />
     </div>
   );
