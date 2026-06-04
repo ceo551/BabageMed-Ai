@@ -22,8 +22,11 @@ export function middleware(req: NextRequest) {
   const { pathname, search } = req.nextUrl;
   const hasSession = req.cookies.has("pervagans_session");
 
-  // Fully public surfaces are open to everyone — never redirected.
-  if (PUBLIC.test(pathname)) return NextResponse.next();
+  // The home page + fully public surfaces are open to everyone — never
+  // redirected. An anonymous visitor lands on the dashboard in trial mode
+  // (deepseek only, one un-saved conversation); the rest of the app stays
+  // gated and the sidebar shows only "Sign in" until they authenticate.
+  if (pathname === "/" || PUBLIC.test(pathname)) return NextResponse.next();
 
   const isAuth = AUTH.test(pathname);
 

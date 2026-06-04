@@ -694,7 +694,7 @@ func clampForAnon(ctx context.Context, req *chatRequest) {
 	if auth.FromContext(ctx) != nil {
 		return
 	}
-	req.Model = "glm-5.1" // cheap, served via the DashScope key; ignore the client pick
+	req.Model = "deepseek-v4-pro" // the only model unlocked for anonymous visitors; ignore the client pick
 	req.DeepResearch = false
 	req.EnableWebSearch = false
 	req.UseMcps = nil

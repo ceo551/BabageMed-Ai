@@ -6,6 +6,7 @@ import React, { Suspense, useEffect, useLayoutEffect, useMemo, useRef, useState 
 import { MODELS, type Locale, type LocaleStrings } from "./i18n";
 import { I } from "./icons";
 import { useUI } from "./lib/ui-context";
+import { useAuth } from "./lib/auth-context";
 import { usePrefs, useSession, prefs, session } from "./lib/store";
 import { ConnectorIcon } from "./components/ConnectorIcon";
 import { AssistantMessage, type Citation } from "./components/AssistantMessage";
@@ -41,6 +42,10 @@ function newId(): string {
   return `${Date.now().toString(36)}-${__idCounter.toString(36)}`;
 }
 
+// The single model anonymous (logged-out) visitors may use on the public home.
+// Everything else is lock-iconed in the picker; clampForAnon enforces it too.
+const ANON_MODEL = "deepseek-v4-pro";
+
 // Next.js 14's App Router requires components that call useSearchParams() to
 // either live inside a <Suspense> boundary OR have the route opted out of
 // prerendering. We use Suspense here so we keep client-side navigation fast
@@ -56,6 +61,11 @@ export default function Dashboard() {
 
 function DashboardInner() {
   const { locale, s } = useUI();
+  // Anonymous (logged-out) visitors get the public trial mode: deepseek only,
+  // one un-saved conversation. `authLoading` guards against locking the picker
+  // for a split second before a logged-in user resolves.
+  const { user, loading: authLoading } = useAuth();
+  const anon = !authLoading && !user;
   const params = useSearchParams();
   const chatIdParam = params?.get("c") || "";
   // 'n' is the cache-buster the sidebar's New button puts on the URL to
@@ -134,6 +144,7 @@ function DashboardInner() {
       <Composer
         s={s}
         locale={locale}
+        anon={anon}
         messages={messages}
         setMessages={setMessages}
         chatId={chatId}
@@ -226,12 +237,13 @@ function Transcript({ messages }: { messages: ChatMessage[] }) {
 
 // ─── Composer ────────────────────────────────────────────────────────────────
 function Composer({
-  s, locale,
+  s, locale, anon,
   messages, setMessages,
   chatId, setChatId,
 }: {
   s: LocaleStrings;
   locale: Locale;
+  anon: boolean;
   messages: ChatMessage[];
   setMessages: React.Dispatch<React.SetStateAction<ChatMessage[]>>;
   chatId: string;
@@ -395,7 +407,11 @@ function Composer({
     ta.style.height = Math.min(ta.scrollHeight, 280) + "px";
   }, [value]);
 
-  const currentModel = MODELS.find((m) => m.id === model) || MODELS[0];
+  // Anonymous visitors are locked to deepseek (the one unlocked model); the
+  // backend's clampForAnon enforces this server-side too.
+  const currentModel = anon
+    ? (MODELS.find((m) => m.id === ANON_MODEL) || MODELS[0])
+    : (MODELS.find((m) => m.id === model) || MODELS[0]);
 
   function brandMark(brand: string): React.ReactNode {
     switch (brand) {
@@ -459,7 +475,10 @@ function Composer({
       // user's first message. Best-effort — if it fails (401, etc.) we
       // still let the chat happen, just unpersisted.
       let activeChatId = chatId;
-      if (!activeChatId) {
+      // Anonymous visitors get ONE un-saved conversation — never persist (the
+      // chats API is auth-gated anyway; skipping avoids a doomed 401 + keeps
+      // the trial chat out of any history).
+      if (!activeChatId && !anon) {
         try {
           // Empty feature → dashboard "general" chat. Backend stores
           // feature_slug as NULL, which the sidebar's general History row
@@ -937,18 +956,35 @@ function Composer({
           {modelOpen && (
             <div className="model-pop" role="menu">
               <div className="pop-header">{s.modelHeader}</div>
-              {MODELS.map((m) => (
-                <button key={m.id} className="model-row" type="button" data-active={model === m.id} onClick={() => { setModel(m.id); setModelOpen(false); }}>
-                  <span className="brand-mark">{brandMark(m.brand)}</span>
-                  <span className="col">
-                    <span className="nm">{m.name}</span>
-                    <span className="meta-row">
-                      {m.pills[locale].map((p, i) => <span key={i} className="pill">{p}</span>)}
+              {MODELS.map((m) => {
+                // Anonymous: every model except deepseek is locked → clicking
+                // nudges to sign-in instead of selecting it.
+                const locked = anon && m.id !== ANON_MODEL;
+                return (
+                  <button
+                    key={m.id}
+                    className="model-row"
+                    type="button"
+                    data-active={currentModel.id === m.id}
+                    onClick={() => {
+                      if (locked) { window.location.href = "/login"; return; }
+                      setModel(m.id);
+                      setModelOpen(false);
+                    }}
+                    title={locked ? (locale === "ar" ? "سجّل الدخول لفتح هذا النموذج" : "Sign in to unlock this model") : undefined}
+                    style={locked ? { opacity: 0.55 } : undefined}
+                  >
+                    <span className="brand-mark">{brandMark(m.brand)}</span>
+                    <span className="col">
+                      <span className="nm">{m.name}</span>
+                      <span className="meta-row">
+                        {m.pills[locale].map((p, i) => <span key={i} className="pill">{p}</span>)}
+                      </span>
                     </span>
-                  </span>
-                  <span className="check">{I.check}</span>
-                </button>
-              ))}
+                    <span className="check">{locked ? I.lock : I.check}</span>
+                  </button>
+                );
+              })}
             </div>
           )}
         </div>

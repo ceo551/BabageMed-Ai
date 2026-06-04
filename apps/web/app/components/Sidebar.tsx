@@ -143,6 +143,19 @@ export function Sidebar({
       )}
 
       <div className="sb-body">
+        {/* Anonymous visitors (public home in trial mode) see ONLY a Sign in
+            row — no New chat / Spaces / Connectors / history. The full nav
+            appears once authenticated. */}
+        {!user ? (
+          <Link href="/login" className="sb-row" style={{ textDecoration: "none" }} onClick={() => onMobileClose?.()}>
+            <svg viewBox="0 0 24 24" width={18} height={18} fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <circle cx="12" cy="8" r="4" /><path d="M4 21a8 8 0 0 1 16 0" />
+            </svg>
+            <span className="lbl">{s.signInCta}</span>
+            <span className="trail-chev">{I.chevR}</span>
+          </Link>
+        ) : (
+        <>
         <button className="sb-new" type="button" title={s.new} onClick={startNewChat}>
           {I.plus}
           <span className="lbl">{s.new}</span>
@@ -204,6 +217,8 @@ export function Sidebar({
         />
 
         <HistorySection label={s.recent} feature="general" />
+        </>
+        )}
       </div>
 
       <div className="sb-foot">
@@ -222,27 +237,7 @@ export function Sidebar({
             s={s}
             onSignOut={async () => { await signOut(); router.replace("/login"); }}
           />
-        ) : (
-          <div style={{ display: "flex", gap: 6 }}>
-            <Link
-              href="/login"
-              className="sb-row"
-              style={{
-                flex: 1, justifyContent: "center", textDecoration: "none",
-                border: "1px solid var(--border)",
-              }}
-            ><span className="lbl">{s.signInCta}</span></Link>
-            <Link
-              href="/signup"
-              className="sb-row"
-              style={{
-                flex: 1, justifyContent: "center", textDecoration: "none",
-                background: "var(--cyan-soft)", color: "var(--cyan)",
-                border: "1px solid var(--cyan-line)",
-              }}
-            ><span className="lbl">{s.signUpCta}</span></Link>
-          </div>
-        )}
+        ) : null}
       </div>
     </aside>
   );
