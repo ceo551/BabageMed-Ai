@@ -138,7 +138,7 @@ export const I = {
     </svg>
   ),
   check: (
-    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round">
+    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
       <path d="M5 12l5 5L20 7" />
     </svg>
   ),
@@ -298,7 +298,7 @@ export const I = {
   // Vertical 3-dot overflow menu — replaces the old × delete glyph on
   // chat history rows so the rename action has somewhere to live.
   dotsV: (
-    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
       <circle cx="12" cy="5" r="1" />
       <circle cx="12" cy="12" r="1" />
       <circle cx="12" cy="19" r="1" />
@@ -306,7 +306,7 @@ export const I = {
   ),
   // Trash — used in the row overflow menu's Delete action.
   trash: (
-    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
       <path d="M3 6h18" />
       <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
       <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
@@ -318,6 +318,43 @@ export const I = {
       <path d="M12 2l3 6.5 7 .7-5.2 4.6 1.6 6.7L12 17l-6.4 3.5 1.6-6.7L2 9.2l7-.7L12 2z" fill="#F59E0B" />
     </svg>
   ),
+  // Search — magnifier. Replaces the wrong globe glyph on filter fields.
+  search: (
+    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <circle cx="11" cy="11" r="7" />
+      <path d="M21 21l-4.3-4.3" />
+    </svg>
+  ),
+  // Send — paper plane. Replaces the Unicode ↵ on the composer send button.
+  send: (
+    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M22 2L11 13" />
+      <path d="M22 2l-7 20-4-9-9-4 20-7z" />
+    </svg>
+  ),
+  // Stop — filled rounded square. Replaces the Unicode ■ while a send is in flight.
+  stop: (
+    <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+      <rect x="5" y="5" width="14" height="14" rx="3" fill="currentColor" />
+    </svg>
+  ),
+  // Lock — seed-locked state on the media controls.
+  lock: (
+    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <rect x="5" y="11" width="14" height="10" rx="2" />
+      <path d="M8 11V7a4 4 0 0 1 8 0v4" />
+    </svg>
+  ),
+  // Dice — randomise-seed state on the media controls.
+  dice: (
+    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <rect x="4" y="4" width="16" height="16" rx="3" />
+      <circle cx="9" cy="9" r="1.1" fill="currentColor" />
+      <circle cx="15" cy="9" r="1.1" fill="currentColor" />
+      <circle cx="9" cy="15" r="1.1" fill="currentColor" />
+      <circle cx="15" cy="15" r="1.1" fill="currentColor" />
+    </svg>
+  ),
 };
 
 // ─── Feature icons — slug → outline SVG ──────────────────────────────
@@ -327,7 +364,7 @@ export const I = {
 function featureSvg(d: string): React.ReactNode {
   return (
     <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor"
-         strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+         strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
       {d.split("|").map((path, i) => <path key={i} d={path} />)}
     </svg>
   );

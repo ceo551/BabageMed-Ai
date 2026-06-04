@@ -959,7 +959,7 @@ function Composer({
             transition: "color .12s, background .12s, opacity .12s",
           }}
         >
-          {sending ? "■" : "↵"}
+          {sending ? I.stop : I.send}
         </button>
       </div>
     </div>

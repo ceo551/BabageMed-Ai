@@ -551,7 +551,7 @@ export function FeatureChat({
                 <div className="mc-seed">
                   <button type="button" className="mc-chip" data-active={seedLocked}
                     aria-pressed={seedLocked} title={s.lockSeed}
-                    onClick={() => setSeedLocked((v) => !v)}>{seedLocked ? "🔒" : "🎲"}</button>
+                    onClick={() => setSeedLocked((v) => !v)}>{seedLocked ? I.lock : I.dice}</button>
                   <input
                     type="number" min={1} className="mc-seed-input" placeholder={s.seed}
                     value={seed || ""}
@@ -763,7 +763,7 @@ export function FeatureChat({
                 transition: "color .12s, background .12s, opacity .12s",
               }}
             >
-              {sending ? "■" : "↵"}
+              {sending ? I.stop : I.send}
             </button>
           </div>
         </div>

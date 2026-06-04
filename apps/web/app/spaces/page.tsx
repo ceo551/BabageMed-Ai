@@ -154,7 +154,7 @@ export default function SpacesIndexPage() {
       </div>
 
       <div className="sp-search-wrap">
-        <span className="sp-search-ico" aria-hidden="true">{I.globe}</span>
+        <span className="sp-search-ico" aria-hidden="true">{I.search}</span>
         <input
           type="search"
           className="sp-search"

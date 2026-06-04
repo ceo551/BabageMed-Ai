@@ -430,7 +430,7 @@ export function SpaceChat({ space }: { space: Space }) {
             transition: "color .12s, background .12s, opacity .12s",
           }}
         >
-          {sending ? "■" : "↵"}
+          {sending ? I.stop : I.send}
         </button>
       </div>
     </div>
