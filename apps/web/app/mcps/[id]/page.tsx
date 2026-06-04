@@ -13,6 +13,7 @@ import {
 import { useAuth } from "../../lib/auth-context";
 import { ConnectorIcon } from "../../components/ConnectorIcon";
 import { Modal } from "../../components/Modal";
+import { startOAuthPopup } from "../../lib/oauth";
 import "../mcps.css";
 
 // new URL(server.siteUrl) throws synchronously during render if siteUrl is
@@ -50,11 +51,42 @@ export default function McpDetailPage() {
   // verify pass. Re-add when the provider-OAuth flow lands.)
   const [keyModalOpen, setKeyModalOpen] = useState(false);
   const [apiKeyDraft, setApiKeyDraft] = useState("");
+  // Whether this connector has a real OAuth flow configured on the backend.
+  const [oauthAvailable, setOauthAvailable] = useState(false);
 
   useEffect(() => {
     if (!id) return;
     mcps.get(id).then(setServer).catch((e: ApiError) => setErr(e.error || String(e)));
   }, [id]);
+
+  useEffect(() => {
+    if (!id) return;
+    connectorsApi.oauthProviders()
+      .then((r) => setOauthAvailable(r.providers.includes(id)))
+      .catch(() => setOauthAvailable(false));
+  }, [id]);
+
+  // Real OAuth connect: open the provider sign-in popup, then refresh on success.
+  async function oauthConnect() {
+    if (!id || !user) return;
+    setBusy(true);
+    setErr(null);
+    try {
+      const r = await startOAuthPopup(id);
+      if (r.ok) {
+        const all = await connectorsApi.list();
+        setConnector(all.find((c) => c.mcpId === id) || null);
+      } else if (r.error === "popup_blocked") {
+        setErr("Popup blocked — allow popups for this site and try again.");
+      } else if (r.error && r.error !== "cancelled") {
+        setErr("Sign-in didn't complete. Please try again.");
+      }
+    } catch (e: any) {
+      setErr(e?.error || String(e));
+    } finally {
+      setBusy(false);
+    }
+  }
 
   useEffect(() => {
     if (loading || !user || !id) return;
@@ -183,9 +215,9 @@ export default function McpDetailPage() {
               </button>
             </>
           ) : isApi ? (
-            // api-kind: route through the OAuth-ish key dialog so we can
-            // store credentials, not just toggle the row on.
-            <button className="primary-btn" onClick={beginApiConnect} disabled={busy}>
+            // api-kind: real OAuth popup when the provider is configured,
+            // otherwise the paste-a-token dialog so we can still store a key.
+            <button className="primary-btn" onClick={oauthAvailable ? oauthConnect : beginApiConnect} disabled={busy}>
               {busy ? "Connecting…" : `Sign in with ${server.siteUrl ? safeHostname(server.siteUrl) : "provider"}`}
             </button>
           ) : (

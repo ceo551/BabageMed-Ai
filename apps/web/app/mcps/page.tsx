@@ -12,6 +12,7 @@ import { useAuth } from "../lib/auth-context";
 import { useUI } from "../lib/ui-context";
 import { ConnectorIcon } from "../components/ConnectorIcon";
 import { Modal } from "../components/Modal";
+import { startOAuthPopup } from "../lib/oauth";
 import "./mcps.css";
 
 // "Connectors" directory (mounted at /mcps for backwards-compatible URLs).
@@ -32,6 +33,13 @@ export default function ConnectorsBrowsePage() {
   // The connector pending a connect dialog (for an optional per-user token).
   const [pending, setPending] = useState<McpServer | null>(null);
   const [token, setToken] = useState("");
+  // Connector ids with a real OAuth flow configured → Connect opens the popup.
+  const [oauthIds, setOauthIds] = useState<Set<string>>(new Set());
+  useEffect(() => {
+    connectorsApi.oauthProviders()
+      .then((r) => setOauthIds(new Set(r.providers)))
+      .catch(() => {});
+  }, []);
   // Reset pagination whenever the search changes so the user always sees the
   // top of the result set after typing.
   useEffect(() => { setShown(PAGE_SIZE); }, [q]);
@@ -71,9 +79,32 @@ export default function ConnectorsBrowsePage() {
     }
     if (mine[srv.id]) {
       void disconnect(srv);
+    } else if (oauthIds.has(srv.id)) {
+      void oauthConnect(srv);
     } else {
       setToken("");
       setPending(srv);
+    }
+  }
+
+  // Real OAuth: open the provider sign-in popup, then refresh on success.
+  async function oauthConnect(srv: McpServer) {
+    setBusy(srv.id);
+    setError(null);
+    try {
+      const r = await startOAuthPopup(srv.id);
+      if (r.ok) {
+        const all = await connectorsApi.list();
+        setMine(Object.fromEntries(all.map((c) => [c.mcpId, c])));
+      } else if (r.error === "popup_blocked") {
+        setError("Popup blocked — allow popups for this site and try again.");
+      } else if (r.error && r.error !== "cancelled") {
+        setError("Sign-in didn't complete. Please try again.");
+      }
+    } catch (e: any) {
+      setError(e?.error || String(e));
+    } finally {
+      setBusy(null);
     }
   }
 

@@ -181,12 +181,18 @@ func (s *Service) Get(ctx context.Context, userID, mcpID string) (*Connector, er
 // ─── HTTP layer ────────────────────────────────────────────────────────────
 
 func (s *Service) Register(r chi.Router) {
+	// Public OAuth endpoints. The callback is a cross-site top-level GET from
+	// the provider (no session cookie) — it authenticates via the state row.
+	// providers just reports which connectors have OAuth configured (no secrets).
+	r.Get("/api/oauth/callback", s.handleOAuthCallback)
+	r.Get("/api/oauth/providers", s.handleOAuthProviders)
 	r.Route("/api/connectors", func(r chi.Router) {
 		r.Use(s.auth.Required)
 		r.Get("/", s.handleList)
 		r.Post("/{mcpID}", s.handleConnect)
 		r.Get("/{mcpID}", s.handleGet)
 		r.Delete("/{mcpID}", s.handleDisconnect)
+		r.Get("/{mcpID}/oauth/start", s.handleOAuthStart)
 	})
 }
 
@@ -269,6 +275,15 @@ func (s *Service) Credential(ctx context.Context, userID, mcpID string) (string,
 	if json.Unmarshal(cfgRaw, &cfg) != nil {
 		return "", false
 	}
+	// OAuth connection: return a valid access token, refreshing it first if it
+	// is expiring and we hold a refresh token.
+	if oauth, _ := cfg["oauth"].(bool); oauth {
+		if tok := s.oauthAccessToken(ctx, userID, mcpID, cfg); tok != "" {
+			return tok, true
+		}
+		return "", false
+	}
+	// Manual token the user pasted.
 	for _, k := range credKeys {
 		if v, ok := cfg[k].(string); ok && v != "" {
 			if dec := strings.TrimSpace(s.box.Decrypt(v)); dec != "" {

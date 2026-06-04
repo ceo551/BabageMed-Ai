@@ -215,6 +215,9 @@ export const connectors = {
       method: "DELETE",
       credentials: "include",
     }).then((r) => handle<void>(r)),
+  // Connector ids that currently have OAuth configured (real "Connect → sign in"
+  // flow available). Public — reports availability only, no secrets.
+  oauthProviders: () => api.get<{ providers: string[] }>("/api/oauth/providers"),
 };
 
 export type McpToolSchema = {
