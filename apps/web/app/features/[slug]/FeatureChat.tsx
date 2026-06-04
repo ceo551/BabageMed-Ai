@@ -795,7 +795,7 @@ function Transcript({ messages, endRef }: { messages: Msg[]; endRef: React.RefOb
   // Transcript is self-contained.
   const { s } = useUI();
   return (
-    <div className="transcript feat-transcript">
+    <div className="transcript feat-transcript" role="log" aria-live="polite" aria-relevant="additions text">
       {messages.map((m) => {
         if (m.role === "loading") {
           return (

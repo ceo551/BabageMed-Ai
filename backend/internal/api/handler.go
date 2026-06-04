@@ -157,6 +157,7 @@ func (h *Handler) Chat(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	sanitiseChatRequest(&req)
+	clampForAnon(r.Context(), &req)
 	// Same visual-model guard as ChatStream — an image/video id on the text
 	// endpoint would otherwise mis-route to the DashScope text completion API.
 	if isVisualModel(req.Model) {
@@ -179,6 +180,7 @@ func (h *Handler) ChatStream(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	sanitiseChatRequest(&req)
+	clampForAnon(r.Context(), &req)
 	// SSE response headers are set up-front — BEFORE the visual-model
 	// rejection below — so even that early-exit error is a well-formed
 	// event stream the browser's EventSource parses (correct content-type
@@ -564,6 +566,22 @@ func validModelID(s string) bool {
 		}
 	}
 	return true
+}
+
+// clampForAnon caps what a logged-OUT visitor can spend on the anonymous chat
+// endpoint: a cheap model and no web-search / Deep-Research / MCP fan-out.
+// Logged-in users (auth.Optional populated the context) are unaffected. This
+// keeps the try-before-signup funnel while closing the open-wallet exposure
+// where an anonymous caller could drive Opus + Brave + Deep Research on nothing
+// but a per-IP bucket.
+func clampForAnon(ctx context.Context, req *chatRequest) {
+	if auth.FromContext(ctx) != nil {
+		return
+	}
+	req.Model = "glm-5.1" // cheap, served via the DashScope key; ignore the client pick
+	req.DeepResearch = false
+	req.EnableWebSearch = false
+	req.UseMcps = nil
 }
 
 func sanitiseChatRequest(req *chatRequest) {
