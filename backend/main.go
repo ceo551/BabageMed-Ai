@@ -149,7 +149,16 @@ func main() {
 	// inside a 5-min window skip the upstream call. Returns a no-op cache
 	// when REDIS_URL is unset, so this is safe to construct unconditionally.
 	cacheClient := cache.New()
-	apiH := api.NewHandler(registry, llmClient, cacheClient)
+	// The connectors service doubles as the per-user credential provider for
+	// the chat + agent tool-call paths. Built here (when the DB is up) so it
+	// can be injected into the handler and the agent; its HTTP routes are
+	// registered later in the authenticated block. nil when there's no DB —
+	// both consumers are nil-safe and fall back to the pod's shared env token.
+	var connSvc *connectors.Service
+	if dbConn != nil {
+		connSvc = connectors.New(dbConn, authSvc, registry)
+	}
+	apiH := api.NewHandler(registry, llmClient, cacheClient, connSvc)
 
 	r := chi.NewRouter()
 	r.Use(middleware.RequestID)
@@ -308,10 +317,10 @@ func main() {
 		})
 		admin.NewHandler(dbConn, authSvc).Register(r)
 		media.New(dbConn, authSvc, llmClient).Register(r, toolsLimiter.Middleware)
-		agent.New(llmClient, registry, authSvc).Register(r, agentLimiter.Middleware)
+		agent.New(llmClient, registry, authSvc, connSvc).Register(r, agentLimiter.Middleware)
 		spaces.New(dbConn, authSvc).Register(r, uploadLimiter.Middleware)
 		features.New(dbConn, authSvc).Register(r, uploadLimiter.Middleware)
-		connectors.New(dbConn, authSvc, registry).Register(r)
+		connSvc.Register(r)
 		chats.New(dbConn, authSvc).Register(r)
 	}
 

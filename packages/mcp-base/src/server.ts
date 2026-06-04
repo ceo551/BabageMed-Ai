@@ -61,7 +61,7 @@ export class McpServer {
     return this;
   }
 
-  private async callTool(name: string, input: unknown): Promise<unknown> {
+  private async callTool(name: string, input: unknown, credential?: string): Promise<unknown> {
     const t = this.tools.get(name);
     if (!t) throw Object.assign(new Error(`unknown tool: ${name}`), { code: -32601 });
     const parsed = t.input.safeParse(input ?? {});
@@ -70,6 +70,7 @@ export class McpServer {
     }
     const ctx: ToolContext = {
       log: (lvl, msg, meta) => (this.log as any)[lvl](msg, meta),
+      credential,
     };
     const stop = this.metrics.toolDuration.startTimer({ tool: name });
     return withSpan(
@@ -98,7 +99,7 @@ export class McpServer {
     }));
   }
 
-  private async handleJsonRpc(req: JsonRpcRequest): Promise<JsonRpcResponse> {
+  private async handleJsonRpc(req: JsonRpcRequest, credential?: string): Promise<JsonRpcResponse> {
     const respond = (result?: unknown, error?: JsonRpcResponse["error"]): JsonRpcResponse => ({
       jsonrpc: "2.0",
       id: req.id,
@@ -117,7 +118,7 @@ export class McpServer {
         case "tools/call": {
           const p = (req.params as { name?: string; arguments?: unknown }) || {};
           if (!p.name) throw Object.assign(new Error("missing tool name"), { code: -32602 });
-          const result = await this.callTool(p.name, p.arguments);
+          const result = await this.callTool(p.name, p.arguments, credential);
           return respond({
             content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
             structuredContent: result,
@@ -181,7 +182,7 @@ export class McpServer {
             this.metrics.httpRequests.inc({ path: labelPath, method, status: "200" });
             return json(res, 200, { jsonrpc: "2.0", id: null, error: { code: -32700, message: "Parse error" } });
           }
-          const out = await this.handleJsonRpc(rpcReq);
+          const out = await this.handleJsonRpc(rpcReq, credHeader(req));
           stopHttp({ status: "200" });
           this.metrics.httpRequests.inc({ path: labelPath, method, status: "200" });
           return json(res, 200, out);
@@ -191,7 +192,7 @@ export class McpServer {
           const name = decodeURIComponent(url.pathname.slice("/call/".length));
           const body = await readBody(req);
           const args = body ? JSON.parse(body) : {};
-          const out = await this.callTool(name, args);
+          const out = await this.callTool(name, args, credHeader(req));
           stopHttp({ status: "200" });
           this.metrics.httpRequests.inc({ path: labelPath, method, status: "200" });
           return json(res, 200, { ok: true, result: out });
@@ -254,6 +255,13 @@ export class McpServer {
 function json(res: ServerResponse, code: number, body: unknown) {
   res.writeHead(code, { "content-type": "application/json" });
   res.end(JSON.stringify(body));
+}
+
+// credHeader extracts the per-user upstream credential the backend forwards as
+// X-MCP-Credential. Returns undefined when absent so tools fall back to env.
+function credHeader(req: IncomingMessage): string | undefined {
+  const h = req.headers["x-mcp-credential"];
+  return typeof h === "string" && h ? h : undefined;
 }
 
 // Cap the inbound JSON-RPC / tool-call body at 10 MB. The MCP servers only

@@ -22,14 +22,22 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
+// CredentialProvider returns a user's stored per-connector upstream credential.
+// Implemented by the connectors service; nil-safe (nil → every call falls back
+// to the pod's shared environment token).
+type CredentialProvider interface {
+	Credential(ctx context.Context, userID, mcpID string) (string, bool)
+}
+
 type Handler struct {
 	reg   *mcp.Registry
 	llm   *llm.Client
 	cache *cache.Cache
+	creds CredentialProvider
 }
 
-func NewHandler(reg *mcp.Registry, l *llm.Client, c *cache.Cache) *Handler {
-	return &Handler{reg: reg, llm: l, cache: c}
+func NewHandler(reg *mcp.Registry, l *llm.Client, c *cache.Cache, creds CredentialProvider) *Handler {
+	return &Handler{reg: reg, llm: l, cache: c, creds: creds}
 }
 
 // Health is the legacy /health endpoint kept for dashboards / ops:
@@ -103,7 +111,16 @@ func (h *Handler) CallTool(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-	out, err := h.reg.Call(r.Context(), id, tool, args)
+	ctx := r.Context()
+	// Forward the user's own credential for this connector, if they stored one.
+	if h.creds != nil {
+		if u := auth.FromContext(ctx); u != nil {
+			if cred, ok := h.creds.Credential(ctx, u.ID, id); ok {
+				ctx = mcp.WithCredential(ctx, cred)
+			}
+		}
+	}
+	out, err := h.reg.Call(ctx, id, tool, args)
 	if err != nil {
 		upstreamErr(w, 502, err, "upstream tool call failed")
 		return
@@ -348,7 +365,15 @@ func (h *Handler) gather(ctx context.Context, req chatRequest) ([]map[string]any
 			}
 			ctxT, cancel := context.WithTimeout(gctx, 25*time.Second)
 			defer cancel()
-			res, err := h.reg.Call(ctxT, id, "search", map[string]string{"query": last})
+			// Forward this user's own credential for the connector, if stored,
+			// so the pod authenticates as them rather than via the shared token.
+			callCtx := ctxT
+			if h.creds != nil && userKey != "anon" {
+				if cred, ok := h.creds.Credential(ctxT, userKey, id); ok {
+					callCtx = mcp.WithCredential(ctxT, cred)
+				}
+			}
+			res, err := h.reg.Call(callCtx, id, "search", map[string]string{"query": last})
 			if err != nil {
 				// Per-MCP failures are non-fatal for the chat as a whole, but
 				// we DO surface a synthetic result documenting the failure

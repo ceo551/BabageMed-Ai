@@ -29,14 +29,22 @@ const (
 	agentModel  = "qwen-3.7-max"
 )
 
-type Service struct {
-	llm  *llm.Client
-	reg  *mcp.Registry
-	auth *auth.Service
+// CredentialProvider returns a user's stored per-connector upstream credential.
+// Implemented by the connectors service; nil-safe (a nil provider means every
+// call falls back to the pod's shared environment token).
+type CredentialProvider interface {
+	Credential(ctx context.Context, userID, mcpID string) (string, bool)
 }
 
-func New(l *llm.Client, r *mcp.Registry, a *auth.Service) *Service {
-	return &Service{llm: l, reg: r, auth: a}
+type Service struct {
+	llm   *llm.Client
+	reg   *mcp.Registry
+	auth  *auth.Service
+	creds CredentialProvider
+}
+
+func New(l *llm.Client, r *mcp.Registry, a *auth.Service, creds CredentialProvider) *Service {
+	return &Service{llm: l, reg: r, auth: a, creds: creds}
 }
 
 func (s *Service) Register(r chi.Router, limiter func(http.Handler) http.Handler) {
@@ -329,6 +337,15 @@ func (s *Service) execTool(ctx context.Context, refs map[string]toolRef, tc llm.
 	}
 	if args == nil {
 		args = map[string]any{}
+	}
+	// Forward the user's own credential for this connector, if they stored one,
+	// so the pod authenticates as them instead of using the shared env token.
+	if s.creds != nil {
+		if u := auth.FromContext(ctx); u != nil {
+			if cred, ok := s.creds.Credential(ctx, u.ID, ref.id); ok {
+				ctx = mcp.WithCredential(ctx, cred)
+			}
+		}
 	}
 	res, err := s.reg.Call(ctx, ref.id, ref.tool, args)
 	if err != nil {

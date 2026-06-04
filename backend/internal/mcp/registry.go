@@ -200,6 +200,21 @@ func (r *Registry) ListTools(ctx context.Context, id string) (any, error) {
 // the backend. 4 MiB easily covers any reasonable search/fetch payload.
 const maxMcpResponseBytes = 4 << 20
 
+type credCtxKey struct{}
+
+// WithCredential attaches a per-user upstream credential to the context. Call()
+// forwards it to the MCP pod as the X-MCP-Credential header, so the pod can
+// authenticate to the external API as THIS user instead of from its shared
+// environment token. Absent (the default) → the pod falls back to its env auth.
+func WithCredential(ctx context.Context, cred string) context.Context {
+	return context.WithValue(ctx, credCtxKey{}, cred)
+}
+
+func credentialFromContext(ctx context.Context) string {
+	c, _ := ctx.Value(credCtxKey{}).(string)
+	return c
+}
+
 func (r *Registry) Call(ctx context.Context, id, tool string, args any) (any, error) {
 	s, ok := r.Get(id)
 	if !ok {
@@ -228,6 +243,12 @@ func (r *Registry) Call(ctx context.Context, id, tool string, args any) (any, er
 		return nil, err
 	}
 	req.Header.Set("content-type", "application/json")
+	// Forward the caller's per-user credential to the pod, if one was attached
+	// via WithCredential. Guarded against header-injection from a tampered
+	// stored value (CR/LF). Never logged or used as a metric label.
+	if cred := credentialFromContext(ctx); cred != "" && !strings.ContainsAny(cred, "\r\n") {
+		req.Header.Set("X-MCP-Credential", cred)
+	}
 	res, err := r.client.Do(req)
 	if err != nil {
 		timer()

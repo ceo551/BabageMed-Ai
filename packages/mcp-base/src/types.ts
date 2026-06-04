@@ -27,6 +27,11 @@ export interface McpToolDef<TInput = unknown, TOutput = unknown> {
 export interface ToolContext {
   log: (level: "info" | "warn" | "error" | "debug", msg: string, meta?: unknown) => void;
   abortSignal?: AbortSignal;
+  // Per-request upstream credential, forwarded by the backend as the
+  // X-MCP-Credential header (the connecting user's own token). Tools should
+  // prefer this over their process-wide env token so each user authenticates
+  // to the external API as themselves. Undefined → fall back to the env token.
+  credential?: string;
 }
 
 export interface JsonRpcRequest {

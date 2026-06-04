@@ -23,6 +23,7 @@ import (
 	"github.com/pervagans/backend/internal/auth"
 	"github.com/pervagans/backend/internal/db"
 	"github.com/pervagans/backend/internal/mcp"
+	"github.com/pervagans/backend/internal/secretbox"
 	"github.com/go-chi/chi/v5"
 	"github.com/jackc/pgx/v5"
 )
@@ -43,10 +44,11 @@ type Service struct {
 	db   *db.DB
 	auth *auth.Service
 	reg  *mcp.Registry
+	box  *secretbox.Box
 }
 
 func New(d *db.DB, a *auth.Service, r *mcp.Registry) *Service {
-	return &Service{db: d, auth: a, reg: r}
+	return &Service{db: d, auth: a, reg: r, box: secretbox.New()}
 }
 
 // ─── Persistence ───────────────────────────────────────────────────────────
@@ -105,7 +107,10 @@ func (s *Service) Connect(ctx context.Context, userID, mcpID string, config map[
 	if config == nil {
 		config = map[string]any{}
 	}
-	cfgJSON, err := json.Marshal(config)
+	// Encrypt secret-looking values (token / api key / password …) at rest so a
+	// per-user upstream credential isn't stored as plaintext JSONB. Opportunistic:
+	// a no-op passthrough when no encryption key is configured.
+	cfgJSON, err := json.Marshal(s.encryptConfig(config))
 	if err != nil {
 		return nil, err
 	}
@@ -222,6 +227,56 @@ func isSecretKey(k string) bool {
 		}
 	}
 	return false
+}
+
+// encryptConfig returns a copy of cfg with secret-looking string values
+// encrypted at rest. Non-secret settings pass through untouched.
+func (s *Service) encryptConfig(cfg map[string]any) map[string]any {
+	if cfg == nil {
+		return map[string]any{}
+	}
+	out := make(map[string]any, len(cfg))
+	for k, v := range cfg {
+		if sv, ok := v.(string); ok && sv != "" && isSecretKey(k) {
+			out[k] = s.box.Encrypt(sv)
+			continue
+		}
+		out[k] = v
+	}
+	return out
+}
+
+// credKeys are the config keys, in priority order, under which a user may have
+// stored the per-connector upstream credential the call path should forward.
+var credKeys = []string{"token", "accessToken", "access_token", "apiKey", "apikey", "api_key", "bearer", "key", "secret"}
+
+// Credential returns the decrypted per-user upstream credential the user stored
+// for this connector, if any. The chat/agent call path forwards it to the MCP
+// pod (via mcp.WithCredential) so the pod authenticates as this user rather
+// than from the shared environment token.
+func (s *Service) Credential(ctx context.Context, userID, mcpID string) (string, bool) {
+	if s == nil || s.db == nil {
+		return "", false
+	}
+	var cfgRaw []byte
+	err := s.db.Pool.QueryRow(ctx, `
+        SELECT config FROM user_connectors WHERE user_id = $1 AND mcp_id = $2
+    `, userID, mcpID).Scan(&cfgRaw)
+	if err != nil || len(cfgRaw) == 0 {
+		return "", false
+	}
+	var cfg map[string]any
+	if json.Unmarshal(cfgRaw, &cfg) != nil {
+		return "", false
+	}
+	for _, k := range credKeys {
+		if v, ok := cfg[k].(string); ok && v != "" {
+			if dec := strings.TrimSpace(s.box.Decrypt(v)); dec != "" {
+				return dec, true
+			}
+		}
+	}
+	return "", false
 }
 
 // maxConnectorConfigBytes — caps the JSONB config blob a single

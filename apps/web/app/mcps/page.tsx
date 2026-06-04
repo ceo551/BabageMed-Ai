@@ -11,6 +11,7 @@ import {
 import { useAuth } from "../lib/auth-context";
 import { useUI } from "../lib/ui-context";
 import { ConnectorIcon } from "../components/ConnectorIcon";
+import { Modal } from "../components/Modal";
 import "./mcps.css";
 
 // "Connectors" directory (mounted at /mcps for backwards-compatible URLs).
@@ -28,6 +29,9 @@ export default function ConnectorsBrowsePage() {
   const [q, setQ] = useState("");
   const [busy, setBusy] = useState<string | null>(null);
   const [shown, setShown] = useState<number>(PAGE_SIZE);
+  // The connector pending a connect dialog (for an optional per-user token).
+  const [pending, setPending] = useState<McpServer | null>(null);
+  const [token, setToken] = useState("");
   // Reset pagination whenever the search changes so the user always sees the
   // top of the result set after typing.
   useEffect(() => { setShown(PAGE_SIZE); }, [q]);
@@ -58,24 +62,47 @@ export default function ConnectorsBrowsePage() {
     );
   }, [all, q]);
 
-  async function toggle(srv: McpServer) {
+  // Connecting opens a dialog for an optional per-user credential; disconnecting
+  // is immediate.
+  function toggle(srv: McpServer) {
     if (!user) {
       window.location.href = "/login";
       return;
     }
+    if (mine[srv.id]) {
+      void disconnect(srv);
+    } else {
+      setToken("");
+      setPending(srv);
+    }
+  }
+
+  async function disconnect(srv: McpServer) {
     setBusy(srv.id);
     try {
-      if (mine[srv.id]) {
-        await connectorsApi.disconnect(srv.id);
-        setMine((m) => {
-          const next = { ...m };
-          delete next[srv.id];
-          return next;
-        });
-      } else {
-        const c = await connectorsApi.connect(srv.id);
-        setMine((m) => ({ ...m, [srv.id]: c }));
-      }
+      await connectorsApi.disconnect(srv.id);
+      setMine((m) => {
+        const next = { ...m };
+        delete next[srv.id];
+        return next;
+      });
+    } catch (e: any) {
+      setError(e?.error || String(e));
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function confirmConnect() {
+    const srv = pending;
+    if (!srv) return;
+    setBusy(srv.id);
+    try {
+      const tok = token.trim();
+      const c = await connectorsApi.connect(srv.id, tok ? { token: tok } : {});
+      setMine((m) => ({ ...m, [srv.id]: c }));
+      setPending(null);
+      setToken("");
     } catch (e: any) {
       setError(e?.error || String(e));
     } finally {
@@ -168,6 +195,48 @@ export default function ConnectorsBrowsePage() {
           )}
         </>
       )}
+
+      <Modal
+        open={!!pending}
+        onClose={() => setPending(null)}
+        title={pending ? `${locale === "ar" ? "ربط" : "Connect"} ${pending.name}` : ""}
+        width={460}
+      >
+        <p style={{ fontSize: 13, color: "var(--muted)", marginTop: 0, lineHeight: 1.6 }}>
+          {locale === "ar"
+            ? "ألصق التوكن الخاص بك لهذا الموصِّل (اختياري) عشان المساعد يتصرّف باسمك. لو سِبته فاضي، هيُستخدم إعداد المساحة المشترك."
+            : "Paste your own access token / API key for this connector (optional) so the assistant acts as you. Leave it blank to use the shared workspace setup."}
+        </p>
+        <input
+          type="password"
+          value={token}
+          onChange={(e) => setToken(e.target.value)}
+          placeholder={locale === "ar" ? "التوكن (اختياري)" : "Access token (optional)"}
+          autoComplete="off"
+          style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: "1px solid var(--line)", background: "transparent", color: "inherit", fontSize: 13 }}
+          onKeyDown={(e) => { if (e.key === "Enter") void confirmConnect(); }}
+        />
+        <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 16 }}>
+          <button
+            type="button"
+            className="connect-btn"
+            style={{ width: "auto", padding: "8px 16px", borderRadius: 8 }}
+            onClick={() => setPending(null)}
+          >
+            {locale === "ar" ? "إلغاء" : "Cancel"}
+          </button>
+          <button
+            type="button"
+            className="connect-btn"
+            data-connected
+            style={{ width: "auto", padding: "8px 18px", borderRadius: 8 }}
+            disabled={!!busy}
+            onClick={() => void confirmConnect()}
+          >
+            {busy ? "…" : locale === "ar" ? "ربط" : "Connect"}
+          </button>
+        </div>
+      </Modal>
     </div>
   );
 }
