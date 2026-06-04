@@ -48,6 +48,7 @@
   padding: 10px 14px;
   font: inherit;
   cursor: pointer;
+  transition: background .15s, border-color .15s;
 }
 .settings-nav button:hover { background: var(--panel); }
 .settings-nav button[data-active="true"] {

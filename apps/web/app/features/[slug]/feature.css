@@ -27,16 +27,16 @@
  * consistent across the page. */
 .feat-shell[data-color="cyan"]   { --hue-bg: var(--cyan-soft);   --hue-line: var(--cyan-line);   --hue-ink: var(--cyan);   }
 .feat-shell[data-color="purple"] { --hue-bg: var(--purple-soft); --hue-line: var(--purple-line); --hue-ink: var(--purple); }
-.feat-shell[data-color="yellow"] { --hue-bg: rgba(250,204,21,.10); --hue-line: rgba(250,204,21,.30); --hue-ink: rgb(250,204,21); }
-.feat-shell[data-color="green"]  { --hue-bg: rgba(74,222,128,.10); --hue-line: rgba(74,222,128,.30); --hue-ink: rgb(74,222,128);  }
-.feat-shell[data-color="blue"]   { --hue-bg: rgba(96,165,250,.10); --hue-line: rgba(96,165,250,.30); --hue-ink: rgb(96,165,250);  }
-.feat-shell[data-color="pink"]   { --hue-bg: rgba(244,114,182,.10); --hue-line: rgba(244,114,182,.30); --hue-ink: rgb(244,114,182); }
-.feat-shell[data-color="orange"] { --hue-bg: rgba(251,146,60,.10);  --hue-line: rgba(251,146,60,.30);  --hue-ink: rgb(251,146,60);  }
-.feat-shell[data-color="red"]    { --hue-bg: rgba(248,113,113,.10); --hue-line: rgba(248,113,113,.30); --hue-ink: rgb(248,113,113); }
-.feat-shell[data-color="teal"]   { --hue-bg: rgba(45,212,191,.10);  --hue-line: rgba(45,212,191,.30);  --hue-ink: rgb(45,212,191);  }
-.feat-shell[data-color="amber"]  { --hue-bg: rgba(251,191,36,.10);  --hue-line: rgba(251,191,36,.30);  --hue-ink: rgb(251,191,36);  }
-.feat-shell[data-color="indigo"] { --hue-bg: rgba(129,140,248,.12); --hue-line: rgba(129,140,248,.32); --hue-ink: rgb(129,140,248); }
-.feat-shell[data-color="rose"]   { --hue-bg: rgba(244,63,94,.12);   --hue-line: rgba(244,63,94,.32);   --hue-ink: rgb(244,63,94);   }
+.feat-shell[data-color="yellow"] { --hue-bg: var(--yellow-soft); --hue-line: var(--yellow-line); --hue-ink: var(--yellow); }
+.feat-shell[data-color="green"]  { --hue-bg: var(--green-soft);  --hue-line: var(--green-line);  --hue-ink: var(--green);  }
+.feat-shell[data-color="blue"]   { --hue-bg: var(--indigo-soft); --hue-line: var(--indigo-line); --hue-ink: var(--indigo); }
+.feat-shell[data-color="pink"]   { --hue-bg: var(--rose-soft);   --hue-line: var(--rose-line);   --hue-ink: var(--rose);   }
+.feat-shell[data-color="orange"] { --hue-bg: var(--orange-soft); --hue-line: var(--orange-line); --hue-ink: var(--orange); }
+.feat-shell[data-color="red"]    { --hue-bg: var(--rose-soft);   --hue-line: var(--rose-line);   --hue-ink: var(--rose);   }
+.feat-shell[data-color="teal"]   { --hue-bg: var(--cyan-soft);   --hue-line: var(--cyan-line);   --hue-ink: var(--cyan);   }
+.feat-shell[data-color="amber"]  { --hue-bg: var(--yellow-soft); --hue-line: var(--yellow-line); --hue-ink: var(--yellow); }
+.feat-shell[data-color="indigo"] { --hue-bg: var(--indigo-soft); --hue-line: var(--indigo-line); --hue-ink: var(--indigo); }
+.feat-shell[data-color="rose"]   { --hue-bg: var(--rose-soft);   --hue-line: var(--rose-line);   --hue-ink: var(--rose);   }
 
 .feat-hero {
   display: flex;
