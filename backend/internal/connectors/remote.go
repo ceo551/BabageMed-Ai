@@ -23,6 +23,7 @@ import (
 	"time"
 
 	"github.com/pervagans/backend/internal/auth"
+	"github.com/pervagans/backend/internal/mcp"
 	"github.com/go-chi/chi/v5"
 	"github.com/jackc/pgx/v5"
 )
@@ -485,8 +486,95 @@ func (s *Service) handleRemoteTools(w http.ResponseWriter, r *http.Request) {
 const maxRemoteResponseBytes = 4 << 20
 
 type rpcTool struct {
-	Name        string `json:"name"`
-	Description string `json:"description"`
+	Name        string         `json:"name"`
+	Description string         `json:"description"`
+	InputSchema map[string]any `json:"inputSchema"`
+}
+
+// callRemoteTool initialises an MCP session then invokes tools/call.
+func callRemoteTool(ctx context.Context, serverURL, bearer, tool string, args map[string]any) (json.RawMessage, error) {
+	_, sid, err := remoteRPC(ctx, serverURL, bearer, "", "initialize", map[string]any{
+		"protocolVersion": "2025-06-18",
+		"capabilities":    map[string]any{},
+		"clientInfo":      map[string]any{"name": "Pervagans", "version": "1"},
+	})
+	if err != nil {
+		return nil, err
+	}
+	raw, _, err := remoteRPC(ctx, serverURL, bearer, sid, "tools/call", map[string]any{"name": tool, "arguments": args})
+	return raw, err
+}
+
+// maxRemoteConnectorsPerRun caps how many of a user's remote servers the agent
+// will enumerate per run (each costs an initialize + tools/list round trip).
+const maxRemoteConnectorsPerRun = 5
+
+// RemoteAgentTools returns the tools of the user's connected remote MCP servers,
+// flattened, with each server's bearer resolved (refreshed if needed). Network-
+// bound, so it's capped + time-boxed. Implements the agent's remoteProvider.
+func (s *Service) RemoteAgentTools(ctx context.Context, userID string) []mcp.RemoteTool {
+	if s == nil || s.db == nil {
+		return nil
+	}
+	rows, err := s.db.Pool.Query(ctx,
+		`SELECT id::text FROM remote_connectors WHERE user_id=$1 AND connected=true ORDER BY created_at DESC LIMIT $2`,
+		userID, maxRemoteConnectorsPerRun)
+	if err != nil {
+		return nil
+	}
+	ids := []string{}
+	for rows.Next() {
+		var id string
+		if rows.Scan(&id) == nil {
+			ids = append(ids, id)
+		}
+	}
+	rows.Close()
+
+	out := []mcp.RemoteTool{}
+	for _, id := range ids {
+		rc, err := s.loadRemote(ctx, userID, id)
+		if err != nil || !rc.Connected || rc.AccessToken == "" {
+			continue
+		}
+		bearer := s.remoteAccessToken(ctx, userID, rc)
+		cctx, cancel := context.WithTimeout(ctx, 6*time.Second)
+		tools, err := listRemoteTools(cctx, rc.ServerURL, bearer)
+		cancel()
+		if err != nil {
+			continue
+		}
+		for _, t := range tools {
+			if t.Name == "" {
+				continue
+			}
+			out = append(out, mcp.RemoteTool{ConnectorID: id, Name: t.Name, Description: t.Description, InputSchema: t.InputSchema})
+		}
+	}
+	return out
+}
+
+// CallRemoteTool invokes a tool on one of the user's connected remote MCP
+// servers. Implements the agent's remoteProvider.
+func (s *Service) CallRemoteTool(ctx context.Context, userID, connectorID, tool string, args map[string]any) (any, error) {
+	if s == nil || s.db == nil {
+		return nil, errors.New("unavailable")
+	}
+	rc, err := s.loadRemote(ctx, userID, connectorID)
+	if err != nil {
+		return nil, err
+	}
+	if !rc.Connected || rc.AccessToken == "" {
+		return nil, errors.New("not connected")
+	}
+	bearer := s.remoteAccessToken(ctx, userID, rc)
+	raw, err := callRemoteTool(ctx, rc.ServerURL, bearer, tool, args)
+	if err != nil {
+		return nil, err
+	}
+	var result any
+	_ = json.Unmarshal(raw, &result)
+	return result, nil
 }
 
 // listRemoteTools initialises an MCP session then calls tools/list.

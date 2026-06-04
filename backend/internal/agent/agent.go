@@ -158,11 +158,21 @@ func (s *Service) handleStream(w http.ResponseWriter, r *http.Request) {
 	send("done", map[string]any{})
 }
 
-// toolRef maps a model-facing function name back to the concrete (connector,
-// tool) pair the registry should call.
+// toolRef maps a model-facing function name back to the concrete tool to run.
+// Either a self-hosted connector (id+tool via the registry) or a remote MCP
+// server (remote=connector UUID, tool via the remote JSON-RPC client).
 type toolRef struct {
-	id   string
-	tool string
+	id     string
+	tool   string
+	remote string
+}
+
+// remoteProvider is the subset of the connectors service the agent uses to
+// expose + call the user's connected remote MCP servers. Satisfied by
+// *connectors.Service; absent (type-assertion fails) → no remote tools.
+type remoteProvider interface {
+	RemoteAgentTools(ctx context.Context, userID string) []mcp.RemoteTool
+	CallRemoteTool(ctx context.Context, userID, connectorID, tool string, args map[string]any) (any, error)
 }
 
 // toolSpec is one tool a connector declares — name + description + the real
@@ -228,7 +238,51 @@ func (s *Service) buildTools(ctx context.Context, useMcps []string) ([]llm.ToolD
 			break
 		}
 	}
+
+	// Append the user's connected REMOTE MCP servers' tools (external servers
+	// connected via the MCP authorization flow). Auto-included — not gated on
+	// req.UseMcps — since the user explicitly connected them. Each is namespaced
+	// r<shorthex>__<tool>; the real connector UUID lives in the refs map.
+	if rp, ok := s.creds.(remoteProvider); ok && len(tools) < maxToolDefs {
+		if u := auth.FromContext(ctx); u != nil {
+			for _, rt := range rp.RemoteAgentTools(ctx, u.ID) {
+				if len(tools) >= maxToolDefs {
+					break
+				}
+				fnName := toolFnName("r"+shortHex(rt.ConnectorID), rt.Name)
+				if fnName == "" {
+					continue
+				}
+				if _, dup := refs[fnName]; dup {
+					continue
+				}
+				desc := rt.Description
+				if desc == "" {
+					desc = rt.Name
+				}
+				params := rt.InputSchema
+				if params == nil {
+					params = genericQuerySchema()
+				}
+				tools = append(tools, llm.ToolDef{Name: fnName, Description: desc, Parameters: params})
+				refs[fnName] = toolRef{remote: rt.ConnectorID, tool: rt.Name}
+			}
+		}
+	}
 	return tools, refs
+}
+
+// shortHex returns up to the first 8 hex chars of an id (e.g. a UUID), for a
+// compact, charset-safe function-name prefix. The full id is kept in refs.
+func shortHex(id string) string {
+	var b strings.Builder
+	for i := 0; i < len(id) && b.Len() < 8; i++ {
+		c := id[i]
+		if (c >= '0' && c <= '9') || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F') {
+			b.WriteByte(c)
+		}
+	}
+	return b.String()
 }
 
 // discoverTools asks the live pod for its tool list + schemas (GET /tools). On
@@ -338,8 +392,24 @@ func (s *Service) execTool(ctx context.Context, refs map[string]toolRef, tc llm.
 	if args == nil {
 		args = map[string]any{}
 	}
-	// Forward the user's own credential for this connector, if they stored one,
-	// so the pod authenticates as them instead of using the shared env token.
+	// Remote MCP server → JSON-RPC tools/call with the user's bearer.
+	if ref.remote != "" {
+		rp, ok := s.creds.(remoteProvider)
+		if !ok {
+			return "tool error: remote connectors unavailable"
+		}
+		u := auth.FromContext(ctx)
+		if u == nil {
+			return "tool error: unauthorized"
+		}
+		res, err := rp.CallRemoteTool(ctx, u.ID, ref.remote, ref.tool, args)
+		if err != nil {
+			return "tool error: " + err.Error()
+		}
+		return capObs(res)
+	}
+	// Self-hosted connector → forward the user's own credential (if stored) so
+	// the pod authenticates as them instead of using the shared env token.
 	if s.creds != nil {
 		if u := auth.FromContext(ctx); u != nil {
 			if cred, ok := s.creds.Credential(ctx, u.ID, ref.id); ok {
@@ -351,6 +421,11 @@ func (s *Service) execTool(ctx context.Context, refs map[string]toolRef, tc llm.
 	if err != nil {
 		return "tool error: " + err.Error()
 	}
+	return capObs(res)
+}
+
+// capObs marshals a tool result and caps it to maxObsChars for the model.
+func capObs(res any) string {
 	b, _ := json.Marshal(res)
 	out := string(b)
 	if len(out) > maxObsChars {

@@ -6,11 +6,36 @@ import { useAuth } from "../lib/auth-context";
 import { useUI } from "../lib/ui-context";
 import { startRemoteOAuthPopup } from "../lib/oauth";
 
-// Known hosted MCP servers we pre-seed so the user can connect in one click,
-// the way Claude lists Notion etc. Any other server can be added by URL.
-const KNOWN: { name: string; url: string }[] = [
-  { name: "Notion", url: "https://mcp.notion.com/mcp" },
+// Curated catalog of official hosted MCP servers (each verified to answer the
+// MCP-authz handshake), pre-seeded so the user connects in one click — sign in
+// at the provider, no setup — exactly like Claude's connector directory. Any
+// other server can still be added by URL. Icons resolve from the provider
+// domain via icon.horse.
+const KNOWN: { name: string; url: string; icon: string }[] = [
+  { name: "Notion", url: "https://mcp.notion.com/mcp", icon: "notion.so" },
+  { name: "Slack", url: "https://mcp.slack.com/mcp", icon: "slack.com" },
+  { name: "Linear", url: "https://mcp.linear.app/mcp", icon: "linear.app" },
+  { name: "GitHub", url: "https://api.githubcopilot.com/mcp/", icon: "github.com" },
+  { name: "Atlassian", url: "https://mcp.atlassian.com/v1/sse", icon: "atlassian.com" },
+  { name: "Sentry", url: "https://mcp.sentry.dev/mcp", icon: "sentry.io" },
+  { name: "Asana", url: "https://mcp.asana.com/sse", icon: "asana.com" },
+  { name: "Canva", url: "https://mcp.canva.com/mcp", icon: "canva.com" },
+  { name: "Figma", url: "https://mcp.figma.com/mcp", icon: "figma.com" },
+  { name: "PayPal", url: "https://mcp.paypal.com/mcp", icon: "paypal.com" },
+  { name: "Stripe", url: "https://mcp.stripe.com/", icon: "stripe.com" },
+  { name: "Square", url: "https://mcp.squareup.com/sse", icon: "squareup.com" },
+  { name: "Intercom", url: "https://mcp.intercom.com/mcp", icon: "intercom.com" },
+  { name: "Webflow", url: "https://mcp.webflow.com/sse", icon: "webflow.com" },
+  { name: "Vercel", url: "https://mcp.vercel.com", icon: "vercel.com" },
+  { name: "Wix", url: "https://mcp.wix.com/sse", icon: "wix.com" },
+  { name: "Plaid", url: "https://api.dashboard.plaid.com/mcp/sse", icon: "plaid.com" },
+  { name: "Hugging Face", url: "https://huggingface.co/mcp", icon: "huggingface.co" },
 ];
+
+function hostIcon(u: string): string {
+  try { return new URL(u).hostname.replace(/^www\./, "").replace(/^mcp\./, ""); }
+  catch { return ""; }
+}
 
 // RemoteMcpSection — connect external MCP servers via the MCP authorization flow
 // (OAuth + dynamic client registration). One click → sign in at the provider →
@@ -55,9 +80,9 @@ export function RemoteMcpSection() {
 
   const ar = locale === "ar";
   const extra = mine.filter((c) => !KNOWN.some((k) => k.url === c.serverUrl));
-  const cards: { key: string; name: string; serverUrl: string; conn?: RemoteConnector; removable: boolean }[] = [
-    ...KNOWN.map((k) => ({ key: k.url, name: k.name, serverUrl: k.url, conn: mine.find((c) => c.serverUrl === k.url), removable: false })),
-    ...extra.map((c) => ({ key: c.id, name: c.name, serverUrl: c.serverUrl, conn: c, removable: true })),
+  const cards: { key: string; name: string; serverUrl: string; icon: string; conn?: RemoteConnector; removable: boolean }[] = [
+    ...KNOWN.map((k) => ({ key: k.url, name: k.name, serverUrl: k.url, icon: k.icon, conn: mine.find((c) => c.serverUrl === k.url), removable: false })),
+    ...extra.map((c) => ({ key: c.id, name: c.name, serverUrl: c.serverUrl, icon: hostIcon(c.serverUrl), conn: c, removable: true })),
   ];
 
   return (
@@ -75,7 +100,20 @@ export function RemoteMcpSection() {
           const isBusy = busy === c.serverUrl;
           return (
             <div key={c.key} className="mcp-card" data-connected={isConnected} style={{ padding: 14, display: "flex", flexDirection: "column", gap: 8 }}>
-              <div style={{ fontWeight: 600 }}>{c.name}</div>
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                {c.icon && (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={`https://icon.horse/icon/${c.icon}`}
+                    alt=""
+                    width={26}
+                    height={26}
+                    style={{ borderRadius: 6, flexShrink: 0 }}
+                    onError={(e) => { (e.currentTarget as HTMLImageElement).style.visibility = "hidden"; }}
+                  />
+                )}
+                <div style={{ fontWeight: 600 }}>{c.name}</div>
+              </div>
               <div className="meta" style={{ wordBreak: "break-all", color: "var(--muted-2)" }}>{c.serverUrl}</div>
               <div style={{ display: "flex", gap: 8, alignItems: "center", marginTop: "auto" }}>
                 {isConnected ? (
