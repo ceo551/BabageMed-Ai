@@ -1,8 +1,34 @@
 {{- if .Values.frontend.enabled -}}
+{{- if eq .Values.cloud "gke" }}
+apiVersion: cloud.google.com/v1
+kind: BackendConfig
+metadata:
+  name: {{ .Release.Name }}-frontend
+  labels:
+    {{- include "pervagans.labels" . | nindent 4 }}
+    app.kubernetes.io/component: frontend
+spec:
+  # The GCE load-balancer health check must hit a path that returns 200
+  # WITHOUT a session. The app gate (apps/web/middleware.ts) 307-redirects
+  # "/" to "/login" for unauthenticated requests, and GCE health checks
+  # treat 3xx as UNHEALTHY (unlike kube probes, which follow the redirect).
+  # /login is public and returns 200 on both old and new pods, so the NEG
+  # health check stays green across the rollout instead of wedging the
+  # readiness gate (cloud.google.com/load-balancer-neg-ready).
+  healthCheck:
+    type: HTTP
+    requestPath: /login
+    port: 3000
+---
+{{- end }}
 apiVersion: v1
 kind: Service
 metadata:
   name: {{ .Release.Name }}-frontend
+  {{- if eq .Values.cloud "gke" }}
+  annotations:
+    cloud.google.com/backend-config: '{"default":"{{ .Release.Name }}-frontend"}'
+  {{- end }}
   labels:
     {{- include "pervagans.labels" . | nindent 4 }}
     app.kubernetes.io/component: frontend
@@ -64,17 +90,23 @@ spec:
               value: "http://{{ .Release.Name }}-backend:{{ .Values.backend.service.port }}"
             - name: NEXT_PUBLIC_API
               value: "/api/backend"
+          # Probe /login, not / — the auth gate 307-redirects / to /login for
+          # the (cookie-less) probe. kube probes follow the redirect so / would
+          # still pass, but the GCE NEG health check does not; keeping both on
+          # the same public 200 path keeps them consistent. /login is a static
+          # prerendered page, so it answers well inside the timeout.
           readinessProbe:
-            httpGet: { path: /, port: http }
+            httpGet: { path: /login, port: http }
             initialDelaySeconds: 10
             periodSeconds: 10
+            timeoutSeconds: 3
           # A liveness probe was missing — a hung Next.js process (e.g. an
           # unhandled promise rejection in the route handler that takes down
           # the event loop) would keep the pod marked Ready forever. Long
           # period + high failureThreshold avoids killing pods that are just
           # slow on the cold path (route handler proxying the 416-MCP /health).
           livenessProbe:
-            httpGet: { path: /, port: http }
+            httpGet: { path: /login, port: http }
             initialDelaySeconds: 30
             periodSeconds: 30
             timeoutSeconds: 10
