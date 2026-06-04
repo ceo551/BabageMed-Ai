@@ -485,6 +485,19 @@ export const agentRuns = {
   get: (id: string) => api.get<AgentRun>(`/api/agent/runs/${encodeURIComponent(id)}`),
 };
 
+// ── Web Push (notify on async task completion, P6.5) ────────────────────────
+export const push = {
+  config: () => api.get<{ publicKey: string }>("/api/push/config"),
+  // 204 on success — use a raw fetch so an empty body doesn't trip JSON parsing.
+  subscribe: (sub: unknown) =>
+    fetch("/api/backend/api/push/subscribe", {
+      method: "POST",
+      credentials: "include",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(sub),
+    }).then((r) => { if (!r.ok) throw new Error(`subscribe ${r.status}`); }),
+};
+
 // ── Media generation (Alibaba Model Studio / DashScope) ────────────────────
 // Image is synchronous (one call → url). Video is async: submit returns a
 // task id the caller polls until status is SUCCEEDED (url ready) or FAILED.

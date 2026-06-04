@@ -46,17 +46,24 @@ type UsageMeter interface {
 	Record(userID, plan, op, model string)
 }
 
+// Notifier sends a Web Push when an async run finishes (P6.5). nil → no push
+// (the /tasks page still polls), so it's optional + nil-safe.
+type Notifier interface {
+	Send(userID, title, body, url string)
+}
+
 type Service struct {
 	llm   *llm.Client
 	reg   *mcp.Registry
 	auth  *auth.Service
 	creds CredentialProvider
 	meter UsageMeter
-	db    *db.DB // P6: persist async runs; nil → background runs disabled
+	db    *db.DB    // P6: persist async runs; nil → background runs disabled
+	push  Notifier  // P6.5: notify on completion; nil → polling only
 }
 
-func New(l *llm.Client, r *mcp.Registry, a *auth.Service, creds CredentialProvider, meter UsageMeter, d *db.DB) *Service {
-	return &Service{llm: l, reg: r, auth: a, creds: creds, meter: meter, db: d}
+func New(l *llm.Client, r *mcp.Registry, a *auth.Service, creds CredentialProvider, meter UsageMeter, d *db.DB, push Notifier) *Service {
+	return &Service{llm: l, reg: r, auth: a, creds: creds, meter: meter, db: d, push: push}
 }
 
 func (s *Service) Register(r chi.Router, limiter func(http.Handler) http.Handler) {
@@ -321,14 +328,31 @@ func (s *Service) handleCreateRun(w http.ResponseWriter, r *http.Request) {
 func (s *Service) executeRun(runID string, u *auth.User, req agentReq) {
 	ctx, cancel := context.WithTimeout(auth.WithUser(context.Background(), u), asyncRunTimeout)
 	defer cancel()
+
+	steps := []map[string]any{}
+	// finish writes the terminal state AND fires the completion push (P6.5).
+	// Defined before the panic-recovery defer so that path can notify too.
+	finish := func(status, result, errMsg string) {
+		s.finishRun(runID, status, steps, result, errMsg)
+		if s.push != nil {
+			mark := "✓ "
+			if status == "failed" {
+				mark = "⚠ "
+			}
+			body := strings.TrimSpace(req.Task)
+			if len(body) > 90 {
+				body = body[:90] + "…"
+			}
+			s.push.Send(u.ID, mark+notifyTitle(req.Locale, status), body, "/tasks")
+		}
+	}
 	defer func() {
 		if rec := recover(); rec != nil {
 			log.Printf("agent: run %s panic: %v", runID, rec)
-			s.finishRun(runID, "failed", nil, "", "internal error")
+			finish("failed", "", "internal error")
 		}
 	}()
 
-	steps := []map[string]any{}
 	tools, refs := s.buildTools(ctx, req.UseMcps)
 	messages := []map[string]any{
 		{"role": "system", "content": agentSystemPrompt(req.Locale, len(tools))},
@@ -337,11 +361,11 @@ func (s *Service) executeRun(runID string, u *auth.User, req agentReq) {
 	for iter := 0; iter < maxIters; iter++ {
 		content, calls, err := s.llm.ChatWithTools(ctx, agentModel, messages, tools)
 		if err != nil {
-			s.finishRun(runID, "failed", steps, "", "agent step failed")
+			finish("failed", "", "agent step failed")
 			return
 		}
 		if len(calls) == 0 {
-			s.finishRun(runID, "done", steps, content, "")
+			finish("done", content, "")
 			return
 		}
 		tcArr := make([]map[string]any, 0, len(calls))
@@ -365,10 +389,25 @@ func (s *Service) executeRun(runID string, u *auth.User, req agentReq) {
 	messages = append(messages, map[string]any{"role": "user", "content": "Stop calling tools now and write your best final answer from what you've gathered, citing connectors by name."})
 	content, _, err := s.llm.ChatWithTools(ctx, agentModel, messages, nil)
 	if err != nil {
-		s.finishRun(runID, "failed", steps, "", "agent synthesis failed")
+		finish("failed", "", "agent synthesis failed")
 		return
 	}
-	s.finishRun(runID, "done", steps, content, "")
+	finish("done", content, "")
+}
+
+// notifyTitle is the Web Push title for a finished async run.
+func notifyTitle(locale, status string) string {
+	ar := locale == "ar"
+	if status == "failed" {
+		if ar {
+			return "فشلت المهمة"
+		}
+		return "Task failed"
+	}
+	if ar {
+		return "خلصت المهمة"
+	}
+	return "Task finished"
 }
 
 func (s *Service) persistSteps(runID string, steps []map[string]any) {

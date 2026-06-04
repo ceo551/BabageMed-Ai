@@ -6,6 +6,7 @@ import { useUI } from "../lib/ui-context";
 import { useAuth } from "../lib/auth-context";
 import { AssistantMessage } from "../components/AssistantMessage";
 import { agentRuns, type AgentRun } from "../lib/api";
+import { enablePush } from "../lib/push";
 
 // /tasks — the async "delegate" hub (P6). Assign a multi-step agent task, close
 // the tab, and come back: the run executes in a detached backend goroutine and
@@ -39,6 +40,9 @@ export default function TasksPage() {
     if (!t || starting) return;
     setStarting(true);
     setErr(null);
+    // Opt into push on the user's gesture so they're notified when this run
+    // finishes even after closing the tab (no-op if denied / unsupported).
+    void enablePush();
     try {
       await agentRuns.create(t, [], locale);
       setTask("");

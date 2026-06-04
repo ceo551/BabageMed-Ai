@@ -29,6 +29,7 @@ import (
 	"github.com/pervagans/backend/internal/payments"
 	"github.com/pervagans/backend/internal/features"
 	"github.com/pervagans/backend/internal/mfa"
+	"github.com/pervagans/backend/internal/push"
 	"github.com/pervagans/backend/internal/ratelimit"
 	"github.com/pervagans/backend/internal/share"
 	"github.com/pervagans/backend/internal/spaces"
@@ -160,9 +161,13 @@ func main() {
 	// Usage metering: per-plan monthly credit caps on expensive ops (wrapper
 	// economics). nil when there's no DB — Check/Record are nil-safe + fail-open.
 	var billingSvc *billing.Service
+	// Web Push (P6.5): notifies a user when their async agent run finishes.
+	// Generates/loads a VAPID keypair on construction; disabled if that fails.
+	var pushSvc *push.Service
 	if dbConn != nil {
 		connSvc = connectors.New(dbConn, authSvc, registry)
 		billingSvc = billing.New(dbConn, authSvc)
+		pushSvc = push.New(dbConn, authSvc)
 	}
 	apiH := api.NewHandler(registry, llmClient, cacheClient, connSvc, billingSvc)
 
@@ -323,11 +328,12 @@ func main() {
 		})
 		admin.NewHandler(dbConn, authSvc).Register(r)
 		media.New(dbConn, authSvc, llmClient, billingSvc).Register(r, toolsLimiter.Middleware)
-		agent.New(llmClient, registry, authSvc, connSvc, billingSvc, dbConn).Register(r, agentLimiter.Middleware)
+		agent.New(llmClient, registry, authSvc, connSvc, billingSvc, dbConn, pushSvc).Register(r, agentLimiter.Middleware)
 		spaces.New(dbConn, authSvc).Register(r, uploadLimiter.Middleware)
 		features.New(dbConn, authSvc).Register(r, uploadLimiter.Middleware)
 		connSvc.Register(r)
 		billingSvc.Register(r)
+		pushSvc.Register(r) // P6.5: GET /api/push/config + POST /api/push/subscribe
 		// Public answer snapshots for the zero-login trial (P4): POST /api/share
 		// (anon-writable, IP-throttled) + GET /api/share/{id} (public).
 		share.New(dbConn).Register(r, chatLimiter.Middleware)
