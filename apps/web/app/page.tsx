@@ -369,9 +369,13 @@ function Composer({
   }
 
   useEffect(() => {
+    // Anonymous visitors have no spaces/connectors and these endpoints are
+    // auth-gated — skip the doomed 401s entirely (the trial composer hides
+    // the space/connector chips anyway).
+    if (anon) { setUserSpaces([]); setUserConnectors([]); return; }
     spacesApi.list().then(setUserSpaces).catch(() => setUserSpaces([]));
     connectorsApi.list().then(setUserConnectors).catch(() => setUserConnectors([]));
-  }, []);
+  }, [anon]);
 
   const activeSpace = useMemo(
     () => userSpaces.find((sp) => sp.id === activeSpaceId),

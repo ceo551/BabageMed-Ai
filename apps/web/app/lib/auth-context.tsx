@@ -34,6 +34,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // Dedupe via a Promise ref so concurrent callers await the same
   // network response.
   const refreshInFlight = useRef<Promise<void> | null>(null);
+  // Mirror of `user` for the on401 watchdog: only force-redirect to /login when
+  // a REAL session expires (we HAD a user, then a call 401'd) — never for an
+  // anonymous visitor on the now-public home, whose auth-gated fetches
+  // (spaces/connectors) 401 by design.
+  const userRef = useRef<User | null>(null);
+  useEffect(() => { userRef.current = user; }, [user]);
 
   const refresh = useCallback(async () => {
     if (refreshInFlight.current) return refreshInFlight.current;
@@ -104,7 +110,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // inside setOn401Handler's call site in api.ts.
   useEffect(() => {
     setOn401Handler(() => {
+      // Only a session that WAS authenticated and just 401'd is a real expiry.
+      // An anonymous visitor (never had a user) hitting a gated endpoint must
+      // NOT be force-routed off the public home.
+      const hadUser = userRef.current !== null;
       setUser(null);
+      if (!hadUser) return;
       // A mid-session 401 means the cookie expired/was revoked. Clearing
       // the user (above) flips the sidebar chip, but the page kept
       // silently 401ing because nothing navigated. Bounce to /login —
