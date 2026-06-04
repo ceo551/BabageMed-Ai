@@ -117,12 +117,12 @@ export default function BillingPage() {
 
   return (
     <div style={{ minHeight: "100vh", padding: "48px 24px", display: "flex", flexDirection: "column", alignItems: "center", gap: 32 }}>
-      <h1 style={{ fontFamily: "var(--serif)", fontSize: 48, margin: 0, color: "var(--ink)" }}>
+      <h1 style={{ fontFamily: "var(--serif)", fontSize: "clamp(32px, 6vw, 44px)", lineHeight: 1.15, letterSpacing: "-0.02em", margin: 0, color: "var(--ink)" }}>
         {locale === "ar" ? "الخطط والفوترة" : "Plans & Billing"}
       </h1>
 
       {error && (
-        <div style={{ background: "var(--purple-soft)", border: "1px solid var(--purple-line)", color: "var(--purple)", padding: 12, borderRadius: 10, maxWidth: 600 }}>
+        <div role="alert" style={{ background: "var(--error-soft)", border: "1px solid var(--error-line)", color: "var(--error)", padding: 12, borderRadius: 10, maxWidth: 600 }}>
           {error}
         </div>
       )}
@@ -134,7 +134,7 @@ export default function BillingPage() {
             style={{
               background: "var(--panel-solid)",
               border: "1px solid var(--border)",
-              borderRadius: 18,
+              borderRadius: 14,
               padding: 24,
               display: "flex",
               flexDirection: "column",
@@ -158,7 +158,7 @@ export default function BillingPage() {
             <ul style={{ listStyle: "none", margin: "4px 0 0", padding: 0, display: "flex", flexDirection: "column", gap: 8 }}>
               {(PLAN_FEATURES[p.Name.toLowerCase()]?.[locale] || []).map((feat, i) => (
                 <li key={i} style={{ display: "flex", alignItems: "flex-start", gap: 8, color: "var(--ink-2)", fontSize: 13, lineHeight: 1.45 }}>
-                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="var(--cyan)" strokeWidth={2.4}
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="var(--cyan)" strokeWidth={1.8}
                        strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ flexShrink: 0, marginTop: 1 }}>
                     <path d="M20 6L9 17l-5-5" />
                   </svg>
