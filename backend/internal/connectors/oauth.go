@@ -403,13 +403,18 @@ func (s *Service) handleOAuthCallback(w http.ResponseWriter, r *http.Request) {
 		oauthDone(w, mcpID, false, "authorization was denied or cancelled")
 		return
 	}
-	p, ok := oauthProviderFor(mcpID)
-	if !ok || !p.configured() {
-		oauthDone(w, mcpID, false, "this connector is not configured for sign-in")
-		return
-	}
 	if code == "" {
 		oauthDone(w, mcpID, false, "no authorization code returned")
+		return
+	}
+	p, providerOK := oauthProviderFor(mcpID)
+	if !providerOK {
+		// Not a built-in provider → mcp_id is a remote MCP connector id (UUID).
+		s.completeRemoteOAuth(r.Context(), w, userID, mcpID, code, verifier)
+		return
+	}
+	if !p.configured() {
+		oauthDone(w, mcpID, false, "this connector is not configured for sign-in")
 		return
 	}
 	tokens, err := p.exchange(r.Context(), code, oauthRedirectURI(), verifier)

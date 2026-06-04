@@ -6,6 +6,56 @@
 
 export type OAuthResult = { ok: boolean; error?: string };
 
+function centeredPopupFeatures(w: number, h: number): string {
+  const y = window.top ? window.top.outerHeight / 2 + window.top.screenY - h / 2 : 0;
+  const x = window.top ? window.top.outerWidth / 2 + window.top.screenX - w / 2 : 0;
+  return `popup,width=${w},height=${h},left=${x},top=${y}`;
+}
+
+// Await the callback page's postMessage for a given flow id, resolving false if
+// the popup is closed first.
+function awaitOAuthMessage(popup: Window, id: string): Promise<OAuthResult> {
+  return new Promise((resolve) => {
+    let settled = false;
+    let timer: ReturnType<typeof setInterval> | undefined;
+    function finish(r: OAuthResult) {
+      if (settled) return;
+      settled = true;
+      window.removeEventListener("message", onMsg);
+      if (timer) clearInterval(timer);
+      resolve(r);
+    }
+    function onMsg(e: MessageEvent) {
+      if (e.origin !== window.location.origin) return;
+      const d = e.data as { type?: string; mcpId?: string; ok?: boolean } | null;
+      if (d && d.type === "pervagans-oauth" && d.mcpId === id) finish({ ok: !!d.ok });
+    }
+    window.addEventListener("message", onMsg);
+    timer = setInterval(() => { if (popup.closed) finish({ ok: false, error: "cancelled" }); }, 700);
+  });
+}
+
+// Remote MCP connect: open a popup, ask the backend to discover OAuth + register
+// a client dynamically, then point the popup at the provider sign-in. Resolves
+// when the callback page signals back.
+export async function startRemoteOAuthPopup(url: string): Promise<OAuthResult> {
+  const popup = window.open("", "pervagans-oauth", centeredPopupFeatures(600, 760));
+  if (!popup) return { ok: false, error: "popup_blocked" };
+  let id = "";
+  let authorizeUrl = "";
+  try {
+    const { remoteConnectors } = await import("./api");
+    const r = await remoteConnectors.add(url);
+    id = r.id;
+    authorizeUrl = r.authorizeUrl;
+  } catch (e: any) {
+    try { popup.close(); } catch { /* ignore */ }
+    return { ok: false, error: e?.error || "discover_failed" };
+  }
+  popup.location.href = authorizeUrl;
+  return awaitOAuthMessage(popup, id);
+}
+
 export function startOAuthPopup(mcpId: string): Promise<OAuthResult> {
   return new Promise((resolve) => {
     const url = `/api/backend/api/connectors/${encodeURIComponent(mcpId)}/oauth/start`;

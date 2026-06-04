@@ -194,6 +194,16 @@ func (s *Service) Register(r chi.Router) {
 		r.Delete("/{mcpID}", s.handleDisconnect)
 		r.Get("/{mcpID}/oauth/start", s.handleOAuthStart)
 	})
+	// Remote MCP connectors — external MCP servers connected via the MCP
+	// authorization flow (OAuth + dynamic client registration + PKCE), the way
+	// Claude/Perplexity/Manus do it. No operator app registration.
+	r.Route("/api/remote-connectors", func(r chi.Router) {
+		r.Use(s.auth.Required)
+		r.Get("/", s.handleRemoteList)
+		r.Post("/", s.handleRemoteStart)
+		r.Delete("/{id}", s.handleRemoteDelete)
+		r.Get("/{id}/tools", s.handleRemoteTools)
+	})
 }
 
 func (s *Service) handleList(w http.ResponseWriter, r *http.Request) {

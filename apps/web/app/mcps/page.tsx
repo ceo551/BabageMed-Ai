@@ -13,6 +13,7 @@ import { useUI } from "../lib/ui-context";
 import { ConnectorIcon } from "../components/ConnectorIcon";
 import { Modal } from "../components/Modal";
 import { startOAuthPopup } from "../lib/oauth";
+import { RemoteMcpSection } from "./RemoteMcpSection";
 import "./mcps.css";
 
 // "Connectors" directory (mounted at /mcps for backwards-compatible URLs).
@@ -150,6 +151,8 @@ export default function ConnectorsBrowsePage() {
         Connected ones surface in the chat composer "+" menu and the assistant can
         retrieve from them when relevant.
       </p>
+
+      <RemoteMcpSection />
 
       <div className="mcps-toolbar">
         <input

@@ -220,6 +220,29 @@ export const connectors = {
   oauthProviders: () => api.get<{ providers: string[] }>("/api/oauth/providers"),
 };
 
+// Remote MCP connectors — external MCP servers connected via the MCP
+// authorization flow (OAuth + dynamic client registration), Claude-style.
+export type RemoteConnector = {
+  id: string;
+  name: string;
+  serverUrl: string;
+  connected: boolean;
+  connectedAt: string;
+};
+
+export const remoteConnectors = {
+  list:   () => api.get<{ connectors: RemoteConnector[] }>("/api/remote-connectors"),
+  // Returns the provider authorize URL for the popup to navigate to.
+  add:    (url: string) => api.post<{ id: string; authorizeUrl: string }>("/api/remote-connectors", { url }),
+  remove: (id: string) =>
+    fetch(`/api/backend/api/remote-connectors/${encodeURIComponent(id)}`, {
+      method: "DELETE",
+      credentials: "include",
+    }).then((r) => handle<void>(r)),
+  tools:  (id: string) =>
+    api.get<{ tools: { name: string; description: string }[] }>(`/api/remote-connectors/${encodeURIComponent(id)}/tools`),
+};
+
 export type McpToolSchema = {
   name: string;
   description: string;
