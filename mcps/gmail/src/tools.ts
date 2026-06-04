@@ -1,15 +1,19 @@
 // @hand-edited — do not regenerate via write-real-tools.mjs
 import { z, McpServer, ApiClient, googleAccessToken } from "@pervagans/mcp-base";
-// Lazy, persistent client so the response cache + rate-limit slot
-// survive across tool invocations. The per-call `new ApiClient(...)`
-// pattern reset nextSlot to 0 on every call, completely bypassing the
-// rps:3 throttle, and the cache always missed.
+// Lazy, persistent client so the response cache + rate-limit slot survive
+// across tool invocations. Auth is NOT baked onto the shared client (that
+// would race across concurrent per-user requests) — it is attached per
+// request via googleAuth().
 let _client: ApiClient | null = null;
-async function client(): Promise<ApiClient> {
+function client(): ApiClient {
   if (!_client) _client = new ApiClient({ base: "https://gmail.googleapis.com/gmail/v1", rps: 3 });
-  const t = await googleAccessToken();
-  (_client as unknown as { opts: { defaultHeaders: Record<string, string> } }).opts.defaultHeaders = { Authorization: `Bearer ${t}` };
   return _client;
+}
+// Per-call Google auth: the user's own access token (ctx.credential, forwarded
+// as X-MCP-Credential) if present, else the shared env refresh-token flow.
+async function googleAuth(ctx: { credential?: string }): Promise<Record<string, string>> {
+  const token = ctx.credential || (await googleAccessToken());
+  return { Authorization: `Bearer ${token}` };
 }
 // Gmail message id regex (Gmail-format string ids).
 const messageIdSchema = z.string().regex(/^[A-Za-z0-9_-]{1,32}$/, "invalid message id");
@@ -33,19 +37,19 @@ export function registerTools(server: McpServer) {
     name: "list",
     description: "List Gmail messages.",
     input: z.object({ q: z.string().optional(), maxResults: z.number().int().min(1).max(500).optional() }),
-    handler: async ({ q, maxResults = 20 }) => (await client()).get<any>("users/me/messages", { q, maxResults }),
+    handler: async ({ q, maxResults = 20 }, ctx) => client().get<any>("users/me/messages", { q, maxResults }, { headers: await googleAuth(ctx) }),
   });
   server.tool({
     name: "get",
     description: "Get a single message.",
     input: z.object({ id: messageIdSchema }),
-    handler: async ({ id }) => (await client()).get<any>(`users/me/messages/${encodeURIComponent(id)}`),
+    handler: async ({ id }, ctx) => client().get<any>(`users/me/messages/${encodeURIComponent(id)}`, undefined, { headers: await googleAuth(ctx) }),
   });
   server.tool({
     name: "search",
     description: "Search Gmail.",
     input: z.object({ q: z.string().min(1).max(1024) }),
-    handler: async ({ q }) => (await client()).get<any>("users/me/messages", { q, maxResults: 50 }),
+    handler: async ({ q }, ctx) => client().get<any>("users/me/messages", { q, maxResults: 50 }, { headers: await googleAuth(ctx) }),
   });
   server.tool({
     name: "send",
@@ -55,7 +59,7 @@ export function registerTools(server: McpServer) {
       subject: headerSafeSchema,
       body: z.string().max(5_000_000), // ~5 MB cap on the body
     }),
-    handler: async ({ to, subject, body }) => {
+    handler: async ({ to, subject, body }, ctx) => {
       // Build the MIME with \r\n line endings (RFC 5322), base64-encoded
       // body so embedded "From " / 8-bit chars survive intact. The
       // header fields were already validated against CRLF by the schema
@@ -76,7 +80,7 @@ export function registerTools(server: McpServer) {
         bodyBase64,
       ].join("\r\n");
       const raw = Buffer.from(mime).toString("base64url");
-      return (await client()).post<any>("users/me/messages/send", { raw });
+      return client().post<any>("users/me/messages/send", { raw }, { headers: await googleAuth(ctx) });
     },
   });
 }

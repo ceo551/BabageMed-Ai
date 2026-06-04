@@ -2,19 +2,21 @@
 import { z, McpServer, ApiClient } from "@pervagans/mcp-base";
 
 const TOKEN = process.env.LINKEDIN_ACCESS_TOKEN || "";
-// Only attach Authorization when we actually have a token — previously
-// `Bearer ` (empty) was sent on every request, which any logging proxy
-// would record and which produced a confusing 401 if `need()` was ever
-// forgotten on a future tool.
+// Authorization is attached PER REQUEST (authOverride) so a per-user token
+// (ctx.credential, forwarded by the backend as X-MCP-Credential) takes
+// precedence over the shared env token. The client keeps only the non-auth
+// protocol header.
 const api = new ApiClient({
   base: "https://api.linkedin.com/v2",
   rps: 1,
-  defaultHeaders: TOKEN
-    ? { Authorization: `Bearer ${TOKEN}`, "X-Restli-Protocol-Version": "2.0.0" }
-    : { "X-Restli-Protocol-Version": "2.0.0" },
+  defaultHeaders: { "X-Restli-Protocol-Version": "2.0.0" },
 });
 
-function need() { if (!TOKEN) throw new Error("LINKEDIN_ACCESS_TOKEN required"); }
+function authOverride(ctx: { credential?: string }): Record<string, string> {
+  const token = (ctx.credential || TOKEN).trim();
+  if (!token) throw new Error("LinkedIn not configured: connect with your access token");
+  return { Authorization: `Bearer ${token}` };
+}
 
 // urn:li:person:XXXX shape. Without this any `author` value flows into
 // the URL path and could rewrite the endpoint.
@@ -25,7 +27,7 @@ export function registerTools(server: McpServer) {
     name: "me",
     description: "Get the authenticated LinkedIn profile.",
     input: z.object({}),
-    handler: async () => { need(); return api.get<any>("userinfo"); },
+    handler: async (_input, ctx) => api.get<any>("userinfo", undefined, { headers: authOverride(ctx) }),
   });
   server.tool({
     name: "posts",
@@ -35,10 +37,8 @@ export function registerTools(server: McpServer) {
       count: z.number().int().min(1).max(50).optional(),
       start: z.number().int().min(0).max(10_000).optional(),
     }),
-    handler: async ({ author, count = 10, start = 0 }) => {
-      need();
-      return api.get<any>("ugcPosts", { q: "authors", authors: author, count, start });
-    },
+    handler: async ({ author, count = 10, start = 0 }, ctx) =>
+      api.get<any>("ugcPosts", { q: "authors", authors: author, count, start }, { headers: authOverride(ctx) }),
   });
   server.tool({
     name: "share",
@@ -47,9 +47,8 @@ export function registerTools(server: McpServer) {
       author: personUrnSchema,
       text: z.string().min(1).max(3000),
     }),
-    handler: async ({ author, text }) => {
-      need();
-      return api.post<any>("ugcPosts", {
+    handler: async ({ author, text }, ctx) =>
+      api.post<any>("ugcPosts", {
         author,
         lifecycleState: "PUBLISHED",
         specificContent: {
@@ -59,7 +58,6 @@ export function registerTools(server: McpServer) {
           },
         },
         visibility: { "com.linkedin.ugc.MemberNetworkVisibility": "PUBLIC" },
-      });
-    },
+      }, { headers: authOverride(ctx) }),
   });
 }
