@@ -52,6 +52,7 @@ export type LocaleStrings = {
   spaceNotFound: string;
   createFailed: string;
   send: string;
+  stop: string;
   errorPrefix: string;
   instructions: string; instructionsDesc: string;
   filesFolders: string; filesFoldersDesc: string;
@@ -81,6 +82,7 @@ export type LocaleStrings = {
   galleryTitle: string;
   galleryEmpty: string;
   galleryDeleteConfirm: string;
+  galleryCreateCta: string;
   openInCanvas: string;
   canvasTitle: string;
   canvasPreview: string;
@@ -247,6 +249,7 @@ export const STR: Record<Locale, LocaleStrings> = {
     spaceNotFound: "Space not found",
     createFailed: "Couldn't create the space. Please try again.",
     send: "Send",
+    stop: "Stop",
     errorPrefix: "Error: ",
     instructions: "Instructions",
     instructionsDesc: "Custom system prompt that runs on every chat in this feature.",
@@ -281,8 +284,9 @@ export const STR: Record<Locale, LocaleStrings> = {
     batch: "Count",
     lockSeed: "Lock seed for reproducible results",
     galleryTitle: "Gallery",
-    galleryEmpty: "No generated media yet — create some in the Image & Video workspace.",
+    galleryEmpty: "No generated media yet — create your first image or video.",
     galleryDeleteConfirm: "Delete this asset? This can't be undone.",
+    galleryCreateCta: "Create an image",
     openInCanvas: "Open in Canvas",
     canvasTitle: "Canvas",
     canvasPreview: "Preview",
@@ -412,6 +416,7 @@ export const STR: Record<Locale, LocaleStrings> = {
     spaceNotFound: "المساحة غير موجودة",
     createFailed: "تعذّر إنشاء المساحة. حاول مرة أخرى.",
     send: "إرسال",
+    stop: "إيقاف",
     errorPrefix: "خطأ: ",
     instructions: "التعليمات",
     instructionsDesc: "نص توجيه يُطبَّق على كل محادثة فى هذه الميزة.",
@@ -446,8 +451,9 @@ export const STR: Record<Locale, LocaleStrings> = {
     batch: "العدد",
     lockSeed: "تثبيت البذرة لنتائج قابلة للتكرار",
     galleryTitle: "المعرض",
-    galleryEmpty: "لا توجد وسائط مُنشأة بعد — أنشئ بعضها في مساحة الصور والفيديو.",
+    galleryEmpty: "لا توجد وسائط مُنشأة بعد — أنشئ أول صورة أو فيديو.",
     galleryDeleteConfirm: "حذف هذا العنصر؟ لا يمكن التراجع.",
+    galleryCreateCta: "أنشئ صورة",
     openInCanvas: "افتح في الكانفس",
     canvasTitle: "الكانفس",
     canvasPreview: "معاينة",

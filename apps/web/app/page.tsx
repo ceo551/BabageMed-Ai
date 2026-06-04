@@ -287,6 +287,15 @@ function Composer({
   // Abort on unmount.
   useEffect(() => () => { streamAbortRef.current?.abort(); }, []);
 
+  // Stop the in-flight chat/agent stream (the composer's send button flips to a
+  // Stop control while sending). Aborting triggers send()'s AbortError path,
+  // which drops the loading row; we also clear sending for instant feedback.
+  function stop() {
+    streamAbortRef.current?.abort();
+    streamAbortRef.current = null;
+    setSending(false);
+  }
+
   // Click handler for the "Add file or folder" popover row. Opens the OS
   // file picker; onFilesChosen does the actual upload + space attach.
   function openFilePicker() {
@@ -932,25 +941,25 @@ function Composer({
         <button
           className="cmpr-icon"
           type="button"
-          onClick={send}
-          aria-label={sending ? "Sending" : "Send"}
-          disabled={sending || value.trim() === ""}
-          // Disabled style is opt-in (cmpr-icon doesn't have a default
-          // disabled treatment yet); fade + neutral colors make the
-          // "you can't send an empty / in-flight message" state legible
-          // without sacrificing the cyan accent of the active state.
+          onClick={sending ? stop : send}
+          aria-label={sending ? s.stop : s.send}
+          title={sending ? s.stop : s.send}
+          disabled={!sending && value.trim() === ""}
+          // While sending the button becomes a Stop control (abort the stream)
+          // instead of a dead "…" — users were otherwise locked out for the
+          // whole generation. Idle-empty stays the faded not-allowed state.
           style={{
             width: "auto",
             padding: "0 10px",
-            color: sending || value.trim() === "" ? "var(--muted)" : "var(--cyan)",
-            borderColor: sending || value.trim() === "" ? "var(--border)" : "var(--cyan-line)",
-            background: sending || value.trim() === "" ? "var(--panel)" : "var(--cyan-soft)",
-            opacity: sending || value.trim() === "" ? 0.6 : 1,
-            cursor: sending ? "progress" : value.trim() === "" ? "not-allowed" : "pointer",
+            color: sending ? "var(--rose, var(--cyan))" : value.trim() === "" ? "var(--muted)" : "var(--cyan)",
+            borderColor: sending ? "var(--rose-line, var(--cyan-line))" : value.trim() === "" ? "var(--border)" : "var(--cyan-line)",
+            background: sending ? "var(--rose-soft, var(--cyan-soft))" : value.trim() === "" ? "var(--panel)" : "var(--cyan-soft)",
+            opacity: !sending && value.trim() === "" ? 0.6 : 1,
+            cursor: !sending && value.trim() === "" ? "not-allowed" : "pointer",
             transition: "color .12s, background .12s, opacity .12s",
           }}
         >
-          {sending ? "…" : "↵"}
+          {sending ? "■" : "↵"}
         </button>
       </div>
     </div>

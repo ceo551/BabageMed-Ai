@@ -155,6 +155,14 @@ export function SpaceChat({ space }: { space: Space }) {
 
   const currentModel = TEXT_MODELS.find((m) => m.id === model) || TEXT_MODELS[0];
 
+  // Stop the in-flight stream (the send button becomes a Stop control while
+  // sending). Abort triggers send()'s AbortError path which drops the loader.
+  function stop() {
+    streamAbortRef.current?.abort();
+    streamAbortRef.current = null;
+    setSending(false);
+  }
+
   async function send() {
     const text = value.trim();
     if (!text || sending) return;
@@ -407,21 +415,22 @@ export function SpaceChat({ space }: { space: Space }) {
         <button
           type="button"
           className="cmpr-icon"
-          onClick={send}
-          aria-label={sending ? s.generating : s.send}
-          disabled={sending || value.trim() === ""}
+          onClick={sending ? stop : send}
+          aria-label={sending ? s.stop : s.send}
+          title={sending ? s.stop : s.send}
+          disabled={!sending && value.trim() === ""}
           style={{
             width: "auto",
             padding: "0 10px",
-            color: sending || value.trim() === "" ? "var(--muted)" : "var(--hue-ink, var(--cyan))",
-            borderColor: sending || value.trim() === "" ? "var(--border)" : "var(--hue-line, var(--cyan-line))",
-            background: sending || value.trim() === "" ? "var(--panel)" : "var(--hue-bg, var(--cyan-soft))",
-            opacity: sending || value.trim() === "" ? 0.6 : 1,
-            cursor: sending ? "progress" : value.trim() === "" ? "not-allowed" : "pointer",
+            color: sending ? "var(--rose, var(--hue-ink, var(--cyan)))" : value.trim() === "" ? "var(--muted)" : "var(--hue-ink, var(--cyan))",
+            borderColor: sending ? "var(--rose-line, var(--hue-line, var(--cyan-line)))" : value.trim() === "" ? "var(--border)" : "var(--hue-line, var(--cyan-line))",
+            background: sending ? "var(--rose-soft, var(--hue-bg, var(--cyan-soft)))" : value.trim() === "" ? "var(--panel)" : "var(--hue-bg, var(--cyan-soft))",
+            opacity: !sending && value.trim() === "" ? 0.6 : 1,
+            cursor: !sending && value.trim() === "" ? "not-allowed" : "pointer",
             transition: "color .12s, background .12s, opacity .12s",
           }}
         >
-          {sending ? "…" : "↵"}
+          {sending ? "■" : "↵"}
         </button>
       </div>
     </div>

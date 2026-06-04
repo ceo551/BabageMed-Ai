@@ -188,6 +188,15 @@ export function FeatureChat({
   const aspectOptions: ReadonlyArray<"1:1" | "16:9" | "9:16" | "4:3" | "3:4"> =
     isVideoModel ? ["16:9", "9:16"] : ["1:1", "16:9", "9:16", "4:3", "3:4"];
 
+  // Stop the in-flight text stream OR media-generation poll (the send button
+  // becomes a Stop control while sending).
+  function stop() {
+    streamAbortRef.current?.abort();
+    streamAbortRef.current = null;
+    mediaAbortRef.current = true;
+    setSending(false);
+  }
+
   async function send() {
     const text = value.trim();
     if (!text || sending) return;
@@ -736,21 +745,22 @@ export function FeatureChat({
             <button
               type="button"
               className="cmpr-icon"
-              onClick={send}
-              aria-label={sending ? s.generating : s.send}
-              disabled={sending || value.trim() === ""}
+              onClick={sending ? stop : send}
+              aria-label={sending ? s.stop : s.send}
+              title={sending ? s.stop : s.send}
+              disabled={!sending && value.trim() === ""}
               style={{
                 width: "auto",
                 padding: "0 10px",
-                color: sending || value.trim() === "" ? "var(--muted)" : "var(--hue-ink, var(--cyan))",
-                borderColor: sending || value.trim() === "" ? "var(--border)" : "var(--hue-line, var(--cyan-line))",
-                background: sending || value.trim() === "" ? "var(--panel)" : "var(--hue-bg, var(--cyan-soft))",
-                opacity: sending || value.trim() === "" ? 0.6 : 1,
-                cursor: sending ? "progress" : value.trim() === "" ? "not-allowed" : "pointer",
+                color: sending ? "var(--rose, var(--hue-ink, var(--cyan)))" : value.trim() === "" ? "var(--muted)" : "var(--hue-ink, var(--cyan))",
+                borderColor: sending ? "var(--rose-line, var(--hue-line, var(--cyan-line)))" : value.trim() === "" ? "var(--border)" : "var(--hue-line, var(--cyan-line))",
+                background: sending ? "var(--rose-soft, var(--hue-bg, var(--cyan-soft)))" : value.trim() === "" ? "var(--panel)" : "var(--hue-bg, var(--cyan-soft))",
+                opacity: !sending && value.trim() === "" ? 0.6 : 1,
+                cursor: !sending && value.trim() === "" ? "not-allowed" : "pointer",
                 transition: "color .12s, background .12s, opacity .12s",
               }}
             >
-              {sending ? "…" : "↵"}
+              {sending ? "■" : "↵"}
             </button>
           </div>
         </div>

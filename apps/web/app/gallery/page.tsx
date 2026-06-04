@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import Link from "next/link";
 import { useUI } from "../lib/ui-context";
 import { useAuth } from "../lib/auth-context";
 import { media as mediaApi, type MediaAsset } from "../lib/api";
@@ -63,6 +64,9 @@ export default function GalleryPage() {
         <div className="sp-empty">
           <span className="sp-empty-emoji" aria-hidden="true">🖼️</span>
           <span className="sp-empty-title">{s.galleryEmpty}</span>
+          <Link href="/features/image" className="sp-new-btn" style={{ textDecoration: "none" }}>
+            {s.galleryCreateCta}
+          </Link>
         </div>
       ) : (
         <div className="gal-grid">
