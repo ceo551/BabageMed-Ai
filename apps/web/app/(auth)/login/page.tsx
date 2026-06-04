@@ -67,6 +67,7 @@ export default function LoginPage() {
   return (
     <div className="auth-shell">
       <form className="auth-card" onSubmit={submit}>
+        <div className="auth-brand"><img src="/pervagans-icon.png" alt="" className="auth-brand-icon" /></div>
         <h1>{s.welcomeBack}</h1>
         <p className="lead">
           {mfaRequired ? s.mfaCodePrompt : s.signInToContinue}

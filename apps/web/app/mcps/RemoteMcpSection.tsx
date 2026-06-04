@@ -129,7 +129,7 @@ export function RemoteMcpSection() {
       </div>
 
       {err && (
-        <div style={{ marginTop: 12, borderRadius: 10, padding: 10, border: "1px solid var(--purple-line)", background: "var(--purple-soft)", color: "var(--purple)", fontSize: 13 }}>
+        <div role="alert" style={{ marginTop: 12, borderRadius: 10, padding: 10, border: "1px solid var(--error-line)", background: "var(--error-soft)", color: "var(--error)", fontSize: 13 }}>
           {err}
         </div>
       )}

@@ -142,9 +142,9 @@
 }
 .admin-toolbar input[type="search"] { min-width: 280px; flex: 1; }
 .admin-blocked {
-  background: var(--purple-soft);
-  border: 1px solid var(--purple-line);
-  color: var(--purple);
+  background: var(--error-soft);
+  border: 1px solid var(--error-line);
+  color: var(--error);
   padding: 16px;
   border-radius: 14px;
 }

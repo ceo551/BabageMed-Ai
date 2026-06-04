@@ -42,6 +42,7 @@ export default function SignupPage() {
   return (
     <div className="auth-shell">
       <form className="auth-card" onSubmit={submit}>
+        <div className="auth-brand"><img src="/pervagans-icon.png" alt="" className="auth-brand-icon" /></div>
         <h1>{s.createAccount}</h1>
         <p className="lead">{s.signUpToContinue}</p>
         {err && <div className="auth-err">{err}</div>}

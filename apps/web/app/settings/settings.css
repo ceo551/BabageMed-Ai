@@ -155,9 +155,9 @@
 .settings-err {
   border-radius: 10px;
   padding: 10px 12px;
-  border: 1px solid var(--purple-line);
-  background: var(--purple-soft);
-  color: var(--purple);
+  border: 1px solid var(--error-line);
+  background: var(--error-soft);
+  color: var(--error);
 }
 
 /* Usage tab */

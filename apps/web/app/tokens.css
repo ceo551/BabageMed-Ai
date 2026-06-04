@@ -27,7 +27,11 @@
   --yellow-soft: rgba(239, 193, 95, 0.10);
   --yellow-line: rgba(239, 193, 95, 0.32);
   --orange: #f3a366;
+  --orange-soft: rgba(243, 163, 102, 0.10);
+  --orange-line: rgba(243, 163, 102, 0.32);
   --green: #5fd49a;
+  --green-soft: rgba(95, 212, 154, 0.10);
+  --green-line: rgba(95, 212, 154, 0.32);
   /* Extended feature palette — soft + line derivatives pre-computed so
    * consumers reuse the var(--X-soft)/var(--X-line) idiom. */
   --indigo: #8b95f8;
@@ -39,6 +43,17 @@
   --fuchsia: #df7bef;
   --fuchsia-soft: rgba(223, 123, 239, 0.10);
   --fuchsia-line: rgba(223, 123, 239, 0.32);
+  /* Semantic colours — alias the palette so they re-theme automatically. */
+  --error: var(--rose);     --error-soft: var(--rose-soft);     --error-line: var(--rose-line);
+  --success: var(--green);  --success-soft: var(--green-soft);  --success-line: var(--green-line);
+  --warn: var(--yellow);    --warn-soft: var(--yellow-soft);    --warn-line: var(--yellow-line);
+  /* Overlay scrim for modal/drawer backdrops (theme-aware via the light override). */
+  --scrim: rgba(0, 0, 0, 0.55);
+  /* Seed ramps — a consistent spacing scale, content measures + base radius so
+     surfaces stop reinventing magic numbers. */
+  --sp-1: 4px; --sp-2: 8px; --sp-3: 12px; --sp-4: 16px; --sp-5: 20px;
+  --sp-6: 24px; --sp-8: 32px; --sp-12: 48px; --sp-16: 64px;
+  --content-prose: 760px; --content-wide: 1120px; --radius: 12px;
   --shadow: 0 20px 60px rgba(0, 0, 0, 0.55);
   --sans: "Geist", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   --serif: "Instrument Serif", ui-serif, Georgia, serif;
@@ -60,17 +75,21 @@
   --ink-2: #353d4a;
   --muted: #5d6775;
   --muted-2: #6b7480;
-  --cyan: #0a8fa6;
-  --cyan-soft: rgba(10, 143, 166, 0.08);
-  --cyan-line: rgba(10, 143, 166, 0.28);
+  --cyan: #0079a0;
+  --cyan-soft: rgba(0, 121, 160, 0.08);
+  --cyan-line: rgba(0, 121, 160, 0.28);
   --purple: #6d4ed6;
   --purple-soft: rgba(109, 78, 214, 0.08);
   --purple-line: rgba(109, 78, 214, 0.28);
   --yellow: #a9760a;
   --yellow-soft: rgba(169, 118, 10, 0.08);
   --yellow-line: rgba(169, 118, 10, 0.28);
-  --orange: #d77a3a;
-  --green: #1f9a55;
+  --orange: #a85b15;
+  --orange-soft: rgba(168, 91, 21, 0.08);
+  --orange-line: rgba(168, 91, 21, 0.28);
+  --green: #157040;
+  --green-soft: rgba(21, 112, 64, 0.08);
+  --green-line: rgba(21, 112, 64, 0.28);
   --indigo: #4f46e5;
   --indigo-soft: rgba(79, 70, 229, 0.08);
   --indigo-line: rgba(79, 70, 229, 0.28);
@@ -81,11 +100,21 @@
   --fuchsia-soft: rgba(162, 28, 175, 0.08);
   --fuchsia-line: rgba(162, 28, 175, 0.28);
   --shadow: 0 12px 40px rgba(20, 30, 50, 0.10);
+  --scrim: rgba(15, 18, 24, 0.45);
 }
 [dir="rtl"] body { font-family: var(--ar-sans); }
-/* Arabic hero text must use the Arabic serif, not the Latin Instrument Serif. */
+/* Arabic hero + page headings must use the Arabic serif, not the Latin
+   Instrument Serif (which falls back to Georgia for Arabic glyphs). */
 [dir="rtl"] .greet,
-[dir="rtl"] .brand-greet .b1 { font-family: var(--ar-serif); }
+[dir="rtl"] .brand-greet .b1,
+[dir="rtl"] h1,
+[dir="rtl"] .mcps-section-title,
+[dir="rtl"] .connector-meta h1,
+[dir="rtl"] .mcp-detail h1,
+[dir="rtl"] .admin-stat .val { font-family: var(--ar-serif); }
+/* Arabic needs more leading than Latin to clear its ascenders/diacritics. */
+[dir="rtl"] .md-body,
+[dir="rtl"] .msg-assistant { line-height: 1.95; }
 
 /* Global keyboard focus ring. Most interactive elements removed their
    outline without a replacement, leaving keyboard users with no visible
@@ -94,6 +123,16 @@
   outline: 2px solid var(--cyan);
   outline-offset: 2px;
   border-radius: 6px;
+}
+/* Text fields strip their outline app-wide with only a faint border-colour
+   change for focus, which bypasses the keyboard ring above. Restore a real
+   ring inset into the box (no layout shift); uses the local accent hue on
+   feature pages, cyan elsewhere. */
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  outline: 2px solid var(--hue-ink, var(--cyan));
+  outline-offset: -1px;
 }
 
 /* Respect users who ask for reduced motion (vestibular sensitivity) —

@@ -375,9 +375,9 @@
   margin: 0;
 }
 .tool-panel .err {
-  background: color-mix(in srgb, var(--purple) 12%, transparent);
-  border: 1px solid var(--purple-line);
-  color: var(--purple);
+  background: var(--error-soft);
+  border: 1px solid var(--error-line);
+  color: var(--error);
   padding: 10px 12px;
   border-radius: 10px;
   font-size: 13px;
