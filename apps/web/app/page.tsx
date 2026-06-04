@@ -780,7 +780,7 @@ function Composer({
             className="model-pill"
             onClick={() => setActiveSpaceId("")}
             title="Clear space"
-            style={{ background: "var(--cyan-soft)", color: "var(--cyan)", borderColor: "var(--cyan-line)" }}
+            style={{ background: "var(--yellow-soft)", color: "var(--yellow)", borderColor: "var(--yellow-line)" }}
           >
             📁 {activeSpace.name} ×
           </button>
@@ -795,7 +795,7 @@ function Composer({
               className="model-pill"
               onClick={() => toggleConnector(id)}
               title="Remove from this chat"
-              style={{ background: "var(--cyan-soft)", color: "var(--cyan)", borderColor: "var(--cyan-line)", display: "inline-flex", alignItems: "center", gap: 6 }}
+              style={{ background: "var(--purple-soft)", color: "var(--purple)", borderColor: "var(--purple-line)", display: "inline-flex", alignItems: "center", gap: 6 }}
             >
               <ConnectorIcon id={c.mcpId} name={c.name} iconUrl={c.iconUrl} size={16} />
               {c.name} ×
@@ -803,7 +803,7 @@ function Composer({
           );
         })}
         {activeConnectorIds.length > 3 && (
-          <span className="model-pill" style={{ background: "var(--cyan-soft)", color: "var(--cyan)" }}>
+          <span className="model-pill" style={{ background: "var(--purple-soft)", color: "var(--purple)" }}>
             +{activeConnectorIds.length - 3}
           </span>
         )}
@@ -824,7 +824,7 @@ function Composer({
             className="model-pill ws-chip"
             onClick={() => setDeepResearch(false)}
             title={s.deepResearch}
-            style={{ background: "var(--cyan-soft)", color: "var(--cyan)", border: "1px solid var(--cyan-line)", display: "inline-flex", alignItems: "center" }}
+            style={{ background: "var(--indigo-soft)", color: "var(--indigo)", border: "1px solid var(--indigo-line)", display: "inline-flex", alignItems: "center" }}
           >
             {I.globe}{s.deepResearch} ×
           </button>
@@ -835,7 +835,7 @@ function Composer({
             className="model-pill ws-chip"
             onClick={() => setAgentMode(false)}
             title={s.agentMode}
-            style={{ background: "var(--cyan-soft)", color: "var(--cyan)", border: "1px solid var(--cyan-line)", display: "inline-flex", alignItems: "center" }}
+            style={{ background: "var(--fuchsia-soft)", color: "var(--fuchsia)", border: "1px solid var(--fuchsia-line)", display: "inline-flex", alignItems: "center" }}
           >
             {I.agent}{s.agentMode} ×
           </button>
