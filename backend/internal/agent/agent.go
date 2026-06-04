@@ -13,6 +13,7 @@ import (
 	"log"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/pervagans/backend/internal/auth"
 	"github.com/pervagans/backend/internal/llm"
@@ -23,6 +24,7 @@ import (
 const (
 	maxIters    = 5    // plan/act rounds before we force a final answer
 	maxTools    = 8    // distinct connectors exposed to the model per run
+	maxToolDefs = 32   // hard cap on total function tools handed to the model
 	maxObsChars = 3000 // cap each tool observation fed back into the context
 	agentModel  = "qwen-3.7-max"
 )
@@ -87,8 +89,10 @@ func (s *Service) handleStream(w http.ResponseWriter, r *http.Request) {
 		return true
 	}
 
-	// Expose the user's connected MCPs (capped) as function tools.
-	tools, toolToID := s.buildTools(req.UseMcps)
+	// Expose the user's connected MCPs (capped) as function tools — every tool
+	// each connector declares, with its real input schema, namespaced
+	// connector__tool. Discovery hits the live pods, so this needs the ctx.
+	tools, refs := s.buildTools(ctx, req.UseMcps)
 	send("status", map[string]any{"phase": "planning", "tools": len(tools)})
 
 	messages := []map[string]any{
@@ -121,9 +125,9 @@ func (s *Service) handleStream(w http.ResponseWriter, r *http.Request) {
 		messages = append(messages, map[string]any{"role": "assistant", "content": content, "tool_calls": tcArr})
 
 		for _, tc := range calls {
-			query := extractQuery(tc.Arguments)
+			query := argSummary(tc.Arguments)
 			send("step", map[string]any{"phase": "action", "tool": tc.Name, "query": query})
-			obs := s.execTool(ctx, toolToID, tc)
+			obs := s.execTool(ctx, refs, tc)
 			ok := !strings.HasPrefix(obs, "tool error")
 			send("step", map[string]any{"phase": "observation", "tool": tc.Name, "ok": ok})
 			messages = append(messages, map[string]any{
@@ -146,57 +150,187 @@ func (s *Service) handleStream(w http.ResponseWriter, r *http.Request) {
 	send("done", map[string]any{})
 }
 
-// buildTools turns the user's connected MCP ids into function tools (only those
-// that exist + declare a "search" tool), capped. Returns the tool defs and a
-// map from tool name back to the mcp id.
-func (s *Service) buildTools(useMcps []string) ([]llm.ToolDef, map[string]string) {
+// toolRef maps a model-facing function name back to the concrete (connector,
+// tool) pair the registry should call.
+type toolRef struct {
+	id   string
+	tool string
+}
+
+// toolSpec is one tool a connector declares — name + description + the real
+// JSON-Schema for its arguments (from the live pod's /tools, or a degraded
+// fallback).
+type toolSpec struct {
+	name        string
+	description string
+	inputSchema map[string]any
+}
+
+// buildTools turns the user's connected MCP ids into function tools. For each
+// connector it discovers EVERY tool the pod declares (search, create, page,
+// send, …) with that tool's real input schema, and exposes each as a separate
+// function named connector__tool so the model can pick the right action with
+// the right arguments — not just a single hard-coded {query} search. Returns
+// the tool defs plus a map from function name back to (connector, tool).
+func (s *Service) buildTools(ctx context.Context, useMcps []string) ([]llm.ToolDef, map[string]toolRef) {
 	tools := []llm.ToolDef{}
-	toolToID := map[string]string{}
-	seen := map[string]bool{}
+	refs := map[string]toolRef{}
+	seenConn := map[string]bool{}
+	nConn := 0
 	for _, id := range useMcps {
 		id = strings.TrimSpace(id)
-		if id == "" || seen[id] || !validToolName(id) {
+		if id == "" || seenConn[id] || !validToolName(id) {
 			continue
 		}
 		srv, ok := s.reg.Get(id)
-		if !ok || !serverHasSearch(srv) {
+		if !ok {
 			continue
 		}
-		seen[id] = true
-		desc := srv.Name
-		if srv.Category != "" {
-			desc += " — " + srv.Category
+		seenConn[id] = true
+		specs := s.discoverTools(ctx, srv)
+		if len(specs) == 0 {
+			continue
 		}
-		tools = append(tools, llm.ToolDef{
-			Name:        id,
-			Description:  "Search " + desc,
-			Parameters: map[string]any{
-				"type":       "object",
-				"properties": map[string]any{"query": map[string]any{"type": "string", "description": "search query"}},
-				"required":   []string{"query"},
-			},
-		})
-		toolToID[id] = id
-		if len(tools) >= maxTools {
+		nConn++
+		for _, sp := range specs {
+			fnName := toolFnName(id, sp.name)
+			if fnName == "" {
+				continue
+			}
+			if _, dup := refs[fnName]; dup {
+				continue
+			}
+			desc := sp.description
+			if desc == "" {
+				desc = sp.name + " on " + srv.Name
+			} else {
+				desc = srv.Name + ": " + desc
+			}
+			params := sp.inputSchema
+			if params == nil {
+				params = genericQuerySchema()
+			}
+			tools = append(tools, llm.ToolDef{Name: fnName, Description: desc, Parameters: params})
+			refs[fnName] = toolRef{id: id, tool: sp.name}
+			if len(tools) >= maxToolDefs {
+				return tools, refs
+			}
+		}
+		if nConn >= maxTools {
 			break
 		}
 	}
-	return tools, toolToID
+	return tools, refs
+}
+
+// discoverTools asks the live pod for its tool list + schemas (GET /tools). On
+// any failure it degrades to the manifest's declared tool names with a generic
+// {query} schema, so the connector still works (the model just doesn't get the
+// precise arg shape). Legacy entries that declare no tools fall back to a lone
+// "search" tool.
+func (s *Service) discoverTools(ctx context.Context, srv mcp.Server) []toolSpec {
+	cctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+	if raw, err := s.reg.ListTools(cctx, srv.ID); err == nil {
+		if specs := parseToolSpecs(raw); len(specs) > 0 {
+			return specs
+		}
+	}
+	out := []toolSpec{}
+	for _, name := range srv.Tools {
+		if validToolName(name) {
+			out = append(out, toolSpec{name: name, inputSchema: genericQuerySchema()})
+		}
+	}
+	if len(out) == 0 {
+		out = append(out, toolSpec{name: "search", inputSchema: genericQuerySchema()})
+	}
+	return out
+}
+
+// parseToolSpecs reads the {tools:[{name,description,inputSchema}]} envelope the
+// MCP base serves at /tools. The registry hands it back as decoded `any`, so we
+// round-trip through JSON into a typed shape.
+func parseToolSpecs(raw any) []toolSpec {
+	b, err := json.Marshal(raw)
+	if err != nil {
+		return nil
+	}
+	var env struct {
+		Tools []struct {
+			Name        string         `json:"name"`
+			Description string         `json:"description"`
+			InputSchema map[string]any `json:"inputSchema"`
+		} `json:"tools"`
+	}
+	if err := json.Unmarshal(b, &env); err != nil {
+		return nil
+	}
+	out := []toolSpec{}
+	for _, t := range env.Tools {
+		if t.Name == "" || !validToolName(t.Name) {
+			continue
+		}
+		out = append(out, toolSpec{name: t.Name, description: t.Description, inputSchema: t.InputSchema})
+	}
+	return out
+}
+
+// toolFnName builds the model-facing function name connector__tool. The tool
+// part is sanitised to the OpenAI function-name charset ([a-zA-Z0-9_-]); the
+// real tool name is preserved in the refs map, so a '.'→'_' rewrite here never
+// affects what the registry actually calls. Returns "" if the result would
+// exceed the 64-char function-name limit.
+func toolFnName(id, tool string) string {
+	name := id + "__" + sanitizeFn(tool)
+	if len(name) == 0 || len(name) > 64 {
+		return ""
+	}
+	return name
+}
+
+func sanitizeFn(s string) string {
+	var b strings.Builder
+	for i := 0; i < len(s); i++ {
+		c := s[i]
+		if (c >= '0' && c <= '9') || (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_' || c == '-' {
+			b.WriteByte(c)
+		} else {
+			b.WriteByte('_')
+		}
+	}
+	return b.String()
+}
+
+func genericQuerySchema() map[string]any {
+	return map[string]any{
+		"type":       "object",
+		"properties": map[string]any{"query": map[string]any{"type": "string", "description": "search query or input"}},
+		"required":   []string{"query"},
+	}
 }
 
 // execTool runs one tool call against its MCP and returns a (capped) string
-// observation for the model. Errors are returned as "tool error: …" text so the
-// model can react rather than the whole run aborting.
-func (s *Service) execTool(ctx context.Context, toolToID map[string]string, tc llm.ToolCall) string {
-	id, ok := toolToID[tc.Name]
+// observation for the model. The model-chosen function name is mapped back to
+// the concrete (connector, tool), and the FULL argument object is forwarded —
+// not just a query string — so create/update/send tools receive their real
+// parameters. Errors are returned as "tool error: …" text so the model can
+// react rather than the whole run aborting.
+func (s *Service) execTool(ctx context.Context, refs map[string]toolRef, tc llm.ToolCall) string {
+	ref, ok := refs[tc.Name]
 	if !ok {
 		return "tool error: unknown tool"
 	}
-	query := extractQuery(tc.Arguments)
-	if query == "" {
-		return "tool error: missing query"
+	var args map[string]any
+	if strings.TrimSpace(tc.Arguments) != "" {
+		if err := json.Unmarshal([]byte(tc.Arguments), &args); err != nil {
+			return "tool error: invalid arguments json"
+		}
 	}
-	res, err := s.reg.Call(ctx, id, "search", map[string]any{"query": query})
+	if args == nil {
+		args = map[string]any{}
+	}
+	res, err := s.reg.Call(ctx, ref.id, ref.tool, args)
 	if err != nil {
 		return "tool error: " + err.Error()
 	}
@@ -208,24 +342,20 @@ func (s *Service) execTool(ctx context.Context, toolToID map[string]string, tc l
 	return out
 }
 
-func extractQuery(arguments string) string {
-	var a struct {
-		Query string `json:"query"`
-	}
-	_ = json.Unmarshal([]byte(arguments), &a)
-	return strings.TrimSpace(a.Query)
-}
-
-func serverHasSearch(s mcp.Server) bool {
-	if len(s.Tools) == 0 {
-		return true // unknown tool set — assume the common "search" shape
-	}
-	for _, t := range s.Tools {
-		if t == "search" {
-			return true
+// argSummary produces a short human-readable preview of a tool call's arguments
+// for the SSE "action" step (the query field if present, else a truncated dump).
+func argSummary(arguments string) string {
+	var a map[string]any
+	if json.Unmarshal([]byte(arguments), &a) == nil {
+		if q, ok := a["query"].(string); ok && strings.TrimSpace(q) != "" {
+			return q
 		}
 	}
-	return false
+	t := strings.TrimSpace(arguments)
+	if len(t) > 160 {
+		t = t[:160] + "…"
+	}
+	return t
 }
 
 func validToolName(t string) bool {
@@ -234,7 +364,7 @@ func validToolName(t string) bool {
 	}
 	for i := 0; i < len(t); i++ {
 		c := t[i]
-		if !((c >= '0' && c <= '9') || (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_' || c == '-') {
+		if !((c >= '0' && c <= '9') || (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_' || c == '-' || c == '.') {
 			return false
 		}
 	}
@@ -242,7 +372,8 @@ func validToolName(t string) bool {
 }
 
 func agentSystemPrompt(locale string, nTools int) string {
-	b := "You are Pervagans Agent. Complete the user's task by calling the available connector tools to gather real information, then deliver a clear, well-organised final answer. " +
+	b := "You are Pervagans Agent. Complete the user's task by calling the available connector tools to gather real information or take actions, then deliver a clear, well-organised final answer. " +
+		"Each tool is named connector__action (e.g. notion__search, notion__create, gmail__send); choose the specific action that fits the step and pass its arguments per the tool's schema. " +
 		"Plan briefly, call one or more tools when useful, and once you have enough evidence, stop calling tools and write the final answer. " +
 		"Attribute facts to the connectors you used. Never fabricate tool results."
 	if nTools == 0 {
