@@ -30,6 +30,7 @@ import (
 	"github.com/pervagans/backend/internal/features"
 	"github.com/pervagans/backend/internal/mfa"
 	"github.com/pervagans/backend/internal/ratelimit"
+	"github.com/pervagans/backend/internal/share"
 	"github.com/pervagans/backend/internal/spaces"
 	"github.com/pervagans/backend/internal/tracing"
 	"github.com/pervagans/backend/internal/updates"
@@ -327,6 +328,9 @@ func main() {
 		features.New(dbConn, authSvc).Register(r, uploadLimiter.Middleware)
 		connSvc.Register(r)
 		billingSvc.Register(r)
+		// Public answer snapshots for the zero-login trial (P4): POST /api/share
+		// (anon-writable, IP-throttled) + GET /api/share/{id} (public).
+		share.New(dbConn).Register(r, chatLimiter.Middleware)
 		chats.New(dbConn, authSvc).Register(r)
 	}
 

@@ -1,8 +1,15 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-// Routes reachable WITHOUT a session — the auth flow itself.
-const PUBLIC = /^\/(login|signup|forgot-password|reset-password|verify-email)(\/|$)/;
+// Routes reachable WITHOUT a session — the auth flow itself. A signed-in
+// visitor who lands here is bounced into the app.
+const AUTH = /^\/(login|signup|forgot-password|reset-password|verify-email)(\/|$)/;
+
+// Fully public surfaces (P4): the zero-login trial (/try) and shared answer
+// snapshots (/s/<id>). Open to EVERYONE — no redirect either way — so a logged-
+// out visitor gets a no-friction "wow" and a shared link opens without an
+// account. The rest of the app stays gated.
+const PUBLIC = /^\/(try|s)(\/|$)/;
 
 // Gate the whole app behind authentication. A visitor without the session
 // cookie is sent to /login (carrying ?next so we can bounce them back after
@@ -14,9 +21,13 @@ const PUBLIC = /^\/(login|signup|forgot-password|reset-password|verify-email)(\/
 export function middleware(req: NextRequest) {
   const { pathname, search } = req.nextUrl;
   const hasSession = req.cookies.has("pervagans_session");
-  const isPublic = PUBLIC.test(pathname);
 
-  if (!hasSession && !isPublic) {
+  // Fully public surfaces are open to everyone — never redirected.
+  if (PUBLIC.test(pathname)) return NextResponse.next();
+
+  const isAuth = AUTH.test(pathname);
+
+  if (!hasSession && !isAuth) {
     const url = req.nextUrl.clone();
     url.pathname = "/login";
     url.search = "";
@@ -25,7 +36,7 @@ export function middleware(req: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  if (hasSession && isPublic) {
+  if (hasSession && isAuth) {
     const url = req.nextUrl.clone();
     url.pathname = "/";
     url.search = "";

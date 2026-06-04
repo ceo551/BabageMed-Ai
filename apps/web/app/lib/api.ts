@@ -458,6 +458,14 @@ export const usage = {
   get: () => api.get<UsageSummary>("/api/usage"),
 };
 
+// ── Public answer snapshots (zero-login trial share/remix loop, P4) ─────────
+export type SharedAnswer = { title: string; content: string; citations?: unknown };
+export const share = {
+  create: (payload: { title?: string; content: string; citations?: unknown }) =>
+    api.post<{ id: string }>("/api/share", payload),
+  get: (id: string) => api.get<SharedAnswer>(`/api/share/${encodeURIComponent(id)}`),
+};
+
 // ── Media generation (Alibaba Model Studio / DashScope) ────────────────────
 // Image is synchronous (one call → url). Video is async: submit returns a
 // task id the caller polls until status is SUCCEEDED (url ready) or FAILED.

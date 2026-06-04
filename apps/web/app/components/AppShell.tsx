@@ -23,6 +23,10 @@ import { I } from "../icons";
 // route-gate in middleware.ts guarantees only signed-in users ever reach the
 // chrome'd branch.
 const AUTH_ROUTE = /^\/(login|signup|forgot-password|reset-password|verify-email)(\/|$)/;
+// Public, chrome-free surfaces (P4): the zero-login trial and shared answer
+// pages. Like auth routes they render WITHOUT the sidebar — the visitor may not
+// be signed in, and showing app navigation would mislead + leak feature names.
+const PUBLIC_ROUTE = /^\/(try|s)(\/|$)/;
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   return (
@@ -36,8 +40,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
 function Shell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname() || "";
-  if (AUTH_ROUTE.test(pathname)) {
-    // Bare: the (auth) layout's .auth-wrapper centers the card full-width.
+  if (AUTH_ROUTE.test(pathname) || PUBLIC_ROUTE.test(pathname)) {
+    // Bare: auth pages center their card; /try and /s render their own
+    // full-bleed layout. No sidebar/canvas chrome on any of them.
     return <>{children}</>;
   }
   return (
