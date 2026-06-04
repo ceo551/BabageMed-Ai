@@ -747,21 +747,12 @@ export function FeatureChat({
             <button className="cmpr-icon" type="button" aria-label={s.voiceComingSoon} title={s.voiceComingSoon}>{I.mic}</button>
             <button
               type="button"
-              className="cmpr-icon"
+              className="cmpr-icon cmpr-send"
               onClick={sending ? stop : send}
               aria-label={sending ? s.stop : s.send}
               title={sending ? s.stop : s.send}
               disabled={!sending && value.trim() === ""}
-              style={{
-                width: "auto",
-                padding: "0 10px",
-                color: sending ? "var(--rose, var(--hue-ink, var(--cyan)))" : value.trim() === "" ? "var(--muted)" : "var(--hue-ink, var(--cyan))",
-                borderColor: sending ? "var(--rose-line, var(--hue-line, var(--cyan-line)))" : value.trim() === "" ? "var(--border)" : "var(--hue-line, var(--cyan-line))",
-                background: sending ? "var(--rose-soft, var(--hue-bg, var(--cyan-soft)))" : value.trim() === "" ? "var(--panel)" : "var(--hue-bg, var(--cyan-soft))",
-                opacity: !sending && value.trim() === "" ? 0.6 : 1,
-                cursor: !sending && value.trim() === "" ? "not-allowed" : "pointer",
-                transition: "color .12s, background .12s, opacity .12s",
-              }}
+              data-state={sending ? "sending" : value.trim() === "" ? "idle" : "ready"}
             >
               {sending ? I.stop : I.send}
             </button>

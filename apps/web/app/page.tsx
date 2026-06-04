@@ -939,25 +939,15 @@ function Composer({
         </div>
         <button className="cmpr-icon" type="button" data-on={voiceOn} onClick={() => setVoiceOn((v) => !v)} aria-label={s.micLabel}>{I.mic}</button>
         <button
-          className="cmpr-icon"
+          className="cmpr-icon cmpr-send"
           type="button"
           onClick={sending ? stop : send}
           aria-label={sending ? s.stop : s.send}
           title={sending ? s.stop : s.send}
           disabled={!sending && value.trim() === ""}
-          // While sending the button becomes a Stop control (abort the stream)
-          // instead of a dead "…" — users were otherwise locked out for the
-          // whole generation. Idle-empty stays the faded not-allowed state.
-          style={{
-            width: "auto",
-            padding: "0 10px",
-            color: sending ? "var(--rose, var(--cyan))" : value.trim() === "" ? "var(--muted)" : "var(--cyan)",
-            borderColor: sending ? "var(--rose-line, var(--cyan-line))" : value.trim() === "" ? "var(--border)" : "var(--cyan-line)",
-            background: sending ? "var(--rose-soft, var(--cyan-soft))" : value.trim() === "" ? "var(--panel)" : "var(--cyan-soft)",
-            opacity: !sending && value.trim() === "" ? 0.6 : 1,
-            cursor: !sending && value.trim() === "" ? "not-allowed" : "pointer",
-            transition: "color .12s, background .12s, opacity .12s",
-          }}
+          // Send/stop button — state drives the CSS (.cmpr-send[data-state]).
+          // While sending it becomes a Stop control (abort the stream).
+          data-state={sending ? "sending" : value.trim() === "" ? "idle" : "ready"}
         >
           {sending ? I.stop : I.send}
         </button>
