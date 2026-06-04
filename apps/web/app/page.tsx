@@ -693,6 +693,7 @@ function Composer({
     let buffer = "";
     const steps: string[] = [];
     let answer = "";
+    let agentCites: Citation[] | undefined;
     const render = () => {
       const head = steps.length ? `**${s.agentWorking}**\n${steps.join("\n")}\n\n---\n\n` : "";
       const tail = answer || (steps.length ? `_${s.agentWorking}_` : "");
@@ -722,6 +723,10 @@ function Composer({
         } else if (event === "answer" && typeof parsed?.content === "string") {
           answer = parsed.content;
           render();
+        } else if (event === "sources" && Array.isArray(parsed)) {
+          // P3: provenance for the agent's tool calls → numbered source cards.
+          agentCites = parsed as Citation[];
+          setMessages((cur) => cur.map((m) => (m.id === assistantId && m.role === "assistant" ? { ...m, citations: agentCites } : m)));
         } else if (event === "error") {
           answer = "Error: " + (parsed?.error || "agent failed");
           render();
@@ -730,7 +735,7 @@ function Composer({
     }
     if (activeChatId && answer) {
       const head = steps.length ? `**${s.agentWorking}**\n${steps.join("\n")}\n\n---\n\n` : "";
-      chatsApi.append(activeChatId, { role: "assistant", content: head + answer }).catch(() => {});
+      chatsApi.append(activeChatId, { role: "assistant", content: head + answer, citations: agentCites ?? [] }).catch(() => {});
     }
   }
 

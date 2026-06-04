@@ -131,6 +131,30 @@ func (s *Service) handleStream(w http.ResponseWriter, r *http.Request) {
 		{"role": "user", "content": req.Task},
 	}
 
+	// Accumulate the tool results as provenance so the agent answer carries
+	// numbered source cards (P3) — agent mode previously emitted ZERO citations.
+	// Shape matches the chat path's {source, result} so the frontend renders
+	// them with the existing SourceCards (ConnectorIcon by source name).
+	sources := []map[string]any{}
+	addSource := func(toolName, obs string) {
+		if len(sources) >= 16 {
+			return
+		}
+		// Display name = the connector, not the namespaced function. Prefer the
+		// resolved connector id; else the namespace before "__".
+		name := toolName
+		if ref, ok := refs[toolName]; ok && ref.id != "" {
+			name = ref.id
+		} else if i := strings.Index(toolName, "__"); i > 0 {
+			name = toolName[:i]
+		}
+		res := obs
+		if len(res) > 1000 {
+			res = res[:1000] + "…"
+		}
+		sources = append(sources, map[string]any{"source": name, "result": res})
+	}
+
 	for iter := 0; iter < maxIters; iter++ {
 		content, calls, err := s.llm.ChatWithTools(ctx, agentModel, messages, tools)
 		if err != nil {
@@ -141,6 +165,9 @@ func (s *Service) handleStream(w http.ResponseWriter, r *http.Request) {
 		}
 		if len(calls) == 0 {
 			// No more tools requested → this is the final answer.
+			if len(sources) > 0 {
+				send("sources", sources)
+			}
 			send("answer", map[string]any{"content": content})
 			send("done", map[string]any{})
 			return
@@ -161,6 +188,9 @@ func (s *Service) handleStream(w http.ResponseWriter, r *http.Request) {
 			obs := s.execTool(ctx, refs, tc)
 			ok := !strings.HasPrefix(obs, "tool error")
 			send("step", map[string]any{"phase": "observation", "tool": tc.Name, "ok": ok})
+			if ok {
+				addSource(tc.Name, obs)
+			}
 			messages = append(messages, map[string]any{
 				"role": "tool", "tool_call_id": tc.ID, "content": obs,
 			})
@@ -176,6 +206,9 @@ func (s *Service) handleStream(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		send("error", map[string]any{"error": "agent synthesis failed"})
 	} else {
+		if len(sources) > 0 {
+			send("sources", sources)
+		}
 		send("answer", map[string]any{"content": content})
 	}
 	send("done", map[string]any{})
