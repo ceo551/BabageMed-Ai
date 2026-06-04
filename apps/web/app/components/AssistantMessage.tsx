@@ -15,6 +15,10 @@ import { useCanvas, renderableKind } from "../lib/canvas-context";
 export type Citation = {
   source: string;
   result?: unknown;
+  // P3: provenance kind. Absent/"" → inferred (web-search vs MCP) as before.
+  // "file" → an uploaded Space file that grounded the answer (rendered as a
+  // document card, kept OUT of the model's numbered [n] block server-side).
+  kind?: string;
 };
 
 // AssistantMessage — renders one assistant turn with full markdown (GFM
@@ -81,12 +85,12 @@ function AssistantMessageInner({
 // each web result is its own card; each MCP connector is one card.
 type SourceCardData = {
   n: number;
-  kind: "web" | "mcp";
-  source: string;        // mcp id, or domain for web
+  kind: "web" | "mcp" | "file";
+  source: string;        // mcp id, domain for web, or filename for file
   title?: string;
   url?: string;
   snippet?: string;
-  raw?: unknown;         // mcp raw retrieval (expandable)
+  raw?: unknown;         // mcp/file raw retrieval (expandable)
 };
 
 function normaliseCitations(citations: Citation[]): SourceCardData[] {
@@ -106,6 +110,11 @@ function normaliseCitations(citations: Citation[]): SourceCardData[] {
           snippet: typeof w.description === "string" ? w.description : undefined,
         });
       }
+      continue;
+    }
+    if (c.kind === "file") {
+      n++;
+      cards.push({ n, kind: "file", source: c.source, raw: c.result });
       continue;
     }
     n++;
@@ -157,6 +166,29 @@ function SourceCards({
               <span className="src-title">{card.title}</span>
               {card.snippet ? <span className="src-snippet">{card.snippet}</span> : null}
             </a>
+          ) : card.kind === "file" ? (
+            <div key={`f-${card.n}`} className="src-card src-card-mcp">
+              <button
+                type="button"
+                className="src-card-head src-card-mcp-btn"
+                aria-expanded={openIdx === i}
+                onClick={() => onToggle(i)}
+                title={openIdx === i ? "Hide excerpt" : "Show excerpt"}
+              >
+                <span className="src-num" aria-hidden="true">{card.n}</span>
+                <svg viewBox="0 0 24 24" width={14} height={14} fill="none" stroke="currentColor"
+                     strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="M14 3v4a1 1 0 0 0 1 1h4" />
+                  <path d="M17 21H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7l5 5v11a2 2 0 0 1-2 2z" />
+                </svg>
+                <span className="src-title">{card.source}</span>
+              </button>
+              {openIdx === i && card.raw !== undefined && (
+                <pre className="msg-citation-detail" dir="auto">
+                  {typeof card.raw === "string" ? card.raw : jsonPreview(card.raw)}
+                </pre>
+              )}
+            </div>
           ) : (
             <div key={`m-${card.n}`} className="src-card src-card-mcp">
               <button
