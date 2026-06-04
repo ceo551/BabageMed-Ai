@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { toast } from "sonner";
 import { useSearchParams } from "next/navigation";
 import React, { Suspense, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { MODELS, type Locale, type LocaleStrings } from "./i18n";
@@ -678,15 +679,11 @@ function Composer({
       // above did its job; the stream is already orphaned to the new
       // chat's transcript and the old one shouldn't show anything.
       const err = e as { name?: string; message?: string };
+      // Drop the loading row in all cases; surface real failures as a toast
+      // (an intentional abort — chat switch / unmount — stays silent).
+      setMessages((cur) => cur.filter((m) => m.id !== loadingId));
       if (err?.name !== "AbortError") {
-        setMessages((cur) =>
-          cur
-            .filter((m) => m.id !== loadingId)
-            .concat({ id: `a-${newId()}`, role: "assistant", content: "Error: " + (err?.message || "unknown") })
-        );
-      } else {
-        // Just drop the loading row — the stream was aborted intentionally.
-        setMessages((cur) => cur.filter((m) => m.id !== loadingId));
+        toast.error(err?.message || (locale === "ar" ? "حدث خطأ، حاول مرة أخرى" : "Something went wrong"));
       }
     } finally {
       setSending(false);
@@ -761,7 +758,8 @@ function Composer({
           agentCites = parsed as Citation[];
           setMessages((cur) => cur.map((m) => (m.id === assistantId && m.role === "assistant" ? { ...m, citations: agentCites } : m)));
         } else if (event === "error") {
-          answer = "Error: " + (parsed?.error || "agent failed");
+          toast.error(parsed?.error || (locale === "ar" ? "فشل الوكيل" : "Agent failed"));
+          answer = answer || (locale === "ar" ? "⚠ تعذّر إكمال المهمة" : "⚠ Couldn't complete the task");
           render();
         }
       }

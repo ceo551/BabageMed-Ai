@@ -6,6 +6,7 @@
 // (?t=general / ?t=usage) so a deep link from the sidebar lands on the
 // right pane.
 import Link from "next/link";
+import { toast } from "sonner";
 import { useSearchParams, useRouter } from "next/navigation";
 import { Suspense, useEffect, useMemo, useState } from "react";
 import { auth as authApi, type ProfilePatch, type UsageReport, type User } from "../lib/api";
@@ -77,7 +78,6 @@ function GeneralTab({ user, refresh }: { user: User; refresh: () => Promise<void
   const [instructions, setInstructions] = useState(user.instructions || "");
   const [saving, setSaving] = useState(false);
   const [savedAt, setSavedAt] = useState<number | null>(null);
-  const [err, setErr] = useState<string | null>(null);
 
   // Track what's actually changed so the Save button greys out when the form
   // matches what's on the server — small UX nudge so users don't fire empty
@@ -96,7 +96,6 @@ function GeneralTab({ user, refresh }: { user: User; refresh: () => Promise<void
 
   async function onSave() {
     setSaving(true);
-    setErr(null);
     try {
       const patch: ProfilePatch = {
         displayName,
@@ -107,8 +106,9 @@ function GeneralTab({ user, refresh }: { user: User; refresh: () => Promise<void
       await authApi.updateMe(patch);
       await refresh();
       setSavedAt(Date.now());
+      toast.success("Saved");
     } catch (e: any) {
-      setErr(e?.error || String(e));
+      toast.error(e?.error || String(e));
     } finally {
       setSaving(false);
     }
@@ -195,8 +195,6 @@ function GeneralTab({ user, refresh }: { user: User; refresh: () => Promise<void
           />
         </div>
       </div>
-
-      {err && <div className="settings-err">{err}</div>}
 
       <div className="settings-actions">
         {savedAt && !dirty && <span className="settings-saved">Saved ✓</span>}

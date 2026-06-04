@@ -96,6 +96,7 @@ export type LocaleStrings = {
   cancel: string;
   save: string;
   saving: string;
+  saved: string; connected: string; copied: string;
   rename: string;
   renameChat: string;
   delete: string;
@@ -304,6 +305,7 @@ export const STR: Record<Locale, LocaleStrings> = {
     cancel: "Cancel",
     save: "Save",
     saving: "Saving…",
+    saved: "Saved", connected: "Connected", copied: "Copied",
     rename: "Rename",
     renameChat: "Rename chat",
     delete: "Delete",
@@ -476,6 +478,7 @@ export const STR: Record<Locale, LocaleStrings> = {
     cancel: "إلغاء",
     save: "حفظ",
     saving: "جارٍ الحفظ…",
+    saved: "تم الحفظ", connected: "تم الاتصال", copied: "تم النسخ",
     rename: "إعادة تسمية",
     renameChat: "إعادة تسمية المحادثة",
     delete: "حذف",

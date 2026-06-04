@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { auth } from "../../lib/api";
@@ -24,7 +25,6 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [mfaCode, setMfaCode] = useState("");
   const [mfaRequired, setMfaRequired] = useState(false);
-  const [err, setErr] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [next, setNext] = useState("/");
   // Read the ?next bounce-back target on mount (client-only; avoids the
@@ -38,7 +38,6 @@ export default function LoginPage() {
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     setBusy(true);
-    setErr(null);
     try {
       // Two-leg login: first call is password-only; backend replies
       // with mfaRequired:true (via ApiError) if a second factor is
@@ -58,7 +57,7 @@ export default function LoginPage() {
         setMfaRequired(true);
         return;
       }
-      setErr(errObj?.error || errObj?.message || "Sign-in failed");
+      toast.error(errObj?.error || errObj?.message || "Sign-in failed");
     } finally {
       setBusy(false);
     }
@@ -72,7 +71,6 @@ export default function LoginPage() {
         <p className="lead">
           {mfaRequired ? s.mfaCodePrompt : s.signInToContinue}
         </p>
-        {err && <div className="auth-err">{err}</div>}
         {!mfaRequired && (
           <>
             <div className="auth-field">

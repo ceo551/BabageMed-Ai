@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { toast } from "sonner";
 import { usage as usageApi, type UsageSummary } from "../lib/api";
 
 type Plan = {
@@ -62,7 +63,6 @@ export default function BillingPage() {
   const [plans, setPlans] = useState<Plan[]>([]);
   const [providers, setProviders] = useState<Providers>({ paddle: false });
   const [busy, setBusy] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
   const [locale, setLocale] = useState<"en" | "ar">("en");
   const [usage, setUsage] = useState<UsageSummary | null>(null);
   // Paddle.Initialize must run exactly once per token; track it across clicks.
@@ -77,7 +77,7 @@ export default function BillingPage() {
         setPlans(p?.plans || []);
         setProviders(pr || { paddle: false });
       })
-      .catch((e) => setError(e.message));
+      .catch((e) => toast.error(e.message));
     setLocale((document.documentElement.lang as "en" | "ar") || "en");
     // Current-month usage vs the plan's credit allowance (best-effort).
     usageApi.get().then(setUsage).catch(() => {});
@@ -87,7 +87,6 @@ export default function BillingPage() {
 
   async function subscribe(planID: string) {
     setBusy(planID);
-    setError(null);
     try {
       // Backend creates a Paddle transaction (server-trusted user_id + plan)
       // and returns the id + public client token to open the overlay with.
@@ -113,7 +112,7 @@ export default function BillingPage() {
         settings: { successUrl: window.location.origin + "/billing/return" },
       });
     } catch (e: any) {
-      setError(e.message);
+      toast.error(e.message);
     } finally {
       setBusy(null);
     }
@@ -134,12 +133,6 @@ export default function BillingPage() {
           <div style={{ height: 8, borderRadius: 999, background: "var(--surface-2, var(--border))", overflow: "hidden" }}>
             <div style={{ height: "100%", width: `${Math.min(100, usage.limit > 0 ? (usage.used / usage.limit) * 100 : 0)}%`, background: usage.remaining <= 0 ? "var(--error)" : "var(--cyan)", transition: "width .3s" }} />
           </div>
-        </div>
-      )}
-
-      {error && (
-        <div role="alert" style={{ background: "var(--error-soft)", border: "1px solid var(--error-line)", color: "var(--error)", padding: 12, borderRadius: 10, maxWidth: 600 }}>
-          {error}
         </div>
       )}
 

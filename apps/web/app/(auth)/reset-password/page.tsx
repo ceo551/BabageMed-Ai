@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { toast } from "sonner";
 import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { auth } from "../../lib/api";
@@ -27,20 +28,19 @@ function ResetInner() {
 
   const [pw, setPw] = useState("");
   const [pw2, setPw2] = useState("");
-  const [err, setErr] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
-    setErr(null);
-    if (pw !== pw2) { setErr("Passwords don't match."); return; }
-    if (pw.length < 8) { setErr("Password must be at least 8 characters."); return; }
+    if (pw !== pw2) { toast.error("Passwords don't match."); return; }
+    if (pw.length < 8) { toast.error("Password must be at least 8 characters."); return; }
     setBusy(true);
     try {
       await auth.resetPassword(email, token, pw);
+      toast.success("Password updated — please sign in.");
       router.push("/login?reset=ok");
     } catch (e: any) {
-      setErr(e?.error || "Reset failed — the link may be expired.");
+      toast.error(e?.error || "Reset failed — the link may be expired.");
     } finally {
       setBusy(false);
     }
@@ -63,7 +63,6 @@ function ResetInner() {
       <form className="auth-card" onSubmit={submit}>
         <h1>Choose a new password</h1>
         <p className="lead">Resetting for <strong>{email}</strong>.</p>
-        {err && <div className="auth-err">{err}</div>}
         <div className="auth-field">
           <label htmlFor="pw">New password</label>
           <input id="pw" type="password" required minLength={8} value={pw} onChange={(e) => setPw(e.target.value)} autoComplete="new-password" />

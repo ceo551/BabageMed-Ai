@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import { toast } from "sonner";
 import { useUI } from "../lib/ui-context";
 import { Modal } from "../components/Modal";
 import "./spaces.css";
@@ -23,25 +24,22 @@ export function CreateSpaceModal({
   const [name, setName] = useState("");
   const [icon, setIcon] = useState("📁");
   const [saving, setSaving] = useState(false);
-  const [err, setErr] = useState<string | null>(null);
 
   // Reset the form whenever the dialog (re)opens.
   useEffect(() => {
-    if (open) { setName(""); setIcon("📁"); setSaving(false); setErr(null); }
+    if (open) { setName(""); setIcon("📁"); setSaving(false); }
   }, [open]);
 
   async function submit() {
     const n = name.trim();
     if (!n || saving) return;
     setSaving(true);
-    setErr(null);
     try {
       await onCreate(n, icon.trim() || "📁");
       onClose();
     } catch (e) {
-      // Leave the dialog open AND tell the user why, so a failed create is
-      // not a silent no-op.
-      setErr((e as { error?: string })?.error || s.createFailed);
+      // Leave the dialog open AND toast why, so a failed create isn't silent.
+      toast.error((e as { error?: string })?.error || s.createFailed);
     } finally {
       setSaving(false);
     }
@@ -67,7 +65,6 @@ export function CreateSpaceModal({
           />
         </div>
       </div>
-      {err && <div className="feat-err" style={{ margin: "10px 0 0" }}>{err}</div>}
       <div className="feat-modal-foot">
         <button
           type="button"

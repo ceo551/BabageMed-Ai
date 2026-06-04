@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useUI } from "../lib/ui-context";
 import { useAuth } from "../lib/auth-context";
 import { AssistantMessage } from "../components/AssistantMessage";
+import { toast } from "sonner";
 import { agentRuns, type AgentRun } from "../lib/api";
 import { enablePush } from "../lib/push";
 
@@ -20,7 +21,6 @@ export default function TasksPage() {
   const [task, setTask] = useState("");
   const [starting, setStarting] = useState(false);
   const [open, setOpen] = useState<string | null>(null);
-  const [err, setErr] = useState<string | null>(null);
 
   const load = useCallback(() => {
     agentRuns.list().then(setRuns).catch(() => {});
@@ -39,16 +39,16 @@ export default function TasksPage() {
     const t = task.trim();
     if (!t || starting) return;
     setStarting(true);
-    setErr(null);
     // Opt into push on the user's gesture so they're notified when this run
     // finishes even after closing the tab (no-op if denied / unsupported).
     void enablePush();
     try {
       await agentRuns.create(t, [], locale);
       setTask("");
+      toast.success(ar ? "تم تكليف الوكيل — هنبلّغك لما تخلص" : "Task assigned — we'll notify you when it's done");
       load();
     } catch (e: any) {
-      setErr(e?.status === 402 ? (ar ? "وصلت إلى حد الاستخدام الشهري لباقتك." : "You've reached your plan's monthly usage limit.") : (e?.error || (ar ? "تعذّر بدء المهمة" : "Couldn't start the task")));
+      toast.error(e?.status === 402 ? (ar ? "وصلت إلى حد الاستخدام الشهري لباقتك." : "You've reached your plan's monthly usage limit.") : (e?.error || (ar ? "تعذّر بدء المهمة" : "Couldn't start the task")));
     } finally {
       setStarting(false);
     }
@@ -89,7 +89,7 @@ export default function TasksPage() {
           style={{ width: "100%", resize: "vertical", padding: "14px 16px", fontSize: 15, lineHeight: 1.6, borderRadius: 14, border: "1px solid var(--border)", background: "var(--panel-solid)", color: "var(--ink)", fontFamily: "inherit" }}
         />
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10 }}>
-          {err ? <span role="alert" style={{ color: "var(--error)", fontSize: 13 }}>{err}</span> : <span style={{ fontSize: 12, color: "var(--muted-2)" }}>{ar ? "⌘/Ctrl + Enter" : "⌘/Ctrl + Enter"}</span>}
+          <span style={{ fontSize: 12, color: "var(--muted-2)" }}>{"⌘/Ctrl + Enter"}</span>
           <button
             type="button"
             onClick={start}

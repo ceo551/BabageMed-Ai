@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { toast } from "sonner";
 import { useRouter, useSearchParams } from "next/navigation";
 import { I } from "../../icons";
 import { useUI } from "../../lib/ui-context";
@@ -292,11 +293,13 @@ export function SpaceChat({ space, memory }: { space: Space; memory?: string[] }
               );
             }
           } else if (event === "error" && parsed?.error) {
-            setMessages((cur) =>
-              cur.map((m) => m.id === assistantId && m.role === "assistant" ? { ...m, content: s.errorPrefix + parsed.error } : m),
-            );
-            finalContent = s.errorPrefix + parsed.error;
+            toast.error(parsed.error);
             synthetic = true;
+            finalContent = finalContent || (locale === "ar" ? "⚠ حدث خطأ" : "⚠ Something went wrong");
+            const fc = finalContent;
+            setMessages((cur) =>
+              cur.map((m) => m.id === assistantId && m.role === "assistant" ? { ...m, content: fc } : m),
+            );
           }
         }
       }
@@ -322,13 +325,9 @@ export function SpaceChat({ space, memory }: { space: Space; memory?: string[] }
       }
     } catch (e: unknown) {
       const err = e as { name?: string; message?: string };
-      if (err?.name === "AbortError") {
-        setMessages((cur) => cur.filter((m) => m.id !== loadingId));
-      } else {
-        setMessages((cur) =>
-          cur.filter((m) => m.id !== loadingId)
-            .concat({ id: `a-${newId()}`, role: "assistant", content: s.errorPrefix + (err?.message || String(e)) })
-        );
+      setMessages((cur) => cur.filter((m) => m.id !== loadingId));
+      if (err?.name !== "AbortError") {
+        toast.error(err?.message || String(e));
       }
     } finally {
       setSending(false);

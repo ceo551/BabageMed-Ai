@@ -2,6 +2,7 @@
 
 import React, { Suspense, useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
+import { Toaster } from "sonner";
 import { UIProvider, useUI } from "../lib/ui-context";
 import { CanvasProvider } from "../lib/canvas-context";
 import { usePrefs, prefs } from "../lib/store";
@@ -33,8 +34,26 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     <UIProvider>
       <CanvasProvider>
         <Shell>{children}</Shell>
+        <ToasterMount />
       </CanvasProvider>
     </UIProvider>
+  );
+}
+
+// Project-wide toast host (sonner). Mounted once inside the providers so it
+// follows the app's theme + reading direction; every notification across the
+// app routes through `toast.*` (see lib/toast.ts).
+function ToasterMount() {
+  const { effectiveTheme, locale } = useUI();
+  return (
+    <Toaster
+      position="top-center"
+      richColors
+      closeButton
+      dir={locale === "ar" ? "rtl" : "ltr"}
+      theme={effectiveTheme === "dark" ? "dark" : "light"}
+      toastOptions={{ style: { fontFamily: "var(--sans)" } }}
+    />
   );
 }
 

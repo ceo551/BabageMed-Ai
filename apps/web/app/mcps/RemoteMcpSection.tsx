@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useCallback, useEffect, useState } from "react";
+import { toast } from "sonner";
 import { remoteConnectors, type RemoteConnector } from "../lib/api";
 import { useAuth } from "../lib/auth-context";
 import { useUI } from "../lib/ui-context";
@@ -49,7 +50,6 @@ export function RemoteMcpSection() {
   const ar = locale === "ar";
   const [mine, setMine] = useState<RemoteConnector[]>([]);
   const [busy, setBusy] = useState<string | null>(null);
-  const [err, setErr] = useState<string | null>(null);
 
   const refresh = useCallback(() => {
     if (!user) { setMine([]); return; }
@@ -60,14 +60,13 @@ export function RemoteMcpSection() {
   async function connect(serverUrl: string) {
     if (!user) { window.location.href = "/login"; return; }
     setBusy(serverUrl);
-    setErr(null);
     try {
       const r = await startRemoteOAuthPopup(serverUrl);
-      if (r.ok) refresh();
-      else if (r.error === "popup_blocked") setErr(ar ? "النافذة المنبثقة محظورة — اسمح بها وحاول تاني." : "Popup blocked — allow popups and try again.");
-      else if (r.error && r.error !== "cancelled") setErr(ar ? "تعذّر الاتصال بخادم الـ MCP ده." : "Couldn't connect to this MCP server.");
+      if (r.ok) { refresh(); toast.success(ar ? "تم الاتصال" : "Connected"); }
+      else if (r.error === "popup_blocked") toast.error(ar ? "النافذة المنبثقة محظورة — اسمح بها وحاول تاني." : "Popup blocked — allow popups and try again.");
+      else if (r.error && r.error !== "cancelled") toast.error(ar ? "تعذّر الاتصال بخادم الـ MCP ده." : "Couldn't connect to this MCP server.");
     } catch (e: any) {
-      setErr(e?.error || String(e));
+      toast.error(e?.error || String(e));
     } finally {
       setBusy(null);
     }
@@ -75,9 +74,8 @@ export function RemoteMcpSection() {
 
   async function remove(c: RemoteConnector) {
     setBusy(c.serverUrl);
-    setErr(null);
-    try { await remoteConnectors.remove(c.id); refresh(); }
-    catch (e: any) { setErr(e?.error || String(e)); }
+    try { await remoteConnectors.remove(c.id); refresh(); toast.success(ar ? "تم قطع الاتصال" : "Disconnected"); }
+    catch (e: any) { toast.error(e?.error || String(e)); }
     finally { setBusy(null); }
   }
 
@@ -127,12 +125,6 @@ export function RemoteMcpSection() {
           );
         })}
       </div>
-
-      {err && (
-        <div role="alert" style={{ marginTop: 12, borderRadius: 10, padding: 10, border: "1px solid var(--error-line)", background: "var(--error-soft)", color: "var(--error)", fontSize: 13 }}>
-          {err}
-        </div>
-      )}
     </section>
   );
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { toast } from "sonner";
 import { useEffect, useState } from "react";
 import { admin, type AdminPayment, type AdminSession, type AdminStats, type AdminUser } from "../lib/api";
 import { useAuth } from "../lib/auth-context";
@@ -115,9 +116,10 @@ function UsersTab() {
     if (!confirm(`Delete ${email}? This is permanent.`)) return;
     try {
       const r = await admin.deleteUser(id);
-      if (r?.error) alert(r.error);
+      if (r?.error) toast.error(r.error);
+      else toast.success("User deleted");
     } catch (e: any) {
-      alert(e.message || String(e));
+      toast.error(e.message || String(e));
     }
     refresh();
   }

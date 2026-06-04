@@ -1,5 +1,6 @@
 "use client";
 
+import { toast } from "sonner";
 import { notFound, useParams } from "next/navigation";
 import React, { Suspense, useEffect, useRef, useState } from "react";
 import { useUI } from "../../lib/ui-context";
@@ -46,7 +47,6 @@ function FeaturePageInner() {
   // (the next render would see a different number of hooks called).
   const [feature, setFeature] = useState<Feature | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   // Mobile-only drawer state for the feature sub-sidebar — distinct from the
   // desktop collapse pref. Mirrors AppShell's `mobileOpen` for the main
   // sidebar so the sub-sidebar slides over the feature content on phones.
@@ -68,7 +68,7 @@ function FeaturePageInner() {
     setLoading(true);
     featuresApi.get(meta.slug)
       .then((f) => { if (!cancelled) setFeature(f); })
-      .catch((e) => { if (!cancelled) setError(e?.error || String(e)); })
+      .catch((e) => { if (!cancelled) toast.error(e?.error || String(e)); })
       .finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
   }, [authLoading, user, meta?.slug]);
@@ -167,7 +167,6 @@ function FeaturePageInner() {
       />
 
       <section className="feat-main">
-        {error && <div className="feat-err">{error}</div>}
         <FeatureChat meta={meta} feature={feature} onFeatureUpdate={setFeature} />
       </section>
     </div>

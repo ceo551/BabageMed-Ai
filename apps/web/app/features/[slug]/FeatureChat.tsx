@@ -2,6 +2,7 @@
 
 import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { toast } from "sonner";
 import { useSearchParams } from "next/navigation";
 import { I, featureIcon } from "../../icons";
 import { useUI } from "../../lib/ui-context";
@@ -351,14 +352,12 @@ export function FeatureChat({
               );
             }
           } else if (event === "error" && parsed?.error) {
+            toast.error(parsed.error);
+            // Mark the turn inline but don't persist an error as history.
+            finalContent = "";
             setMessages((cur) =>
-              cur.map((m) => m.id === assistantId && m.role === "assistant" ? { ...m, content: "Error: " + parsed.error } : m),
+              cur.map((m) => m.id === assistantId && m.role === "assistant" ? { ...m, content: "⚠ " + parsed.error } : m),
             );
-            // Same fix as page.tsx round 27: persist the error row so
-            // a chat reload doesn't silently drop it (the user saw
-            // "Error: …" on screen; dropping it on persist leaves a
-            // confusing gap on refresh).
-            finalContent = "Error: " + parsed.error;
           }
         }
       }
@@ -373,15 +372,9 @@ export function FeatureChat({
       // see the new chat until the next real route push.
     } catch (e: unknown) {
       const err = e as { name?: string; message?: string };
-      if (err?.name === "AbortError") {
-        // Intentional abort (chat switch / unmount) — just drop the
-        // loading row, don't render a confusing "Error: aborted" bubble.
-        setMessages((cur) => cur.filter((m) => m.id !== loadingId));
-      } else {
-        setMessages((cur) =>
-          cur.filter((m) => m.id !== loadingId)
-            .concat({ id: `a-${newId()}`, role: "assistant", content: "Error: " + (err?.message || String(e)) })
-        );
+      setMessages((cur) => cur.filter((m) => m.id !== loadingId));
+      if (err?.name !== "AbortError") {
+        toast.error(err?.message || String(e));
       }
     } finally {
       setSending(false);
@@ -435,13 +428,9 @@ export function FeatureChat({
       );
     } catch (e: unknown) {
       const err = e as { name?: string; message?: string };
-      if (err?.name === "AbortError") {
-        setMessages((cur) => cur.filter((m) => m.id !== loadingId));
-      } else {
-        setMessages((cur) =>
-          cur.filter((m) => m.id !== loadingId)
-            .concat({ id: `a-${newId()}`, role: "assistant", content: s.errorPrefix + (err?.message || String(e)) }),
-        );
+      setMessages((cur) => cur.filter((m) => m.id !== loadingId));
+      if (err?.name !== "AbortError") {
+        toast.error(err?.message || String(e));
       }
     }
   }

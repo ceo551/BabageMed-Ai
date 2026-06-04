@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import React, { useEffect, useMemo, useState } from "react";
 import { useUI } from "../lib/ui-context";
@@ -98,7 +99,8 @@ export default function SpacesIndexPage() {
       return cur.filter((sp) => sp.id !== id);
     });
     try { await spacesApi.remove(id); }
-    catch {
+    catch (e) {
+      toast.error((e as { error?: string })?.error || s.deleteSpace);
       if (removed) {
         const r = removed, idx = at;
         setItems((cur) => {
@@ -121,7 +123,8 @@ export default function SpacesIndexPage() {
       const updated = await spacesApi.update(id, { name });
       setItems((cur) => cur.map((sp) => (sp.id === id ? { ...sp, ...updated } : sp)));
       setRenaming(null);
-    } catch { /* keep the dialog open to retry */ }
+      toast.success(s.saved);
+    } catch (e) { toast.error((e as { error?: string })?.error || s.save); }
     finally { setSavingRename(false); }
   }
 

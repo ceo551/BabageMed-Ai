@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { auth } from "../../lib/api";
@@ -16,7 +17,6 @@ export default function SignupPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [displayName, setDisplayName] = useState("");
-  const [err, setErr] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [next, setNext] = useState("/");
   useEffect(() => { setNext(readNext()); }, []);
@@ -26,14 +26,13 @@ export default function SignupPage() {
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     setBusy(true);
-    setErr(null);
     try {
       await auth.signup(email, password, displayName);
       await refresh();
       router.push(next);
     } catch (e: unknown) {
       const errObj = e as { error?: string; message?: string };
-      setErr(errObj?.error || errObj?.message || "Signup failed");
+      toast.error(errObj?.error || errObj?.message || "Signup failed");
     } finally {
       setBusy(false);
     }
@@ -45,7 +44,6 @@ export default function SignupPage() {
         <div className="auth-brand"><img src="/pervagans-icon.png" alt="" className="auth-brand-icon" /></div>
         <h1>{s.createAccount}</h1>
         <p className="lead">{s.signUpToContinue}</p>
-        {err && <div className="auth-err">{err}</div>}
         <div className="auth-field">
           <label htmlFor="name">Display name (optional)</label>
           <input id="name" value={displayName} onChange={(e) => setDisplayName(e.target.value)} autoComplete="name" />

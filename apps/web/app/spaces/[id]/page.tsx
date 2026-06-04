@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { toast } from "sonner";
 import { useParams, useRouter } from "next/navigation";
 import React, { Suspense, useEffect, useRef, useState } from "react";
 import { useUI } from "../../lib/ui-context";
@@ -40,7 +41,6 @@ function SpacePageInner() {
   const [files, setFiles] = useState<SpaceFile[]>([]);
   const [memory, setMemory] = useState<SpaceMemoryItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [notFound, setNotFound] = useState(false);
 
   // Header overflow menu + rename dialog state.
@@ -55,7 +55,6 @@ function SpacePageInner() {
     if (!user || !id) return;
     let cancelled = false;
     setLoading(true);
-    setError(null);
     setNotFound(false);
     spacesApi.get(id)
       .then((sp) => {
@@ -71,7 +70,7 @@ function SpacePageInner() {
       .catch((e) => {
         if (cancelled) return;
         if (e?.status === 404) setNotFound(true);
-        else setError(e?.error || String(e));
+        else toast.error(e?.error || String(e));
       })
       .finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
@@ -132,7 +131,7 @@ function SpacePageInner() {
       await spacesApi.remove(id);
       router.push("/spaces");
     } catch (e) {
-      setError((e as { error?: string })?.error || s.deleteSpace);
+      toast.error((e as { error?: string })?.error || s.deleteSpace);
     }
   }
 
@@ -166,7 +165,6 @@ function SpacePageInner() {
     return (
       <div className="sp-gate">
         <h1>{s.noSpacesYet}</h1>
-        {error && <p>{error}</p>}
         <p><Link href="/spaces" className="sp-back">{s.allSpaces}</Link></p>
       </div>
     );
@@ -222,7 +220,6 @@ function SpacePageInner() {
 
       <div className="sp-body">
         <section className="sp-chat-col">
-          {error && <div className="feat-err" style={{ margin: "12px 24px 0" }}>{error}</div>}
           <SpaceChat space={space} memory={memory.map((m) => m.content)} />
         </section>
 
@@ -230,14 +227,14 @@ function SpacePageInner() {
           <InstructionsCard
             value={space.instructions || ""}
             onSave={async (v) => {
-              // Surface failures (and re-throw) so the card stays in edit mode
-              // for a retry instead of silently swallowing the error.
+              // Surface failures as a toast (and re-throw) so the card stays in
+              // edit mode for a retry instead of silently swallowing the error.
               try {
                 const updated = await spacesApi.update(id, { instructions: v });
                 setSpace((sp) => (sp ? { ...sp, ...updated } : updated));
-                setError(null);
+                toast.success(s.saved);
               } catch (e) {
-                setError((e as { error?: string })?.error || s.save);
+                toast.error((e as { error?: string })?.error || s.save);
                 throw e;
               }
             }}
@@ -253,11 +250,12 @@ function SpacePageInner() {
                 catch (e) { errs.push(`${f.name}: ${(e as { error?: string })?.error || "failed"}`); }
               }
               await refreshFiles();
-              setError(errs.length ? errs.join("; ") : null);
+              if (errs.length) toast.error(errs.join("; "));
+              else toast.success(s.saved);
             }}
             onRemove={async (fileId) => {
-              try { await spacesApi.removeFile(id, fileId); setError(null); }
-              catch (e) { setError((e as { error?: string })?.error || s.remove); }
+              try { await spacesApi.removeFile(id, fileId); }
+              catch (e) { toast.error((e as { error?: string })?.error || s.remove); }
               finally { await refreshFiles(); }
             }}
           />
@@ -267,9 +265,9 @@ function SpacePageInner() {
               try {
                 const updated = await spacesApi.update(id, { skills });
                 setSpace((sp) => (sp ? { ...sp, ...updated } : updated));
-                setError(null);
+                toast.success(s.saved);
               } catch (e) {
-                setError((e as { error?: string })?.error || s.save);
+                toast.error((e as { error?: string })?.error || s.save);
                 throw e;
               }
             }}
@@ -281,13 +279,13 @@ function SpacePageInner() {
               // immediately. Re-throw on failure so the card can restore.
               const created = await spacesApi.addMemory(id, content);
               setMemory((m) => [created, ...m]);
-              setError(null);
+              toast.success(s.saved);
             }}
             onRemove={async (memId) => {
               const prev = memory;
               setMemory((m) => m.filter((x) => x.id !== memId));
-              try { await spacesApi.removeMemory(id, memId); setError(null); }
-              catch (e) { setMemory(prev); setError((e as { error?: string })?.error || s.remove); }
+              try { await spacesApi.removeMemory(id, memId); }
+              catch (e) { setMemory(prev); toast.error((e as { error?: string })?.error || s.remove); }
             }}
           />
         </aside>
