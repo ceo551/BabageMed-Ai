@@ -345,6 +345,14 @@ func FromContext(ctx context.Context) *User {
 	return u
 }
 
+// WithUser returns a context carrying u under the same key the auth middleware
+// uses, so code running OUTSIDE the HTTP chain (e.g. an async agent run on a
+// detached background context) can still be seen by FromContext — and thus
+// resolve the user's per-connector credentials.
+func WithUser(ctx context.Context, u *User) context.Context {
+	return context.WithValue(ctx, userCtxKey, u)
+}
+
 // SetCookie writes the session cookie to the response. Secure flag is enabled
 // whenever the originating request looks like it came over HTTPS (or the
 // X-Forwarded-Proto header says https — works behind a reverse proxy).

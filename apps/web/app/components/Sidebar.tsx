@@ -184,6 +184,18 @@ export function Sidebar({
           <span className="trail-chev">{I.chevR}</span>
         </Link>
 
+        {/* Tasks — async "delegate" agent runs (P6). */}
+        <Link
+          href="/tasks"
+          className="sb-row"
+          data-active={pathname === "/tasks"}
+          style={{ textDecoration: "none" }}
+        >
+          {I.agent}
+          <span className="lbl">{s.tasks}</span>
+          <span className="trail-chev">{I.chevR}</span>
+        </Link>
+
         {/* Fixed feature categories (Education … Image & Video). */}
         <FeaturesSection
           label={s.featuresHeader}

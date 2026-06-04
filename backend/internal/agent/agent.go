@@ -9,6 +9,7 @@ package agent
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
@@ -16,9 +17,11 @@ import (
 	"time"
 
 	"github.com/pervagans/backend/internal/auth"
+	"github.com/pervagans/backend/internal/db"
 	"github.com/pervagans/backend/internal/llm"
 	"github.com/pervagans/backend/internal/mcp"
 	"github.com/go-chi/chi/v5"
+	"github.com/jackc/pgx/v5"
 )
 
 const (
@@ -49,10 +52,11 @@ type Service struct {
 	auth  *auth.Service
 	creds CredentialProvider
 	meter UsageMeter
+	db    *db.DB // P6: persist async runs; nil → background runs disabled
 }
 
-func New(l *llm.Client, r *mcp.Registry, a *auth.Service, creds CredentialProvider, meter UsageMeter) *Service {
-	return &Service{llm: l, reg: r, auth: a, creds: creds, meter: meter}
+func New(l *llm.Client, r *mcp.Registry, a *auth.Service, creds CredentialProvider, meter UsageMeter, d *db.DB) *Service {
+	return &Service{llm: l, reg: r, auth: a, creds: creds, meter: meter, db: d}
 }
 
 func (s *Service) Register(r chi.Router, limiter func(http.Handler) http.Handler) {
@@ -60,6 +64,10 @@ func (s *Service) Register(r chi.Router, limiter func(http.Handler) http.Handler
 		gr.Use(s.auth.Required)
 		gr.Use(limiter)
 		gr.Post("/api/agent/stream", s.handleStream)
+		// P6: async "delegate" runs — assign, close the tab, poll for the result.
+		gr.Post("/api/agent/runs", s.handleCreateRun)
+		gr.Get("/api/agent/runs", s.handleListRuns)
+		gr.Get("/api/agent/runs/{id}", s.handleGetRun)
 	})
 }
 
@@ -219,6 +227,233 @@ func (s *Service) handleStream(w http.ResponseWriter, r *http.Request) {
 		send("answer", map[string]any{"content": content})
 	}
 	send("done", map[string]any{})
+}
+
+// ─── Async "delegate" runs (P6) ──────────────────────────────────────────────
+
+const (
+	maxAsyncRuns    = 50              // recent runs returned by the list endpoint
+	asyncRunTimeout = 6 * time.Minute // hard cap on a detached run
+)
+
+type runRow struct {
+	ID         string          `json:"id"`
+	Task       string          `json:"task"`
+	Status     string          `json:"status"`
+	Steps      json.RawMessage `json:"steps"`
+	Result     string          `json:"result"`
+	Error      string          `json:"error"`
+	CreatedAt  time.Time       `json:"createdAt"`
+	FinishedAt *time.Time      `json:"finishedAt"`
+}
+
+// isUUIDish guards the {id} path param so a malformed id returns 404 instead of
+// a Postgres "invalid input syntax for type uuid" 500 (no regexp import).
+func isUUIDish(s string) bool {
+	if len(s) != 36 {
+		return false
+	}
+	for i := 0; i < len(s); i++ {
+		c := s[i]
+		if i == 8 || i == 13 || i == 18 || i == 23 {
+			if c != '-' {
+				return false
+			}
+		} else if !((c >= '0' && c <= '9') || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F')) {
+			return false
+		}
+	}
+	return true
+}
+
+func (s *Service) handleCreateRun(w http.ResponseWriter, r *http.Request) {
+	if s.db == nil {
+		writeJSONErr(w, 503, "runs unavailable")
+		return
+	}
+	u := auth.FromContext(r.Context())
+	if u == nil {
+		writeJSONErr(w, 401, "unauthorized")
+		return
+	}
+	var req agentReq
+	r.Body = http.MaxBytesReader(w, r.Body, 1<<20)
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeJSONErr(w, 400, "invalid json")
+		return
+	}
+	req.Task = strings.TrimSpace(req.Task)
+	if req.Task == "" {
+		writeJSONErr(w, 400, "task required")
+		return
+	}
+	if len(req.Task) > 8000 {
+		req.Task = req.Task[:8000]
+	}
+	// Per-plan credit cap (an async run costs the same as a live one).
+	if s.meter != nil {
+		if ok, _ := s.meter.Check(r.Context(), u.ID, u.Plan, "agent"); !ok {
+			writeJSONErr(w, 402, "Monthly usage limit reached for your plan — upgrade to continue.")
+			return
+		}
+		s.meter.Record(u.ID, u.Plan, "agent", agentModel)
+	}
+	var id string
+	if err := s.db.Pool.QueryRow(r.Context(), `
+        INSERT INTO agent_runs (user_id, task, status) VALUES ($1, $2, 'running') RETURNING id::text
+    `, u.ID, req.Task).Scan(&id); err != nil {
+		log.Printf("agent: create run %v", err)
+		writeJSONErr(w, 500, "could not start run")
+		return
+	}
+	// Detach: the run survives this request. Carry the user so execTool can
+	// resolve their per-connector credentials; cap the lifetime hard. The
+	// agentLimiter (2/min) + timeout bound concurrency without a worker pool.
+	go s.executeRun(id, u, req)
+
+	w.Header().Set("Content-Type", "application/json")
+	_ = json.NewEncoder(w).Encode(map[string]string{"id": id, "status": "running"})
+}
+
+// executeRun runs the plan→act loop on a DETACHED context and records the
+// outcome to agent_runs. Mirrors handleStream's loop but writes to the DB
+// instead of streaming — the live SSE path is intentionally left untouched.
+func (s *Service) executeRun(runID string, u *auth.User, req agentReq) {
+	ctx, cancel := context.WithTimeout(auth.WithUser(context.Background(), u), asyncRunTimeout)
+	defer cancel()
+	defer func() {
+		if rec := recover(); rec != nil {
+			log.Printf("agent: run %s panic: %v", runID, rec)
+			s.finishRun(runID, "failed", nil, "", "internal error")
+		}
+	}()
+
+	steps := []map[string]any{}
+	tools, refs := s.buildTools(ctx, req.UseMcps)
+	messages := []map[string]any{
+		{"role": "system", "content": agentSystemPrompt(req.Locale, len(tools))},
+		{"role": "user", "content": req.Task},
+	}
+	for iter := 0; iter < maxIters; iter++ {
+		content, calls, err := s.llm.ChatWithTools(ctx, agentModel, messages, tools)
+		if err != nil {
+			s.finishRun(runID, "failed", steps, "", "agent step failed")
+			return
+		}
+		if len(calls) == 0 {
+			s.finishRun(runID, "done", steps, content, "")
+			return
+		}
+		tcArr := make([]map[string]any, 0, len(calls))
+		for _, tc := range calls {
+			tcArr = append(tcArr, map[string]any{"id": tc.ID, "type": "function", "function": map[string]any{"name": tc.Name, "arguments": tc.Arguments}})
+		}
+		messages = append(messages, map[string]any{"role": "assistant", "content": content, "tool_calls": tcArr})
+		for _, tc := range calls {
+			obs := s.execTool(ctx, refs, tc)
+			ok := !strings.HasPrefix(obs, "tool error")
+			preview := strings.TrimSpace(obs)
+			if len(preview) > 280 {
+				preview = preview[:280] + "…"
+			}
+			steps = append(steps, map[string]any{"tool": tc.Name, "query": argSummary(tc.Arguments), "ok": ok, "preview": preview})
+			messages = append(messages, map[string]any{"role": "tool", "tool_call_id": tc.ID, "content": obs})
+		}
+		s.persistSteps(runID, steps) // incremental progress for the poller
+	}
+	// Iteration cap — one more pass for a final synthesis with no tools.
+	messages = append(messages, map[string]any{"role": "user", "content": "Stop calling tools now and write your best final answer from what you've gathered, citing connectors by name."})
+	content, _, err := s.llm.ChatWithTools(ctx, agentModel, messages, nil)
+	if err != nil {
+		s.finishRun(runID, "failed", steps, "", "agent synthesis failed")
+		return
+	}
+	s.finishRun(runID, "done", steps, content, "")
+}
+
+func (s *Service) persistSteps(runID string, steps []map[string]any) {
+	b, _ := json.Marshal(steps)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	_, _ = s.db.Pool.Exec(ctx, `UPDATE agent_runs SET steps = $2::jsonb WHERE id = $1`, runID, string(b))
+}
+
+func (s *Service) finishRun(runID, status string, steps []map[string]any, result, errMsg string) {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	var stepsJSON any
+	if steps != nil {
+		b, _ := json.Marshal(steps)
+		stepsJSON = string(b)
+	}
+	if _, err := s.db.Pool.Exec(ctx, `
+        UPDATE agent_runs
+        SET status = $2, result = NULLIF($3, ''), error = NULLIF($4, ''),
+            steps = COALESCE($5::jsonb, steps), finished_at = now()
+        WHERE id = $1
+    `, runID, status, result, errMsg, stepsJSON); err != nil {
+		log.Printf("agent: finish run %s: %v", runID, err)
+	}
+}
+
+func (s *Service) handleListRuns(w http.ResponseWriter, r *http.Request) {
+	if s.db == nil {
+		writeJSONErr(w, 503, "runs unavailable")
+		return
+	}
+	u := auth.FromContext(r.Context())
+	rows, err := s.db.Pool.Query(r.Context(), `
+        SELECT id::text, task, status, steps, COALESCE(result, ''), COALESCE(error, ''), created_at, finished_at
+        FROM agent_runs WHERE user_id = $1 ORDER BY created_at DESC LIMIT $2
+    `, u.ID, maxAsyncRuns)
+	if err != nil {
+		writeJSONErr(w, 500, "internal error")
+		return
+	}
+	defer rows.Close()
+	out := []runRow{}
+	for rows.Next() {
+		var rr runRow
+		var stepsRaw []byte // scan JSONB via []byte (proven path), then wrap
+		if err := rows.Scan(&rr.ID, &rr.Task, &rr.Status, &stepsRaw, &rr.Result, &rr.Error, &rr.CreatedAt, &rr.FinishedAt); err != nil {
+			writeJSONErr(w, 500, "internal error")
+			return
+		}
+		rr.Steps = json.RawMessage(stepsRaw)
+		out = append(out, rr)
+	}
+	w.Header().Set("Content-Type", "application/json")
+	_ = json.NewEncoder(w).Encode(out)
+}
+
+func (s *Service) handleGetRun(w http.ResponseWriter, r *http.Request) {
+	if s.db == nil {
+		writeJSONErr(w, 503, "runs unavailable")
+		return
+	}
+	u := auth.FromContext(r.Context())
+	id := chi.URLParam(r, "id")
+	if !isUUIDish(id) {
+		writeJSONErr(w, 404, "not found")
+		return
+	}
+	var rr runRow
+	var stepsRaw []byte
+	err := s.db.Pool.QueryRow(r.Context(), `
+        SELECT id::text, task, status, steps, COALESCE(result, ''), COALESCE(error, ''), created_at, finished_at
+        FROM agent_runs WHERE id = $1 AND user_id = $2
+    `, id, u.ID).Scan(&rr.ID, &rr.Task, &rr.Status, &stepsRaw, &rr.Result, &rr.Error, &rr.CreatedAt, &rr.FinishedAt)
+	if errors.Is(err, pgx.ErrNoRows) {
+		writeJSONErr(w, 404, "not found")
+		return
+	}
+	if err != nil {
+		writeJSONErr(w, 500, "internal error")
+		return
+	}
+	rr.Steps = json.RawMessage(stepsRaw)
+	w.Header().Set("Content-Type", "application/json")
+	_ = json.NewEncoder(w).Encode(rr)
 }
 
 // toolRef maps a model-facing function name back to the concrete tool to run.

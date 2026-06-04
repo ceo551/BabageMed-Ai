@@ -82,6 +82,7 @@ export type LocaleStrings = {
   batch: string;
   lockSeed: string;
   galleryTitle: string;
+  tasks: string;
   galleryEmpty: string;
   galleryDeleteConfirm: string;
   galleryCreateCta: string;
@@ -290,6 +291,7 @@ export const STR: Record<Locale, LocaleStrings> = {
     batch: "Count",
     lockSeed: "Lock seed for reproducible results",
     galleryTitle: "Gallery",
+    tasks: "Tasks",
     galleryEmpty: "No generated media yet — create your first image or video.",
     galleryDeleteConfirm: "Delete this asset? This can't be undone.",
     galleryCreateCta: "Create an image",
@@ -461,6 +463,7 @@ export const STR: Record<Locale, LocaleStrings> = {
     batch: "العدد",
     lockSeed: "تثبيت البذرة لنتائج قابلة للتكرار",
     galleryTitle: "المعرض",
+    tasks: "المهام",
     galleryEmpty: "لا توجد وسائط مُنشأة بعد — أنشئ أول صورة أو فيديو.",
     galleryDeleteConfirm: "حذف هذا العنصر؟ لا يمكن التراجع.",
     galleryCreateCta: "أنشئ صورة",

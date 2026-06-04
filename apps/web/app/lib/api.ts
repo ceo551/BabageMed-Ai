@@ -466,6 +466,25 @@ export const share = {
   get: (id: string) => api.get<SharedAnswer>(`/api/share/${encodeURIComponent(id)}`),
 };
 
+// ── Async agent runs ("delegate" — assign, close the tab, poll, P6) ─────────
+export type AgentRunStep = { tool: string; query?: string; ok?: boolean; preview?: string };
+export type AgentRun = {
+  id: string;
+  task: string;
+  status: "running" | "done" | "failed" | string;
+  steps?: AgentRunStep[];
+  result?: string;
+  error?: string;
+  createdAt: string;
+  finishedAt?: string | null;
+};
+export const agentRuns = {
+  create: (task: string, useMcps: string[], locale: string) =>
+    api.post<{ id: string; status: string }>("/api/agent/runs", { task, useMcps, locale }),
+  list: () => api.get<AgentRun[]>("/api/agent/runs"),
+  get: (id: string) => api.get<AgentRun>(`/api/agent/runs/${encodeURIComponent(id)}`),
+};
+
 // ── Media generation (Alibaba Model Studio / DashScope) ────────────────────
 // Image is synchronous (one call → url). Video is async: submit returns a
 // task id the caller polls until status is SUCCEEDED (url ready) or FAILED.

@@ -323,7 +323,7 @@ func main() {
 		})
 		admin.NewHandler(dbConn, authSvc).Register(r)
 		media.New(dbConn, authSvc, llmClient, billingSvc).Register(r, toolsLimiter.Middleware)
-		agent.New(llmClient, registry, authSvc, connSvc, billingSvc).Register(r, agentLimiter.Middleware)
+		agent.New(llmClient, registry, authSvc, connSvc, billingSvc, dbConn).Register(r, agentLimiter.Middleware)
 		spaces.New(dbConn, authSvc).Register(r, uploadLimiter.Middleware)
 		features.New(dbConn, authSvc).Register(r, uploadLimiter.Middleware)
 		connSvc.Register(r)
