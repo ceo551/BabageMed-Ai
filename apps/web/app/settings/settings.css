@@ -29,6 +29,10 @@
 }
 @media (max-width: 720px) {
   .settings-grid { grid-template-columns: 1fr; }
+  /* Stack each label/control row and let inputs shrink (min-width:240px
+     overflowed phones). */
+  .settings-row { grid-template-columns: 1fr; }
+  .settings-row .input, .settings-row select, .settings-row textarea { min-width: 0; width: 100%; }
 }
 .settings-nav {
   display: flex;
@@ -236,7 +240,7 @@
   font-size: 13px;
   font-weight: 500;
   cursor: pointer;
-  transition: filter .12s, opacity .12s;
+  transition: background .12s, border-color .12s, opacity .12s;
 }
-.settings-btn:hover { filter: brightness(1.05); }
+.settings-btn:hover:not([disabled]) { background: color-mix(in srgb, var(--cyan) 16%, transparent); border-color: var(--cyan-line); }
 .settings-btn[disabled] { opacity: .5; cursor: not-allowed; }

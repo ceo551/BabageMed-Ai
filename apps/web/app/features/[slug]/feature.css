@@ -463,7 +463,7 @@
   cursor: pointer;
   transition: background .12s, border-color .12s, color .12s;
 }
-.feat-subsb-new:hover { filter: brightness(1.05); }
+.feat-subsb-new:hover { background: color-mix(in srgb, var(--hue-ink, var(--cyan)) 16%, transparent); border-color: var(--hue-line, var(--cyan-line)); }
 .feat-subsb-new .ico { width: 16px; height: 16px; }
 
 .feat-subsb-section-label {
