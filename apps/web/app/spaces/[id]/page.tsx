@@ -5,7 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import React, { Suspense, useEffect, useRef, useState } from "react";
 import { useUI } from "../../lib/ui-context";
 import { useAuth } from "../../lib/auth-context";
-import { spaces as spacesApi, type Space, type SpaceFile } from "../../lib/api";
+import { spaces as spacesApi, type Space, type SpaceFile, type SpaceMemoryItem } from "../../lib/api";
 import { I } from "../../icons";
 import { Modal } from "../../components/Modal";
 import { SpaceChat } from "./SpaceChat";
@@ -38,6 +38,7 @@ function SpacePageInner() {
 
   const [space, setSpace] = useState<Space | null>(null);
   const [files, setFiles] = useState<SpaceFile[]>([]);
+  const [memory, setMemory] = useState<SpaceMemoryItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [notFound, setNotFound] = useState(false);
@@ -60,6 +61,9 @@ function SpacePageInner() {
       .then((sp) => {
         if (cancelled) return;
         setSpace(sp);
+        spacesApi.memory(id)
+          .then((m) => { if (!cancelled) setMemory(m); })
+          .catch(() => { if (!cancelled) setMemory([]); });
         return spacesApi.files(id)
           .then((fl) => { if (!cancelled) setFiles(fl); })
           .catch(() => { if (!cancelled) setFiles([]); });
@@ -219,7 +223,7 @@ function SpacePageInner() {
       <div className="sp-body">
         <section className="sp-chat-col">
           {error && <div className="feat-err" style={{ margin: "12px 24px 0" }}>{error}</div>}
-          <SpaceChat space={space} />
+          <SpaceChat space={space} memory={memory.map((m) => m.content)} />
         </section>
 
         <aside className="sp-rail" aria-label={s.spacesHeader}>
@@ -268,6 +272,22 @@ function SpacePageInner() {
                 setError((e as { error?: string })?.error || s.save);
                 throw e;
               }
+            }}
+          />
+          <MemoryCard
+            items={memory}
+            onAdd={async (content) => {
+              // Optimistic-ish: append the server row so the chat picks it up
+              // immediately. Re-throw on failure so the card can restore.
+              const created = await spacesApi.addMemory(id, content);
+              setMemory((m) => [created, ...m]);
+              setError(null);
+            }}
+            onRemove={async (memId) => {
+              const prev = memory;
+              setMemory((m) => m.filter((x) => x.id !== memId));
+              try { await spacesApi.removeMemory(id, memId); setError(null); }
+              catch (e) { setMemory(prev); setError((e as { error?: string })?.error || s.remove); }
             }}
           />
         </aside>
@@ -538,6 +558,83 @@ function SkillsCard({
           disabled={busy || !draft.trim()}
         >
           {I.plus}<span>{busy ? s.saving : s.addSkill}</span>
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ─── Memory card (persistent per-space facts) ─────────────────────────────
+// Mirrors SkillsCard/FilesCard. Each saved fact is injected into the system
+// prompt on every chat in this space (ChatGPT-memory parity), so the assistant
+// doesn't start cold. Items render as rows (facts can be a full sentence).
+function MemoryCard({
+  items,
+  onAdd,
+  onRemove,
+}: {
+  items: SpaceMemoryItem[];
+  onAdd: (content: string) => Promise<void>;
+  onRemove: (id: string) => Promise<void>;
+}) {
+  const { s } = useUI();
+  const [draft, setDraft] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  async function add() {
+    const content = draft.trim();
+    if (!content) return;
+    setBusy(true);
+    // onAdd re-throws on failure; keep the draft so the user can retry.
+    try { await onAdd(content); setDraft(""); }
+    catch { /* error already surfaced by the parent */ }
+    finally { setBusy(false); }
+  }
+
+  return (
+    <div className="sp-rail-card">
+      <div className="sp-rail-head">
+        <span className="sp-rail-icon" aria-hidden="true">{I.star}</span>
+        <span className="sp-rail-title">{s.memoryPanel}</span>
+      </div>
+
+      {items.length === 0 ? (
+        <div className="sp-dropzone">{s.memoryHint}</div>
+      ) : (
+        <ul className="sp-file-list">
+          {items.map((m) => (
+            <li key={m.id} className="sp-file-row">
+              <span className="sp-file-icon" aria-hidden="true">{I.star}</span>
+              <span className="sp-file-name" title={m.content}>{m.content}</span>
+              <button
+                type="button"
+                className="sp-row-del"
+                onClick={() => onRemove(m.id)}
+                aria-label={s.remove}
+                title={s.remove}
+              >×</button>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      <div className="sp-skill-add">
+        <input
+          type="text"
+          className="feat-modal-input"
+          placeholder={s.addMemory}
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); add(); } }}
+          disabled={busy}
+        />
+        <button
+          type="button"
+          className="sp-add-dashed"
+          onClick={add}
+          disabled={busy || !draft.trim()}
+        >
+          {I.plus}<span>{busy ? s.saving : s.addMemory}</span>
         </button>
       </div>
     </div>

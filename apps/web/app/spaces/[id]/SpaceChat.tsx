@@ -29,7 +29,7 @@ function newId(): string {
   return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
-export function SpaceChat({ space }: { space: Space }) {
+export function SpaceChat({ space, memory }: { space: Space; memory?: string[] }) {
   const params = useSearchParams();
   const router = useRouter();
   const { s, locale } = useUI();
@@ -212,6 +212,7 @@ export function SpaceChat({ space }: { space: Space }) {
         featureInstructions: space.instructions || "",
         spaceName: space.name,
         spaceSkills: space.skills || [],
+        spaceMemory: memory || [],
         spaceContext: chunks,
         messages: [
           ...messages

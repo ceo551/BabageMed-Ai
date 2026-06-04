@@ -44,6 +44,7 @@ export type LocaleStrings = {
   instructionsTellHint: string;
   filesHint: string;
   skillsHint: string;
+  memoryPanel: string; memoryHint: string; addMemory: string;
   updatedAgo: string;
   noSpacesMatch: string;
   clearSearch: string;
@@ -241,6 +242,9 @@ export const STR: Record<Locale, LocaleStrings> = {
     instructionsTellHint: "Tell the assistant how it should work in this space.",
     filesHint: "Add reference docs the assistant should use as context.",
     skillsHint: "Reusable capabilities the assistant applies automatically.",
+    memoryPanel: "Memory",
+    memoryHint: "Facts the assistant remembers in every chat in this space.",
+    addMemory: "Add memory",
     updatedAgo: "Updated",
     noSpacesMatch: "No spaces match your search",
     clearSearch: "Clear search",
@@ -408,6 +412,9 @@ export const STR: Record<Locale, LocaleStrings> = {
     instructionsTellHint: "أخبر المساعد كيف يعمل في هذه المساحة.",
     filesHint: "أضف مستندات مرجعية يستخدمها المساعد كسياق.",
     skillsHint: "قدرات قابلة لإعادة الاستخدام يطبّقها المساعد تلقائيًا.",
+    memoryPanel: "الذاكرة",
+    memoryHint: "حقائق يتذكّرها المساعد في كل محادثة بهذه المساحة.",
+    addMemory: "أضف معلومة",
     updatedAgo: "آخر تحديث",
     noSpacesMatch: "لا توجد مساحات مطابقة لبحثك",
     clearSearch: "مسح البحث",

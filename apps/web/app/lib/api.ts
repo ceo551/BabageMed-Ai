@@ -392,6 +392,13 @@ export type SpaceChunk = {
   content: string;
   score: number;
 };
+export type SpaceMemoryItem = {
+  id: string;
+  kind: string;     // 'fact' | 'preference' | 'connector_state'
+  content: string;
+  source: string;   // 'user' | 'inferred' | 'connector:<id>'
+  createdAt: string;
+};
 
 export const spaces = {
   list:   () => api.get<Space[]>("/api/spaces"),
@@ -434,6 +441,15 @@ export const spaces = {
     }).then((r) => handle<void>(r)),
   context: (id: string, q: string) =>
     api.get<SpaceChunk[]>(`/api/spaces/${encodeURIComponent(id)}/context?q=${encodeURIComponent(q)}`),
+  memory: (id: string) =>
+    api.get<SpaceMemoryItem[]>(`/api/spaces/${encodeURIComponent(id)}/memory`),
+  addMemory: (id: string, content: string) =>
+    api.post<SpaceMemoryItem>(`/api/spaces/${encodeURIComponent(id)}/memory`, { content }),
+  removeMemory: (spaceId: string, memId: string) =>
+    fetch(`/api/backend/api/spaces/${encodeURIComponent(spaceId)}/memory/${encodeURIComponent(memId)}`, {
+      method: "DELETE",
+      credentials: "include",
+    }).then((r) => handle<void>(r)),
 };
 
 // ── Media generation (Alibaba Model Studio / DashScope) ────────────────────

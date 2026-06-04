@@ -34,6 +34,8 @@ const (
 	chunkChars     = 500              // soft chunk size
 	chunkOverlap   = 60               // characters of overlap between adjacent chunks
 	maxContextHits = 8                // chunks returned per /context call
+	maxMemoryItems = 200              // per-space cap on saved memory entries
+	maxMemoryChars = 2000             // per-entry content cap
 )
 
 type Space struct {
@@ -68,6 +70,16 @@ type Chunk struct {
 	Idx      int     `json:"idx"`
 	Content  string  `json:"content"`
 	Score    float64 `json:"score"`
+}
+
+// MemoryItem is one durable per-space fact/preference injected into the system
+// prompt on every chat turn in the space (ChatGPT-memory parity).
+type MemoryItem struct {
+	ID        string    `json:"id"`
+	Kind      string    `json:"kind"`    // 'fact' | 'preference' | 'connector_state'
+	Content   string    `json:"content"`
+	Source    string    `json:"source"`  // 'user' | 'inferred' | 'connector:<id>'
+	CreatedAt time.Time `json:"createdAt"`
 }
 
 type Service struct {
@@ -480,6 +492,96 @@ func (s *Service) Context(ctx context.Context, userID, spaceID, q string) ([]Chu
 	return out, nil
 }
 
+// ─── Memory (persistent per-space facts) ─────────────────────────────────────
+
+// ListMemory returns the space's saved memory items, newest first. Ownership is
+// enforced by joining the parent space on user_id (same idiom as ListFiles).
+func (s *Service) ListMemory(ctx context.Context, userID, spaceID string) ([]MemoryItem, error) {
+	rows, err := s.db.Pool.Query(ctx, `
+        SELECT m.id, m.kind, m.content, m.source, m.created_at
+        FROM space_memory m
+        JOIN spaces s ON s.id = m.space_id
+        WHERE m.space_id = $1 AND s.user_id = $2
+        ORDER BY m.created_at DESC
+    `, spaceID, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := []MemoryItem{}
+	for rows.Next() {
+		var m MemoryItem
+		if err := rows.Scan(&m.ID, &m.Kind, &m.Content, &m.Source, &m.CreatedAt); err != nil {
+			return nil, err
+		}
+		out = append(out, m)
+	}
+	return out, rows.Err()
+}
+
+// AddMemoryInput is the POST body — content is required, kind optional.
+type AddMemoryInput struct {
+	Content string `json:"content"`
+	Kind    string `json:"kind"`
+}
+
+func (s *Service) AddMemory(ctx context.Context, userID, spaceID string, in AddMemoryInput) (*MemoryItem, error) {
+	// Ownership gate: Get returns pgx.ErrNoRows (→ 404) when the space isn't
+	// the caller's, so we never write into someone else's space.
+	if _, err := s.Get(ctx, userID, spaceID); err != nil {
+		return nil, err
+	}
+	content := strings.TrimSpace(in.Content)
+	if content == "" {
+		return nil, errors.New("content required")
+	}
+	if len(content) > maxMemoryChars {
+		content = content[:maxMemoryChars]
+	}
+	kind := strings.TrimSpace(in.Kind)
+	switch kind {
+	case "fact", "preference", "connector_state":
+	default:
+		kind = "fact"
+	}
+	// Per-space cap: every saved item is injected into the prompt on every
+	// turn, so refuse once full instead of letting the prompt grow unbounded.
+	var count int
+	if err := s.db.Pool.QueryRow(ctx, `SELECT count(*) FROM space_memory WHERE space_id = $1`, spaceID).Scan(&count); err != nil {
+		return nil, err
+	}
+	if count >= maxMemoryItems {
+		return nil, fmt.Errorf("memory full (max %d items)", maxMemoryItems)
+	}
+	var m MemoryItem
+	err := s.db.Pool.QueryRow(ctx, `
+        INSERT INTO space_memory (space_id, kind, content, source)
+        VALUES ($1, $2, $3, 'user')
+        RETURNING id, kind, content, source, created_at
+    `, spaceID, kind, content).Scan(&m.ID, &m.Kind, &m.Content, &m.Source, &m.CreatedAt)
+	if err != nil {
+		return nil, err
+	}
+	// Bump the space's updated_at so it sorts to the top, like file upload.
+	_, _ = s.db.Pool.Exec(ctx, `UPDATE spaces SET updated_at = now() WHERE id = $1`, spaceID)
+	return &m, nil
+}
+
+func (s *Service) DeleteMemory(ctx context.Context, userID, spaceID, memID string) error {
+	tag, err := s.db.Pool.Exec(ctx, `
+        DELETE FROM space_memory m
+        USING spaces s
+        WHERE m.id = $1 AND m.space_id = $2 AND m.space_id = s.id AND s.user_id = $3
+    `, memID, spaceID, userID)
+	if err != nil {
+		return err
+	}
+	if tag.RowsAffected() == 0 {
+		return errors.New("not found")
+	}
+	return nil
+}
+
 // ─── HTTP layer ────────────────────────────────────────────────────────────
 
 // Register wires the spaces routes. uploadLimit is an optional
@@ -503,6 +605,9 @@ func (s *Service) Register(r chi.Router, uploadLimit func(http.Handler) http.Han
 		}
 		r.Delete("/{id}/files/{fileID}", s.handleDeleteFile)
 		r.Get("/{id}/context", s.handleContext)
+		r.Get("/{id}/memory", s.handleListMemory)
+		r.Post("/{id}/memory", s.handleAddMemory)
+		r.Delete("/{id}/memory/{memID}", s.handleDeleteMemory)
 	})
 }
 
@@ -607,6 +712,32 @@ func (s *Service) handleContext(w http.ResponseWriter, r *http.Request) {
 	u := auth.FromContext(r.Context())
 	out, err := s.Context(r.Context(), u.ID, chi.URLParam(r, "id"), r.URL.Query().Get("q"))
 	writeJSON(w, out, err)
+}
+
+func (s *Service) handleListMemory(w http.ResponseWriter, r *http.Request) {
+	u := auth.FromContext(r.Context())
+	out, err := s.ListMemory(r.Context(), u.ID, chi.URLParam(r, "id"))
+	writeJSON(w, out, err)
+}
+
+func (s *Service) handleAddMemory(w http.ResponseWriter, r *http.Request) {
+	u := auth.FromContext(r.Context())
+	var in AddMemoryInput
+	if err := json.NewDecoder(r.Body).Decode(&in); err != nil {
+		http.Error(w, "bad json", http.StatusBadRequest)
+		return
+	}
+	m, err := s.AddMemory(r.Context(), u.ID, chi.URLParam(r, "id"), in)
+	writeJSON(w, m, err)
+}
+
+func (s *Service) handleDeleteMemory(w http.ResponseWriter, r *http.Request) {
+	u := auth.FromContext(r.Context())
+	if err := s.DeleteMemory(r.Context(), u.ID, chi.URLParam(r, "id"), chi.URLParam(r, "memID")); err != nil {
+		http.Error(w, err.Error(), http.StatusNotFound)
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
 }
 
 // writeJSON serialises v or, when err != nil, picks an HTTP status code
