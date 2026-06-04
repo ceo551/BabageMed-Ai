@@ -123,8 +123,11 @@ export function FeatureChat({
       setChatId("");
       setMessages([]);
     }
+    // meta.slug is in the deps so switching feature (e.g. image → video) with no
+    // ?c= resets the transcript + chatId — otherwise the previous feature's
+    // chat persisted and the next send wrote into the WRONG chat.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [chatIdParam, nonceParam]);
+  }, [chatIdParam, nonceParam, meta.slug]);
 
   // Abort any in-flight stream / video poll when the page unmounts.
   useEffect(() => () => { streamAbortRef.current?.abort(); mediaAbortRef.current = true; }, []);
