@@ -720,6 +720,16 @@ function Composer({
         if (event === "step" && parsed?.phase === "action") {
           steps.push(`- 🔧 \`${parsed.tool}\`${parsed.query ? ` — ${parsed.query}` : ""}`);
           render();
+        } else if (event === "step" && parsed?.phase === "observation") {
+          // P5: attach a live preview of what the tool returned/wrote to the
+          // step it belongs to, so the work pane shows real progress.
+          if (steps.length) {
+            const mark = parsed.ok ? "✅" : "⚠️";
+            let prev = typeof parsed.preview === "string" ? parsed.preview.replace(/\s+/g, " ").trim() : "";
+            if (prev.length > 120) prev = prev.slice(0, 120) + "…";
+            steps[steps.length - 1] += `\n  ↳ ${mark}${prev ? " " + prev : ""}`;
+            render();
+          }
         } else if (event === "answer" && typeof parsed?.content === "string") {
           answer = parsed.content;
           render();

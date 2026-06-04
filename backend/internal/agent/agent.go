@@ -187,7 +187,14 @@ func (s *Service) handleStream(w http.ResponseWriter, r *http.Request) {
 			send("step", map[string]any{"phase": "action", "tool": tc.Name, "query": query})
 			obs := s.execTool(ctx, refs, tc)
 			ok := !strings.HasPrefix(obs, "tool error")
-			send("step", map[string]any{"phase": "observation", "tool": tc.Name, "ok": ok})
+			// P5: stream a short preview of what the tool returned/wrote so the
+			// work pane shows real progress (what was fetched), not just a
+			// success dot. Full result is in the P3 source card below the answer.
+			preview := strings.TrimSpace(obs)
+			if len(preview) > 280 {
+				preview = preview[:280] + "…"
+			}
+			send("step", map[string]any{"phase": "observation", "tool": tc.Name, "ok": ok, "preview": preview})
 			if ok {
 				addSource(tc.Name, obs)
 			}
