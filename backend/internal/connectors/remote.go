@@ -19,6 +19,7 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+	"os"
 	"strings"
 	"time"
 
@@ -37,25 +38,58 @@ type asMetadata struct {
 }
 
 // discoverOAuth resolves the authorization-server endpoints for an MCP server:
-// probe the server for the protected-resource metadata pointer → fetch it →
-// fetch the authorization-server metadata.
-func discoverOAuth(ctx context.Context, serverURL string) (asMetadata, error) {
+// probe the server for the protected-resource metadata pointer → fetch it (for
+// the authorization server + the scopes it accepts) → fetch the authorization-
+// server metadata. Returns the AS metadata, its issuer (for the pre-registered-
+// client lookup when there's no DCR), and the resource's supported scopes.
+func discoverOAuth(ctx context.Context, serverURL string) (meta asMetadata, issuer string, scopes []string, err error) {
 	resourceMeta := probeResourceMetadata(ctx, serverURL)
 	var as string
 	if resourceMeta != "" {
-		if servers := fetchAuthServers(ctx, resourceMeta); len(servers) > 0 {
+		servers, sc := fetchProtectedResource(ctx, resourceMeta)
+		scopes = sc
+		if len(servers) > 0 {
 			as = servers[0]
 		}
 	}
 	if as == "" {
-		if u, err := url.Parse(serverURL); err == nil && u.Host != "" {
+		if u, e := url.Parse(serverURL); e == nil && u.Host != "" {
 			as = u.Scheme + "://" + u.Host
 		}
 	}
 	if as == "" {
-		return asMetadata{}, errors.New("could not locate the OAuth authorization server")
+		return asMetadata{}, "", nil, errors.New("could not locate the OAuth authorization server")
 	}
-	return fetchASMetadata(ctx, as)
+	issuer = strings.TrimRight(as, "/")
+	meta, err = fetchASMetadata(ctx, as)
+	return meta, issuer, scopes, err
+}
+
+// preregisteredFor returns the env var names of an OAuth client the OPERATOR
+// registered for an authorization server that does NOT support dynamic client
+// registration (notably Google). One app per provider → all users connect with
+// zero per-user setup, which is exactly how Claude ships "Claude for Gmail".
+func preregisteredFor(issuer string) (idEnv, secretEnv string, ok bool) {
+	switch strings.TrimRight(issuer, "/") {
+	case "https://accounts.google.com", "http://accounts.google.com":
+		return "GOOGLE_OAUTH_CLIENT_ID", "GOOGLE_OAUTH_CLIENT_SECRET", true
+	}
+	return "", "", false
+}
+
+func isGoogleIssuer(issuer string) bool { return strings.Contains(issuer, "accounts.google.com") }
+
+// filterScopes drops scopes that are mutually exclusive with broader ones in the
+// same set (e.g. Gmail's .metadata scope can't be combined with full access).
+func filterScopes(scopes []string) []string {
+	out := []string{}
+	for _, sc := range scopes {
+		if strings.HasSuffix(sc, ".metadata") {
+			continue
+		}
+		out = append(out, sc)
+	}
+	return out
 }
 
 func probeResourceMetadata(ctx context.Context, serverURL string) string {
@@ -99,25 +133,26 @@ func parseResourceMetadata(wwwAuth string) string {
 	return rest
 }
 
-func fetchAuthServers(ctx context.Context, metaURL string) []string {
+func fetchProtectedResource(ctx context.Context, metaURL string) (servers []string, scopes []string) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, metaURL, nil)
 	if err != nil {
-		return nil
+		return nil, nil
 	}
 	req.Header.Set("Accept", "application/json")
 	res, err := oauthHTTP.Do(req)
 	if err != nil {
-		return nil
+		return nil, nil
 	}
 	defer res.Body.Close()
 	if res.StatusCode >= 400 {
-		return nil
+		return nil, nil
 	}
 	var m struct {
 		AuthorizationServers []string `json:"authorization_servers"`
+		ScopesSupported      []string `json:"scopes_supported"`
 	}
 	_ = json.Unmarshal(readLimited(res.Body), &m)
-	return m.AuthorizationServers
+	return m.AuthorizationServers, m.ScopesSupported
 }
 
 func fetchASMetadata(ctx context.Context, as string) (asMetadata, error) {
@@ -260,17 +295,33 @@ func (s *Service) handleRemoteStart(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	ctx := r.Context()
-	meta, err := discoverOAuth(ctx, serverURL)
+	meta, issuer, scopes, err := discoverOAuth(ctx, serverURL)
 	if err != nil {
 		log.Printf("remote: discover %s: %v", serverURL, err)
 		http.Error(w, "could not discover OAuth for this server", http.StatusBadGateway)
 		return
 	}
 	redirectURI := oauthRedirectURI()
-	clientID, clientSecret, err := registerClient(ctx, meta.RegistrationEndpoint, redirectURI)
-	if err != nil {
-		log.Printf("remote: register %s: %v", serverURL, err)
-		http.Error(w, "could not register with this server", http.StatusBadGateway)
+	var clientID, clientSecret string
+	if meta.RegistrationEndpoint != "" {
+		// Dynamic Client Registration — zero operator setup (Notion, Slack, …).
+		clientID, clientSecret, err = registerClient(ctx, meta.RegistrationEndpoint, redirectURI)
+		if err != nil {
+			log.Printf("remote: register %s: %v", serverURL, err)
+			http.Error(w, "could not register with this server", http.StatusBadGateway)
+			return
+		}
+	} else if idEnv, secretEnv, ok := preregisteredFor(issuer); ok {
+		// No DCR (e.g. Google) — use the OPERATOR's pre-registered app, exactly
+		// the model Claude uses for "Claude for Gmail". One app, all users.
+		clientID = strings.TrimSpace(os.Getenv(idEnv))
+		clientSecret = strings.TrimSpace(os.Getenv(secretEnv))
+		if clientID == "" {
+			http.Error(w, "this provider needs an OAuth app configured by the operator", http.StatusBadRequest)
+			return
+		}
+	} else {
+		http.Error(w, "this server needs a pre-registered OAuth client", http.StatusBadRequest)
 		return
 	}
 	name := strings.TrimSpace(body.Name)
@@ -309,6 +360,14 @@ func (s *Service) handleRemoteStart(w http.ResponseWriter, r *http.Request) {
 	q.Set("code_challenge", challenge)
 	q.Set("code_challenge_method", "S256")
 	q.Set("resource", serverURL)
+	if sc := filterScopes(scopes); len(sc) > 0 {
+		q.Set("scope", strings.Join(sc, " "))
+	}
+	if isGoogleIssuer(issuer) {
+		// access_type=offline + prompt=consent → Google returns a refresh token.
+		q.Set("access_type", "offline")
+		q.Set("prompt", "consent")
+	}
 	writeJSON(w, map[string]any{"id": id, "authorizeUrl": meta.AuthorizationEndpoint + "?" + q.Encode()}, nil)
 }
 

@@ -13,6 +13,9 @@ import { startRemoteOAuthPopup } from "../lib/oauth";
 // domain via icon.horse.
 const KNOWN: { name: string; url: string; icon: string }[] = [
   { name: "Notion", url: "https://mcp.notion.com/mcp", icon: "notion.so" },
+  { name: "Gmail", url: "https://gmailmcp.googleapis.com/mcp/v1", icon: "gmail.com" },
+  { name: "Google Calendar", url: "https://calendarmcp.googleapis.com/mcp/v1", icon: "calendar.google.com" },
+  { name: "Google Drive", url: "https://drivemcp.googleapis.com/mcp/v1", icon: "drive.google.com" },
   { name: "Slack", url: "https://mcp.slack.com/mcp", icon: "slack.com" },
   { name: "Linear", url: "https://mcp.linear.app/mcp", icon: "linear.app" },
   { name: "GitHub", url: "https://api.githubcopilot.com/mcp/", icon: "github.com" },
