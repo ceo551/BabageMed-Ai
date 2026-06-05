@@ -14,4 +14,8 @@ apps/android
 README.md
 SECURITY.md
 *.md
+# …but the skills catalog ships as embedded markdown (//go:embed data/*.md in
+# internal/skills) — those MUST reach the build context or the backend won't
+# compile. Re-include them after the blanket *.md exclude above.
+!backend/internal/skills/data/*.md
 docker-compose.mcps.yml
