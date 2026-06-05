@@ -140,21 +140,3 @@ nginx.ingress.kubernetes.io/configuration-snippet: |
 {{- end -}}
 {{- end -}}
 
-{{/* Resolve the MCP list. preset=custom uses mcps.enabled directly. */}}
-{{- define "pervagans.mcpList" -}}
-{{- if eq .Values.mcps.preset "all" -}}
-{{ .Files.Get "mcps-all.txt" }}
-{{- else if eq .Values.mcps.preset "default" -}}
-{{/*
-  Default preset — the marquee subset that's safe to deploy on a small
-  cluster. Every id MUST exist in scripts/mcps.manifest.json (and
-  therefore in mcps-index.json) or the chart silently skips it. The
-  previous default list referenced 25+ deleted IDs and rendered only a
-  handful of Deployments. Keep this list small and authoritative; for
-  the full catalog use preset=all.
-*/}}
-notion slack github gmail gcalendar gdrive linkedin huggingface stripe shopify google-sheets google-docs trello calendly zoom
-{{- else -}}
-{{ join " " .Values.mcps.enabled }}
-{{- end -}}
-{{- end -}}

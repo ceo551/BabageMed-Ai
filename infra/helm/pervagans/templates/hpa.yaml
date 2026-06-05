@@ -71,36 +71,4 @@ spec:
         target: { type: Utilization, averageUtilization: {{ .Values.frontend.autoscaling.targetCPUUtilizationPercentage }} }
 {{- end }}
 
-{{- if .Values.mcps.autoscaling.enabled }}
-{{- $idx := .Files.Get "mcps-index.json" | fromJson }}
-{{- $list := include "pervagans.mcpList" . | trim | splitList " " }}
-{{- range $id := $list }}
-{{- if index $idx.byId $id }}
-{{- $kind := (index $idx.byId $id).kind }}
-{{- $cfg := $.Values.mcps.autoscaling.api }}
-{{- if or (eq $kind "scrape") (eq $kind "hybrid") }}{{- $cfg = $.Values.mcps.autoscaling.scrape }}{{- end }}
----
-apiVersion: autoscaling/v2
-kind: HorizontalPodAutoscaler
-metadata:
-  name: mcp-{{ $id }}
-  labels:
-    app.kubernetes.io/name: pervagans
-    app.kubernetes.io/component: mcp
-    pervagans/mcp-id: {{ $id }}
-    pervagans/mcp-kind: {{ $kind }}
-spec:
-  scaleTargetRef:
-    apiVersion: apps/v1
-    kind: Deployment
-    name: mcp-{{ $id }}
-  minReplicas: {{ $cfg.minReplicas }}
-  maxReplicas: {{ $cfg.maxReplicas }}
-  metrics:
-    - type: Resource
-      resource:
-        name: cpu
-        target: { type: Utilization, averageUtilization: {{ $cfg.targetCPUUtilizationPercentage }} }
-{{- end }}
-{{- end }}
-{{- end }}
+{{- /* Self-hosted MCP HorizontalPodAutoscalers removed with the MCP servers. */ -}}

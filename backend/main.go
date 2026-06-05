@@ -23,7 +23,6 @@ import (
 	"github.com/pervagans/backend/internal/connectors"
 	"github.com/pervagans/backend/internal/db"
 	"github.com/pervagans/backend/internal/llm"
-	"github.com/pervagans/backend/internal/mcp"
 	"github.com/pervagans/backend/internal/media"
 	"github.com/pervagans/backend/internal/metrics"
 	"github.com/pervagans/backend/internal/payments"
@@ -51,37 +50,9 @@ func main() {
 		log.Printf("tracing init: %v", err)
 	}
 
-	// Manifest path resolution: explicit MCP_MANIFEST_PATH wins so ops
-	// can point at any location (mounted ConfigMap, sidecar volume, etc.).
-	// When it's unset we walk a fallback chain that covers the three
-	// common runtime layouts: container image (/app/...), `go run` from
-	// the backend dir (../scripts/...), and "the binary lives next to
-	// the manifest" (mcps.manifest.json). We log each miss so a wrong
-	// mount path doesn't silently fall through to a stale manifest.
-	manifestCandidates := []string{}
-	if explicit := os.Getenv("MCP_MANIFEST_PATH"); explicit != "" {
-		manifestCandidates = append(manifestCandidates, explicit)
-	}
-	manifestCandidates = append(manifestCandidates,
-		"/app/mcps.manifest.json",
-		"scripts/mcps.manifest.json",
-		"../scripts/mcps.manifest.json",
-		"mcps.manifest.json",
-	)
-	var registry *mcp.Registry
-	var manifestErr error
-	for _, p := range manifestCandidates {
-		registry, manifestErr = mcp.NewRegistry(p)
-		if manifestErr == nil {
-			log.Printf("loaded MCP manifest from %s", p)
-			break
-		}
-		log.Printf("manifest candidate %s: %v", p, manifestErr)
-	}
-	if manifestErr != nil {
-		log.Fatalf("manifest load failed: tried %v", manifestCandidates)
-	}
-	log.Printf("loaded %d MCP servers from manifest", len(registry.Servers()))
+	// Self-hosted MCP servers + their registry/manifest were removed. The agent
+	// now uses the user's REMOTE MCP connectors (internal/connectors/remote.go);
+	// chat grounding is web search + uploaded-Space files.
 
 	// Database — optional. Backend runs without it; auth + persistence are disabled.
 	var dbConn *db.DB
@@ -165,11 +136,11 @@ func main() {
 	// Generates/loads a VAPID keypair on construction; disabled if that fails.
 	var pushSvc *push.Service
 	if dbConn != nil {
-		connSvc = connectors.New(dbConn, authSvc, registry)
+		connSvc = connectors.New(dbConn, authSvc)
 		billingSvc = billing.New(dbConn, authSvc)
 		pushSvc = push.New(dbConn, authSvc)
 	}
-	apiH := api.NewHandler(registry, llmClient, cacheClient, connSvc, billingSvc)
+	apiH := api.NewHandler(llmClient, cacheClient, connSvc, billingSvc)
 
 	r := chi.NewRouter()
 	r.Use(middleware.RequestID)
@@ -266,24 +237,7 @@ func main() {
 	// the chat bucket it used to share. 2 burst, +1 every 30 s ≈ 2/min sustained.
 	agentLimiter := ratelimit.New(2, 30*time.Second)
 
-	// MCP browse — anonymous-readable. The /call endpoint, however, runs
-	// real upstream queries (paid APIs, scrape jobs) so we gate it behind
-	// auth when the DB is configured AND throttle it via toolsLimiter so
-	// a single user can't drain the upstream budget. When auth is
-	// disabled (DEV mode without DATABASE_URL) the endpoint stays open
-	// but still rate-limited.
-	r.Get("/api/mcp/servers", apiH.ListServers)
-	r.Get("/api/mcp/servers/{id}", apiH.GetServer)
-	r.Get("/api/mcp/servers/{id}/tools", apiH.ListTools)
-	if authSvc != nil {
-		r.Group(func(pr chi.Router) {
-			pr.Use(authSvc.Required)
-			pr.Use(toolsLimiter.Middleware)
-			pr.Post("/api/mcp/call/{id}/{tool}", apiH.CallTool)
-		})
-	} else {
-		r.With(toolsLimiter.Middleware).Post("/api/mcp/call/{id}/{tool}", apiH.CallTool)
-	}
+	// (Self-hosted MCP browse/call endpoints removed with the registry.)
 
 	// Chat — usable anonymously, but if auth is on we'll persist messages.
 	r.With(chatLimiter.Middleware).Post("/api/chat", apiH.Chat)
@@ -328,7 +282,7 @@ func main() {
 		})
 		admin.NewHandler(dbConn, authSvc).Register(r)
 		media.New(dbConn, authSvc, llmClient, billingSvc).Register(r, toolsLimiter.Middleware)
-		agent.New(llmClient, registry, authSvc, connSvc, billingSvc, dbConn, pushSvc).Register(r, agentLimiter.Middleware)
+		agent.New(llmClient, authSvc, connSvc, billingSvc, dbConn, pushSvc).Register(r, agentLimiter.Middleware)
 		spaces.New(dbConn, authSvc).Register(r, uploadLimiter.Middleware)
 		features.New(dbConn, authSvc).Register(r, uploadLimiter.Middleware)
 		connSvc.Register(r)

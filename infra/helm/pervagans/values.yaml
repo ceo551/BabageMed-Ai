@@ -113,37 +113,12 @@ postgres:
   # "require" and add a postgres-tls init container with cert-manager.
   internalSslMode: disable
 
-# ─── MCP servers ──────────────────────────────────────────────────────────
-# 262 MCPs would be too heavy for most clusters. Pick what you need.
-# The "default" preset is the same 47 the laptop/KVM2 stack runs.
-# Override to deploy more or fewer:
-#   --set 'mcps.enabled={pubmed,fda,clinicaltrials}'   # 3 only
-#   --set mcps.preset=all                              # all 262 (heavy)
+# ─── Shared env Secret ────────────────────────────────────────────────────
+# Self-hosted MCP servers were removed; this block now only names the shared
+# Secret that backend / postgres / redis read their env from (kept under the
+# legacy `mcps` key so the existing template references stay valid).
 mcps:
-  preset: default
-  # When preset != "custom", `enabled` is overridden by the preset list below.
-  enabled: []
-  # Resource limits applied to every MCP unless overridden per-MCP.
-  resourcesApi:
-    requests: { cpu: 50m, memory: 128Mi }
-    limits:   { cpu: 500m, memory: 256Mi }
-  resourcesScrape:
-    requests: { cpu: 100m, memory: 256Mi }
-    limits:   { cpu: 1000m, memory: 512Mi }
-  # All MCPs read the shared .env via the same Secret as the backend.
   envFromSecret: pervagans-env
-  # Per-MCP autoscaling. Off by default — most clusters won't have metrics
-  # for each of 262 deployments. Turn on selectively.
-  autoscaling:
-    enabled: false
-    api:
-      minReplicas: 1
-      maxReplicas: 5
-      targetCPUUtilizationPercentage: 75
-    scrape:
-      minReplicas: 1
-      maxReplicas: 3
-      targetCPUUtilizationPercentage: 80
 
 # ─── Tracing (OpenTelemetry) ──────────────────────────────────────────────
 # When enabled, every backend + MCP container gets OTEL_* env vars pointing

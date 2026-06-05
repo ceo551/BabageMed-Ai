@@ -177,22 +177,6 @@ export const auth = {
   usage: () => api.get<UsageReport>("/api/auth/me/usage"),
 };
 
-// ── MCPs ──
-export type McpServer = {
-  id: string;
-  name: string;
-  kind: "api" | "scrape" | "hybrid" | "stub";
-  category: string;
-  port: number;
-  base: string;
-  iconUrl?: string;
-  siteUrl?: string;
-  // Which sidebar feature this server is most relevant to. One of the 10
-  // feature slugs — see apps/web/app/i18n.ts FEATURES_EN. Optional only so
-  // older cached responses still type-check during the rollout.
-  feature?: string;
-};
-
 // ── Connectors (user's installed MCPs) ──
 export type Connector = {
   mcpId: string;
@@ -243,23 +227,6 @@ export const remoteConnectors = {
     api.get<{ tools: { name: string; description: string }[] }>(`/api/remote-connectors/${encodeURIComponent(id)}/tools`),
 };
 
-export type McpToolSchema = {
-  name: string;
-  description: string;
-  inputSchema: {
-    type: "object";
-    properties: Record<string, { type?: string; description?: string; enum?: string[]; items?: any }>;
-    required?: string[];
-  };
-};
-
-export const mcps = {
-  list:  () => api.get<{ servers: McpServer[] }>("/api/mcp/servers"),
-  get:   (id: string) => api.get<McpServer>(`/api/mcp/servers/${encodeURIComponent(id)}`),
-  tools: (id: string) => api.get<{ tools: McpToolSchema[] }>(`/api/mcp/servers/${encodeURIComponent(id)}/tools`),
-  call:  (id: string, tool: string, args: unknown) =>
-    api.post<{ ok: boolean; result: unknown }>(`/api/mcp/call/${encodeURIComponent(id)}/${encodeURIComponent(tool)}`, args),
-};
 
 // ── admin ──
 export type AdminStats = {

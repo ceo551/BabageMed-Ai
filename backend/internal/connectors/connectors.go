@@ -22,7 +22,6 @@ import (
 
 	"github.com/pervagans/backend/internal/auth"
 	"github.com/pervagans/backend/internal/db"
-	"github.com/pervagans/backend/internal/mcp"
 	"github.com/pervagans/backend/internal/secretbox"
 	"github.com/go-chi/chi/v5"
 	"github.com/jackc/pgx/v5"
@@ -43,12 +42,11 @@ type Connector struct {
 type Service struct {
 	db   *db.DB
 	auth *auth.Service
-	reg  *mcp.Registry
 	box  *secretbox.Box
 }
 
-func New(d *db.DB, a *auth.Service, r *mcp.Registry) *Service {
-	return &Service{db: d, auth: a, reg: r, box: secretbox.New()}
+func New(d *db.DB, a *auth.Service) *Service {
+	return &Service{db: d, auth: a, box: secretbox.New()}
 }
 
 // ─── Persistence ───────────────────────────────────────────────────────────
@@ -84,24 +82,15 @@ func (s *Service) List(ctx context.Context, userID string) ([]Connector, error) 
 			c.Config = map[string]any{}
 		}
 		c.ConnectedAt = connectedAt.UTC().Format(time.RFC3339)
-		// Enrich with current MCP metadata (name, base, icon).
-		if srv, ok := s.reg.Get(c.MCPID); ok {
-			c.Name = srv.Name
-			c.Category = srv.Category
-			c.Base = srv.Base
-			c.IconURL = srv.IconURL
-			c.SiteURL = srv.SiteURL
-			// Kind snapshot in the row could go stale — prefer the registry's.
-			c.Kind = srv.Kind
-		}
 		out = append(out, c)
 	}
 	return out, rows.Err()
 }
 
 func (s *Service) Connect(ctx context.Context, userID, mcpID string, config map[string]any) (*Connector, error) {
-	srv, ok := s.reg.Get(mcpID)
-	if !ok {
+	// Self-hosted MCP registry removed — store the per-user credential against
+	// the mcp id directly (kind defaults to "api").
+	if mcpID == "" {
 		return nil, errors.New("unknown mcp")
 	}
 	if config == nil {
@@ -114,25 +103,15 @@ func (s *Service) Connect(ctx context.Context, userID, mcpID string, config map[
 	if err != nil {
 		return nil, err
 	}
-	_, err = s.db.Pool.Exec(ctx, `
+	if _, err := s.db.Pool.Exec(ctx, `
         INSERT INTO user_connectors (user_id, mcp_id, kind, config)
         VALUES ($1, $2, $3, $4)
         ON CONFLICT (user_id, mcp_id) DO UPDATE
         SET config = EXCLUDED.config, connected_at = now()
-    `, userID, mcpID, srv.Kind, cfgJSON)
-	if err != nil {
+    `, userID, mcpID, "api", cfgJSON); err != nil {
 		return nil, err
 	}
-	return &Connector{
-		MCPID:    srv.ID,
-		Name:     srv.Name,
-		Kind:     srv.Kind,
-		Category: srv.Category,
-		Base:     srv.Base,
-		IconURL:  srv.IconURL,
-		SiteURL:  srv.SiteURL,
-		Config:   config,
-	}, nil
+	return &Connector{MCPID: mcpID, Kind: "api", Config: config}, nil
 }
 
 func (s *Service) Disconnect(ctx context.Context, userID, mcpID string) error {
@@ -166,14 +145,6 @@ func (s *Service) Get(ctx context.Context, userID, mcpID string) (*Connector, er
 	}
 	if c.Config == nil {
 		c.Config = map[string]any{}
-	}
-	if srv, ok := s.reg.Get(c.MCPID); ok {
-		c.Name = srv.Name
-		c.Category = srv.Category
-		c.Base = srv.Base
-		c.IconURL = srv.IconURL
-		c.SiteURL = srv.SiteURL
-		c.Kind = srv.Kind
 	}
 	return &c, nil
 }

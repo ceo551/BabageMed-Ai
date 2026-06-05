@@ -54,7 +54,6 @@ type Notifier interface {
 
 type Service struct {
 	llm   *llm.Client
-	reg   *mcp.Registry
 	auth  *auth.Service
 	creds CredentialProvider
 	meter UsageMeter
@@ -62,8 +61,8 @@ type Service struct {
 	push  Notifier  // P6.5: notify on completion; nil → polling only
 }
 
-func New(l *llm.Client, r *mcp.Registry, a *auth.Service, creds CredentialProvider, meter UsageMeter, d *db.DB, push Notifier) *Service {
-	return &Service{llm: l, reg: r, auth: a, creds: creds, meter: meter, db: d, push: push}
+func New(l *llm.Client, a *auth.Service, creds CredentialProvider, meter UsageMeter, d *db.DB, push Notifier) *Service {
+	return &Service{llm: l, auth: a, creds: creds, meter: meter, db: d, push: push}
 }
 
 func (s *Service) Register(r chi.Router, limiter func(http.Handler) http.Handler) {
@@ -512,71 +511,16 @@ type remoteProvider interface {
 	CallRemoteTool(ctx context.Context, userID, connectorID, tool string, args map[string]any) (any, error)
 }
 
-// toolSpec is one tool a connector declares — name + description + the real
-// JSON-Schema for its arguments (from the live pod's /tools, or a degraded
-// fallback).
-type toolSpec struct {
-	name        string
-	description string
-	inputSchema map[string]any
-}
-
-// buildTools turns the user's connected MCP ids into function tools. For each
-// connector it discovers EVERY tool the pod declares (search, create, page,
-// send, …) with that tool's real input schema, and exposes each as a separate
-// function named connector__tool so the model can pick the right action with
-// the right arguments — not just a single hard-coded {query} search. Returns
-// the tool defs plus a map from function name back to (connector, tool).
-func (s *Service) buildTools(ctx context.Context, useMcps []string) ([]llm.ToolDef, map[string]toolRef) {
+// buildTools exposes the user's connected REMOTE MCP servers' tools as model
+// functions (namespaced r<shorthex>__<tool>), returning the tool defs + a map
+// from function name back to the connector. Self-hosted MCPs were removed.
+func (s *Service) buildTools(ctx context.Context, _ []string) ([]llm.ToolDef, map[string]toolRef) {
+	// Self-hosted MCP connectors were removed; the agent now exposes ONLY the
+	// user's connected REMOTE MCP servers (the useMcps arg is ignored).
 	tools := []llm.ToolDef{}
 	refs := map[string]toolRef{}
-	seenConn := map[string]bool{}
-	nConn := 0
-	for _, id := range useMcps {
-		id = strings.TrimSpace(id)
-		if id == "" || seenConn[id] || !validToolName(id) {
-			continue
-		}
-		srv, ok := s.reg.Get(id)
-		if !ok {
-			continue
-		}
-		seenConn[id] = true
-		specs := s.discoverTools(ctx, srv)
-		if len(specs) == 0 {
-			continue
-		}
-		nConn++
-		for _, sp := range specs {
-			fnName := toolFnName(id, sp.name)
-			if fnName == "" {
-				continue
-			}
-			if _, dup := refs[fnName]; dup {
-				continue
-			}
-			desc := sp.description
-			if desc == "" {
-				desc = sp.name + " on " + srv.Name
-			} else {
-				desc = srv.Name + ": " + desc
-			}
-			params := sp.inputSchema
-			if params == nil {
-				params = genericQuerySchema()
-			}
-			tools = append(tools, llm.ToolDef{Name: fnName, Description: desc, Parameters: params})
-			refs[fnName] = toolRef{id: id, tool: sp.name}
-			if len(tools) >= maxToolDefs {
-				return tools, refs
-			}
-		}
-		if nConn >= maxTools {
-			break
-		}
-	}
 
-	// Append the user's connected REMOTE MCP servers' tools (external servers
+	// The user's connected REMOTE MCP servers' tools (external servers
 	// connected via the MCP authorization flow). Auto-included — not gated on
 	// req.UseMcps — since the user explicitly connected them. Each is namespaced
 	// r<shorthex>__<tool>; the real connector UUID lives in the refs map.
@@ -620,59 +564,6 @@ func shortHex(id string) string {
 		}
 	}
 	return b.String()
-}
-
-// discoverTools asks the live pod for its tool list + schemas (GET /tools). On
-// any failure it degrades to the manifest's declared tool names with a generic
-// {query} schema, so the connector still works (the model just doesn't get the
-// precise arg shape). Legacy entries that declare no tools fall back to a lone
-// "search" tool.
-func (s *Service) discoverTools(ctx context.Context, srv mcp.Server) []toolSpec {
-	cctx, cancel := context.WithTimeout(ctx, 5*time.Second)
-	defer cancel()
-	if raw, err := s.reg.ListTools(cctx, srv.ID); err == nil {
-		if specs := parseToolSpecs(raw); len(specs) > 0 {
-			return specs
-		}
-	}
-	out := []toolSpec{}
-	for _, name := range srv.Tools {
-		if validToolName(name) {
-			out = append(out, toolSpec{name: name, inputSchema: genericQuerySchema()})
-		}
-	}
-	if len(out) == 0 {
-		out = append(out, toolSpec{name: "search", inputSchema: genericQuerySchema()})
-	}
-	return out
-}
-
-// parseToolSpecs reads the {tools:[{name,description,inputSchema}]} envelope the
-// MCP base serves at /tools. The registry hands it back as decoded `any`, so we
-// round-trip through JSON into a typed shape.
-func parseToolSpecs(raw any) []toolSpec {
-	b, err := json.Marshal(raw)
-	if err != nil {
-		return nil
-	}
-	var env struct {
-		Tools []struct {
-			Name        string         `json:"name"`
-			Description string         `json:"description"`
-			InputSchema map[string]any `json:"inputSchema"`
-		} `json:"tools"`
-	}
-	if err := json.Unmarshal(b, &env); err != nil {
-		return nil
-	}
-	out := []toolSpec{}
-	for _, t := range env.Tools {
-		if t.Name == "" || !validToolName(t.Name) {
-			continue
-		}
-		out = append(out, toolSpec{name: t.Name, description: t.Description, inputSchema: t.InputSchema})
-	}
-	return out
 }
 
 // toolFnName builds the model-facing function name connector__tool. The tool
@@ -745,20 +636,9 @@ func (s *Service) execTool(ctx context.Context, refs map[string]toolRef, tc llm.
 		}
 		return capObs(res)
 	}
-	// Self-hosted connector → forward the user's own credential (if stored) so
-	// the pod authenticates as them instead of using the shared env token.
-	if s.creds != nil {
-		if u := auth.FromContext(ctx); u != nil {
-			if cred, ok := s.creds.Credential(ctx, u.ID, ref.id); ok {
-				ctx = mcp.WithCredential(ctx, cred)
-			}
-		}
-	}
-	res, err := s.reg.Call(ctx, ref.id, ref.tool, args)
-	if err != nil {
-		return "tool error: " + err.Error()
-	}
-	return capObs(res)
+	// Self-hosted MCP connectors were removed — every tool is now a remote one,
+	// so a ref without a remote id shouldn't occur.
+	return "tool error: unknown tool"
 }
 
 // capObs marshals a tool result and caps it to maxObsChars for the model.
@@ -787,18 +667,6 @@ func argSummary(arguments string) string {
 	return t
 }
 
-func validToolName(t string) bool {
-	if t == "" || len(t) > 64 {
-		return false
-	}
-	for i := 0; i < len(t); i++ {
-		c := t[i]
-		if !((c >= '0' && c <= '9') || (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_' || c == '-' || c == '.') {
-			return false
-		}
-	}
-	return true
-}
 
 func agentSystemPrompt(locale string, nTools int) string {
 	b := "You are Pervagans Agent. Complete the user's task by calling the available connector tools to gather real information or take actions, then deliver a clear, well-organised final answer. " +

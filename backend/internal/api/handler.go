@@ -5,21 +5,16 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
 	"log"
 	"net/http"
 	"os"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/pervagans/backend/internal/auth"
 	"github.com/pervagans/backend/internal/cache"
 	"github.com/pervagans/backend/internal/llm"
-	"github.com/pervagans/backend/internal/mcp"
 	"github.com/pervagans/backend/internal/metrics"
-	"github.com/go-chi/chi/v5"
-	"golang.org/x/sync/errgroup"
 )
 
 // CredentialProvider returns a user's stored per-connector upstream credential.
@@ -37,15 +32,14 @@ type UsageMeter interface {
 }
 
 type Handler struct {
-	reg   *mcp.Registry
 	llm   *llm.Client
 	cache *cache.Cache
 	creds CredentialProvider
 	meter UsageMeter
 }
 
-func NewHandler(reg *mcp.Registry, l *llm.Client, c *cache.Cache, creds CredentialProvider, meter UsageMeter) *Handler {
-	return &Handler{reg: reg, llm: l, cache: c, creds: creds, meter: meter}
+func NewHandler(l *llm.Client, c *cache.Cache, creds CredentialProvider, meter UsageMeter) *Handler {
+	return &Handler{llm: l, cache: c, creds: creds, meter: meter}
 }
 
 // checkQuota enforces the per-plan monthly credit cap for a logged-in user.
@@ -68,18 +62,12 @@ func (h *Handler) checkQuota(w http.ResponseWriter, r *http.Request, op, model s
 	return true
 }
 
-// Health is the legacy /health endpoint kept for dashboards / ops:
-// returns rich state including per-MCP reachability. Do NOT use this as
-// a Kubernetes liveness probe — a single slow MCP can wedge the response
-// past the probe timeout and the kubelet will SIGKILL the backend.
-// Probe with /livez (process-only) and /readyz (DB ping) instead.
-func (h *Handler) Health(w http.ResponseWriter, r *http.Request) {
-	ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
-	defer cancel()
+// Health is the legacy /health endpoint kept for dashboards / ops.
+// Probe with /livez (process-only) and /readyz (DB ping) for k8s instead.
+func (h *Handler) Health(w http.ResponseWriter, _ *http.Request) {
 	writeJSON(w, 200, map[string]any{
 		"ok":   true,
 		"time": time.Now().UTC(),
-		"mcps": h.reg.Health(ctx),
 	})
 }
 
@@ -99,62 +87,6 @@ func (h *Handler) Ready(w http.ResponseWriter, _ *http.Request) {
 	writeJSON(w, 200, map[string]any{"ok": true})
 }
 
-func (h *Handler) ListServers(w http.ResponseWriter, _ *http.Request) {
-	writeJSON(w, 200, map[string]any{"servers": h.reg.Servers()})
-}
-
-func (h *Handler) GetServer(w http.ResponseWriter, r *http.Request) {
-	id := chi.URLParam(r, "id")
-	s, ok := h.reg.Get(id)
-	if !ok {
-		http.Error(w, "not found", 404)
-		return
-	}
-	writeJSON(w, 200, s)
-}
-
-func (h *Handler) ListTools(w http.ResponseWriter, r *http.Request) {
-	id := chi.URLParam(r, "id")
-	out, err := h.reg.ListTools(r.Context(), id)
-	if err != nil {
-		upstreamErr(w, 502, err, "upstream tools list failed")
-		return
-	}
-	writeJSON(w, 200, out)
-}
-
-func (h *Handler) CallTool(w http.ResponseWriter, r *http.Request) {
-	id := chi.URLParam(r, "id")
-	tool := chi.URLParam(r, "tool")
-	// Cap the JSON args body at 4 MiB. The previous io.ReadAll(r.Body)
-	// would buffer the entire payload into memory, so an authenticated
-	// client could OOM the backend by streaming a huge body to
-	// /api/mcp/call/{id}/{tool}.
-	body, _ := io.ReadAll(io.LimitReader(r.Body, 4<<20))
-	var args any
-	if len(body) > 0 {
-		if err := json.Unmarshal(body, &args); err != nil {
-			// JSON parse errors are caller-controlled — safe to surface.
-			writeJSON(w, 400, map[string]string{"error": "invalid json"})
-			return
-		}
-	}
-	ctx := r.Context()
-	// Forward the user's own credential for this connector, if they stored one.
-	if h.creds != nil {
-		if u := auth.FromContext(ctx); u != nil {
-			if cred, ok := h.creds.Credential(ctx, u.ID, id); ok {
-				ctx = mcp.WithCredential(ctx, cred)
-			}
-		}
-	}
-	out, err := h.reg.Call(ctx, id, tool, args)
-	if err != nil {
-		upstreamErr(w, 502, err, "upstream tool call failed")
-		return
-	}
-	writeJSON(w, 200, out)
-}
 
 type chatRequest struct {
 	Model    string        `json:"model"`
@@ -365,120 +297,15 @@ func (h *Handler) gather(ctx context.Context, req chatRequest) ([]map[string]any
 	// Deep Research implies a web-search fan-out below, so it must NOT be
 	// short-circuited here — otherwise toggling Deep Research alone (web search
 	// off, no connectors) silently gathered nothing.
-	if len(req.UseMcps) == 0 && !req.EnableWebSearch && !req.DeepResearch && len(req.SpaceContext) == 0 {
+	if !req.EnableWebSearch && !req.DeepResearch && len(req.SpaceContext) == 0 {
 		return nil, nil
 	}
 	last := req.Messages[len(req.Messages)-1].Content
 
-	// Fan out to all selected MCPs in parallel. Previously this was a serial
-	// loop with a 25s per-call timeout, so 3+ selected MCPs would blow past
-	// the 60s router timeout (middleware.Timeout in main.go) and the whole
-	// chat request would 504. errgroup with SetLimit caps the fan-out so a
-	// pathological case (every connector enabled) doesn't open hundreds of
-	// outbound HTTP connections at once.
-	type result struct {
-		idx    int
-		source string
-		value  any
-	}
-	results := make([]result, len(req.UseMcps))
-	var mu sync.Mutex // guards the results slice writes
-	g, gctx := errgroup.WithContext(ctx)
-	g.SetLimit(8)
-	// Scope cached results to the calling user. The query is part of the
-	// key too, but two users with the same query against a connector that
-	// can return user-specific data (e.g. a future calendar/email MCP)
-	// would otherwise share each other's results. For anonymous calls we
-	// use a single "anon" bucket; the result is from a public source so
-	// sharing across anonymous users is fine and saves upstream calls.
-	userKey := "anon"
-	if u := auth.FromContext(ctx); u != nil {
-		userKey = u.ID
-	}
-	for i, id := range req.UseMcps {
-		i, id := i, id
-		g.Go(func() error {
-			// gather is search-centric: it calls the MCP's "search" tool
-			// with {query}. Connectors that don't declare a "search" tool
-			// (calendars, social, code hosts, …) can't answer this shape,
-			// so skip them quietly — leaving results[i].value nil drops
-			// them from the citation list below — instead of calling a
-			// non-existent tool and surfacing an error-citation every turn.
-			if srv, ok := h.reg.Get(id); ok && !mcpSupportsSearch(srv) {
-				return nil
-			}
-			cacheKey := "mcp:search:" + userKey + ":" + id + ":" + last
-			var cached any
-			if h.cache != nil && h.cache.GetJSON(gctx, cacheKey, &cached) {
-				mu.Lock()
-				results[i] = result{idx: i, source: id, value: cached}
-				mu.Unlock()
-				return nil
-			}
-			ctxT, cancel := context.WithTimeout(gctx, 25*time.Second)
-			defer cancel()
-			// Forward this user's own credential for the connector, if stored,
-			// so the pod authenticates as them rather than via the shared token.
-			callCtx := ctxT
-			if h.creds != nil && userKey != "anon" {
-				if cred, ok := h.creds.Credential(ctxT, userKey, id); ok {
-					callCtx = mcp.WithCredential(ctxT, cred)
-				}
-			}
-			res, err := h.reg.Call(callCtx, id, "search", map[string]string{"query": last})
-			if err != nil {
-				// Per-MCP failures are non-fatal for the chat as a whole, but
-				// we DO surface a synthetic result documenting the failure
-				// so the model can say "Cleveland Clinic returned an error"
-				// instead of silently hallucinating an answer that looks
-				// like it came from there.
-				//
-				// Also bump a metric so an operator can see "FDA MCP has been
-				// failing for 30 min" without scrolling chat logs. Previously
-				// the failure was completely silent at the systemic level —
-				// the model just saw an {error:...} citation and the operator
-				// never noticed.
-				metrics.MCPProxyCalls.WithLabelValues(id, "search", "error").Inc()
-				log.Printf("mcp gather error: id=%s err=%v", id, err)
-				mu.Lock()
-				results[i] = result{
-					idx:    i,
-					source: id,
-					value:  map[string]any{"error": err.Error(), "note": "this connector returned an error; do not cite it"},
-				}
-				mu.Unlock()
-				return nil
-			}
-			if h.cache != nil {
-				// Use Background() for cache writes — the request ctx may be
-				// cancelled the moment we return success to the user, which
-				// would otherwise abort the Redis write and leave the cache
-				// cold on retry. The bounded WithTimeout caps the orphaned
-				// write so a broken cache doesn't leak goroutines.
-				cacheCtx, cacheCancel := context.WithTimeout(context.Background(), 3*time.Second)
-				h.cache.SetJSON(cacheCtx, cacheKey, res, 5*time.Minute)
-				cacheCancel()
-			}
-			mu.Lock()
-			results[i] = result{idx: i, source: id, value: res}
-			mu.Unlock()
-			return nil
-		})
-	}
-	// Every g.Go returns nil today, so Wait should also return nil. We log
-	// if that ever changes (panic-in-goroutine or future code that returns
-	// a real error) instead of silently swallowing it.
-	if err := g.Wait(); err != nil {
-		log.Printf("mcp gather: unexpected errgroup error: %v", err)
-	}
-
-	out := make([]map[string]any, 0, len(results))
-	for _, r := range results {
-		if r.value == nil {
-			continue
-		}
-		out = append(out, map[string]any{"source": r.source, "result": r.value})
-	}
+	// Self-hosted MCP connectors were removed — chat grounding is now web search
+	// + uploaded-Space files. (Agent Mode uses the user's REMOTE MCP connectors
+	// directly, not this chat-side gather.)
+	out := []map[string]any{}
 
 	// Web search (Brave). Plain web search runs ONE query; Deep Research expands
 	// the question into several focused sub-queries, searches each, and merges
@@ -604,20 +431,6 @@ func (h *Handler) researchQueries(ctx context.Context, question string) []string
 	return queries
 }
 
-// mcpSupportsSearch reports whether the connector declares a "search" tool
-// (the only shape the chat gather path knows how to call). Connectors with
-// an unknown/empty tool set fall through (true) to preserve prior behaviour.
-func mcpSupportsSearch(s mcp.Server) bool {
-	if len(s.Tools) == 0 {
-		return true
-	}
-	for _, t := range s.Tools {
-		if t == "search" {
-			return true
-		}
-	}
-	return false
-}
 
 func (h *Handler) complete(ctx context.Context, req chatRequest, citations []map[string]any) (*llm.CompletionResponse, error) {
 	system := buildSystem(req.Mode, req.Locale, citations, req.UseMcps, req.SpaceContext, req.SpaceName, req.Feature, req.FeatureInstructions, req.SpaceSkills, req.SpaceMemory, req.DeepResearch)

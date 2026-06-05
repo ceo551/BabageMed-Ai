@@ -434,10 +434,7 @@ func (s *Service) handleOAuthCallback(w http.ResponseWriter, r *http.Request) {
 // storeOAuth upserts the user's connector row with the OAuth tokens (secret
 // values encrypted at rest by encryptConfig).
 func (s *Service) storeOAuth(ctx context.Context, userID, mcpID string, t oauthTokens) error {
-	kind := "api"
-	if srv, ok := s.reg.Get(mcpID); ok {
-		kind = srv.Kind
-	}
+	kind := "api" // self-hosted MCP registry removed; OAuth connectors are api-kind
 	cfg := map[string]any{"oauth": true, "accessToken": t.access}
 	if t.refresh != "" {
 		cfg["refreshToken"] = t.refresh
