@@ -1,5 +1,6 @@
 .admin-shell {
   min-height: 100vh;
+  min-height: 100dvh;
   padding: 32px 24px 80px;
   /* width:100% + border-box: flex item in .app-main (flex-column) whose
    * `margin: 0 auto` auto cross-margins disable stretch — see .mcps-shell. */
@@ -157,10 +158,87 @@
 
 /* The admin page had no responsive rules — the toolbar + wide search field
    overflowed on phones. */
+
+/* Touch tier: in-table controls (Delete / Revoke buttons, plan/status selects,
+   admin checkbox) were ~16-26px tall — below the 44px WCAG 2.5.5 minimum. */
+@media (max-width: 768px) {
+  .admin-table button,
+  .admin-table select,
+  .admin-table input[type="text"] {
+    min-height: 44px;
+  }
+  .admin-table button.danger {
+    /* keep the destructive action separated from the adjacent select */
+    margin-inline-start: 8px;
+  }
+  .admin-table input[type="checkbox"] {
+    width: 22px;
+    height: 22px;
+  }
+}
+
 @media (max-width: 640px) {
   .admin-shell { padding: 16px 14px 64px; }
   .admin-shell h1 { font-size: 28px; }
   .admin-toolbar { flex-direction: column; align-items: stretch; }
   .admin-toolbar input[type="search"] { min-width: 0; width: 100%; }
-  .admin-table { display: block; overflow-x: auto; }
+  /* Scroll lives on .admin-table-wrap (overflow:auto, above) so the table can
+     stay display:table — keeping column widths synced and the sticky header
+     aligned. Do NOT set display:block here (it breaks both). */
+}
+
+/* Phone tier: trim the shell to a phone gutter (folding in the landscape-notch
+   inset), scale the heading fluidly, and convert the wide data tables into a
+   stacked label/value card per record so users stop sideways-scrolling a tiny
+   strip. Relies on data-label on each <td> (admin/page.tsx). */
+@media (max-width: 480px) {
+  .admin-shell {
+    padding-block: 14px 56px;
+    padding-inline: max(14px, env(safe-area-inset-left)) max(14px, env(safe-area-inset-right));
+  }
+  .admin-shell h1 { font-size: clamp(28px, 8vw, 44px); }
+
+  .admin-table-wrap { overflow: visible; }
+  .admin-table { display: block; width: 100%; font-size: 13px; }
+  .admin-table thead { display: none; }
+  .admin-table tbody { display: block; }
+  .admin-table tr {
+    display: block;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 6px 0;
+    margin-bottom: 10px;
+    background: var(--panel-solid);
+  }
+  .admin-table tr:hover { background: var(--panel-solid); }
+  .admin-table td {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 8px 14px;
+    border-bottom: 1px solid var(--border);
+    white-space: normal;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+    text-align: end;
+  }
+  .admin-table tr td:last-child { border-bottom: 0; }
+  .admin-table td::before {
+    content: attr(data-label);
+    flex: 0 0 auto;
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--muted);
+    text-align: start;
+  }
+  /* the User-Agent cell carries an inline maxWidth/overflow cap for the wide
+     desktop table — in stacked mode it must use the full card row instead, so
+     override the inline style (inline wins specificity → !important needed). */
+  .admin-table td[data-label="User agent"] {
+    max-width: none !important;
+    overflow: visible !important;
+  }
 }

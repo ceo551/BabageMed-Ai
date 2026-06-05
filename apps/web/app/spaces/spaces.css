@@ -272,7 +272,9 @@
    icon-buttons get a 44px hit area so they meet the touch-target minimum. */
 @media (hover: none) {
   .sp-card-menu-btn { opacity: 1; }
-  .sp-card-menu-btn, .sp-row-del, .sp-rail-add { min-width: 44px; min-height: 44px; }
+  .sp-card-menu-btn, .sp-row-del, .sp-rail-add, .sp-menu-btn { min-width: 44px; min-height: 44px; }
+  .sp-new-btn, .sp-newthread-btn { min-height: 44px; }
+  .sp-card-menu-item { min-height: 44px; }
 }
 
 /* Map the shared --hue-* vars on the space surface so feature.css's chat /
@@ -716,3 +718,21 @@
  * dashboard; cap it so it reads as a focused workspace column. */
 .sp-chat-col .feat-composer,
 .sp-chat-col .feat-transcript { max-width: 720px; }
+
+/* ── Phone tier ───────────────────────────────────────────────────────────
+ * Recover usable width on small screens: trim shell/header/rail gutters, scale
+ * the index heading, and let the per-space identity row wrap so the title keeps
+ * its width instead of truncating to a sliver next to the controls. */
+@media (max-width: 480px) {
+  .spaces-index { padding: 20px 16px 40px; }
+  .spaces-header { font-size: 22px; }
+  .sp-search { padding: 12px 14px 12px 38px; }
+  [dir="rtl"] .sp-search { padding: 12px 38px 12px 14px; }
+
+  .sp-head { padding: 14px 16px 12px; }
+  .sp-head-main { flex-wrap: wrap; }
+  .sp-head-text { flex: 1 1 100%; order: 3; }
+
+  .sp-rail { padding: 14px; }
+  .sp-rail-card { padding: 14px; }
+}

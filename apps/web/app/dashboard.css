@@ -22,7 +22,7 @@ button { font: inherit; cursor: pointer; }
 a { color: inherit; text-decoration: none; }
 ::selection { background: var(--cyan-soft); color: var(--ink); }
 
-.shell { display: grid; grid-template-columns: var(--sidebar-w, 280px) 1fr; height: 100vh; overflow: hidden; transition: grid-template-columns .22s ease; position: relative; }
+.shell { display: grid; grid-template-columns: var(--sidebar-w, 280px) 1fr; height: 100vh; height: 100dvh; overflow: hidden; transition: grid-template-columns .22s ease; position: relative; }
 .shell[data-collapsed="true"] { grid-template-columns: 68px 1fr; }
 /* Persistent main column: per-page shells (.spaces-shell, .mcps-shell, etc.)
  * render inside this column, so we need a vertical scroll here — the outer
@@ -31,7 +31,7 @@ a { color: inherit; text-decoration: none; }
  * scroll rules live on .main below — single source of truth, avoids a
  * cascade fight where the later .main rule was winning the overflow battle. */
 /* Auth wrapper: minimal centring chrome for login/signup (no sidebar). */
-.auth-wrapper { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 24px; }
+.auth-wrapper { min-height: 100vh; min-height: 100dvh; display: flex; align-items: center; justify-content: center; padding: 24px; }
 
 /* SIDEBAR */
 .sidebar { position: relative; display: flex; flex-direction: column; background: linear-gradient(180deg, color-mix(in srgb, var(--panel-solid) 60%, transparent), color-mix(in srgb, var(--panel-solid) 30%, transparent)); border-inline-end: 1px solid var(--border); backdrop-filter: blur(12px); overflow: hidden; min-width: 0; }
@@ -259,6 +259,11 @@ a { color: inherit; text-decoration: none; }
 /* POPOVERS */
 .tools-pop { background: var(--panel-solid); border: 1px solid var(--border-strong); border-radius: 14px; padding: 6px; min-width: 280px; max-width: 360px; box-shadow: var(--shadow); }
 .account-pop { min-width: 0; max-width: none; }
+/* The Appearance / Language flyouts (.acct-sub-pop) inherit .tools-pop's
+ * min-width:280px; the .account-pop override above doesn't reach them, so they
+ * overflow a ~270px drawer on phones. Drop the floor; a phone cap follows in
+ * the ≤560px block. */
+.acct-sub-pop { min-width: 0; }
 .pop-header { padding: 6px 12px 4px; font-family: var(--mono); font-size: 10px; letter-spacing: .16em; color: var(--muted); text-transform: uppercase; }
 .tool-row { display: flex; align-items: center; gap: 12px; padding: 9px 10px; border-radius: 10px; background: transparent; border: 1px solid transparent; width: 100%; text-align: start; color: var(--ink); transition: background .15s, border-color .15s; }
 .tool-row:hover { background: var(--panel); border-color: var(--border); }
@@ -292,6 +297,7 @@ a { color: inherit; text-decoration: none; }
   display: flex; flex-direction: column;
   min-width: 0; min-height: 0;
   height: 100vh;
+  height: 100dvh;
   overflow-y: auto; overflow-x: hidden;
 }
 .main::-webkit-scrollbar { width: 8px; }
@@ -310,7 +316,7 @@ a { color: inherit; text-decoration: none; }
   overflow: auto;
 }
 .stage-inner { width: 100%; max-width: 760px; display: flex; flex-direction: column; gap: 28px; }
-.greet { display: flex; align-items: center; gap: 16px; justify-content: center; font-family: var(--serif); font-weight: 400; font-size: 56px; line-height: 1.05; letter-spacing: -.01em; color: var(--ink); margin: 0; }
+.greet { display: flex; align-items: center; gap: 16px; justify-content: center; font-family: var(--serif); font-weight: 400; font-size: clamp(30px, 9vw, 56px); line-height: 1.05; letter-spacing: -.01em; color: var(--ink); margin: 0; }
 .greet .star { width: 56px; height: 56px; flex-shrink: 0; }
 /* Hero brand icon — rendered clean (no white frame/border) so the mark
    reads like an app tile (Claude-style). The PNG ships an opaque dark
@@ -346,7 +352,10 @@ a { color: inherit; text-decoration: none; }
 .cmpr-send[data-state="ready"]   { color: var(--hue-ink, var(--cyan)); background: var(--hue-bg, var(--cyan-soft)); border-color: var(--hue-line, var(--cyan-line)); }
 .cmpr-send[data-state="sending"] { color: var(--error); background: var(--error-soft); border-color: var(--error-line); }
 .spacer { flex: 1; }
-.model-pill { display: inline-flex; align-items: center; gap: 8px; padding: 6px 10px; border-radius: 999px; background: var(--panel); border: 1px solid var(--border); color: var(--ink); font-size: 12px; font-weight: 500; }
+.model-pill { display: inline-flex; align-items: center; gap: 8px; padding: 6px 10px; border-radius: 999px; background: var(--panel); border: 1px solid var(--border); color: var(--ink); font-size: 12px; font-weight: 500; min-width: 0; max-width: 100%; }
+/* Ellipsize a long model `short` / connector label instead of stretching the
+ * bar past the viewport (no-op on desktop — only bites on real overflow). */
+.model-pill > span:not(.brand-mark) { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
 .model-pill[data-open="true"] { border-color: var(--border-strong); }
 .model-pill .swatch { width: 10px; height: 10px; border-radius: 50%; }
 .model-pill .swatch.o { background: linear-gradient(135deg, var(--orange), var(--yellow)); }
@@ -354,7 +363,7 @@ a { color: inherit; text-decoration: none; }
 .model-pill .chev { width: 14px; height: 14px; color: var(--muted); }
 /* Web-search toggle chip — same footprint as the model pill (the bare globe
  * SVG would otherwise render at its intrinsic size and wrap the label). */
-.ws-chip { white-space: nowrap; gap: 6px; padding: 6px 10px; font-size: 12px; font-weight: 500; line-height: 1; }
+.ws-chip { white-space: nowrap; gap: 6px; padding: 6px 10px; font-size: 12px; font-weight: 500; line-height: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 .ws-chip svg { width: 15px; height: 15px; flex-shrink: 0; }
 .model-pop { position: absolute; bottom: 56px; inset-inline-end: 14px; min-width: 320px; background: var(--panel-solid); border: 1px solid var(--border-strong); border-radius: 14px; padding: 6px; box-shadow: var(--shadow); z-index: 30; }
 .model-row { display: flex; align-items: center; gap: 12px; width: 100%; padding: 10px; border-radius: 10px; background: transparent; border: 1px solid transparent; color: var(--ink); text-align: start; }
@@ -435,6 +444,7 @@ a { color: inherit; text-decoration: none; }
   padding-block: 0;
   overflow: hidden;
   height: 100vh;
+  height: 100dvh;
   gap: 0;
 }
 /* Scroller spans the FULL .main column width so the scrollbar lives at
@@ -467,6 +477,9 @@ a { color: inherit; text-decoration: none; }
   width: 100%;
   max-width: 760px;
   margin: 0 auto 24px;
+  /* Fold the home-indicator inset into the bottom spacing so the docked
+   * composer clears the gesture bar on notched phones (no-op on desktop). */
+  margin-bottom: max(24px, env(safe-area-inset-bottom));
   z-index: 2;
   /* Slight backdrop so any token that overshoots the scroll edge during
    * a smooth-scroll animation is still hidden behind the composer. */
@@ -541,6 +554,8 @@ a { color: inherit; text-decoration: none; }
   padding: 1px 6px;
   font-family: var(--mono);
   font-size: 13px;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 .md-body pre {
   background: var(--panel-solid);
@@ -706,6 +721,8 @@ button.msg-citation[data-open="true"] {
 }
 .md-code:hover .md-code-copy,
 .md-code-copy:focus-visible { opacity: 1; }
+/* Touch has no hover — keep the copy affordance visible on coarse pointers. */
+@media (hover: none) { .md-code-copy { opacity: 1; } }
 .md-code-copy:hover {
   color: var(--cyan);
   border-color: var(--cyan-line);
@@ -924,6 +941,12 @@ a.src-card:active { transform: translateY(1px); }
   cursor: pointer; opacity: 0; transition: opacity .12s, color .12s, border-color .12s;
 }
 .md-code:hover .md-code-actions .md-code-copy, .md-code:hover .md-code-canvas { opacity: 1; }
+/* Keyboard + touch reveal so Copy / Open-in-Canvas aren't dead on phones. */
+.md-code:focus-within .md-code-actions .md-code-copy,
+.md-code:focus-within .md-code-canvas { opacity: 1; }
+@media (hover: none) {
+  .md-code-actions .md-code-copy, .md-code-canvas { opacity: 1; }
+}
 .md-code-canvas { color: var(--hue-ink, var(--cyan)); border-color: var(--hue-line, var(--cyan-line)); background: var(--hue-bg, var(--cyan-soft)); }
 .md-code-canvas:hover, .md-code-actions .md-code-copy:hover { color: var(--ink); }
 
@@ -951,7 +974,25 @@ a.src-card:active { transform: translateY(1px); }
 .canvas-body { flex: 1; min-height: 0; }
 .canvas-frame { width: 100%; height: 100%; border: 0; background: #fff; }
 .canvas-codeview { width: 100%; height: 100%; margin: 0; overflow: auto; padding: 14px; font-size: 12.5px; background: var(--bg-2); white-space: pre-wrap; word-break: break-word; }
-@media (max-width: 560px) { .canvas-drawer { width: 100vw; } }
+@media (max-width: 560px) {
+  .canvas-drawer { width: 100vw; }
+  /* Full-bleed drawer on a notched phone: let the header wrap so the close ×
+   * can never be pushed off the inline-end edge, and fold the status-bar /
+   * home-indicator insets into the header / body padding. */
+  .canvas-head {
+    flex-wrap: wrap;
+    padding-top: max(10px, env(safe-area-inset-top));
+  }
+  .canvas-title { max-width: none; flex: 1 1 100%; }
+  .canvas-body { padding-bottom: env(safe-area-inset-bottom); }
+}
+/* Touch-size the canvas controls (Copy / Download / × / Preview-Code tabs);
+ * the 768px touch block below doesn't enumerate the .canvas-* selectors. */
+@media (hover: none) {
+  .canvas-tabs button, .canvas-act, .canvas-close {
+    min-width: 44px; min-height: 44px;
+  }
+}
 
 /* The plus glyph inside the New button used to inherit no size constraint
  * (its SVG has no explicit width/height), so it grew to fill its line-height
@@ -1005,6 +1046,8 @@ a.src-card:active { transform: translateY(1px); }
   box-shadow: var(--shadow);
   display: flex; flex-direction: column;
   max-height: calc(100vh - 80px);
+  max-height: calc(100dvh - 80px);
+  max-width: calc(100vw - 48px);
   margin: 24px;
   animation: modal-pop-in .18s ease-out;
 }
@@ -1057,8 +1100,8 @@ a.src-card:active { transform: translateY(1px); }
 .mobile-nav-btn {
   display: none;
   position: fixed;
-  top: 14px;
-  inset-inline-start: 14px;
+  top: max(14px, env(safe-area-inset-top));
+  inset-inline-start: max(14px, env(safe-area-inset-left));
   z-index: 60;
   width: 40px; height: 40px;
   border-radius: 10px;
@@ -1114,7 +1157,10 @@ body.modal-open .mobile-nav-btn { display: none !important; }
   }
   .shell[data-mobile-open="true"] .sidebar { transform: translateX(0); }
   .shell[data-mobile-open="true"] .mobile-nav-backdrop { display: block; }
-  .mobile-nav-btn { display: inline-flex; }
+  /* 44px hit area wherever the hamburger is actually shown — the drawer turns
+   * on at 880px but the generic touch bump only fires at 768px, leaving a
+   * 769-880px gap where the primary nav control was undersized. */
+  .mobile-nav-btn { display: inline-flex; min-width: 44px; min-height: 44px; }
   /* While the drawer is open the toggle slides to the sidebar's inner edge
      so it stops covering the "Pervagans" brand wordmark at the top of the
      sidebar. inset-inline-start resolves to the correct physical edge in
@@ -1128,8 +1174,33 @@ body.modal-open .mobile-nav-btn { display: none !important; }
   /* Push the desktop collapse button to the right inside the drawer so the
    * close-by-tapping-the-grid-pattern is still discoverable. */
   .sb-collapse { display: none; }
-  /* Push main content over to make room for the hamburger button. */
-  .main { padding-top: 56px; }
+  /* Push main content over to make room for the hamburger button. The top
+   * inset keeps the first content row clear of the notch under viewportFit. */
+  .main { padding-top: max(56px, calc(42px + env(safe-area-inset-top))); }
+  /* Fixed drawer: fold the notch / home-indicator insets in so the brand at
+   * the top and the account/logout rows at the foot stay reachable. */
+  .sidebar { padding-top: env(safe-area-inset-top); }
+  .sb-foot { padding-bottom: max(12px, env(safe-area-inset-bottom)); }
+}
+
+/* ── Chat column: restore a side gutter + let the chip row wrap on narrow
+ * viewports. Below 760px the 760px max-width resolves to 100% and margin:auto
+ * adds no gutter, so the transcript + composer would otherwise run edge-to-
+ * edge against a 0px screen margin. ─────────────────────────────────────── */
+@media (max-width: 768px) {
+  .stage[data-chat="true"] > .stage-inner { padding-inline: 16px; }
+  .stage[data-chat="true"] > .composer {
+    width: auto;
+    margin-inline: 16px;
+    /* Fold the landscape-notch insets into the side margins (no-op upright). */
+    margin-inline: max(16px, env(safe-area-inset-left)) max(16px, env(safe-area-inset-right));
+  }
+}
+/* Allow the composer chip row to wrap before the send/model controls get
+ * pushed off-edge (the off-canvas drawer frees the full width at ≤880px, but
+ * the bar stayed nowrap until 560px). */
+@media (max-width: 880px) {
+  .composer-bar { flex-wrap: wrap; }
 }
 
 /* Modal full-screen on mobile (more touchable than centered 540px). */
@@ -1138,10 +1209,14 @@ body.modal-open .mobile-nav-btn { display: none !important; }
     width: 100% !important;
     max-width: 100%;
     height: 100%;
+    height: 100dvh;
     max-height: 100%;
     border-radius: 0;
     margin: 0;
+    /* Clear the home indicator so the footer action row stays tappable. */
+    padding-bottom: env(safe-area-inset-bottom);
   }
+  .modal-header { padding-top: max(16px, env(safe-area-inset-top)); }
   .modal-backdrop { padding: 0; }
 }
 
@@ -1167,6 +1242,44 @@ body.modal-open .mobile-nav-btn { display: none !important; }
   .greet { font-size: 38px; }
   .brand-greet .b1 { font-size: 32px !important; }
   .brand-greet-icon { width: 40px; height: 40px; }
+  /* Cap the dashboard composer menus to the viewport (with a gutter) instead
+   * of their fixed 320px min-width, which spills past the opposite edge inside
+   * a ~300px composer; and give the lists an internal scroll so a long model
+   * picker can't escape a short landscape viewport. */
+  .model-pop, .popover {
+    min-width: 0;
+    width: min(320px, calc(100vw - 28px));
+    max-width: calc(100vw - 28px);
+    max-height: min(70vh, 520px);
+    overflow-y: auto;
+  }
+  /* Same cap for the account Appearance / Language flyouts. */
+  .acct-sub-pop { width: min(260px, calc(100vw - 16px)); max-width: calc(100vw - 16px); }
+  /* Long user turns use more of the narrow column (still right-aligned). */
+  .msg-user { max-width: 88%; }
+}
+
+/* ── Phone tier: trim shell/card density, scale assistant prose + the empty
+ * greeting, and give the galleries/source rail a comfortable phone layout. */
+@media (max-width: 480px) {
+  .gallery-page { padding: 24px 14px 64px; }
+  .gal-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+  .greet { font-size: clamp(28px, 8vw, 44px); }
+  .md-body { font-size: 15px; }
+  .md-body h1 { font-size: 21px; }
+  .md-body h2 { font-size: 18px; }
+  .md-body h3 { font-size: 16px; }
+  .msg-sources-grid { grid-template-columns: 1fr; }
+  .src-card-mcp .msg-citation-detail { margin-inline: 6px; }
+}
+
+/* ── Image/Video generation controls: touch-size the aspect/batch/seed chips
+ * and the negative-prompt + seed fields (all 28px in the base rule), and let
+ * the negative-prompt + seed inputs use the full row width on phones. */
+@media (max-width: 560px) {
+  .mc-chip { min-width: 40px; min-height: 40px; }
+  .mc-neg { flex-basis: 100%; height: 40px; }
+  .mc-seed-input { width: auto; flex: 1; height: 40px; }
 }
 
 /* ── Main sidebar history rows: chat icon prefix + overflow menu ────── */
@@ -1199,6 +1312,9 @@ body.modal-open .mobile-nav-btn { display: none !important; }
 }
 .sb-history-li:hover .sb-history-menu-btn,
 .sb-history-li:focus-within .sb-history-menu-btn { opacity: 1; }
+/* Touch has no hover — keep the Rename/Delete trigger visible on coarse
+ * pointers so it's reachable on phones. */
+@media (hover: none) { .sb-history-menu-btn { opacity: 1; } }
 .sb-history-menu-btn:hover { background: var(--panel); color: var(--ink); }
 
 .sb-history-row-menu {
@@ -1257,7 +1373,9 @@ body.modal-open .mobile-nav-btn { display: none !important; }
   .modal-close,
   .feat-card-add,
   .feat-card-edit,
-  .feat-subsb-row-add {
+  .feat-subsb-row-add,
+  .gal-del,
+  .sb-history-del {
     min-width: 44px;
     min-height: 44px;
   }
@@ -1265,4 +1383,21 @@ body.modal-open .mobile-nav-btn { display: none !important; }
     min-height: 44px;
     padding: 8px 12px;
   }
+  /* Tappable navigation/account ROWS get a 44px floor so they meet the touch
+   * target the file's own WCAG comment promises. */
+  .sb-row,
+  .sb-feature-item,
+  .sb-history-item,
+  .sb-account,
+  .sb-features-toggle,
+  .sb-sec-toggle,
+  .popover-row,
+  .tool-row,
+  .model-row {
+    min-height: 44px;
+  }
+  /* Bump the 1px inter-row gaps so neighbouring rows aren't touching and
+   * mis-taps between adjacent chats are less likely. */
+  .sb-features-list,
+  .sb-history-list { gap: 4px; }
 }

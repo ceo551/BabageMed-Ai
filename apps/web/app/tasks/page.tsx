@@ -66,7 +66,7 @@ export default function TasksPage() {
   }
 
   return (
-    <div dir={ar ? "rtl" : "ltr"} style={{ maxWidth: 820, margin: "0 auto", padding: "32px 20px 64px", display: "flex", flexDirection: "column", gap: 22 }}>
+    <div dir={ar ? "rtl" : "ltr"} style={{ maxWidth: 820, margin: "0 auto", paddingTop: 32, paddingInlineEnd: "max(20px, env(safe-area-inset-right))", paddingInlineStart: "max(20px, env(safe-area-inset-left))", paddingBottom: "calc(64px + env(safe-area-inset-bottom))", display: "flex", flexDirection: "column", gap: 22 }}>
       <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
         <h1 style={{ fontFamily: "var(--serif)", fontSize: "clamp(26px,5vw,38px)", letterSpacing: "-0.02em", margin: 0, color: "var(--ink)" }}>
           {ar ? "المهام في الخلفية" : "Background tasks"}
@@ -107,17 +107,17 @@ export default function TasksPage() {
         ) : runs.map((r) => (
           <div key={r.id} style={{ border: "1px solid var(--border)", borderRadius: 14, background: "var(--panel-solid)", padding: 16, display: "flex", flexDirection: "column", gap: 10 }}>
             <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12 }}>
-              <span dir="auto" style={{ fontWeight: 600, color: "var(--ink)", fontSize: 15, lineHeight: 1.45 }}>{r.task}</span>
+              <span dir="auto" style={{ minWidth: 0, overflowWrap: "anywhere", fontWeight: 600, color: "var(--ink)", fontSize: 15, lineHeight: 1.45 }}>{r.task}</span>
               <StatusBadge status={r.status} ar={ar} />
             </div>
 
             {r.steps && r.steps.length > 0 && (
               <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: 4 }}>
                 {r.steps.map((st, i) => (
-                  <li key={i} style={{ fontSize: 12.5, color: "var(--ink-2)", display: "flex", gap: 6, alignItems: "baseline" }}>
+                  <li key={i} style={{ minWidth: 0, fontSize: 12.5, color: "var(--ink-2)", display: "flex", gap: 6, alignItems: "baseline" }}>
                     <span aria-hidden="true">{st.ok === false ? "⚠️" : "🔧"}</span>
-                    <span style={{ fontFamily: "var(--mono)", color: "var(--muted)" }}>{st.tool}</span>
-                    {st.query ? <span dir="auto" style={{ color: "var(--ink-2)" }}>— {st.query}</span> : null}
+                    <span style={{ fontFamily: "var(--mono)", color: "var(--muted)", overflowWrap: "anywhere" }}>{st.tool}</span>
+                    {st.query ? <span dir="auto" style={{ color: "var(--ink-2)", overflowWrap: "anywhere" }}>— {st.query}</span> : null}
                   </li>
                 ))}
               </ul>
@@ -131,12 +131,12 @@ export default function TasksPage() {
               open === r.id ? (
                 <div>
                   <AssistantMessage content={r.result} />
-                  <button type="button" onClick={() => setOpen(null)} style={{ marginTop: 6, fontSize: 12, color: "var(--cyan)", background: "none", border: "none", cursor: "pointer", padding: 0 }}>
+                  <button type="button" onClick={() => setOpen(null)} style={{ marginTop: 6, marginInline: -4, fontSize: 12, color: "var(--cyan)", background: "none", border: "none", cursor: "pointer", padding: "8px 4px" }}>
                     {ar ? "إخفاء" : "Hide"}
                   </button>
                 </div>
               ) : (
-                <button type="button" onClick={() => setOpen(r.id)} style={{ alignSelf: "flex-start", fontSize: 13, fontWeight: 600, color: "var(--cyan)", background: "none", border: "none", cursor: "pointer", padding: 0 }}>
+                <button type="button" onClick={() => setOpen(r.id)} style={{ alignSelf: "flex-start", marginInline: -4, fontSize: 13, fontWeight: 600, color: "var(--cyan)", background: "none", border: "none", cursor: "pointer", padding: "8px 4px" }}>
                   {ar ? "عرض النتيجة ↓" : "View result ↓"}
                 </button>
               )

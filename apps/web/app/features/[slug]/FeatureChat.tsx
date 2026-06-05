@@ -141,7 +141,12 @@ export function FeatureChat({
     const ta = taRef.current;
     if (!ta) return;
     ta.style.height = "auto";
-    ta.style.height = Math.min(ta.scrollHeight, 280) + "px";
+    // Cap growth relative to viewport height too, so on a short phone (esp.
+    // landscape) a long message can't let the textarea eat the whole screen
+    // and bury the transcript. On tall/desktop viewports 35vh exceeds 280px,
+    // so the effective cap stays 280px and desktop is unchanged.
+    const vhCap = typeof window !== "undefined" ? window.innerHeight * 0.35 : 280;
+    ta.style.height = Math.min(ta.scrollHeight, Math.min(280, vhCap)) + "px";
   }, [value]);
 
   // Auto-scroll transcript to bottom on new tokens, with a "user has

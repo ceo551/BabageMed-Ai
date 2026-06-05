@@ -119,16 +119,16 @@ export default function BillingPage() {
   }
 
   return (
-    <div style={{ minHeight: "100vh", padding: "48px 24px", display: "flex", flexDirection: "column", alignItems: "center", gap: 32 }}>
+    <div style={{ minHeight: "100dvh", padding: "48px max(clamp(14px, 4vw, 24px), env(safe-area-inset-right)) calc(48px + env(safe-area-inset-bottom)) max(clamp(14px, 4vw, 24px), env(safe-area-inset-left))", display: "flex", flexDirection: "column", alignItems: "center", gap: 32 }}>
       <h1 style={{ fontFamily: "var(--serif)", fontSize: "clamp(32px, 6vw, 44px)", lineHeight: 1.15, letterSpacing: "-0.02em", margin: 0, color: "var(--ink)" }}>
         {locale === "ar" ? "الخطط والفوترة" : "Plans & Billing"}
       </h1>
 
       {usage && (
         <div style={{ width: "100%", maxWidth: 600, display: "flex", flexDirection: "column", gap: 8 }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", fontSize: 13, color: "var(--ink-2)" }}>
-            <span>{locale === "ar" ? `الاستخدام هذا الشهر — باقة ${usage.plan.toUpperCase()}` : `Usage this month — ${usage.plan.toUpperCase()} plan`}</span>
-            <span style={{ fontFamily: "var(--mono)" }}>{usage.used} / {usage.limit}</span>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 8, fontSize: 13, color: "var(--ink-2)" }}>
+            <span style={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{locale === "ar" ? `الاستخدام هذا الشهر — باقة ${usage.plan.toUpperCase()}` : `Usage this month — ${usage.plan.toUpperCase()} plan`}</span>
+            <span style={{ fontFamily: "var(--mono)", flexShrink: 0 }}>{usage.used} / {usage.limit}</span>
           </div>
           <div style={{ height: 8, borderRadius: 999, background: "var(--surface-2, var(--border))", overflow: "hidden" }}>
             <div style={{ height: "100%", width: `${Math.min(100, usage.limit > 0 ? (usage.used / usage.limit) * 100 : 0)}%`, background: usage.remaining <= 0 ? "var(--error)" : "var(--cyan)", transition: "width .3s" }} />
@@ -144,7 +144,7 @@ export default function BillingPage() {
               background: "var(--panel-solid)",
               border: "1px solid var(--border)",
               borderRadius: 14,
-              padding: 24,
+              padding: "clamp(16px, 4vw, 24px)",
               display: "flex",
               flexDirection: "column",
               gap: 12,

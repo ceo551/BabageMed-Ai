@@ -671,7 +671,11 @@ function AccountChip(props: {
       setSubStyle({ position: "fixed", top, right: Math.max(8, window.innerWidth - pop.left + 8), zIndex: 51 });
     } else {
       // Place sub-popover to the RIGHT of the main popover.
-      setSubStyle({ position: "fixed", top, left: Math.min(window.innerWidth - 220, pop.right + 8), zIndex: 51 });
+      // Reserve the flyout's real min-width (.acct-sub-pop is min-width:280px,
+      // inheriting .tools-pop) — clamping to only 220 let the 280px-wide
+      // flyout run ~60px off the inline-end edge on 320-390px phones. Use the
+      // viewport-relative cap so it always lands fully on-screen.
+      setSubStyle({ position: "fixed", top, left: Math.max(8, Math.min(window.innerWidth - 280 - 8, pop.right + 8)), zIndex: 51 });
     }
     setSub(name);
   }

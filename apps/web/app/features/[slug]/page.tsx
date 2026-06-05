@@ -61,6 +61,17 @@ function FeaturePageInner() {
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
   }, [subDrawerOpen]);
+  // Lock body scroll while the drawer is open so the feature chat behind it
+  // doesn't scroll under the finger / chain through to the page body on
+  // phones. Mirrors the Modal body-scroll-lock pattern (capture + restore the
+  // previous overflow). The matching overscroll-behavior:contain lives on
+  // .feat-subsb / .feat-subsb-backdrop in feature.css.
+  useEffect(() => {
+    if (!subDrawerOpen) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => { document.body.style.overflow = prev; };
+  }, [subDrawerOpen]);
 
   useEffect(() => {
     if (authLoading) return;

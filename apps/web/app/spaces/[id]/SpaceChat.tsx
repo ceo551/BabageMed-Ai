@@ -110,7 +110,12 @@ export function SpaceChat({ space, memory }: { space: Space; memory?: string[] }
     const ta = taRef.current;
     if (!ta) return;
     ta.style.height = "auto";
-    ta.style.height = Math.min(ta.scrollHeight, 280) + "px";
+    // Cap the grow height by the viewport on short/landscape phones so a long
+    // paste can't swallow the whole transcript; desktop keeps the 280px cap.
+    const cap = typeof window !== "undefined"
+      ? Math.min(280, Math.round(window.innerHeight * 0.35))
+      : 280;
+    ta.style.height = Math.min(ta.scrollHeight, cap) + "px";
   }, [value]);
 
   // Auto-scroll transcript to bottom on new tokens, with a "user has
@@ -411,7 +416,7 @@ export function SpaceChat({ space, memory }: { space: Space; memory?: string[] }
           )}
         </div>
 
-        <button className="cmpr-icon" type="button" aria-label={s.voiceComingSoon} title={s.voiceComingSoon}>{I.mic}</button>
+        <button className="cmpr-icon" type="button" aria-label={s.voiceComingSoon} title={s.voiceComingSoon} onClick={() => toast(s.voiceComingSoon)}>{I.mic}</button>
         <button
           type="button"
           className="cmpr-icon cmpr-send"

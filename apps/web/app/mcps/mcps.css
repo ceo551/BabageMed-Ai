@@ -1,5 +1,6 @@
 .mcps-shell {
   min-height: 100vh;
+  min-height: 100dvh;
   padding: 32px 24px 80px;
   /* width:100% is load-bearing: .mcps-shell is a flex item inside .app-main
    * (display:flex; flex-direction:column), and its `margin: 0 auto` centering
@@ -216,6 +217,19 @@
   background: var(--cyan-soft); color: var(--cyan); border-color: var(--cyan-line);
 }
 .mcp-card .connect-btn[disabled] { opacity: .6; cursor: progress; }
+/* The "✓ Connected" badge in RemoteMcpSection's grid cards uses .connected-pill,
+ * but the only matching rule was .connector-cta .connected-pill (detail page),
+ * which doesn't reach inside .mcp-card — so the badge rendered as bare text
+ * crowding the URL row. Give it the same compact pill styling here. */
+.mcp-card .connected-pill {
+  background: var(--cyan-soft);
+  color: var(--cyan);
+  border: 1px solid var(--cyan-line);
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+}
 
 /* Connector detail header (replaces old .head + .base for the rewritten page) */
 .connector-header {
@@ -406,3 +420,14 @@
   align-items: center;
 }
 .mcps-empty p { margin: 0; }
+
+/* Phone tier: trim the catalog shell gutters and scale the heading down so the
+ * directory grid + cards aren't squeezed on 320-390px viewports. The grid track
+ * (min(100%,240px)) already collapses to one column; this only adjusts chrome. */
+@media (max-width: 480px) {
+  .mcps-shell { padding: 20px 14px 64px; }
+  .mcps-shell h1 { font-size: clamp(28px, 8vw, 44px); }
+  /* The Connect/Disconnect button is the primary per-card action in a
+   * finger-driven grid; bump its tap height toward the 44px touch target. */
+  .mcp-card .connect-btn { min-height: 40px; }
+}

@@ -1,8 +1,9 @@
 .auth-shell {
   min-height: 100vh;
+  min-height: 100dvh;
   display: grid;
   place-items: center;
-  padding: 24px;
+  padding: max(24px, env(safe-area-inset-top)) max(24px, env(safe-area-inset-right)) max(24px, env(safe-area-inset-bottom)) max(24px, env(safe-area-inset-left));
   background: radial-gradient(ellipse 620px 420px at 50% 38%, color-mix(in srgb, var(--cyan) 6%, transparent), transparent 70%);
 }
 .auth-brand { display: flex; justify-content: center; margin-bottom: 2px; }
@@ -31,6 +32,8 @@
   margin: 0;
   color: var(--muted);
   font-size: 13px;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 .auth-field { display: flex; flex-direction: column; gap: 6px; }
 .auth-field label { font-size: 12px; letter-spacing: 0.01em; color: var(--ink-2); font-family: var(--sans); font-weight: 500; }
@@ -69,3 +72,10 @@
 }
 .auth-foot { color: var(--muted); font-size: 13px; text-align: center; }
 .auth-foot a { color: var(--cyan); }
+
+@media (max-width: 480px) {
+  .auth-shell {
+    padding: max(16px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) max(16px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
+  }
+  .auth-card { padding: 22px; }
+}

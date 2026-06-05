@@ -146,9 +146,9 @@ function UsersTab() {
           <tbody>
             {rows.map((u) => (
               <tr key={u.id}>
-                <td>{u.email} {me?.id === u.id && <span className="admin-pill admin">you</span>}</td>
-                <td>{u.displayName || <span className="mono">—</span>}</td>
-                <td>
+                <td data-label="Email">{u.email} {me?.id === u.id && <span className="admin-pill admin">you</span>}</td>
+                <td data-label="Display name">{u.displayName || <span className="mono">—</span>}</td>
+                <td data-label="Plan">
                   <select value={u.plan} onChange={(e) => setPlan(u.id, e.target.value)}>
                     <option value="go">GO</option>
                     <option value="plus">Plus</option>
@@ -157,12 +157,12 @@ function UsersTab() {
                   </select>
                   <span className={`admin-pill ${u.plan}`} style={{ marginInlineStart: 8 }}>{u.plan}</span>
                 </td>
-                <td>
+                <td data-label="Admin">
                   <input type="checkbox" checked={u.isAdmin} onChange={(e) => setAdmin(u.id, e.target.checked)} />
                   {u.isAdmin && <span className="admin-pill admin" style={{ marginInlineStart: 8 }}>admin</span>}
                 </td>
-                <td className="mono">{u.createdAt?.slice(0, 10)}</td>
-                <td>
+                <td className="mono" data-label="Created">{u.createdAt?.slice(0, 10)}</td>
+                <td data-label="">
                   {me?.id !== u.id && (
                     <button className="danger" onClick={() => del(u.id, u.email)}>Delete</button>
                   )}
@@ -226,12 +226,12 @@ function PaymentsTab() {
           <tbody>
             {rows.map((p) => (
               <tr key={p.id}>
-                <td className="mono">{p.createdAt?.slice(0, 16).replace("T", " ")}</td>
-                <td>{p.userEmail || <span className="mono">—</span>}</td>
-                <td>{p.provider}</td>
-                <td>{p.planId || <span className="mono">—</span>}</td>
-                <td className="mono">{(p.amountMinor / 100).toFixed(2)} {p.currency}</td>
-                <td>
+                <td className="mono" data-label="When">{p.createdAt?.slice(0, 16).replace("T", " ")}</td>
+                <td data-label="User">{p.userEmail || <span className="mono">—</span>}</td>
+                <td data-label="Provider">{p.provider}</td>
+                <td data-label="Plan">{p.planId || <span className="mono">—</span>}</td>
+                <td className="mono" data-label="Amount">{(p.amountMinor / 100).toFixed(2)} {p.currency}</td>
+                <td data-label="Status">
                   <select value={p.status} onChange={(e) => update(p.id, e.target.value as AdminPayment["status"])}>
                     <option value="pending">pending</option>
                     <option value="paid">paid</option>
@@ -240,7 +240,7 @@ function PaymentsTab() {
                   </select>
                   <span className={`admin-pill ${p.status}`} style={{ marginInlineStart: 8 }}>{p.status}</span>
                 </td>
-                <td className="mono">{p.externalId}</td>
+                <td className="mono" data-label="External ID">{p.externalId}</td>
               </tr>
             ))}
           </tbody>
@@ -292,12 +292,12 @@ function SessionsTab() {
           <tbody>
             {rows.map((s) => (
               <tr key={s.id}>
-                <td>{s.userEmail}</td>
-                <td className="mono">{s.ip || "—"}</td>
-                <td className="mono" style={{ maxWidth: 360, overflow: "hidden", textOverflow: "ellipsis" }}>{s.userAgent || "—"}</td>
-                <td className="mono">{s.createdAt?.slice(0, 16).replace("T", " ")}</td>
-                <td className="mono">{s.expiresAt?.slice(0, 10)}</td>
-                <td><button className="danger" onClick={() => revoke(s.id, s.userEmail)}>Revoke</button></td>
+                <td data-label="User">{s.userEmail}</td>
+                <td className="mono" data-label="IP">{s.ip || "—"}</td>
+                <td className="mono" data-label="User agent" style={{ maxWidth: "clamp(120px, 40vw, 360px)", overflow: "hidden", textOverflow: "ellipsis" }}>{s.userAgent || "—"}</td>
+                <td className="mono" data-label="Created">{s.createdAt?.slice(0, 16).replace("T", " ")}</td>
+                <td className="mono" data-label="Expires">{s.expiresAt?.slice(0, 10)}</td>
+                <td data-label=""><button className="danger" onClick={() => revoke(s.id, s.userEmail)}>Revoke</button></td>
               </tr>
             ))}
           </tbody>

@@ -99,7 +99,7 @@ export function RemoteMcpSection() {
                 {isConnected ? (
                   <button
                     className="connect-btn"
-                    style={{ width: "auto", padding: "6px 14px", borderRadius: 8, flexShrink: 0 }}
+                    style={{ position: "static", width: "auto", padding: "6px 14px", borderRadius: 8, flexShrink: 0 }}
                     disabled={isBusy}
                     onClick={() => remove(c.conn!)}
                   >
@@ -109,7 +109,7 @@ export function RemoteMcpSection() {
                   <button
                     className="connect-btn"
                     data-connected
-                    style={{ width: "auto", padding: "6px 16px", borderRadius: 8, flexShrink: 0 }}
+                    style={{ position: "static", width: "auto", padding: "6px 16px", borderRadius: 8, flexShrink: 0 }}
                     disabled={isBusy}
                     onClick={() => connect(c.serverUrl)}
                   >
@@ -119,7 +119,7 @@ export function RemoteMcpSection() {
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
                 {isConnected && <span className="connected-pill" style={{ flexShrink: 0 }}>{ar ? "✓ متصل" : "✓ Connected"}</span>}
-                <span className="meta" style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: "var(--muted-2)", fontSize: 12 }}>{c.serverUrl}</span>
+                <span className="meta" style={{ flex: "1 1 auto", minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: "var(--muted-2)", fontSize: 12 }}>{c.serverUrl}</span>
               </div>
             </div>
           );

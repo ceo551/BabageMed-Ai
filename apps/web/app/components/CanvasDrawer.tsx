@@ -42,6 +42,23 @@ export function CanvasDrawer() {
     <>
       <div className="canvas-backdrop" onClick={close} aria-hidden="true" />
       <aside className="canvas-drawer" role="dialog" aria-label={s.canvasTitle}>
+        {/*
+          Touch-only dismiss affordance. On phones the drawer is width:100vw so it
+          fully covers .canvas-backdrop — tap-outside-to-close is impossible and the
+          header × can be clipped by the un-wrapped header on a 320px row, leaving a
+          touch user with no reliable way out. This grab-handle + full-width Close is
+          rendered always but only revealed on coarse-pointer phones via the scoped
+          media query below, so desktop layout is byte-identical.
+        */}
+        <button
+          type="button"
+          className="canvas-touch-close"
+          onClick={close}
+          aria-label={s.close}
+        >
+          <span className="canvas-touch-grip" aria-hidden="true" />
+          {s.close}
+        </button>
         <header className="canvas-head">
           <span className="canvas-title">{artifact.title || s.canvasTitle}</span>
           <div className="canvas-tabs">
@@ -69,6 +86,41 @@ export function CanvasDrawer() {
           )}
         </div>
       </aside>
+      {/*
+        Scoped, self-contained styling for the touch-only close affordance above.
+        Default (desktop) is display:none, so layout is unchanged at >=561px; the
+        control is only revealed inside the phone media query. Kept in this file so
+        it does not depend on dashboard.css (owned elsewhere).
+      */}
+      <style>{`
+        .canvas-touch-close { display: none; }
+        @media (max-width: 560px) {
+          .canvas-touch-close {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            width: 100%;
+            min-height: 44px;
+            padding: 8px 12px;
+            padding-top: max(8px, env(safe-area-inset-top));
+            border: none;
+            border-bottom: 1px solid var(--border, rgba(127,127,127,0.2));
+            background: var(--panel-solid, var(--panel, transparent));
+            color: inherit;
+            font: inherit;
+            font-size: 13px;
+            cursor: pointer;
+          }
+          .canvas-touch-grip {
+            width: 36px;
+            height: 4px;
+            border-radius: 999px;
+            background: currentColor;
+            opacity: 0.4;
+          }
+        }
+      `}</style>
     </>
   );
 }

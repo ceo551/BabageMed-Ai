@@ -6,7 +6,9 @@
  * editable textareas. */
 .settings-shell {
   min-height: 100vh;
+  min-height: 100dvh;
   padding: 32px 24px 80px;
+  padding-bottom: max(80px, env(safe-area-inset-bottom));
   /* width:100% + border-box: this shell is a flex item in .app-main
    * (flex-column) and `margin: 0 auto` uses auto cross-margins, which disable
    * align-items:stretch — without an explicit width it shrinks to content. */
@@ -31,13 +33,6 @@
   grid-template-columns: 220px 1fr;
   gap: 24px;
   align-items: start;
-}
-@media (max-width: 720px) {
-  .settings-grid { grid-template-columns: 1fr; }
-  /* Stack each label/control row and let inputs shrink (min-width:240px
-     overflowed phones). */
-  .settings-row { grid-template-columns: 1fr; }
-  .settings-row .input, .settings-row select, .settings-row textarea { min-width: 0; width: 100%; }
 }
 .settings-nav {
   display: flex;
@@ -181,7 +176,7 @@
   border-radius: 12px;
   align-items: center;
 }
-.usage-card .model-name { font-weight: 600; }
+.usage-card .model-name { font-weight: 600; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .usage-card .count { font-family: var(--mono); color: var(--ink-2); }
 .usage-card .bar {
   grid-column: 1 / -1;
@@ -249,3 +244,34 @@
 }
 .settings-btn:hover:not([disabled]) { background: color-mix(in srgb, var(--cyan) 16%, transparent); border-color: var(--cyan-line); }
 .settings-btn[disabled] { opacity: .5; cursor: not-allowed; }
+
+/* ── Responsive (tablet → phone) ────────────────────────────────────────
+ * This block lives at the END of the file ON PURPOSE: the input-width
+ * override below (`min-width:0; width:100%`) has the same specificity as
+ * the base `.settings-row .input/select/textarea { min-width:240px }`
+ * rule, so source order decides the tie — it must come LAST to win on
+ * phones (otherwise the 240px floor overflows a ~228px container at 320px). */
+@media (max-width: 720px) {
+  .settings-grid { grid-template-columns: 1fr; }
+  /* Stack each label/control row and let inputs shrink (min-width:240px
+     overflowed phones). */
+  .settings-row { grid-template-columns: 1fr; }
+  .settings-row .input, .settings-row select, .settings-row textarea { min-width: 0; width: 100%; }
+  /* Stacked layout: align values/avatar under their left-aligned labels
+     instead of hugging the (wrong, under RTL) inline-end edge. */
+  .settings-row > .control { justify-content: flex-start; }
+  /* Touch targets: primary actions should clear the 44px guideline. */
+  .settings-nav button,
+  .settings-save,
+  .settings-btn { min-height: 44px; }
+}
+
+/* Phone tier: trim shell/section chrome so narrow fields keep usable width,
+   scale the big heading, and restack the usage card so the model name keeps
+   priority over the wide mono count. */
+@media (max-width: 480px) {
+  .settings-shell { padding: 24px 16px 80px; padding-bottom: max(80px, env(safe-area-inset-bottom)); }
+  .settings-section { padding: 16px; }
+  .settings-shell h1 { font-size: clamp(28px, 8vw, 44px); }
+  .usage-card { grid-template-columns: 1fr; }
+}
