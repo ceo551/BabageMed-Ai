@@ -74,8 +74,11 @@ func load() {
 			continue
 		}
 		name, desc, body := parseFrontmatter(string(raw))
-		if name == "" {
-			name = e.id
+		name = strings.TrimSpace(name)
+		// Most source files set `name` to the slug (e.g. "react-best-practices");
+		// turn those into a display title. Already-proper multi-word names are kept.
+		if name == "" || !strings.Contains(name, " ") {
+			name = prettifyName(e.id)
 		}
 		ordered = append(ordered, Skill{
 			ID: e.id, Name: name, Description: desc,
@@ -89,6 +92,31 @@ func load() {
 			defaultsByFeat[f] = append(defaultsByFeat[f], sk.ID)
 		}
 	}
+}
+
+// acronyms render in all-caps (or canonical case) instead of Title Case so the
+// display names read professionally ("SEO Optimizer", not "Seo Optimizer").
+var acronyms = map[string]string{
+	"ui": "UI", "ux": "UX", "seo": "SEO", "qa": "QA", "api": "API",
+	"sql": "SQL", "3d": "3D", "ceo": "CEO", "ai": "AI", "ml": "ML",
+	"css": "CSS", "html": "HTML", "devops": "DevOps", "qms": "QMS",
+}
+
+// prettifyName turns a slug id ("react-best-practices") into a display title
+// ("React Best Practices"), upper-casing known acronyms.
+func prettifyName(id string) string {
+	parts := strings.FieldsFunc(id, func(r rune) bool { return r == '-' || r == '_' })
+	for i, p := range parts {
+		if p == "" {
+			continue
+		}
+		if a, ok := acronyms[strings.ToLower(p)]; ok {
+			parts[i] = a
+			continue
+		}
+		parts[i] = strings.ToUpper(p[:1]) + p[1:]
+	}
+	return strings.Join(parts, " ")
 }
 
 // ─── library API (used by the chat builder + features package) ───────────────
