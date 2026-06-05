@@ -13,6 +13,10 @@
   --hue-line: var(--border);
   --hue-ink:  var(--ink);
   padding: 24px 32px;
+  /* width:100% is load-bearing: flex item in .app-main (flex-column) whose
+   * `margin: 0 auto` auto cross-margins disable stretch — without it the shell
+   * shrinks to its content (~760px), not filling the column. See .mcps-shell. */
+  width: 100%;
   max-width: 1180px;
   margin: 0 auto;
   display: flex;

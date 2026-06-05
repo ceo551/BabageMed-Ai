@@ -7,8 +7,13 @@
 .settings-shell {
   min-height: 100vh;
   padding: 32px 24px 80px;
+  /* width:100% + border-box: this shell is a flex item in .app-main
+   * (flex-column) and `margin: 0 auto` uses auto cross-margins, which disable
+   * align-items:stretch — without an explicit width it shrinks to content. */
+  width: 100%;
   max-width: 1080px;
   margin: 0 auto;
+  box-sizing: border-box;
   display: flex;
   flex-direction: column;
   gap: 24px;

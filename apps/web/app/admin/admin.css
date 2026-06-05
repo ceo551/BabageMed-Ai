@@ -1,8 +1,12 @@
 .admin-shell {
   min-height: 100vh;
   padding: 32px 24px 80px;
+  /* width:100% + border-box: flex item in .app-main (flex-column) whose
+   * `margin: 0 auto` auto cross-margins disable stretch — see .mcps-shell. */
+  width: 100%;
   max-width: 1280px;
   margin: 0 auto;
+  box-sizing: border-box;
   display: flex;
   flex-direction: column;
   gap: 24px;

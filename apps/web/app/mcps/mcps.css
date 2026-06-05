@@ -1,8 +1,17 @@
 .mcps-shell {
   min-height: 100vh;
   padding: 32px 24px 80px;
+  /* width:100% is load-bearing: .mcps-shell is a flex item inside .app-main
+   * (display:flex; flex-direction:column), and its `margin: 0 auto` centering
+   * uses AUTO horizontal margins — which on a flex item DISABLE the default
+   * align-items:stretch. Without an explicit width the shell shrinks to its
+   * content (~320px), squeezing the grid to a single column on desktop. With
+   * width:100% it fills the 1000px main column (capped at max-width:1200px,
+   * still centered) so the grid packs 3-4 cards per row. */
+  width: 100%;
   max-width: 1200px;
   margin: 0 auto;
+  box-sizing: border-box;
   display: flex;
   flex-direction: column;
   gap: 24px;
