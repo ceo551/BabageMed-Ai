@@ -62,8 +62,11 @@
 }
 .mcps-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 12px;
+  /* Side-by-side cards. min(100%, 240px) keeps a single card from overflowing
+   * on very narrow widths while packing 2–4 per row on a normal viewport. */
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 240px), 1fr));
+  gap: 14px;
+  width: 100%;
 }
 .mcps-sections { display: flex; flex-direction: column; gap: 28px; }
 .mcps-section { display: flex; flex-direction: column; gap: 12px; }
