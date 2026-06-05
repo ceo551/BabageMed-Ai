@@ -39,7 +39,11 @@ export type MediaModel = {
 export const TEXT_MODELS: ReadonlyArray<TextModel> = [
   { id: "opus-4.8",      name: "Claude Opus 4.8", brand: "anthropic", short: "Opus 4.8",
     pills: { en: ["FRONTIER", "REASONING"], ar: ["متقدّم", "استدلال"] } },
+  { id: "sonnet-4.6",    name: "Claude Sonnet 4.6", brand: "anthropic", short: "Sonnet 4.6",
+    pills: { en: ["FAST", "BALANCED"], ar: ["سريع", "متوازن"] } },
   { id: "gpt-5.5",       name: "GPT 5.5",         brand: "openai",    short: "GPT 5.5",
+    pills: { en: ["VISION", "TOOLS"], ar: ["رؤية", "أدوات"] } },
+  { id: "gpt-5.4",       name: "GPT 5.4",         brand: "openai",    short: "GPT 5.4",
     pills: { en: ["VISION", "TOOLS"], ar: ["رؤية", "أدوات"] } },
   { id: "gemini-pro-3.1", name: "Gemini Pro 3.1", brand: "google",    short: "Gemini 3.1",
     pills: { en: ["LONG CTX", "IMAGING"], ar: ["سياق طويل", "تصوير"] } },
@@ -53,6 +57,8 @@ export const TEXT_MODELS: ReadonlyArray<TextModel> = [
 
 // ── Image models (Alibaba Model Studio / DashScope — synchronous) ────
 export const IMAGE_MODELS: ReadonlyArray<MediaModel> = [
+  { id: "gpt-image-2", name: "GPT Image 2", brand: "openai", kind: "image", short: "GPT Image 2",
+    pills: { en: ["PHOTOREAL", "EDIT"], ar: ["واقعي", "تعديل"] } },
   { id: "qwen-image-2.0-pro", name: "Qwen Image 2.0 Pro", brand: "alibaba", kind: "image", short: "Qwen Image 2.0",
     pills: { en: ["PHOTO", "DESIGN"], ar: ["صورة", "تصميم"] } },
   { id: "wan2.7-image-pro", name: "Wan 2.7 Image Pro", brand: "alibaba", kind: "image", short: "Wan 2.7 Image",

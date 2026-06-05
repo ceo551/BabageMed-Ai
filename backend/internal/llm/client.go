@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -452,8 +453,9 @@ var anthropicModelMap = map[string]string{
 	// persisted before the picker moved to 4.8 — they resolve to 4.8.
 	"opus-4.7": "claude-opus-4-8",
 	"opus-4.6": "claude-opus-4-8",
-	"sonnet":   "claude-sonnet-4-6",
-	"haiku":    "claude-haiku-4-5",
+	"sonnet":     "claude-sonnet-4-6",
+	"sonnet-4.6": "claude-sonnet-4-6",
+	"haiku":      "claude-haiku-4-5",
 }
 
 func anthropicModel(id string) string {
@@ -482,6 +484,7 @@ func resolveAnthropicModel(id string) string {
 // through unchanged so a freshly-released model needs no redeploy.
 var openAIModelMap = map[string]string{
 	"gpt-5.5": "gpt-4o",
+	"gpt-5.4": "gpt-4o",
 }
 
 func mapOpenAIModel(id string) string {
@@ -887,4 +890,108 @@ func (c *Client) callOpenAI(ctx context.Context, req CompletionRequest) (*Comple
 		text = out.Choices[0].Message.Content
 	}
 	return &CompletionResponse{Provider: "openai", Model: req.Model, Content: text}, nil
+}
+
+// ─── OpenAI image generation ───────────────────────────────────────────────
+
+// openAIImageModelMap maps UI image-picker ids to real OpenAI image models.
+// "gpt-image-2" is the product label the composer advertises; gpt-image-1 is
+// the actual API model. Mirrors openAIModelMap for chat.
+var openAIImageModelMap = map[string]string{
+	"gpt-image-2": "gpt-image-1",
+}
+
+// IsOpenAIImageModel reports whether a UI image model id routes to OpenAI
+// (vs DashScope). The media service uses it to pick the generation path.
+func IsOpenAIImageModel(id string) bool {
+	_, ok := openAIImageModelMap[id]
+	return ok
+}
+
+// generateImageOpenAI renders images via OpenAI's images API. gpt-image-1 only
+// returns base64 (no URL response_format), so each result is handed back as a
+// data: URI which the media service decodes + stores directly (its download()
+// path is SSRF-locked to DashScope's CDN and can't fetch these).
+func (c *Client) generateImageOpenAI(ctx context.Context, modelID, prompt string, opts ImageOptions) ([]string, error) {
+	if c.cfg.OpenAIKey == "" {
+		return nil, errors.New("OPENAI_API_KEY not configured")
+	}
+	model := openAIImageModelMap[modelID]
+	if model == "" {
+		model = "gpt-image-1"
+	}
+	// gpt-image-1 has no negative_prompt / seed params — fold the negative
+	// prompt into the instruction so the control still has an effect.
+	p := prompt
+	if np := strings.TrimSpace(opts.NegativePrompt); np != "" {
+		p = p + "\n\nDo not include: " + np
+	}
+	n := opts.N
+	if n < 1 {
+		n = 1
+	}
+	body, _ := json.Marshal(map[string]any{
+		"model":  model,
+		"prompt": p,
+		"n":      n,
+		"size":   openAIImageSize(opts.Size),
+	})
+	r, err := http.NewRequestWithContext(ctx, "POST", "https://api.openai.com/v1/images/generations", bytes.NewReader(body))
+	if err != nil {
+		return nil, err
+	}
+	r.Header.Set("Authorization", "Bearer "+c.cfg.OpenAIKey)
+	r.Header.Set("content-type", "application/json")
+	res, err := c.http.Do(r)
+	if err != nil {
+		return nil, err
+	}
+	defer res.Body.Close()
+	raw, _ := io.ReadAll(res.Body)
+	if res.StatusCode >= 400 {
+		return nil, fmt.Errorf("openai image: %s: %s", res.Status, truncBody(raw))
+	}
+	var out struct {
+		Data []struct {
+			B64 string `json:"b64_json"`
+			URL string `json:"url"`
+		} `json:"data"`
+	}
+	if err := json.Unmarshal(raw, &out); err != nil {
+		return nil, fmt.Errorf("openai image: decode: %w", err)
+	}
+	urls := make([]string, 0, len(out.Data))
+	for _, d := range out.Data {
+		if d.B64 != "" {
+			urls = append(urls, "data:image/png;base64,"+d.B64)
+		} else if d.URL != "" {
+			urls = append(urls, d.URL)
+		}
+	}
+	if len(urls) == 0 {
+		return nil, errors.New("openai image: no images returned")
+	}
+	return urls, nil
+}
+
+// openAIImageSize maps a DashScope-style "w*h" size to one of gpt-image-1's
+// allowed sizes (1024x1024 / 1536x1024 / 1024x1536), by aspect.
+func openAIImageSize(dashSize string) string {
+	w, h := 1024, 1024
+	if parts := strings.Split(dashSize, "*"); len(parts) == 2 {
+		if a, err := strconv.Atoi(strings.TrimSpace(parts[0])); err == nil && a > 0 {
+			w = a
+		}
+		if b, err := strconv.Atoi(strings.TrimSpace(parts[1])); err == nil && b > 0 {
+			h = b
+		}
+	}
+	switch {
+	case w > h:
+		return "1536x1024"
+	case h > w:
+		return "1024x1536"
+	default:
+		return "1024x1024"
+	}
 }

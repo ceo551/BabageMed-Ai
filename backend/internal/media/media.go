@@ -10,6 +10,7 @@ package media
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -57,6 +58,7 @@ func New(d *db.DB, a *auth.Service, l *llm.Client, meter UsageMeter) *Service {
 }
 
 var allowedImageModels = map[string]bool{
+	"gpt-image-2":        true, // OpenAI (gpt-image-1); returns base64, stored via data: URI
 	"qwen-image-2.0-pro": true,
 	"wan2.7-image-pro":   true,
 }
@@ -200,9 +202,21 @@ func (s *Service) handleGenerateImage(w http.ResponseWriter, r *http.Request) {
 	params := paramsJSON(req)
 	out := []string{}
 	for _, src := range urls {
-		b, mime, derr := s.download(r.Context(), src)
+		var (
+			b    []byte
+			mime string
+			derr error
+		)
+		// OpenAI image models hand back a base64 data: URI (no fetchable URL);
+		// decode it inline. DashScope returns an aliyuncs CDN URL we download
+		// (SSRF-guarded). Routing on the prefix keeps both paths in one loop.
+		if strings.HasPrefix(src, "data:") {
+			b, mime, derr = decodeDataURI(src)
+		} else {
+			b, mime, derr = s.download(r.Context(), src)
+		}
 		if derr != nil {
-			log.Printf("media: download generated image failed: %v", derr)
+			log.Printf("media: fetch generated image failed: %v", derr)
 			continue
 		}
 		var id string
@@ -439,6 +453,36 @@ func (s *Service) download(ctx context.Context, rawURL string) ([]byte, string, 
 	mime := res.Header.Get("Content-Type")
 	if mime == "" {
 		mime = "application/octet-stream"
+	}
+	return b, mime, nil
+}
+
+// decodeDataURI decodes a base64 "data:<mime>;base64,<payload>" URI (produced
+// by the OpenAI image path) into raw bytes + mime, enforcing the same size cap
+// as download(). No network fetch, so no SSRF surface.
+func decodeDataURI(s string) ([]byte, string, error) {
+	if !strings.HasPrefix(s, "data:") {
+		return nil, "", errors.New("not a data uri")
+	}
+	comma := strings.IndexByte(s, ',')
+	if comma < 0 {
+		return nil, "", errors.New("malformed data uri")
+	}
+	meta := s[len("data:"):comma] // e.g. "image/png;base64"
+	mime := "image/png"
+	if i := strings.IndexByte(meta, ';'); i >= 0 {
+		if m := strings.TrimSpace(meta[:i]); m != "" {
+			mime = m
+		}
+	} else if m := strings.TrimSpace(meta); m != "" {
+		mime = m
+	}
+	b, err := base64.StdEncoding.DecodeString(s[comma+1:])
+	if err != nil {
+		return nil, "", fmt.Errorf("data uri base64: %w", err)
+	}
+	if len(b) > maxAssetBytes {
+		return nil, "", errors.New("asset too large")
 	}
 	return b, mime, nil
 }

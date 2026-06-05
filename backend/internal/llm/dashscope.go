@@ -306,6 +306,11 @@ type ImageOptions struct {
 // non-stream client timeout) and accepts negative_prompt / seed / n / size
 // (validated live). modelID is a UI picker id.
 func (c *Client) GenerateImage(ctx context.Context, modelID, prompt string, opts ImageOptions) ([]string, error) {
+	// OpenAI image models (gpt-image-*) take a different API + return base64;
+	// route them out before the DashScope path.
+	if IsOpenAIImageModel(modelID) {
+		return c.generateImageOpenAI(ctx, modelID, prompt, opts)
+	}
 	if c.cfg.DashScopeKey == "" {
 		return nil, errors.New("DASHSCOPE_API_KEY not configured")
 	}

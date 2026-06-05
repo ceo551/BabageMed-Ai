@@ -27,7 +27,6 @@ import (
 
 	"github.com/pervagans/backend/internal/auth"
 	"github.com/pervagans/backend/internal/db"
-	"github.com/pervagans/backend/internal/skills"
 	"github.com/go-chi/chi/v5"
 	"github.com/jackc/pgx/v5"
 )
@@ -111,27 +110,19 @@ func (s *Service) get(ctx context.Context, userID, slug string) (*Feature, error
 		return nil, err
 	}
 	row := s.db.Pool.QueryRow(ctx, `
-		SELECT instructions, skills, connectors, skills_customized, updated_at
+		SELECT instructions, skills, connectors, updated_at
 		FROM features WHERE user_id = $1 AND slug = $2
 	`, userID, slug)
 	f := &Feature{Slug: slug, Skills: []string{}, Connectors: []string{}, Files: []File{}}
 	var skillsJSON, connJSON []byte
-	var skillsCustomized bool
-	if err := row.Scan(&f.Instructions, &skillsJSON, &connJSON, &skillsCustomized, &f.UpdatedAt); err != nil {
+	if err := row.Scan(&f.Instructions, &skillsJSON, &connJSON, &f.UpdatedAt); err != nil {
 		return nil, err
 	}
 	if len(skillsJSON) > 0 { _ = json.Unmarshal(skillsJSON, &f.Skills) }
 	if len(connJSON) > 0   { _ = json.Unmarshal(connJSON, &f.Connectors) }
-	// Until the user explicitly customises this feature's skills, surface the
-	// curated per-feature defaults (internal/skills) — so the catalog is useful
-	// out of the box for both new and pre-existing feature rows. Once they
-	// toggle anything, patch() sets skills_customized and their choice (even an
-	// empty list) is respected from then on.
-	if !skillsCustomized {
-		if def := skills.DefaultsForFeature(slug); len(def) > 0 {
-			f.Skills = def
-		}
-	}
+	// No skills are enabled by default — a feature opens with nothing checked;
+	// the user picks what they want from the catalog. (The skills_customized
+	// column from migration 025 is left in place but no longer consulted.)
 	// Files list
 	rows, err := s.db.Pool.Query(ctx, `
 		SELECT id::text, name, mime, size_bytes, created_at
@@ -214,9 +205,6 @@ func (s *Service) patch(ctx context.Context, userID, slug string, p UpdatePatch)
 		sets = append(sets, fmt.Sprintf("skills = $%d", i))
 		args = append(args, string(b))
 		i++
-		// Mark customised so get() stops overlaying defaults — the user's
-		// explicit selection (including clearing all skills) now wins.
-		sets = append(sets, "skills_customized = true")
 	}
 	if p.Connectors != nil {
 		b, _ := json.Marshal(p.Connectors)
