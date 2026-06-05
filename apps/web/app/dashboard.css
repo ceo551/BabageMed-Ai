@@ -1254,7 +1254,12 @@ body.modal-open .mobile-nav-btn { display: none !important; }
     min-width: 0;
     width: min(320px, calc(100vw - 32px));
     max-width: calc(100vw - 32px);
-    max-height: min(60vh, 440px);
+    /* The menus open UPWARD from the composer, which on the empty home screen
+     * sits centered — so a tall (440px) panel reached the very top edge. Cap to
+     * ~half the viewport so a comfortable top gap always remains (the panel
+     * scrolls instead). Bottom-anchored, so a shorter panel = lower top. */
+    max-height: min(440px, calc(50vh - 24px));
+    max-height: min(440px, calc(50dvh - 24px));
     overflow-y: auto;
   }
   /* Same cap for the account Appearance / Language flyouts. */
