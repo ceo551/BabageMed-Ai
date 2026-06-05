@@ -9,6 +9,8 @@ import { useUI } from "../../lib/ui-context";
 import { usePrefs } from "../../lib/store";
 import { chats as chatsApi, features as featuresApi, media as mediaApi, type Feature as FeatureRow } from "../../lib/api";
 import { AssistantMessage, type Citation } from "../../components/AssistantMessage";
+import { Modal } from "../../components/Modal";
+import { SkillPicker } from "../../components/SkillPicker";
 import type { FeatureMeta } from "../../i18n";
 import {
   modelsForFeature,
@@ -87,7 +89,8 @@ export function FeatureChat({
   const composerRef = useRef<HTMLDivElement>(null);
   const transcriptEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const skillInputRef = useRef<HTMLInputElement>(null);
+  // Skill-catalog picker modal (opened from the composer "+" menu).
+  const [skillsModalOpen, setSkillsModalOpen] = useState(false);
 
   // Reset model when feature changes (e.g. visual ↔ text would otherwise
   // keep a stale id that doesn't exist in the new picker).
@@ -270,6 +273,9 @@ export function FeatureChat({
         locale,
         feature: meta.slug,
         featureInstructions: feature?.instructions || "",
+        // The feature's enabled skills (catalog ids). The backend resolves each
+        // id to its guidance body and injects it into the system prompt.
+        spaceSkills: feature?.skills || [],
         messages: [
           ...messages
             .filter((m) => m.role === "user" || m.role === "assistant")
@@ -473,30 +479,20 @@ export function FeatureChat({
             }
           }}
         />
-        <input
-          ref={skillInputRef}
-          type="file"
-          multiple
-          hidden
-          accept=".md,.txt,.json,.yaml,.yml,.prompt"
-          onChange={async (e) => {
-            const fl = e.target.files;
-            if (!fl || fl.length === 0) return;
-            setUploading(true);
-            try {
-              const names = Array.from(fl).map((f) => f.name);
-              const cur = feature?.skills || [];
-              const merged = Array.from(new Set([...cur, ...names]));
-              const upd = await featuresApi.update(meta.slug, { skills: merged });
+        <Modal
+          open={skillsModalOpen}
+          onClose={() => setSkillsModalOpen(false)}
+          title={s.skillsPanel}
+          width={620}
+        >
+          <SkillPicker
+            selected={feature?.skills || []}
+            onChange={async (ids) => {
+              const upd = await featuresApi.update(meta.slug, { skills: ids });
               onFeatureUpdate?.(upd);
-            }
-            catch { /* tolerated */ }
-            finally {
-              setUploading(false);
-              if (skillInputRef.current) skillInputRef.current.value = "";
-            }
-          }}
-        />
+            }}
+          />
+        </Modal>
         <div className="composer">
           <textarea
             ref={taRef}
@@ -584,13 +580,12 @@ export function FeatureChat({
                 <button
                   type="button"
                   className="popover-row"
-                  onClick={() => { setAddOpen(false); skillInputRef.current?.click(); }}
-                  disabled={uploading}
-                  style={{ width: "100%", textAlign: "start", border: 0, background: "transparent", cursor: uploading ? "progress" : "pointer" }}
+                  onClick={() => { setAddOpen(false); setSkillsModalOpen(true); }}
+                  style={{ width: "100%", textAlign: "start", border: 0, background: "transparent", cursor: "pointer" }}
                 >
                   {I.skills}
                   <span className="col">
-                    <span className="ttl">{s.addSkill}</span>
+                    <span className="ttl">{s.skillsPanel}</span>
                   </span>
                 </button>
                 {/* Web search + connectors aren't useful on the visual

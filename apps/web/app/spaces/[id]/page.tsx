@@ -9,6 +9,7 @@ import { useAuth } from "../../lib/auth-context";
 import { spaces as spacesApi, type Space, type SpaceFile, type SpaceMemoryItem } from "../../lib/api";
 import { I } from "../../icons";
 import { Modal } from "../../components/Modal";
+import { SkillPicker } from "../../components/SkillPicker";
 import { SpaceChat } from "./SpaceChat";
 import "../spaces.css";
 
@@ -476,6 +477,9 @@ function FilesCard({
 }
 
 // ─── Skills card ──────────────────────────────────────────────────────────
+// Opens the curated skill-catalog picker (same component as the feature page).
+// Selected skill ids are stored on the space and resolved to their guidance
+// bodies by the backend at chat time.
 function SkillsCard({
   skills,
   onChange,
@@ -484,34 +488,7 @@ function SkillsCard({
   onChange: (skills: string[]) => Promise<void>;
 }) {
   const { s } = useUI();
-  const [local, setLocal] = useState<string[]>(skills);
-  const [draft, setDraft] = useState("");
-  const [busy, setBusy] = useState(false);
-  useEffect(() => { setLocal(skills); }, [skills]);
-
-  // Skills are plain text labels passed to the model as enabled capabilities
-  // for this space — they are NOT files. (The old file-picker stored only the
-  // filename and silently discarded the content, which was misleading.)
-  async function add() {
-    const name = draft.trim();
-    if (!name || local.includes(name)) { setDraft(""); return; }
-    const prev = local;
-    const next = [...local, name];
-    setLocal(next);
-    setDraft("");
-    setBusy(true);
-    try { await onChange(next); }
-    catch { setLocal(prev); }
-    finally { setBusy(false); }
-  }
-
-  async function remove(name: string) {
-    const prev = local;
-    const next = local.filter((x) => x !== name);
-    setLocal(next);
-    try { await onChange(next); }
-    catch { setLocal(prev); }
-  }
+  const [open, setOpen] = useState(false);
 
   return (
     <div className="sp-rail-card">
@@ -520,44 +497,19 @@ function SkillsCard({
         <span className="sp-rail-title">{s.skillsPanel}</span>
       </div>
 
-      {local.length === 0 ? (
-        <div className="sp-dropzone">{s.skillsHint}</div>
-      ) : (
-        <div className="sp-chips">
-          {local.map((name) => (
-            <span key={name} className="sp-chip">
-              <span className="sp-chip-name" title={name}>{name}</span>
-              <button
-                type="button"
-                className="sp-row-del"
-                onClick={() => remove(name)}
-                aria-label={s.remove}
-                title={s.remove}
-              >×</button>
-            </span>
-          ))}
-        </div>
-      )}
+      {skills.length === 0 && <div className="sp-dropzone">{s.skillsHint}</div>}
 
-      <div className="sp-skill-add">
-        <input
-          type="text"
-          className="feat-modal-input"
-          placeholder={s.addSkill}
-          value={draft}
-          onChange={(e) => setDraft(e.target.value)}
-          onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); add(); } }}
-          disabled={busy}
-        />
-        <button
-          type="button"
-          className="sp-add-dashed"
-          onClick={add}
-          disabled={busy || !draft.trim()}
-        >
-          {I.plus}<span>{busy ? s.saving : s.addSkill}</span>
-        </button>
-      </div>
+      <button
+        type="button"
+        className="sp-add-dashed"
+        onClick={() => setOpen(true)}
+      >
+        {I.plus}<span>{skills.length > 0 ? `${s.skillsPanel} · ${skills.length}` : s.skillsPanel}</span>
+      </button>
+
+      <Modal open={open} onClose={() => setOpen(false)} title={s.skillsPanel} width={620}>
+        <SkillPicker selected={skills} onChange={onChange} />
+      </Modal>
     </div>
   );
 }

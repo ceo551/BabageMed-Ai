@@ -31,6 +31,7 @@ import (
 	"github.com/pervagans/backend/internal/push"
 	"github.com/pervagans/backend/internal/ratelimit"
 	"github.com/pervagans/backend/internal/share"
+	"github.com/pervagans/backend/internal/skills"
 	"github.com/pervagans/backend/internal/spaces"
 	"github.com/pervagans/backend/internal/tracing"
 	"github.com/pervagans/backend/internal/updates"
@@ -242,6 +243,12 @@ func main() {
 	// Chat — usable anonymously, but if auth is on we'll persist messages.
 	r.With(chatLimiter.Middleware).Post("/api/chat", apiH.Chat)
 	r.With(chatLimiter.Middleware).Post("/api/chat/stream", apiH.ChatStream)
+
+	// Skills catalog — public, read-only product metadata (no per-user data).
+	// Registered outside the auth block so the picker works for anon/trial too.
+	// The embedded catalog (internal/skills) backs both these endpoints and the
+	// chat system-prompt builder's skill-content injection.
+	skills.New().Register(r)
 
 	// Media generation + durable persistence (DashScope) lives in the media
 	// service — it needs DB + auth (results are stored as owned assets and

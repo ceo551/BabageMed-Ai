@@ -9,6 +9,7 @@ import { usePrefs } from "../../lib/store";
 import { features as featuresApi, type Feature, type FeatureFile } from "../../lib/api";
 import { I, featureIcon } from "../../icons";
 import { Modal } from "../../components/Modal";
+import { SkillPicker } from "../../components/SkillPicker";
 import { FeatureChat } from "./FeatureChat";
 import { FeatureSubSidebar } from "./FeatureSubSidebar";
 import "./feature.css";
@@ -346,8 +347,9 @@ function FilesRow({
 }
 
 // ─── Skills row ───────────────────────────────────────────────────────────
-// Same pattern as FilesRow — button opens a modal showing saved skill
-// "files" (skills are tracked by filename in this MVP, see SkillsCard).
+// Opens the curated skill-catalog picker. Selected skill ids are persisted on
+// each toggle (the picker is optimistic); the row shows the enabled count.
+// Replaces the old file-upload stub that only stored filenames.
 function SkillsRow({
   loading,
   selected,
@@ -359,32 +361,6 @@ function SkillsRow({
 }) {
   const { s } = useUI();
   const [open, setOpen] = useState(false);
-  const [local, setLocal] = useState<string[]>(selected);
-  const [busy, setBusy] = useState(false);
-  const inputRef = useRef<HTMLInputElement>(null);
-  useEffect(() => { setLocal(selected); }, [selected]);
-
-  async function onFiles(e: React.ChangeEvent<HTMLInputElement>) {
-    const fl = e.target.files;
-    if (!fl || fl.length === 0) return;
-    setBusy(true);
-    try {
-      const names = Array.from(fl).map((f) => f.name);
-      const merged = Array.from(new Set([...local, ...names]));
-      await onChange(merged);
-      setLocal(merged);
-    } finally {
-      setBusy(false);
-      if (inputRef.current) inputRef.current.value = "";
-    }
-  }
-
-  async function remove(name: string) {
-    const next = local.filter((x) => x !== name);
-    setLocal(next);
-    try { await onChange(next); }
-    catch { setLocal(local); }
-  }
 
   return (
     <>
@@ -396,55 +372,16 @@ function SkillsRow({
       >
         <span className="feat-subsb-row-icon" aria-hidden="true">{I.skills}</span>
         <span className="feat-subsb-row-label as-text">{s.skillsPanel}</span>
-        {local.length > 0 && <span className="feat-subsb-row-count">{local.length}</span>}
+        {selected.length > 0 && <span className="feat-subsb-row-count">{selected.length}</span>}
         <span className="feat-subsb-row-chev" aria-hidden="true">{I.chevR}</span>
       </button>
-      <input
-        ref={inputRef}
-        type="file"
-        multiple
-        hidden
-        accept=".md,.txt,.json,.yaml,.yml,.prompt"
-        onChange={onFiles}
-      />
       <Modal
         open={open}
         onClose={() => setOpen(false)}
         title={s.skillsPanel}
-        width={520}
+        width={620}
       >
-        {local.length === 0 ? (
-          <div className="feat-card-empty">{s.skillsPanelDesc}</div>
-        ) : (
-          <ul className="feat-files feat-files-modal">
-            {local.map((name) => (
-              <li key={name} className="feat-file-row">
-                <span className="feat-file-icon">{I.doc}</span>
-                <span className="feat-file-name" title={name}>{name}</span>
-                <button
-                  type="button"
-                  className="feat-file-del"
-                  onClick={() => remove(name)}
-                  aria-label={s.remove}
-                  title={s.remove}
-                >×</button>
-              </li>
-            ))}
-          </ul>
-        )}
-        <div className="feat-modal-foot">
-          <button
-            type="button"
-            className="feat-btn-secondary"
-            onClick={() => setOpen(false)}
-          >{s.cancel}</button>
-          <button
-            type="button"
-            className="feat-btn-primary"
-            onClick={() => inputRef.current?.click()}
-            disabled={busy}
-          >{busy ? s.saving : s.addSkill}</button>
-        </div>
+        <SkillPicker selected={selected} onChange={onChange} />
       </Modal>
     </>
   );

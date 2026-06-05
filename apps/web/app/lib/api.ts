@@ -572,6 +572,23 @@ export const features = {
   },
 };
 
+// ─── Skills catalog ─────────────────────────────────────────────────────────
+// The curated, read-only catalog of reusable assistant capabilities (backed by
+// the embedded backend catalog). The picker shows these grouped by category;
+// the user's selection is stored as skill ids in a feature's/space's `skills`.
+export type SkillMeta = {
+  id: string;
+  name: string;
+  description: string;
+  category: string;
+  features: string[]; // feature slugs that auto-enable this skill
+};
+
+export const skills = {
+  list: () => api.get<SkillMeta[]>("/api/skills"),
+  get: (id: string) => api.get<SkillMeta & { content: string }>(`/api/skills/${encodeURIComponent(id)}`),
+};
+
 export const admin = {
   stats:         () => api.get<AdminStats>("/api/admin/stats"),
   users:         (q = "", limit = 50, offset = 0) =>
