@@ -949,7 +949,7 @@ function Composer({
         )}
 
         <span className="spacer" />
-        <div style={{ position: "relative" }}>
+        <div className="model-anchor">
           <button className="model-pill" type="button" data-open={modelOpen} onClick={() => { setModelOpen((v) => !v); setAddOpen(false); }}>
             <span className="brand-mark">{brandMark(currentModel.brand)}</span>
             <span>{currentModel.short}</span>
