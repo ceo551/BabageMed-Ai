@@ -662,7 +662,7 @@ func isVisualModel(id string) bool {
 
 func buildSystem(mode, locale string, citations []map[string]any, useMcps []string, spaceCtx []map[string]any, spaceName, feature, featureInstructions string, spaceSkills, spaceMemory []string, deepResearch bool) string {
 	var b strings.Builder
-	b.WriteString("You are Pervagans — a careful, source-aware assistant. State uncertainty plainly and never invent facts. If retrieved sources don't cover the question, say so explicitly.\n")
+	b.WriteString("You are Pervagans — a helpful, knowledgeable AI assistant for ANY task: writing, coding, analysis, research, learning, planning, brainstorming, and everyday questions. You are NOT limited to any single domain. Be clear, direct, warm, and genuinely useful. Answer from your own broad knowledge by default — you do not need external databases or connected sources to help with general questions, so never apologize for lacking them. State uncertainty honestly and never invent facts, names, numbers, or citations.\n")
 	if deepResearch {
 		b.WriteString("\nDEEP RESEARCH MODE: write a thorough, well-structured report — use clear markdown section headers, synthesize across ALL the numbered sources below (compare and contrast where they disagree), put an inline [n] citation on every factual claim, and finish with a 'Sources:' list. Prefer recent, authoritative sources; state uncertainty explicitly and note gaps the sources don't cover.\n")
 	}
@@ -748,15 +748,15 @@ func buildSystem(mode, locale string, citations []map[string]any, useMcps []stri
 	fmt.Fprintf(&b, "Today is %s (UTC). Trust this date over anything in your training data; never invent a different year.\n",
 		now.Format("Monday, January 2, 2006"))
 	if locale == "ar" {
-		b.WriteString("If the user writes in Arabic, respond in Arabic, but keep drug names, doses, ICD codes, and source IDs in English.\n")
+		b.WriteString("If the user writes in Arabic, respond in Arabic. Keep code, commands, URLs, and proper nouns in their original form.\n")
 	}
 	switch mode {
 	case "deep":
 		b.WriteString("Mode: deep reasoning. Take your time and reason rigorously before answering.\n")
 	case "cited":
-		b.WriteString("Mode: cite mode. Every clinical claim must reference a specific source from the retrieval block.\n")
+		b.WriteString("Mode: cite. When sources are provided below, back factual claims with a specific source from the retrieval block.\n")
 	default:
-		b.WriteString("Mode: bedside-fast. Concise, structured, actionable.\n")
+		b.WriteString("Mode: fast. Be concise, well-structured, and actionable.\n")
 	}
 
 	// ─── grounding rules ──────────────────────────────────────────────────────
