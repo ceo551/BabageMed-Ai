@@ -253,6 +253,20 @@
  * phones (otherwise the 240px floor overflows a ~228px container at 320px). */
 @media (max-width: 720px) {
   .settings-grid { grid-template-columns: 1fr; }
+  /* General/Usage become a horizontal 2-button segmented control at the top
+     (side by side), NOT sticky — the sticky vertical sidebar overlapped the
+     form content as it scrolled underneath on phones. */
+  .settings-nav {
+    flex-direction: row;
+    position: static;
+    top: auto;
+    gap: 4px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 4px;
+  }
+  .settings-nav button { flex: 1; text-align: center; }
   /* Stack each label/control row and let inputs shrink (min-width:240px
      overflowed phones). */
   .settings-row { grid-template-columns: 1fr; }
