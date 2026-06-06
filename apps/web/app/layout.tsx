@@ -8,7 +8,7 @@ import { NavProgress } from "./components/NavProgress";
 
 const SITE_URL = "https://pervagans.com";
 const SITE_TITLE =
-  "Pervagans — AI workspace with instructions, files, skills & connectors";
+  "Pervagans: AI workspace with instructions, files, skills & connectors";
 const SITE_DESCRIPTION =
   "Pervagans is a bilingual (EN/AR) AI assistant and workspace. Give each workflow its own instructions, files, skills and MCP connectors, then chat to get work done.";
 
@@ -139,7 +139,7 @@ const JSON_LD = {
       url: "https://pervagans.com",
       logo: "https://pervagans.com/pervagans-icon.png",
       description:
-        "Pervagans is a bilingual (EN/AR) AI assistant and workspace — chat with leading AI models and ground every workflow in your own instructions, files, skills and connectors.",
+        "Pervagans is a bilingual (EN/AR) AI assistant and workspace. Chat with leading AI models and ground every workflow in your own instructions, files, skills and connectors.",
     },
     {
       "@type": "WebSite",

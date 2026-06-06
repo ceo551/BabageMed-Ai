@@ -24,7 +24,7 @@ export async function generateMetadata(
   const { slug } = await params;
   const label = TITLES[slug] || "Feature";
   return {
-    title: `${label} — Pervagans`,
+    title: `${label} · Pervagans`,
     description: `Pervagans workspace for ${label.toLowerCase()}.`,
   };
 }
