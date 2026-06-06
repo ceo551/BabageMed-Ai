@@ -126,27 +126,54 @@ const PRE_PAINT_SCRIPT = `(function(){
   } catch (e) { /* incognito / disabled storage → defaults stand */ }
 })();`;
 
-// schema.org structured data (Organization + WebSite). Rendered server-side
-// from the root layout so crawlers see it in the initial HTML. The WebSite
-// SearchAction wires Google's sitelinks search box to the MCP catalog search.
+// schema.org structured data (Organization + WebSite + SoftwareApplication).
+// Rendered server-side from the root layout so crawlers see it in the initial
+// HTML — this is what powers rich results (logo, app card, price) in Google.
 const JSON_LD = {
   "@context": "https://schema.org",
   "@graph": [
     {
       "@type": "Organization",
+      "@id": "https://pervagans.com/#organization",
       name: "Pervagans",
       url: "https://pervagans.com",
       logo: "https://pervagans.com/pervagans-icon.png",
+      description:
+        "Pervagans is a bilingual (EN/AR) AI assistant and workspace — chat with leading AI models and ground every workflow in your own instructions, files, skills and connectors.",
     },
     {
       "@type": "WebSite",
+      "@id": "https://pervagans.com/#website",
       name: "Pervagans",
       url: "https://pervagans.com",
-      potentialAction: {
-        "@type": "SearchAction",
-        target: "https://pervagans.com/mcps?q={search_term_string}",
-        "query-input": "required name=search_term_string",
+      inLanguage: ["en", "ar"],
+      publisher: { "@id": "https://pervagans.com/#organization" },
+    },
+    {
+      "@type": "SoftwareApplication",
+      "@id": "https://pervagans.com/#app",
+      name: "Pervagans",
+      applicationCategory: "BusinessApplication",
+      operatingSystem: "Web, Windows, macOS",
+      url: "https://pervagans.com",
+      description:
+        "A bilingual AI assistant and workspace. Chat with Claude, GPT and Gemini, build Spaces with custom instructions, files, skills and MCP connectors, generate images and video, run deep research, and automate multi-step tasks with Agent Mode.",
+      inLanguage: ["en", "ar"],
+      offers: {
+        "@type": "Offer",
+        price: "0",
+        priceCurrency: "USD",
+        description: "Free plan available; paid plans for higher usage.",
       },
+      featureList: [
+        "Chat with leading AI models (Claude, GPT, Gemini, and more)",
+        "Per-workspace instructions, files, skills and connectors",
+        "AI image and video generation",
+        "Deep research with cited sources",
+        "Agent Mode for multi-step tasks",
+        "Bilingual English and Arabic",
+      ],
+      publisher: { "@id": "https://pervagans.com/#organization" },
     },
   ],
 };

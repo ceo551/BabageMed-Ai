@@ -28,6 +28,10 @@ const AUTH_ROUTE = /^\/(login|signup|forgot-password|reset-password|verify-email
 // pages. Like auth routes they render WITHOUT the sidebar — the visitor may not
 // be signed in, and showing app navigation would mislead + leak feature names.
 const PUBLIC_ROUTE = /^\/(try|s)(\/|$)/;
+// Public marketing pages (/product, /pricing, /about) — crawlable, content-rich
+// landing surfaces that render their OWN nav + footer (see app/(marketing)/
+// layout.tsx), so the app sidebar is skipped here too.
+const MARKETING_ROUTE = /^\/(product|pricing|about|use-cases|terms|privacy|refund|company)(\/|$)/;
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   return (
@@ -59,9 +63,10 @@ function ToasterMount() {
 
 function Shell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname() || "";
-  if (AUTH_ROUTE.test(pathname) || PUBLIC_ROUTE.test(pathname)) {
+  if (AUTH_ROUTE.test(pathname) || PUBLIC_ROUTE.test(pathname) || MARKETING_ROUTE.test(pathname)) {
     // Bare: auth pages center their card; /try and /s render their own
-    // full-bleed layout. No sidebar/canvas chrome on any of them.
+    // full-bleed layout; marketing pages render their own nav + footer. No
+    // app sidebar/canvas chrome on any of them.
     return <>{children}</>;
   }
   return (

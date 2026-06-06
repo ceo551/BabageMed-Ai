@@ -5,11 +5,11 @@ import type { NextRequest } from "next/server";
 // visitor who lands here is bounced into the app.
 const AUTH = /^\/(login|signup|forgot-password|reset-password|verify-email)(\/|$)/;
 
-// Fully public surfaces (P4): the zero-login trial (/try) and shared answer
-// snapshots (/s/<id>). Open to EVERYONE — no redirect either way — so a logged-
-// out visitor gets a no-friction "wow" and a shared link opens without an
-// account. The rest of the app stays gated.
-const PUBLIC = /^\/(try|s)(\/|$)/;
+// Fully public surfaces: the zero-login trial (/try), shared answer snapshots
+// (/s/<id>), and the marketing pages (/product, /pricing, /about). Open to
+// EVERYONE — no redirect either way — so a logged-out visitor (and search-engine
+// crawlers) reach them without an account. The rest of the app stays gated.
+const PUBLIC = /^\/(try|s|product|pricing|about|use-cases|terms|privacy|refund|company)(\/|$)/;
 
 // Gate the whole app behind authentication. A visitor without the session
 // cookie is sent to /login (carrying ?next so we can bounce them back after

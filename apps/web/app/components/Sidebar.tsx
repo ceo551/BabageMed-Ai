@@ -606,7 +606,7 @@ function AccountChip(props: {
   } = props;
 
   const [open, setOpen] = useState(false);
-  const [sub, setSub] = useState<null | "appearance" | "language">(null);
+  const [sub, setSub] = useState<null | "appearance" | "language" | "help">(null);
   const [popStyle, setPopStyle] = useState<React.CSSProperties>({});
   const [subStyle, setSubStyle] = useState<React.CSSProperties>({});
   const [mounted, setMounted] = useState(false);
@@ -653,7 +653,7 @@ function AccountChip(props: {
   // Sub-popover spawns from a row inside the main popover. It floats to the
   // side AWAY from the chip (so it doesn't overlap the menu the user just
   // opened) — to the right in LTR, to the left in RTL.
-  function openSub(name: "appearance" | "language" | null, e: React.MouseEvent<HTMLButtonElement>) {
+  function openSub(name: "appearance" | "language" | "help" | null, e: React.MouseEvent<HTMLButtonElement>) {
     const row = e.currentTarget.getBoundingClientRect();
     const pop = popRef.current?.getBoundingClientRect();
     const dir = document.documentElement.dir === "rtl" ? "rtl" : "ltr";
@@ -818,6 +818,19 @@ function AccountChip(props: {
               <span className="desc">{s.plansDesc}</span>
             </span>
           </Link>
+          <button
+            type="button"
+            className="tool-row"
+            data-active={sub === "help"}
+            onClick={(e) => openSub(sub === "help" ? null : "help", e)}
+          >
+            <span className="swatch">{I.doc}</span>
+            <span className="col">
+              <span className="ttl">{locale === "ar" ? "المساعدة" : "Help"}</span>
+              <span className="desc">{locale === "ar" ? "الخصوصية · الشروط · الشركة" : "Privacy · Terms · Company"}</span>
+            </span>
+            <span className="trail-chev">{I.chevR}</span>
+          </button>
           {isAdmin && (
             <Link href="/admin" className="tool-row" onClick={() => setOpen(false)}>
               <span className="swatch p">{I.skills}</span>
@@ -883,6 +896,25 @@ function AccountChip(props: {
               <span className="ttl">{s.langAR}</span>
               {locale === "ar" && <span className="check-end">{I.check}</span>}
             </button>
+          </div>
+        )}
+
+        {/* Help flyout — public policy + company pages (also indexed for SEO via
+            the sitemap). Picking one closes the whole account menu. */}
+        {sub === "help" && (
+          <div className="tools-pop acct-sub-pop" style={subStyle} role="menu">
+            <Link href="/privacy" className="tool-row" onClick={() => { setOpen(false); setSub(null); }}>
+              <span className="ttl">{locale === "ar" ? "سياسة الخصوصية" : "Privacy Policy"}</span>
+            </Link>
+            <Link href="/terms" className="tool-row" onClick={() => { setOpen(false); setSub(null); }}>
+              <span className="ttl">{locale === "ar" ? "شروط الخدمة" : "Terms of Service"}</span>
+            </Link>
+            <Link href="/refund" className="tool-row" onClick={() => { setOpen(false); setSub(null); }}>
+              <span className="ttl">{locale === "ar" ? "سياسة الاسترداد" : "Refund Policy"}</span>
+            </Link>
+            <Link href="/company" className="tool-row" onClick={() => { setOpen(false); setSub(null); }}>
+              <span className="ttl">{locale === "ar" ? "الشركة" : "Company"}</span>
+            </Link>
           </div>
         )}
         </>,
