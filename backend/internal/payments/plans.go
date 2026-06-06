@@ -15,41 +15,42 @@ type Plan struct {
 	Interval    string // "month" | "year" | "one_time"
 }
 
-// Four monthly tiers: GO $17, Plus $30, Pro $50, Max $100. EGP amounts are
-// the USD figure at ~50 EGP/$ (matching the historical price points).
+// Four monthly tiers: Go $20, Plus $40, Pro $70, Max $100 (matching the pricing
+// model + the per-plan model matrix in internal/billing/plans.go). EGP amounts
+// are the USD figure at ~50 EGP/$.
 var Plans = map[string]Plan{
 	"go_monthly": {
 		ID:            "go_monthly",
-		Name:          "GO",
-		DescriptionEN: "Best models, connectors, features",
-		DescriptionAR: "أفضل النماذج، الموصّلات، الميزات",
-		EGP:           85000, // 850 EGP
-		USD:           1700,  // $17
+		Name:          "Go",
+		DescriptionEN: "Core text models — DeepSeek V4 Pro, GLM 5.1, Qwen 3.7 Max",
+		DescriptionAR: "نماذج النصوص الأساسية — DeepSeek V4 Pro و GLM 5.1 و Qwen 3.7 Max",
+		EGP:           100000, // 1000 EGP
+		USD:           2000,   // $20
 		Interval:      "month",
 	},
 	"plus_monthly": {
 		ID:            "plus_monthly",
 		Name:          "Plus",
-		DescriptionEN: "Everything in GO, higher limits",
-		DescriptionAR: "كل مزايا GO، حدود أعلى",
-		EGP:           150000, // 1500 EGP
-		USD:           3000,   // $30
+		DescriptionEN: "Everything in Go + Gemini 3.1 Pro and image generation",
+		DescriptionAR: "كل مزايا Go + Gemini 3.1 Pro وتوليد الصور",
+		EGP:           200000, // 2000 EGP
+		USD:           4000,   // $40
 		Interval:      "month",
 	},
 	"pro_monthly": {
 		ID:            "pro_monthly",
 		Name:          "Pro",
-		DescriptionEN: "Higher limits, Claude Opus 4.8 and GPT 5.5",
-		DescriptionAR: "حدود أعلى، Claude Opus 4.8 و GPT 5.5",
-		EGP:           250000, // 2500 EGP
-		USD:           5000,   // $50
+		DescriptionEN: "Everything in Plus + Claude Sonnet 4.6, GPT 5.4 and video",
+		DescriptionAR: "كل مزايا Plus + Claude Sonnet 4.6 و GPT 5.4 والفيديو",
+		EGP:           350000, // 3500 EGP
+		USD:           7000,   // $70
 		Interval:      "month",
 	},
 	"max_monthly": {
 		ID:            "max_monthly",
 		Name:          "Max",
-		DescriptionEN: "Every text & image model, and more",
-		DescriptionAR: "كل نماذج النصوص والصور، والمزيد",
+		DescriptionEN: "Every model — including Claude Opus 4.8 and GPT 5.5",
+		DescriptionAR: "كل النماذج — بما فيها Claude Opus 4.8 و GPT 5.5",
 		EGP:           500000, // 5000 EGP
 		USD:           10000,  // $100
 		Interval:      "month",

@@ -38,6 +38,8 @@ const maxBatch = 4
 type UsageMeter interface {
 	Check(ctx context.Context, userID, plan, op string) (bool, int)
 	Record(userID, plan, op, model string)
+	// AllowsModel reports whether the plan unlocks the model id (plan-gating).
+	AllowsModel(plan, model string) bool
 }
 
 type Service struct {
@@ -154,6 +156,14 @@ func (s *Service) checkQuota(w http.ResponseWriter, r *http.Request, op, model s
 	u := auth.FromContext(r.Context())
 	if u == nil || s.meter == nil {
 		return true
+	}
+	// Plan-gating: the chosen image/video model must be unlocked by the plan.
+	if !s.meter.AllowsModel(u.Plan, model) {
+		writeJSON(w, http.StatusPaymentRequired, map[string]any{
+			"error": "This model isn't included in your plan — upgrade to use it.",
+			"code":  "model_locked",
+		})
+		return false
 	}
 	if ok, _ := s.meter.Check(r.Context(), u.ID, u.Plan, op); !ok {
 		writeJSON(w, http.StatusPaymentRequired, map[string]any{

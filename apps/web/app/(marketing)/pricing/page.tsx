@@ -4,12 +4,12 @@ import Link from "next/link";
 export const metadata: Metadata = {
   title: "Pricing — Plans for the bilingual AI workspace",
   description:
-    "Pervagans pricing: a Free plan with 500 monthly credits, Pro at $20/mo, and Max at $60/mo with 200,000 credits. All models, image, video, deep research and agent mode.",
+    "Pervagans pricing: Free with 200 monthly credits, Go $20/mo (1,000), Plus $40/mo (2,000), Pro $70/mo (3,500), Max $100/mo (5,000). One shared credit pool across chat, image, video, research and agent runs.",
   alternates: { canonical: "/pricing" },
   openGraph: {
     title: "Pervagans Pricing — Plans for the bilingual AI workspace",
     description:
-      "Simple AI assistant pricing that scales with you. Start free with 500 monthly credits, upgrade to Pro ($20/mo) or Max ($60/mo) for higher limits, all models and every feature.",
+      "Simple AI assistant pricing that scales with you. Start free with 200 monthly credits, then Go ($20), Plus ($40), Pro ($70) or Max ($100) — more credits and more models at every tier.",
     url: "https://pervagans.com/pricing",
     type: "website",
   },
@@ -18,15 +18,19 @@ export const metadata: Metadata = {
 const FAQ = [
   {
     q: "Is there a free plan?",
-    a: "Yes. The Free plan costs $0 and includes 500 credits every month, with access to the core Pervagans experience: multi-model chat, Spaces, the 8 focused workspaces, the skills catalog and one-click connectors. It is a real product, not a time-limited trial — use it for as long as you like and upgrade only when you need more.",
+    a: "Yes. The Free plan costs $0 and includes 200 credits every month, with no card required. You get the core Pervagans experience — multi-model chat with DeepSeek V4 Pro, GLM 5.1 and Qwen 3.7 Max, plus Spaces, the focused workspaces, the skills catalog and one-click connectors. It is a real product, not a time-limited trial — use it for as long as you like and upgrade only when you need more.",
   },
   {
     q: "What is a credit?",
-    a: "A credit is the unit we use to meter AI usage. Each message, image, video or deep-research run consumes credits based on the model and how much work it does — a quick chat with a fast model costs very little, while a long agent run or a high-resolution video costs more. Free includes 500 credits a month and Max includes 200,000, so heavier users always have room to work.",
+    a: "A credit is the unit we use to meter AI usage. Credits are a single shared pool spent across chat, image, video, deep research and agent runs — each action draws from the same balance based on the model and how much work it does. A quick chat with a fast model costs very little, while a long agent run or a high-resolution video costs more. Free includes 200 credits a month, Go 1,000, Plus 2,000, Pro 3,500 and Max 5,000.",
+  },
+  {
+    q: "Which models do I get on each plan?",
+    a: "Free and Go include DeepSeek V4 Pro, GLM 5.1 and Qwen 3.7 Max. Plus adds Gemini 3.1 Pro plus image generation with Qwen Image 2.0 Pro and Wan 2.7 Image Pro. Pro adds Claude Sonnet 4.6, GPT 5.4, GPT Image 2 and Happy Horse video. Max adds Claude Opus 4.8 and GPT 5.5 — every text, image and video model we offer. Tiers are cumulative, so each plan includes everything in the one below it.",
   },
   {
     q: "Can I change plans later?",
-    a: "Absolutely. You can upgrade, downgrade or switch between monthly and annual billing at any time from your account settings. Upgrades take effect immediately so you get the higher limits right away, and any change is prorated so you are never double-charged.",
+    a: "Absolutely. You can upgrade, downgrade or switch between monthly and annual billing at any time from your account settings. Upgrades take effect immediately so you get the higher credits and models right away, and any change is prorated so you are never double-charged.",
   },
   {
     q: "What payment methods do you accept?",
@@ -66,7 +70,7 @@ const SCHEMA = {
         },
         {
           "@type": "Offer",
-          name: "Pro",
+          name: "Go",
           price: "20",
           priceCurrency: "USD",
           url: "https://pervagans.com/pricing",
@@ -74,8 +78,24 @@ const SCHEMA = {
         },
         {
           "@type": "Offer",
+          name: "Plus",
+          price: "40",
+          priceCurrency: "USD",
+          url: "https://pervagans.com/pricing",
+          availability: "https://schema.org/InStock",
+        },
+        {
+          "@type": "Offer",
+          name: "Pro",
+          price: "70",
+          priceCurrency: "USD",
+          url: "https://pervagans.com/pricing",
+          availability: "https://schema.org/InStock",
+        },
+        {
+          "@type": "Offer",
           name: "Max",
-          price: "60",
+          price: "100",
           priceCurrency: "USD",
           url: "https://pervagans.com/pricing",
           availability: "https://schema.org/InStock",
@@ -107,10 +127,10 @@ export default function PricingPage() {
           <span className="mkt-eyebrow">Pricing</span>
           <h1 className="mkt-h1">Simple pricing that scales with you</h1>
           <p className="mkt-lede">
-            One bilingual AI assistant and workspace, three plans. Start free with 500 monthly
-            credits, then upgrade when you are ready for higher limits, every model and the full
-            toolkit — image and video generation, deep research and agent mode. No lock-in, cancel
-            anytime, and your data stays yours.
+            One bilingual AI assistant and workspace. Start free with 200 monthly credits, then
+            move up to Go, Plus, Pro or Max for more credits and more models — including image
+            and video generation, deep research and agent mode. No lock-in, cancel anytime, and
+            your data stays yours.
           </p>
           <div className="mkt-cta-row">
             <Link href="/" className="mkt-btn mkt-btn-primary">
@@ -126,27 +146,60 @@ export default function PricingPage() {
       {/* Plans */}
       <section className="mkt-section">
         <div className="mkt-wrap">
-          <div className="mkt-pricing">
-            {/* Free */}
-            <div className="mkt-plan">
-              <div className="mkt-plan-name">Free</div>
-              <div className="mkt-price">
-                $0<small>/mo</small>
-              </div>
-              <p className="mkt-sub" style={{ marginTop: 4 }}>
-                Everything you need to try a serious AI workspace.
-              </p>
-              <Link href="/" className="mkt-btn mkt-btn-ghost">
+          {/* Free callout */}
+          <div className="mkt-cta-band" style={{ marginBottom: 24 }}>
+            <h2 className="mkt-h2">Start free — 200 credits, no card</h2>
+            <p className="mkt-sub" style={{ marginInline: "auto" }}>
+              The Free plan is $0 forever and includes 200 monthly credits with DeepSeek V4 Pro,
+              GLM 5.1 and Qwen 3.7 Max — plus Spaces, the focused workspaces, the skills catalog
+              and one-click connectors. Upgrade only when you need more.
+            </p>
+            <div className="mkt-cta-row">
+              <Link href="/" className="mkt-btn mkt-btn-primary">
                 Start free
               </Link>
+            </div>
+          </div>
+
+          <div className="mkt-pricing">
+            {/* Go */}
+            <div className="mkt-plan">
+              <div className="mkt-plan-name">Go</div>
+              <div className="mkt-price">
+                $20<small>/mo</small>
+              </div>
+              <p className="mkt-sub" style={{ marginTop: 4 }}>
+                More room for everyday chat across the core models.
+              </p>
+              <Link href="/" className="mkt-btn mkt-btn-ghost">
+                Get Go
+              </Link>
               <ul className="mkt-plan-features">
-                <li>500 credits every month</li>
-                <li>Multi-model chat across leading AI models</li>
-                <li>Spaces — projects with pinned model and memory</li>
-                <li>All 8 focused workspaces</li>
-                <li>Skills catalog (58 expert skills)</li>
-                <li>One-click MCP connectors</li>
-                <li>Canvas / Artifacts editor</li>
+                <li>1,000 credits every month</li>
+                <li>DeepSeek V4 Pro</li>
+                <li>GLM 5.1</li>
+                <li>Qwen 3.7 Max</li>
+              </ul>
+            </div>
+
+            {/* Plus */}
+            <div className="mkt-plan">
+              <div className="mkt-plan-name">Plus</div>
+              <div className="mkt-price">
+                $40<small>/mo</small>
+              </div>
+              <p className="mkt-sub" style={{ marginTop: 4 }}>
+                Add a frontier model and start generating images.
+              </p>
+              <Link href="/" className="mkt-btn mkt-btn-ghost">
+                Get Plus
+              </Link>
+              <ul className="mkt-plan-features">
+                <li>2,000 credits every month</li>
+                <li>Everything in Go, plus:</li>
+                <li>Gemini 3.1 Pro</li>
+                <li>Image generation: Qwen Image 2.0 Pro</li>
+                <li>Image generation: Wan 2.7 Image Pro</li>
               </ul>
             </div>
 
@@ -155,22 +208,21 @@ export default function PricingPage() {
               <span className="mkt-plan-badge">Most popular</span>
               <div className="mkt-plan-name">Pro</div>
               <div className="mkt-price">
-                $20<small>/mo</small>
+                $70<small>/mo</small>
               </div>
               <p className="mkt-sub" style={{ marginTop: 4 }}>
-                The full toolkit for everyday professional work.
+                The full toolkit — top text models, images and video.
               </p>
               <Link href="/" className="mkt-btn mkt-btn-primary">
-                Start Pro
+                Get Pro
               </Link>
               <ul className="mkt-plan-features">
-                <li>Everything in Free, plus:</li>
-                <li>Far higher monthly credits</li>
-                <li>Access to every model (Opus 4.8, GPT 5.5, Gemini Pro 3.1 and more)</li>
-                <li>Image &amp; video generation with a saved Gallery</li>
-                <li>Deep Research with numbered citations</li>
-                <li>Agent Mode over your connected tools</li>
-                <li>All connectors and skills enabled</li>
+                <li>3,500 credits every month</li>
+                <li>Everything in Plus, plus:</li>
+                <li>Claude Sonnet 4.6</li>
+                <li>GPT 5.4</li>
+                <li>Image generation: GPT Image 2</li>
+                <li>Video generation: Happy Horse</li>
               </ul>
             </div>
 
@@ -178,27 +230,27 @@ export default function PricingPage() {
             <div className="mkt-plan">
               <div className="mkt-plan-name">Max</div>
               <div className="mkt-price">
-                $60<small>/mo</small>
+                $100<small>/mo</small>
               </div>
               <p className="mkt-sub" style={{ marginTop: 4 }}>
-                Highest limits for power users and heavy automation.
+                Every model we offer, with the highest limits.
               </p>
               <Link href="/" className="mkt-btn mkt-btn-ghost">
                 Get Max
               </Link>
               <ul className="mkt-plan-features">
+                <li>5,000 credits every month</li>
                 <li>Everything in Pro, plus:</li>
-                <li>200,000 credits every month</li>
-                <li>Highest usage limits across all features</li>
-                <li>Priority access during peak demand</li>
-                <li>Room for long agent runs and big research reports</li>
-                <li>High-volume image &amp; video generation</li>
+                <li>Claude Opus 4.8</li>
+                <li>GPT 5.5</li>
+                <li>Every text, image and video model</li>
               </ul>
             </div>
           </div>
 
           <p className="mkt-sub mkt-center" style={{ marginTop: 24 }}>
-            Pro and Max can be billed monthly or annually — choose annual billing and you save
+            Credits are a single shared pool spent across chat, image, video, research and agent
+            runs. Paid plans can be billed monthly or annually — choose annual billing and you save
             roughly two months versus paying month to month. Prices shown in USD.
           </p>
         </div>
@@ -209,7 +261,7 @@ export default function PricingPage() {
         <div className="mkt-wrap">
           <div className="mkt-stats">
             <div className="mkt-stat">
-              <div className="mkt-stat-n">7+</div>
+              <div className="mkt-stat-n">9+</div>
               <div className="mkt-stat-l">leading models</div>
             </div>
             <div className="mkt-stat">
@@ -221,7 +273,7 @@ export default function PricingPage() {
               <div className="mkt-stat-l">expert skills</div>
             </div>
             <div className="mkt-stat">
-              <div className="mkt-stat-n">200k</div>
+              <div className="mkt-stat-n">5,000</div>
               <div className="mkt-stat-l">credits on Max</div>
             </div>
           </div>
@@ -236,37 +288,37 @@ export default function PricingPage() {
             <h2 className="mkt-h2">One simple unit for all your AI usage</h2>
             <p className="mkt-sub">
               Instead of juggling separate meters for chat, images and research, Pervagans uses a
-              single pool of credits — so you always know where you stand.
+              single shared pool of credits — so you always know where you stand.
             </p>
           </div>
 
           <div className="mkt-grid mkt-grid--3" style={{ marginTop: 28 }}>
             <div className="mkt-card">
               <span className="mkt-card-ic">💬</span>
-              <h3 className="mkt-h3">Pay for work, not seats</h3>
+              <h3 className="mkt-h3">One pool, every feature</h3>
               <p>
-                Every message, generated image, rendered video and deep-research run draws from the
-                same monthly credit balance. A quick chat with a fast model costs very little; a long
-                agent run or a high-resolution video costs more. You only spend on the work you
-                actually do.
+                Chat, generated images, rendered videos, deep-research runs and agent runs all draw
+                from the same monthly credit balance. A quick chat with a fast model costs very
+                little; a long agent run or a high-resolution video costs more. You only spend on
+                the work you actually do.
               </p>
             </div>
             <div className="mkt-card">
               <span className="mkt-card-ic">📊</span>
               <h3 className="mkt-h3">Predictable by design</h3>
               <p>
-                Free includes 500 credits a month and Max includes 200,000, with Pro sitting
-                comfortably in between. Your balance refreshes each billing cycle, so you can plan
-                your usage with confidence and never get a surprise bill.
+                Free includes 200 credits a month, Go 1,000, Plus 2,000, Pro 3,500 and Max 5,000.
+                Your balance refreshes each billing cycle, so you can plan your usage with
+                confidence and never get a surprise bill.
               </p>
             </div>
             <div className="mkt-card">
               <span className="mkt-card-ic">🚀</span>
-              <h3 className="mkt-h3">Every feature, every plan</h3>
+              <h3 className="mkt-h3">More models as you grow</h3>
               <p>
-                Multi-model chat, Spaces, the 8 workspaces, the skills catalog and connectors are
-                part of the core experience. Upgrading raises your limits and unlocks the full
-                creative and autonomous toolkit — image, video, Deep Research and Agent Mode.
+                Free and Go cover the core text models. Plus unlocks Gemini 3.1 Pro and image
+                generation, Pro adds Claude Sonnet 4.6, GPT 5.4, GPT Image 2 and Happy Horse video,
+                and Max unlocks Claude Opus 4.8, GPT 5.5 and every model we offer.
               </p>
             </div>
           </div>
@@ -290,7 +342,7 @@ export default function PricingPage() {
                   context — no more re-explaining yourself across tabs.
                 </p>
                 <ul className="mkt-list">
-                  <li>Claude Opus 4.8, Sonnet 4.6, GPT 5.5/5.4, Gemini Pro 3.1, GLM 5.1, DeepSeek V4 Pro, Qwen 3.7 Max</li>
+                  <li>Claude Opus 4.8, Sonnet 4.6, GPT 5.5/5.4, Gemini 3.1 Pro, GLM 5.1, DeepSeek V4 Pro, Qwen 3.7 Max</li>
                   <li>Spaces pin a model, custom instructions, files and persistent memory per project</li>
                   <li>Bilingual English / Arabic with full right-to-left support</li>
                 </ul>
@@ -326,7 +378,7 @@ export default function PricingPage() {
                   the chat.
                 </p>
                 <ul className="mkt-list">
-                  <li>Image (GPT Image, Qwen-Image, Wan) and video (Sora, Happy Horse) with a saved Gallery</li>
+                  <li>Image (GPT Image 2, Qwen Image 2.0 Pro, Wan 2.7 Image Pro) and video (Happy Horse) with a saved Gallery</li>
                   <li>Deep Research returns a structured, cited report with numbered citations</li>
                   <li>Canvas / Artifacts for editing documents and code beside the conversation</li>
                 </ul>

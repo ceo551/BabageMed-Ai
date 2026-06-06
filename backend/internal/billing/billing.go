@@ -33,23 +33,19 @@ import (
 // opCost is the credit weight of each metered operation. These are rough
 // RELATIVE weights (video ≫ image ≫ agent ≈ deep-research ≫ chat), tuned to
 // upstream cost — not exact billing. Unknown ops cost 1.
+// opCost is the credit weight of each metered op, tuned so 1 credit ≈ $0.01 of
+// upstream API cost (see plans.go / the pricing model). video ≫ image ≫ agent ≈
+// deep-research ≫ chat. Unknown ops cost 1.
 var opCost = map[string]int{
 	"chat":          1,
-	"deep_research": 5,
-	"agent":         10,
-	"image":         15,
-	"video":         60,
+	"deep_research": 3,
+	"agent":         5,
+	"image":         8,
+	"video":         70,
 }
 
-// planAllowance is the monthly credit grant per plan. users.plan stores these
-// normalized names (see payments.planFromPlanID). Unknown plans → free.
-var planAllowance = map[string]int{
-	"free": 500,
-	"go":   5000,
-	"plus": 15000,
-	"pro":  50000,
-	"max":  200000,
-}
+// The monthly credit allowance per plan lives in plans.go (the single source of
+// truth that also holds prices + the per-plan model matrix).
 
 func costOf(op string) int {
 	if c, ok := opCost[op]; ok {
@@ -58,13 +54,7 @@ func costOf(op string) int {
 	return 1
 }
 
-func allowanceOf(plan string) int {
-	p := strings.ToLower(strings.TrimSpace(plan))
-	if a, ok := planAllowance[p]; ok {
-		return a
-	}
-	return planAllowance["free"]
-}
+func allowanceOf(plan string) int { return CreditsFor(plan) }
 
 type Service struct {
 	db   *db.DB
@@ -91,6 +81,15 @@ func (s *Service) Check(ctx context.Context, userID, plan, op string) (bool, int
 		remaining = 0
 	}
 	return used+costOf(op) <= limit, remaining
+}
+
+// AllowsModel reports whether this user's plan unlocks the given model id
+// (plan-gating). nil-safe + fail-open so a nil service never blocks chat.
+func (s *Service) AllowsModel(plan, model string) bool {
+	if s == nil {
+		return true
+	}
+	return AllowsModel(plan, model)
 }
 
 // Record logs consumed credits AFTER an operation is accepted. Charged on
@@ -151,5 +150,6 @@ func (s *Service) handleUsage(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	_ = json.NewEncoder(w).Encode(map[string]any{
 		"plan": plan, "used": used, "limit": limit, "remaining": remaining,
+		"price": PriceFor(plan), "allowedModels": AllowedModels(plan),
 	})
 }

@@ -21,20 +21,20 @@ type Providers = { paddle: boolean };
 // tier>" so the cumulative value is obvious.
 const PLAN_FEATURES: Record<string, { en: string[]; ar: string[] }> = {
   go: {
-    en: ["DeepSeek V4 Pro", "GLM 5.1", "Qwen 3.7 Max"],
-    ar: ["DeepSeek V4 Pro", "GLM 5.1", "Qwen 3.7 Max"],
+    en: ["1,000 monthly credits", "DeepSeek V4 Pro", "GLM 5.1", "Qwen 3.7 Max"],
+    ar: ["1,000 رصيد شهريًا", "DeepSeek V4 Pro", "GLM 5.1", "Qwen 3.7 Max"],
   },
   plus: {
-    en: ["Up to 2× more usage than GO", "Everything in GO", "Gemini Pro 3.1", "Grok Imagine"],
-    ar: ["استخدام أكثر بـ 2× من GO", "كل مزايا GO", "Gemini Pro 3.1", "Grok Imagine"],
+    en: ["2,000 monthly credits", "Everything in Go", "Gemini 3.1 Pro", "Image generation — Qwen Image 2.0 & Wan 2.7"],
+    ar: ["2,000 رصيد شهريًا", "كل مزايا Go", "Gemini 3.1 Pro", "توليد الصور — Qwen Image 2.0 و Wan 2.7"],
   },
   pro: {
-    en: ["Everything in Plus", "GPT 5.5", "Claude Opus 4.8", "Veo 3.1", "Happy Horse 1.0", "Qwen Image 2.0", "GPT Image 2"],
-    ar: ["كل مزايا Plus", "GPT 5.5", "Claude Opus 4.8", "Veo 3.1", "Happy Horse 1.0", "Qwen Image 2.0", "GPT Image 2"],
+    en: ["3,500 monthly credits", "Everything in Plus", "Claude Sonnet 4.6 & GPT 5.4", "GPT Image 2", "Happy Horse video"],
+    ar: ["3,500 رصيد شهريًا", "كل مزايا Plus", "Claude Sonnet 4.6 و GPT 5.4", "GPT Image 2", "فيديو Happy Horse"],
   },
   max: {
-    en: ["Up to 5× more usage than Pro", "Higher output limits for all tasks", "Everything in Plus", "Every text model", "Every image & video model"],
-    ar: ["استخدام أكثر بـ 5 أضعاف من Pro", "حدود إخراج أعلى لكل المهام", "كل مزايا Plus", "كل نماذج النصوص", "كل نماذج الصور والفيديو"],
+    en: ["5,000 monthly credits", "Everything in Pro", "Claude Opus 4.8 & GPT 5.5", "Every text, image & video model"],
+    ar: ["5,000 رصيد شهريًا", "كل مزايا Pro", "Claude Opus 4.8 و GPT 5.5", "كل نماذج النصوص والصور والفيديو"],
   },
 };
 

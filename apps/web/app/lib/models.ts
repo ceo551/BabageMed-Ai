@@ -105,3 +105,37 @@ export function findModelById(id: string): TextModel | MediaModel | undefined {
     || IMAGE_MODELS.find((m) => m.id === id)
     || VIDEO_MODELS.find((m) => m.id === id);
 }
+
+// ── Plan → unlocked models (MIRROR of backend internal/billing/plans.go) ──────
+// Cumulative tiers. Keep in sync with the backend (the backend is the real gate;
+// this drives the lock icons in the model picker). Prices: Go $20 / Plus $40 /
+// Pro $70 / Max $100; Free is the no-card trial.
+const GO_MODELS = ["deepseek-v4-pro", "glm-5.1", "qwen-3.7-max"];
+const PLUS_MODELS = [...GO_MODELS, "gemini-pro-3.1", "wan2.7-image-pro", "qwen-image-2.0-pro"];
+const PRO_MODELS = [...PLUS_MODELS, "sonnet-4.6", "gpt-5.4", "gpt-image-2", "happy-horse-1.0"];
+const MAX_MODELS = [...PRO_MODELS, "opus-4.8", "gpt-5.5"];
+
+export const PLAN_ORDER = ["free", "go", "plus", "pro", "max"] as const;
+export const PLAN_MODELS: Record<string, readonly string[]> = {
+  free: GO_MODELS, // free trial = the Go text models, small credit grant
+  go: GO_MODELS,
+  plus: PLUS_MODELS,
+  pro: PRO_MODELS,
+  max: MAX_MODELS,
+};
+
+const ALL_GATED = new Set(MAX_MODELS); // every id that appears in some plan
+
+// planAllowsModel: does this plan unlock the model? Unknown ids (not in any
+// plan) pass through, matching the backend's fail-open behaviour.
+export function planAllowsModel(plan: string | undefined, id: string): boolean {
+  if (!ALL_GATED.has(id)) return true;
+  const list = PLAN_MODELS[(plan || "free").toLowerCase()] || PLAN_MODELS.free;
+  return list.includes(id);
+}
+
+// minPlanFor: the lowest plan that unlocks a model (for "upgrade to X" copy).
+export function minPlanFor(id: string): string | null {
+  for (const p of PLAN_ORDER) if ((PLAN_MODELS[p] || []).includes(id)) return p;
+  return null;
+}
