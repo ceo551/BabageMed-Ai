@@ -17,8 +17,9 @@ export default function ArabicMarketingLayout({ children }: { children: React.Re
           </Link>
           <div className="mkt-nav-links">
             <Link href="/ar/models">النماذج</Link>
+            <Link href="/ar/effects">التأثيرات</Link>
+            <Link href="/ar/use-cases">حالات الاستخدام</Link>
             <Link href="/pricing">الأسعار</Link>
-            <Link href="/product">المنتج</Link>
           </div>
           <span className="mkt-nav-spacer" />
           <div className="mkt-nav-cta">
@@ -44,8 +45,9 @@ export default function ArabicMarketingLayout({ children }: { children: React.Re
           <div className="mkt-foot-col">
             <h4>المنتج</h4>
             <Link href="/ar/models">النماذج</Link>
+            <Link href="/ar/effects">التأثيرات</Link>
+            <Link href="/ar/use-cases">حالات الاستخدام</Link>
             <Link href="/pricing">الأسعار</Link>
-            <Link href="/product">نظرة عامة</Link>
           </div>
           <div className="mkt-foot-col">
             <h4>ابدأ الآن</h4>

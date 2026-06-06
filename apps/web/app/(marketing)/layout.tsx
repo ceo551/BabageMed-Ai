@@ -18,6 +18,7 @@ export default function MarketingLayout({ children }: { children: React.ReactNod
           <div className="mkt-nav-links">
             <Link href="/product">Product</Link>
             <Link href="/models">Models</Link>
+            <Link href="/effects">Effects</Link>
             <Link href="/pricing">Pricing</Link>
             <Link href="/about">About</Link>
           </div>
@@ -45,6 +46,7 @@ export default function MarketingLayout({ children }: { children: React.ReactNod
             <h4>Product</h4>
             <Link href="/product">Overview</Link>
             <Link href="/models">Models</Link>
+            <Link href="/effects">Effects</Link>
             <Link href="/pricing">Pricing</Link>
             <Link href="/use-cases">Use cases</Link>
           </div>

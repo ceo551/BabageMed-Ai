@@ -1,5 +1,7 @@
 import type { MetadataRoute } from "next";
 import { MODELS } from "./(marketing)/models/catalog";
+import { EFFECTS } from "./(marketing)/effects/catalog";
+import { USE_CASES } from "./(marketing)/use-cases/catalog";
 
 const SITE_URL = "https://pervagans.com";
 
@@ -30,7 +32,15 @@ export default function sitemap(): MetadataRoute.Sitemap {
     // Arabic (RTL) variant of the models surface — the MENA long tail.
     page("/ar/models", 0.9, "weekly"),
     ...MODELS.map((m) => page(`/ar/models/${m.slug}`, 0.7, "weekly")),
-    page("/use-cases", 0.8, "weekly"),  // use-case / audience landing
+    // Effects library (one-tap presets) — EN + AR.
+    page("/effects", 0.9, "weekly"),
+    ...EFFECTS.map((e) => page(`/effects/${e.slug}`, 0.7, "weekly")),
+    page("/ar/effects", 0.9, "weekly"),
+    ...EFFECTS.map((e) => page(`/ar/effects/${e.slug}`, 0.7, "weekly")),
+    page("/use-cases", 0.8, "weekly"),  // use-case / audience landing (EN index)
+    ...USE_CASES.map((u) => page(`/use-cases/${u.slug}`, 0.7, "weekly")),
+    page("/ar/use-cases", 0.8, "weekly"),
+    ...USE_CASES.map((u) => page(`/ar/use-cases/${u.slug}`, 0.7, "weekly")),
     page("/about", 0.7, "monthly"),     // about
     page("/company", 0.6, "monthly"),   // company hub (links the marketing pages)
     page("/try", 0.6, "weekly"),        // zero-login trial

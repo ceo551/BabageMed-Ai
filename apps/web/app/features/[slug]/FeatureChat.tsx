@@ -101,6 +101,27 @@ export function FeatureChat({
     setModel(defaultModelId(meta));
   }, [meta.slug, meta.modality]);
 
+  // One-time deep-link prefill: an Effects landing page opens this composer with
+  // ?prompt=, ?model= and ?aspect= so a one-tap preset arrives ready to run.
+  // Applied once on mount (after the model reset above) so it never fights the
+  // user's own typing, and only when there's no existing thread to load.
+  const prefilledRef = useRef(false);
+  useEffect(() => {
+    if (prefilledRef.current || chatIdParam) return;
+    const p = params?.get("prompt");
+    const mdl = params?.get("model");
+    const asp = params?.get("aspect");
+    if (!p && !mdl && !asp) return;
+    prefilledRef.current = true;
+    if (p) setValue(p);
+    if (mdl) setModel(mdl);
+    if (asp && ["1:1", "16:9", "9:16", "4:3", "3:4"].includes(asp)) {
+      setAspect(asp as "1:1" | "16:9" | "9:16" | "4:3" | "3:4");
+    }
+    requestAnimationFrame(() => taRef.current?.focus());
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [params]);
+
   // Load chat messages on URL change.
   useEffect(() => {
     // Switching threads cancels any in-flight video poll loop from the

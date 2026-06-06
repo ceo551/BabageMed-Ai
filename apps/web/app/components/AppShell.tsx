@@ -31,7 +31,7 @@ const PUBLIC_ROUTE = /^\/(try|s)(\/|$)/;
 // Public marketing pages (/product, /pricing, /about) — crawlable, content-rich
 // landing surfaces that render their OWN nav + footer (see app/(marketing)/
 // layout.tsx), so the app sidebar is skipped here too.
-const MARKETING_ROUTE = /^\/(product|pricing|models|ar|about|use-cases|terms|privacy|refund|company)(\/|$)/;
+const MARKETING_ROUTE = /^\/(product|pricing|models|effects|ar|about|use-cases|terms|privacy|refund|company)(\/|$)/;
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   return (

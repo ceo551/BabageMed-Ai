@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { USE_CASES } from "./catalog";
 
 const PATH = "/use-cases";
 const URL = `https://pervagans.com${PATH}`;
@@ -8,7 +9,10 @@ export const metadata: Metadata = {
   title: "AI Use Cases: Writing, Research, Coding & Data",
   description:
     "See what people do with Pervagans: AI for writing, research, coding, and data analysis, plus an Arabic AI assistant, business workflows, and AI image generation.",
-  alternates: { canonical: PATH },
+  alternates: {
+    canonical: PATH,
+    languages: { en: "/use-cases", ar: "/ar/use-cases", "x-default": "/use-cases" },
+  },
   openGraph: {
     title: "AI Use Cases: Writing, Research, Coding & Data",
     description:
@@ -304,6 +308,34 @@ export default function UseCasesPage() {
                 <summary>{f.q}</summary>
                 <div>{f.a}</div>
               </details>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── Browse by use case ───────────────────────────────────────────── */}
+      <section className="mkt-section">
+        <div className="mkt-wrap">
+          <div className="mkt-center">
+            <span className="mkt-eyebrow">By audience</span>
+            <h2 className="mkt-h2">Browse by use case</h2>
+            <p className="mkt-sub">
+              Find the workspace built for how you work. Each guide shows the jobs Pervagans
+              handles for your role and the features that matter most.
+            </p>
+          </div>
+
+          <div className="mkt-grid mkt-grid--3" style={{ marginTop: 36 }}>
+            {USE_CASES.map((u) => (
+              <Link
+                key={u.slug}
+                href={`/use-cases/${u.slug}`}
+                className="mkt-card"
+                style={{ textDecoration: "none" }}
+              >
+                <h3 className="mkt-h3">{u.nameEn}</h3>
+                <p>{u.taglineEn}</p>
+              </Link>
             ))}
           </div>
         </div>
