@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { useSearchParams } from "next/navigation";
 import { I, featureIcon } from "../../icons";
 import { useUI } from "../../lib/ui-context";
+import { useAuth } from "../../lib/auth-context";
 import { usePrefs } from "../../lib/store";
 import { chats as chatsApi, features as featuresApi, media as mediaApi, type Feature as FeatureRow } from "../../lib/api";
 import { AssistantMessage, type Citation } from "../../components/AssistantMessage";
@@ -15,6 +16,7 @@ import type { FeatureMeta } from "../../i18n";
 import {
   modelsForFeature,
   defaultModelId,
+  modelLock,
   type ModelBrand,
 } from "../../lib/models";
 
@@ -59,6 +61,7 @@ export function FeatureChat({
 }) {
   const params = useSearchParams();
   const { s, locale } = useUI();
+  const { user, loading: authLoading } = useAuth();
   const chatIdParam = params?.get("c") || "";
   const nonceParam  = params?.get("n") || "";
 
@@ -195,6 +198,9 @@ export function FeatureChat({
     ? group.models
     : [...group.image, ...group.video];
   const currentModel = allModels.find((m) => m.id === model) || allModels[0];
+  // Per-row lock state for the model picker (feature pages are auth-gated, so
+  // there's no anon case — only plan gating). Backend enforces; this previews.
+  const lockOf = (id: string) => modelLock(id, { plan: user?.plan, locale, loading: authLoading });
   // Derived visual flags for the controls panel.
   const isVideoModel = group.kind === "media" && group.video.some((m) => m.id === model);
   const aspectOptions: ReadonlyArray<"1:1" | "16:9" | "9:16" | "4:3" | "3:4"> =
@@ -659,13 +665,17 @@ export function FeatureChat({
                 {group.kind === "text" ? (
                   <>
                     <div className="pop-header">{s.modelHeader}</div>
-                    {group.models.map((m) => (
+                    {group.models.map((m) => {
+                      const lk = lockOf(m.id);
+                      return (
                       <button
                         key={m.id}
                         type="button"
                         className="model-row"
                         data-active={model === m.id}
-                        onClick={() => { setModel(m.id); setModelOpen(false); }}
+                        onClick={() => { if (lk.locked) { window.location.href = lk.href; return; } setModel(m.id); setModelOpen(false); }}
+                        title={lk.locked ? lk.title : undefined}
+                        style={lk.locked ? { opacity: 0.55 } : undefined}
                       >
                         <span className="brand-mark">{brandMark(m.brand)}</span>
                         <span className="col">
@@ -674,22 +684,27 @@ export function FeatureChat({
                             {m.pills[locale].map((p, i) => <span key={i} className="pill">{p}</span>)}
                           </span>
                         </span>
-                        <span className="check">{I.check}</span>
+                        <span className="check">{lk.locked ? I.lock : I.check}</span>
                       </button>
-                    ))}
+                      );
+                    })}
                   </>
                 ) : (
                   <>
                     {group.image.length > 0 && (
                       <>
                         <div className="pop-header">{s.imageGroup}</div>
-                        {group.image.map((m) => (
+                        {group.image.map((m) => {
+                          const lk = lockOf(m.id);
+                          return (
                           <button
                             key={m.id}
                             type="button"
                             className="model-row"
                             data-active={model === m.id}
-                            onClick={() => { setModel(m.id); setModelOpen(false); }}
+                            onClick={() => { if (lk.locked) { window.location.href = lk.href; return; } setModel(m.id); setModelOpen(false); }}
+                            title={lk.locked ? lk.title : undefined}
+                            style={lk.locked ? { opacity: 0.55 } : undefined}
                           >
                             <span className="brand-mark">{brandMark(m.brand)}</span>
                             <span className="col">
@@ -698,22 +713,27 @@ export function FeatureChat({
                                 {m.pills[locale].map((p, i) => <span key={i} className="pill">{p}</span>)}
                               </span>
                             </span>
-                            <span className="check">{I.check}</span>
+                            <span className="check">{lk.locked ? I.lock : I.check}</span>
                           </button>
-                        ))}
+                          );
+                        })}
                       </>
                     )}
                     {group.image.length > 0 && group.video.length > 0 && <div className="popover-sep" />}
                     {group.video.length > 0 && (
                       <>
                         <div className="pop-header">{s.videoGroup}</div>
-                        {group.video.map((m) => (
+                        {group.video.map((m) => {
+                          const lk = lockOf(m.id);
+                          return (
                           <button
                             key={m.id}
                             type="button"
                             className="model-row"
                             data-active={model === m.id}
-                            onClick={() => { setModel(m.id); setModelOpen(false); }}
+                            onClick={() => { if (lk.locked) { window.location.href = lk.href; return; } setModel(m.id); setModelOpen(false); }}
+                            title={lk.locked ? lk.title : undefined}
+                            style={lk.locked ? { opacity: 0.55 } : undefined}
                           >
                             <span className="brand-mark">{brandMark(m.brand)}</span>
                             <span className="col">
@@ -722,9 +742,10 @@ export function FeatureChat({
                                 {m.pills[locale].map((p, i) => <span key={i} className="pill">{p}</span>)}
                               </span>
                             </span>
-                            <span className="check">{I.check}</span>
+                            <span className="check">{lk.locked ? I.lock : I.check}</span>
                           </button>
-                        ))}
+                          );
+                        })}
                       </>
                     )}
                   </>

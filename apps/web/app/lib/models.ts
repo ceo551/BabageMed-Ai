@@ -139,3 +139,37 @@ export function minPlanFor(id: string): string | null {
   for (const p of PLAN_ORDER) if ((PLAN_MODELS[p] || []).includes(id)) return p;
   return null;
 }
+
+// ── Model-picker lock state ──────────────────────────────────────────────────
+// Single source of truth for the lock icon + click behaviour in every composer
+// model picker (home page, feature chat, space chat). The backend is the real
+// gate (402 on a locked model); this just surfaces it BEFORE the user sends.
+export type ModelLock = { locked: boolean; href: string; title: string };
+const NO_LOCK: ModelLock = { locked: false, href: "", title: "" };
+
+export function modelLock(
+  id: string,
+  opts: { anon?: boolean; anonModel?: string; plan?: string; locale?: string; loading?: boolean },
+): ModelLock {
+  // Don't flash locks while auth/plan is still resolving.
+  if (opts.loading) return NO_LOCK;
+  const ar = opts.locale === "ar";
+  // Anonymous visitors (public home trial): only the trial model is open.
+  if (opts.anon) {
+    if (opts.anonModel && id === opts.anonModel) return NO_LOCK;
+    return {
+      locked: true,
+      href: "/login",
+      title: ar ? "سجّل الدخول لفتح هذا النموذج" : "Sign in to unlock this model",
+    };
+  }
+  // Signed-in: models outside the user's plan nudge to upgrade.
+  if (planAllowsModel(opts.plan, id)) return NO_LOCK;
+  const min = minPlanFor(id);
+  const cap = min ? min.charAt(0).toUpperCase() + min.slice(1) : (ar ? "أعلى" : "a higher");
+  return {
+    locked: true,
+    href: "/billing",
+    title: ar ? `الترقية إلى باقة ${cap} لفتح هذا النموذج` : `Upgrade to ${cap} to unlock this model`,
+  };
+}

@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { useSearchParams } from "next/navigation";
 import React, { Suspense, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { MODELS, type Locale, type LocaleStrings } from "./i18n";
+import { modelLock } from "./lib/models";
 import { I } from "./icons";
 import { useUI } from "./lib/ui-context";
 import { useAuth } from "./lib/auth-context";
@@ -146,6 +147,8 @@ function DashboardInner() {
         s={s}
         locale={locale}
         anon={anon}
+        plan={user?.plan}
+        authLoading={authLoading}
         messages={messages}
         setMessages={setMessages}
         chatId={chatId}
@@ -238,13 +241,15 @@ function Transcript({ messages }: { messages: ChatMessage[] }) {
 
 // ─── Composer ────────────────────────────────────────────────────────────────
 function Composer({
-  s, locale, anon,
+  s, locale, anon, plan, authLoading,
   messages, setMessages,
   chatId, setChatId,
 }: {
   s: LocaleStrings;
   locale: Locale;
   anon: boolean;
+  plan?: string;
+  authLoading: boolean;
   messages: ChatMessage[];
   setMessages: React.Dispatch<React.SetStateAction<ChatMessage[]>>;
   chatId: string;
@@ -959,9 +964,9 @@ function Composer({
             <div className="model-pop" role="menu">
               <div className="pop-header">{s.modelHeader}</div>
               {MODELS.map((m) => {
-                // Anonymous: every model except deepseek is locked → clicking
-                // nudges to sign-in instead of selecting it.
-                const locked = anon && m.id !== ANON_MODEL;
+                // Anonymous → only the trial model is open (sign-in nudge).
+                // Signed-in → models outside the plan nudge to upgrade.
+                const lk = modelLock(m.id, { anon, anonModel: ANON_MODEL, plan, locale, loading: authLoading });
                 return (
                   <button
                     key={m.id}
@@ -969,12 +974,12 @@ function Composer({
                     type="button"
                     data-active={currentModel.id === m.id}
                     onClick={() => {
-                      if (locked) { window.location.href = "/login"; return; }
+                      if (lk.locked) { window.location.href = lk.href; return; }
                       setModel(m.id);
                       setModelOpen(false);
                     }}
-                    title={locked ? (locale === "ar" ? "سجّل الدخول لفتح هذا النموذج" : "Sign in to unlock this model") : undefined}
-                    style={locked ? { opacity: 0.55 } : undefined}
+                    title={lk.locked ? lk.title : undefined}
+                    style={lk.locked ? { opacity: 0.55 } : undefined}
                   >
                     <span className="brand-mark">{brandMark(m.brand)}</span>
                     <span className="col">
@@ -983,7 +988,7 @@ function Composer({
                         {m.pills[locale].map((p, i) => <span key={i} className="pill">{p}</span>)}
                       </span>
                     </span>
-                    <span className="check">{locked ? I.lock : I.check}</span>
+                    <span className="check">{lk.locked ? I.lock : I.check}</span>
                   </button>
                 );
               })}

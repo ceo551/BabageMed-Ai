@@ -5,10 +5,11 @@ import { toast } from "sonner";
 import { useRouter, useSearchParams } from "next/navigation";
 import { I } from "../../icons";
 import { useUI } from "../../lib/ui-context";
+import { useAuth } from "../../lib/auth-context";
 import { usePrefs } from "../../lib/store";
 import { chats as chatsApi, spaces as spacesApi, type Space, type Chat } from "../../lib/api";
 import { AssistantMessage, type Citation } from "../../components/AssistantMessage";
-import { TEXT_MODELS, type ModelBrand } from "../../lib/models";
+import { TEXT_MODELS, modelLock, type ModelBrand } from "../../lib/models";
 
 // SpaceChat — the per-space workspace composer + transcript. Adapted from
 // FeatureChat: same streaming/transcript/composer plumbing, but the request
@@ -34,6 +35,7 @@ export function SpaceChat({ space, memory }: { space: Space; memory?: string[] }
   const params = useSearchParams();
   const router = useRouter();
   const { s, locale } = useUI();
+  const { user, loading: authLoading } = useAuth();
   const chatIdParam = params?.get("c") || "";
   const nonceParam  = params?.get("n") || "";
 
@@ -160,6 +162,8 @@ export function SpaceChat({ space, memory }: { space: Space; memory?: string[] }
   }, [modelOpen]);
 
   const currentModel = TEXT_MODELS.find((m) => m.id === model) || TEXT_MODELS[0];
+  // Per-row lock for the model picker (spaces are auth-gated → plan gating only).
+  const lockOf = (id: string) => modelLock(id, { plan: user?.plan, locale, loading: authLoading });
 
   // Stop the in-flight stream (the send button becomes a Stop control while
   // sending). Abort triggers send()'s AbortError path which drops the loader.
@@ -389,18 +393,23 @@ export function SpaceChat({ space, memory }: { space: Space; memory?: string[] }
           {modelOpen && (
             <div className="model-pop feat-model-pop" role="menu">
               <div className="pop-header">{s.modelHeader}</div>
-              {TEXT_MODELS.map((m) => (
+              {TEXT_MODELS.map((m) => {
+                const lk = lockOf(m.id);
+                return (
                 <button
                   key={m.id}
                   type="button"
                   className="model-row"
                   data-active={model === m.id}
                   onClick={() => {
+                    if (lk.locked) { window.location.href = lk.href; return; }
                     setModel(m.id);
                     setModelOpen(false);
                     // Persist the choice as this space's pinned default (best-effort).
                     spacesApi.update(space.id, { defaultModel: m.id }).catch(() => {});
                   }}
+                  title={lk.locked ? lk.title : undefined}
+                  style={lk.locked ? { opacity: 0.55 } : undefined}
                 >
                   <span className="brand-mark">{brandMark(m.brand)}</span>
                   <span className="col">
@@ -409,9 +418,10 @@ export function SpaceChat({ space, memory }: { space: Space; memory?: string[] }
                       {m.pills[locale].map((p, i) => <span key={i} className="pill">{p}</span>)}
                     </span>
                   </span>
-                  <span className="check">{I.check}</span>
+                  <span className="check">{lk.locked ? I.lock : I.check}</span>
                 </button>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>
