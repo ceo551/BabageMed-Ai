@@ -2,14 +2,14 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 export const metadata: Metadata = {
-  title: "Privacy Policy — how we handle your data",
+  title: "Privacy Policy: how we handle your data",
   description:
     "Pervagans Privacy Policy: what information we collect, how we use it, the AI model providers and payment processor we work with, data retention, your privacy rights, security and how to contact us.",
   alternates: { canonical: "/privacy" },
   openGraph: {
-    title: "Privacy Policy — Pervagans",
+    title: "Pervagans Privacy Policy",
     description:
-      "How Pervagans collects, uses and protects your data — including AI model providers, Paddle billing, data retention, your GDPR/CCPA-style rights, security and contact details.",
+      "How Pervagans collects, uses and protects your data, including AI model providers, Paddle billing, data retention, your GDPR/CCPA-style rights, security and contact details.",
     url: "https://pervagans.com/privacy",
     type: "website",
   },
@@ -113,8 +113,8 @@ export default function PrivacyPage() {
             <p>
               The Service uses leading large language and media models to generate responses. To do
               this, the prompts, messages and related content you submit may be transmitted to and
-              processed by third-party AI model providers &mdash; including providers such as
-              Anthropic, OpenAI and Google &mdash; solely to generate the output you requested.
+              processed by third-party AI model providers (including providers such as
+              Anthropic, OpenAI and Google) solely to generate the output you requested.
               These providers process your content as our service providers and under their own
               terms and privacy commitments.
             </p>
@@ -136,7 +136,7 @@ export default function PrivacyPage() {
             </p>
             <p>
               When you make a purchase, your payment details (such as card information) are collected
-              and processed directly by Paddle, not by Pervagans &mdash; we do not store your full
+              and processed directly by Paddle, not by Pervagans. We do not store your full
               payment card numbers. Paddle&rsquo;s handling of your information is governed by
               Paddle&rsquo;s own privacy policy. We receive limited billing-related information from
               Paddle (such as your plan, transaction status and the country used for tax purposes) so
@@ -226,7 +226,7 @@ export default function PrivacyPage() {
               our payment processor, may be located in countries other than your own. This means your
               information may be transferred to, stored in and processed in countries whose data
               protection laws differ from those in your jurisdiction. Where required, we put in place
-              appropriate safeguards &mdash; such as standard contractual clauses &mdash; to protect
+              appropriate safeguards (such as standard contractual clauses) to protect
               your information when it is transferred internationally.
             </p>
 

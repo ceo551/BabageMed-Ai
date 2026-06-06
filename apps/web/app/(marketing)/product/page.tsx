@@ -1,13 +1,14 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { MktIcon } from "../mkt-icons";
 
 export const metadata: Metadata = {
-  title: "AI Assistant & Workspace — Chat, Agents, Connectors",
+  title: "AI Assistant & Workspace: Chat, Agents, Connectors",
   description:
     "Pervagans is a bilingual EN/AR AI workspace: chat with Claude, GPT, Gemini & more, run agents, connect your tools via MCP, and generate images and video.",
   alternates: { canonical: "/product" },
   openGraph: {
-    title: "AI Assistant & Workspace — Chat, Agents, Connectors",
+    title: "AI Assistant & Workspace: Chat, Agents, Connectors",
     description:
       "Pervagans is a bilingual EN/AR AI workspace: chat with Claude, GPT, Gemini & more, run agents, connect your tools via MCP, and generate images and video.",
     url: "https://pervagans.com/product",
@@ -43,7 +44,7 @@ const SCHEMA = {
           name: "What is Pervagans?",
           acceptedAnswer: {
             "@type": "Answer",
-            text: "Pervagans is a bilingual (English and Arabic) AI assistant and workspace, available on web and desktop. You chat with leading AI models in one place, organize work into Spaces with pinned models and memory, enable expert Skills, connect your own tools through MCP connectors, run an AI agent that executes multi-step tasks, and generate images and video — all in a single privacy-first subscription.",
+            text: "Pervagans is a bilingual (English and Arabic) AI assistant and workspace, available on web and desktop. You chat with leading AI models in one place, organize work into Spaces with pinned models and memory, enable expert Skills, connect your own tools through MCP connectors, run an AI agent that executes multi-step tasks, and generate images and video, all in a single privacy-first subscription.",
           },
         },
         {
@@ -51,7 +52,7 @@ const SCHEMA = {
           name: "Which AI models can I use in Pervagans?",
           acceptedAnswer: {
             "@type": "Answer",
-            text: "You can chat with Claude Opus 4.8, Claude Sonnet 4.6, GPT 5.5 and 5.4, Gemini Pro 3.1, GLM 5.1, DeepSeek V4 Pro, and Qwen 3.7 Max — switching between them per task so you always use the right model for the job, with no separate subscriptions to manage.",
+            text: "You can chat with Claude Opus 4.8, Claude Sonnet 4.6, GPT 5.5 and 5.4, Gemini Pro 3.1, GLM 5.1, DeepSeek V4 Pro, and Qwen 3.7 Max. Switch between them per task so you always use the right model for the job, with no separate subscriptions to manage.",
           },
         },
         {
@@ -59,7 +60,7 @@ const SCHEMA = {
           name: "Is Pervagans free to use?",
           acceptedAnswer: {
             "@type": "Answer",
-            text: "Yes. The Free plan includes 500 monthly credits so you can try multi-model chat, Skills and connectors at no cost. When you need more, Pro is $20/month and Max is $60/month with 200,000 monthly credits. Annual billing saves roughly two months.",
+            text: "Yes. The Free plan includes 200 monthly credits so you can try multi-model chat, Skills and connectors at no cost. When you need more, paid plans run from Go at $20/month up to Max at $100/month, with 1,000 to 5,000 monthly credits and more models at each tier. Annual billing saves roughly two months.",
           },
         },
         {
@@ -67,7 +68,7 @@ const SCHEMA = {
           name: "What are MCP connectors?",
           acceptedAnswer: {
             "@type": "Answer",
-            text: "Connectors use the Model Context Protocol (MCP) to securely link external tools to the assistant with one-click OAuth — Notion, Slack, GitHub, Linear, Google Drive, Gmail, Calendar and more. Once connected, Agent Mode can read and act on your real data to complete tasks for you.",
+            text: "Connectors use the Model Context Protocol (MCP) to securely link external tools to the assistant with one-click OAuth, such as Notion, Slack, GitHub, Linear, Google Drive, Gmail, Calendar and more. Once connected, Agent Mode can read and act on your real data to complete tasks for you.",
           },
         },
         {
@@ -106,10 +107,10 @@ export default function ProductPage() {
           <h1 className="mkt-h1">One AI workspace for every workflow</h1>
           <p className="mkt-lede">
             Pervagans is a bilingual AI assistant and workspace. Chat with the
-            best models — Claude, GPT, Gemini and more — then ground every
-            project in your own instructions, files, skills and connectors. Run
-            an AI agent, generate images and video, and get cited answers, all
-            in one place.
+            best models, including Claude, GPT, Gemini and more, then ground
+            every project in your own instructions, files, skills and
+            connectors. Run an AI agent, generate images and video, and get
+            cited answers, all in one place.
           </p>
           <div className="mkt-cta-row">
             <Link href="/" className="mkt-btn mkt-btn-primary">
@@ -120,7 +121,7 @@ export default function ProductPage() {
             </Link>
           </div>
           <p className="mkt-trust">
-            Free plan with 500 monthly credits · No credit card to start ·
+            Free plan with 200 monthly credits · No credit card to start ·
             Web &amp; desktop
           </p>
         </div>
@@ -133,7 +134,7 @@ export default function ProductPage() {
             <span className="mkt-eyebrow">Everything in one place</span>
             <h2 className="mkt-h2">A complete AI workspace, not just a chatbot</h2>
             <p className="mkt-sub">
-              From multi-model chat to autonomous agents and media generation —
+              From multi-model chat to autonomous agents and media generation,
               the capabilities that usually need five different tools, unified
               under one bilingual subscription.
             </p>
@@ -141,16 +142,16 @@ export default function ProductPage() {
 
           <div className="mkt-grid" style={{ marginTop: 36 }}>
             <div className="mkt-card">
-              <span className="mkt-card-ic">💬</span>
+              <span className="mkt-card-ic">{MktIcon.chat}</span>
               <h3 className="mkt-h3">Multi-model chat</h3>
               <p>
                 Talk to Claude Opus 4.8, Sonnet 4.6, GPT 5.5/5.4, Gemini Pro
-                3.1, GLM 5.1, DeepSeek V4 Pro and Qwen 3.7 Max — and pick the
+                3.1, GLM 5.1, DeepSeek V4 Pro and Qwen 3.7 Max, then pick the
                 right model for each task.
               </p>
             </div>
             <div className="mkt-card">
-              <span className="mkt-card-ic">🗂️</span>
+              <span className="mkt-card-ic">{MktIcon.spaces}</span>
               <h3 className="mkt-h3">Spaces</h3>
               <p>
                 Give each project its own pinned model, custom instructions,
@@ -159,16 +160,16 @@ export default function ProductPage() {
               </p>
             </div>
             <div className="mkt-card">
-              <span className="mkt-card-ic">🎓</span>
+              <span className="mkt-card-ic">{MktIcon.skills}</span>
               <h3 className="mkt-h3">Skills</h3>
               <p>
-                Toggle on expert Skills from a catalog of 58 — copywriting, deep
-                research, data science, SEO, design — to inject real expert
-                guidance into the model.
+                Toggle on expert Skills from a catalog of 58, such as
+                copywriting, deep research, data science, SEO and design, to
+                inject real expert guidance into the model.
               </p>
             </div>
             <div className="mkt-card">
-              <span className="mkt-card-ic">🔌</span>
+              <span className="mkt-card-ic">{MktIcon.connectors}</span>
               <h3 className="mkt-h3">Connectors (MCP)</h3>
               <p>
                 Connect Notion, Slack, GitHub, Linear, Google Drive, Gmail and
@@ -177,16 +178,16 @@ export default function ProductPage() {
               </p>
             </div>
             <div className="mkt-card">
-              <span className="mkt-card-ic">🎨</span>
+              <span className="mkt-card-ic">{MktIcon.media}</span>
               <h3 className="mkt-h3">Image &amp; video</h3>
               <p>
                 Generate images with GPT Image, Qwen-Image and Wan, and video
-                with Sora and Happy Horse — with aspect, seed and negative-prompt
+                with Sora and Happy Horse, with aspect, seed and negative-prompt
                 controls and a saved Gallery.
               </p>
             </div>
             <div className="mkt-card">
-              <span className="mkt-card-ic">🔭</span>
+              <span className="mkt-card-ic">{MktIcon.research}</span>
               <h3 className="mkt-h3">Deep Research</h3>
               <p>
                 Autonomous multi-source research that returns a structured report
@@ -194,7 +195,7 @@ export default function ProductPage() {
               </p>
             </div>
             <div className="mkt-card">
-              <span className="mkt-card-ic">🤖</span>
+              <span className="mkt-card-ic">{MktIcon.agent}</span>
               <h3 className="mkt-h3">Agent Mode</h3>
               <p>
                 An AI agent that plans and executes multi-step tasks by calling
@@ -202,11 +203,11 @@ export default function ProductPage() {
               </p>
             </div>
             <div className="mkt-card">
-              <span className="mkt-card-ic">🌐</span>
+              <span className="mkt-card-ic">{MktIcon.globe}</span>
               <h3 className="mkt-h3">Bilingual EN / AR</h3>
               <p>
                 A fully bilingual experience with complete right-to-left Arabic
-                support — work and read cited answers in English or Arabic.
+                support. Work and read cited answers in English or Arabic.
               </p>
             </div>
           </div>
@@ -292,7 +293,7 @@ export default function ProductPage() {
                   Spaces and Skills that keep the AI in context
                 </h3>
                 <p className="mkt-sub" style={{ marginTop: 12 }}>
-                  Organize work into Spaces — projects that remember. Pin a model,
+                  Organize work into Spaces, projects that remember. Pin a model,
                   add instructions and files, and switch on the right expert
                   Skills so every reply is grounded in how you actually work.
                 </p>
@@ -322,11 +323,11 @@ export default function ProductPage() {
                 <p className="mkt-sub" style={{ marginTop: 12 }}>
                   Connect your real tools with one-click OAuth over the Model
                   Context Protocol, then let Agent Mode plan and execute
-                  multi-step tasks against your data — and report back clearly.
+                  multi-step tasks against your data, and report back clearly.
                 </p>
                 <ul className="mkt-list">
                   <li>MCP connectors for Notion, Slack, GitHub, Linear, Google Drive, Gmail, Calendar and more</li>
-                  <li>One-click OAuth — you authorize each connection</li>
+                  <li>One-click OAuth, so you authorize each connection</li>
                   <li>Agent Mode plans, calls your tools, and writes a final answer</li>
                   <li>Deep Research and Agent Mode combine for sourced, actionable output</li>
                 </ul>
@@ -400,7 +401,7 @@ export default function ProductPage() {
                 models in one place, organize work into Spaces with pinned models
                 and memory, enable expert Skills, connect your own tools through
                 MCP connectors, run an AI agent that executes multi-step tasks,
-                and generate images and video — all in a single privacy-first
+                and generate images and video, all in a single privacy-first
                 subscription.
               </div>
             </details>
@@ -408,18 +409,19 @@ export default function ProductPage() {
               <summary>Which AI models can I use in Pervagans?</summary>
               <div>
                 You can chat with Claude Opus 4.8, Claude Sonnet 4.6, GPT 5.5 and
-                5.4, Gemini Pro 3.1, GLM 5.1, DeepSeek V4 Pro, and Qwen 3.7 Max —
-                switching between them per task so you always use the right model
+                5.4, Gemini Pro 3.1, GLM 5.1, DeepSeek V4 Pro, and Qwen 3.7 Max.
+                Switch between them per task so you always use the right model
                 for the job, with no separate subscriptions to manage.
               </div>
             </details>
             <details className="mkt-faq-item">
               <summary>Is Pervagans free to use?</summary>
               <div>
-                Yes. The Free plan includes 500 monthly credits so you can try
+                Yes. The Free plan includes 200 monthly credits so you can try
                 multi-model chat, Skills and connectors at no cost. When you need
-                more, Pro is $20/month and Max is $60/month with 200,000 monthly
-                credits. Annual billing saves roughly two months. Compare plans on
+                more, paid plans run from Go at $20/month up to Max at $100/month,
+                with 1,000 to 5,000 monthly credits and more models at each tier.
+                Annual billing saves roughly two months. Compare plans on
                 the <Link href="/pricing" style={{ color: "var(--cyan)" }}>pricing page</Link>.
               </div>
             </details>
@@ -427,10 +429,10 @@ export default function ProductPage() {
               <summary>What are MCP connectors?</summary>
               <div>
                 Connectors use the Model Context Protocol (MCP) to securely link
-                external tools to the assistant with one-click OAuth — Notion,
-                Slack, GitHub, Linear, Google Drive, Gmail, Calendar and more.
-                Once connected, Agent Mode can read and act on your real data to
-                complete tasks for you.
+                external tools to the assistant with one-click OAuth, such as
+                Notion, Slack, GitHub, Linear, Google Drive, Gmail, Calendar and
+                more. Once connected, Agent Mode can read and act on your real
+                data to complete tasks for you.
               </div>
             </details>
             <details className="mkt-faq-item">
@@ -462,7 +464,7 @@ export default function ProductPage() {
             <h2 className="mkt-h2">Start building with one AI workspace</h2>
             <p className="mkt-sub" style={{ marginInline: "auto" }}>
               Chat with the best models, connect your tools, and put an AI agent
-              to work — free to start, in English or Arabic.
+              to work, free to start, in English or Arabic.
             </p>
             <div className="mkt-cta-row">
               <Link href="/" className="mkt-btn mkt-btn-primary">

@@ -319,8 +319,8 @@ export function SpaceChat({ space, memory }: { space: Space; memory?: string[] }
         // is a synthetic placeholder, so it must NOT be persisted to history.
         synthetic = true;
         finalContent = locale === "ar"
-          ? "لا توجد استجابة — تأكد من إعداد مفتاح الموديل لهذه المساحة."
-          : "No response — check this space's model configuration.";
+          ? "لا توجد استجابة. تأكد من إعداد مفتاح الموديل لهذه المساحة."
+          : "No response. Check this space's model configuration.";
         const fc = finalContent;
         setMessages((cur) =>
           cur.map((m) => (m.id === assistantId && m.role === "assistant" ? { ...m, content: fc } : m)),

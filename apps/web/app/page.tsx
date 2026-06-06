@@ -743,7 +743,7 @@ function Composer({
         let parsed: any = null;
         try { parsed = JSON.parse(data); } catch { /* ignore */ }
         if (event === "step" && parsed?.phase === "action") {
-          steps.push(`- 🔧 \`${parsed.tool}\`${parsed.query ? ` — ${parsed.query}` : ""}`);
+          steps.push(`- 🔧 \`${parsed.tool}\`${parsed.query ? `: ${parsed.query}` : ""}`);
           render();
         } else if (event === "step" && parsed?.phase === "observation") {
           // P5: attach a live preview of what the tool returned/wrote to the

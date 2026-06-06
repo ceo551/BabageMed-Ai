@@ -25,8 +25,8 @@ const PLAN_FEATURES: Record<string, { en: string[]; ar: string[] }> = {
     ar: ["1,000 رصيد شهريًا", "DeepSeek V4 Pro", "GLM 5.1", "Qwen 3.7 Max"],
   },
   plus: {
-    en: ["2,000 monthly credits", "Everything in Go", "Gemini 3.1 Pro", "Image generation — Qwen Image 2.0 & Wan 2.7"],
-    ar: ["2,000 رصيد شهريًا", "كل مزايا Go", "Gemini 3.1 Pro", "توليد الصور — Qwen Image 2.0 و Wan 2.7"],
+    en: ["2,000 monthly credits", "Everything in Go", "Gemini 3.1 Pro", "Image generation with Qwen Image 2.0 & Wan 2.7"],
+    ar: ["2,000 رصيد شهريًا", "كل مزايا Go", "Gemini 3.1 Pro", "توليد الصور باستخدام Qwen Image 2.0 و Wan 2.7"],
   },
   pro: {
     en: ["3,500 monthly credits", "Everything in Plus", "Claude Sonnet 4.6 & GPT 5.4", "GPT Image 2", "Happy Horse video"],
@@ -127,7 +127,7 @@ export default function BillingPage() {
       {usage && (
         <div style={{ width: "100%", maxWidth: 600, display: "flex", flexDirection: "column", gap: 8 }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 8, fontSize: 13, color: "var(--ink-2)" }}>
-            <span style={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{locale === "ar" ? `الاستخدام هذا الشهر — باقة ${usage.plan.toUpperCase()}` : `Usage this month — ${usage.plan.toUpperCase()} plan`}</span>
+            <span style={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{locale === "ar" ? `الاستخدام هذا الشهر على باقة ${usage.plan.toUpperCase()}` : `Usage this month on the ${usage.plan.toUpperCase()} plan`}</span>
             <span style={{ fontFamily: "var(--mono)", flexShrink: 0 }}>{usage.used} / {usage.limit}</span>
           </div>
           <div style={{ height: 8, borderRadius: 999, background: "var(--surface-2, var(--border))", overflow: "hidden" }}>

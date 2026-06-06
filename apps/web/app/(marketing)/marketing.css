@@ -97,7 +97,8 @@
   background: var(--panel-solid); border: 1px solid var(--border); border-radius: 16px; padding: 22px;
   display: flex; flex-direction: column; gap: 4px;
 }
-.mkt-card-ic { width: 38px; height: 38px; border-radius: 10px; display: inline-flex; align-items: center; justify-content: center; margin-bottom: 12px; font-size: 19px; background: var(--cyan-soft); border: 1px solid var(--cyan-line); }
+.mkt-card-ic { width: 42px; height: 42px; border-radius: 11px; display: inline-flex; align-items: center; justify-content: center; margin-bottom: 12px; color: var(--cyan); background: var(--cyan-soft); border: 1px solid var(--cyan-line); }
+.mkt-card-ic svg { width: 21px; height: 21px; display: block; }
 .mkt-card p { color: var(--muted); font-size: 14.5px; line-height: 1.55; margin: 0; }
 
 /* ── Alternating feature rows ────────────────────────────────────────────── */
@@ -120,8 +121,10 @@
 .mkt-stat-l { margin-top: 8px; font-size: 13.5px; color: var(--muted); }
 
 /* ── Pricing ─────────────────────────────────────────────────────────────── */
-.mkt-pricing { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr)); gap: 18px; align-items: start; }
-.mkt-plan { background: var(--panel-solid); border: 1px solid var(--border); border-radius: 18px; padding: 26px; display: flex; flex-direction: column; gap: 6px; }
+/* Four tiers (Go/Plus/Pro/Max) sit in one even row on desktop, then collapse
+ * to 2-up and finally 1-up — so the cards never wrap into a lonely orphan. */
+.mkt-pricing { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; align-items: stretch; }
+.mkt-plan { background: var(--panel-solid); border: 1px solid var(--border); border-radius: 18px; padding: 24px; display: flex; flex-direction: column; gap: 6px; height: 100%; }
 .mkt-plan--featured { border-color: var(--cyan-line); box-shadow: 0 0 0 1px var(--cyan-line), var(--shadow); }
 .mkt-plan-name { font-size: 17px; font-weight: 700; }
 .mkt-plan-badge { font-family: var(--mono); font-size: 11px; letter-spacing: .08em; color: var(--cyan); }
@@ -168,10 +171,16 @@
 .mkt-foot-legal { width: 100%; max-width: var(--content-wide); margin: 28px auto 0; padding-inline: max(18px, env(safe-area-inset-left)); font-size: 13px; color: var(--muted-2); box-sizing: border-box; }
 
 /* ── Responsive ──────────────────────────────────────────────────────────── */
+@media (max-width: 1000px) {
+  .mkt-pricing { grid-template-columns: repeat(2, 1fr); }
+}
 @media (max-width: 860px) {
   .mkt-row { grid-template-columns: 1fr; gap: 22px; }
   .mkt-row:nth-child(even) .mkt-row-media { order: 0; }
   .mkt-section { padding: 48px 0; }
+}
+@media (max-width: 560px) {
+  .mkt-pricing { grid-template-columns: 1fr; }
 }
 @media (max-width: 640px) {
   .mkt-nav-links { display: none; }

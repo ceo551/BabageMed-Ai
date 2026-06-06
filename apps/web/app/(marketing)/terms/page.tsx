@@ -2,12 +2,12 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 export const metadata: Metadata = {
-  title: "Terms of Service — Pervagans subscription agreement",
+  title: "Terms of Service: Pervagans subscription agreement",
   description:
     "The Terms of Service governing your use of Pervagans, the bilingual (English/Arabic) AI assistant and workspace. Covers accounts, subscriptions, billing through Paddle as Merchant of Record, acceptable use, content ownership and liability.",
   alternates: { canonical: "/terms" },
   openGraph: {
-    title: "Terms of Service — Pervagans subscription agreement",
+    title: "Terms of Service: Pervagans subscription agreement",
     description:
       "The terms governing your use of Pervagans: accounts and eligibility, subscriptions billed by Paddle as Merchant of Record, acceptable use, content ownership, AI output disclaimers, liability and more.",
     url: "https://pervagans.com/terms",
@@ -54,7 +54,7 @@ export default function TermsPage() {
           <p className="mkt-sub">Last updated: June 2026</p>
           <p className="mkt-lede">
             These Terms of Service set out the agreement between you and Pervagans for your use of
-            our bilingual AI assistant and workspace. Please read them carefully — by using
+            our bilingual AI assistant and workspace. Please read them carefully. By using
             Pervagans you agree to be bound by them.
           </p>
         </div>
@@ -256,9 +256,9 @@ export default function TermsPage() {
             </p>
             <p>
               Upon termination, your right to use the Service ends and we may delete your User Content
-              in accordance with our data-retention practices. Sections of these Terms that by their
-              nature should survive termination — including ownership, disclaimers, limitation of
-              liability, indemnification, and governing law — will continue to apply.
+              in accordance with our data-retention practices. Some sections of these Terms by their
+              nature should survive termination. These include ownership, disclaimers, limitation of
+              liability, indemnification, and governing law, and they will continue to apply.
             </p>
 
             <h2 className="mkt-h2">11. Disclaimers and limitation of liability</h2>

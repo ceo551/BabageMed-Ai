@@ -5,12 +5,12 @@ const PATH = "/use-cases";
 const URL = `https://pervagans.com${PATH}`;
 
 export const metadata: Metadata = {
-  title: "AI Use Cases — Writing, Research, Coding & Data",
+  title: "AI Use Cases: Writing, Research, Coding & Data",
   description:
     "See what people do with Pervagans: AI for writing, research, coding, and data analysis, plus an Arabic AI assistant, business workflows, and AI image generation.",
   alternates: { canonical: PATH },
   openGraph: {
-    title: "AI Use Cases — Writing, Research, Coding & Data",
+    title: "AI Use Cases: Writing, Research, Coding & Data",
     description:
       "See what people do with Pervagans: AI for writing, research, coding, and data analysis, plus an Arabic AI assistant, business workflows, and AI image generation.",
     url: URL,
@@ -21,7 +21,7 @@ export const metadata: Metadata = {
 const FAQ = [
   {
     q: "Is Pervagans good for academic research?",
-    a: "Yes. Deep Research runs an autonomous, multi-source investigation and returns a structured report with numbered citations, so you can verify every claim against its source. Pair it with the Education & Research workspace — pin a strong reasoning model, upload your papers, and toggle on the deep-research skill for grounded, referenced answers.",
+    a: "Yes. Deep Research runs an autonomous, multi-source investigation and returns a structured report with numbered citations, so you can verify every claim against its source. Pair it with the Education & Research workspace: pin a strong reasoning model, upload your papers, and toggle on the deep-research skill for grounded, referenced answers.",
   },
   {
     q: "Can Pervagans help me write code?",
@@ -71,7 +71,7 @@ export default function UseCasesPage() {
           <span className="mkt-eyebrow">Use cases</span>
           <h1 className="mkt-h1">What can you do with Pervagans?</h1>
           <p className="mkt-lede">
-            Pervagans is one bilingual workspace for the work you already do — writing,
+            Pervagans is one bilingual workspace for the work you already do, including writing,
             research, coding, data analysis, business, translation, and image &amp; video
             creation. Bring the best AI models, your own files, expert skills, and connectors
             together, then let the assistant do the heavy lifting.
@@ -85,7 +85,7 @@ export default function UseCasesPage() {
             </Link>
           </div>
           <p className="mkt-trust">
-            Free plan includes 500 monthly credits — no credit card required.
+            Free plan includes 500 monthly credits, no credit card required.
           </p>
         </div>
       </section>
@@ -120,7 +120,7 @@ export default function UseCasesPage() {
           <div className="mkt-center">
             <h2 className="mkt-h2">Real workflows, not just a chatbox</h2>
             <p className="mkt-sub">
-              Each use case below is a complete way of working — pick a model, turn on the
+              Each use case below is a complete way of working. Pick a model, turn on the
               right skills, connect your tools, and Pervagans handles the task end to end.
             </p>
           </div>
@@ -141,7 +141,7 @@ export default function UseCasesPage() {
               <span className="mkt-card-ic">💻</span>
               <h3 className="mkt-h3">Coding &amp; development</h3>
               <p>
-                AI for coding with the strongest models — Claude Opus 4.8, GPT 5.5, or DeepSeek
+                AI for coding with the strongest models, such as Claude Opus 4.8, GPT 5.5, or DeepSeek
                 V4 Pro. Write, refactor, and debug in Canvas, then connect GitHub and Linear via
                 MCP so Agent Mode can read issues and act on your real repositories.
               </p>
@@ -171,7 +171,7 @@ export default function UseCasesPage() {
               <span className="mkt-card-ic">📈</span>
               <h3 className="mkt-h3">Business &amp; marketing</h3>
               <p>
-                AI for business — go from idea to plan. The Business and Financial workspaces help
+                AI for business that takes you from idea to plan. The Business and Financial workspaces help
                 you draft strategy, model numbers, write proposals, and build campaigns, each with
                 its own instructions, files, and skills.
               </p>
@@ -182,7 +182,7 @@ export default function UseCasesPage() {
               <h3 className="mkt-h3">Translation &amp; bilingual EN/AR</h3>
               <p>
                 A true Arabic AI assistant with full right-to-left support. The Translation
-                workspace renders fluent English↔Arabic, preserving tone and terminology — and
+                workspace renders fluent English↔Arabic, preserving tone and terminology, and
                 you can switch languages mid-chat without losing context.
               </p>
             </div>
@@ -192,7 +192,7 @@ export default function UseCasesPage() {
               <h3 className="mkt-h3">Image &amp; video creation</h3>
               <p>
                 A built-in AI image generator and video studio. Create images with GPT Image,
-                Qwen-Image, and Wan, or video with Sora and Happy Horse — with aspect, seed, and
+                Qwen-Image, and Wan, or video with Sora and Happy Horse, all with aspect, seed, and
                 negative-prompt controls and a saved Gallery.
               </p>
             </div>
@@ -223,7 +223,7 @@ export default function UseCasesPage() {
                 <p className="mkt-sub">
                   Ask a hard question and let Pervagans run an autonomous, multi-source
                   investigation. It reads widely, weighs what it finds, and returns a structured
-                  report with numbered citations — so AI for research means evidence, not guesses.
+                  report with numbered citations, so AI for research means evidence, not guesses.
                 </p>
                 <ul className="mkt-list">
                   <li>Numbered citations on every claim, traceable to the source</li>
@@ -233,7 +233,7 @@ export default function UseCasesPage() {
                 </ul>
               </div>
               <div className="mkt-row-media">
-                A cited Deep Research report — sources [1]…[12], built automatically
+                A cited Deep Research report with sources [1]…[12], built automatically
               </div>
             </div>
 
@@ -245,18 +245,18 @@ export default function UseCasesPage() {
                 </h2>
                 <p className="mkt-sub">
                   Pervagans is bilingual by design. Every page, control, and conversation works
-                  in English and Arabic with full right-to-left layout — so translation,
+                  in English and Arabic with full right-to-left layout, so translation,
                   research, and writing in Arabic feel native, not bolted on.
                 </p>
                 <ul className="mkt-list">
                   <li>Complete EN/AR interface with proper RTL across the whole app</li>
                   <li>Fluent English↔Arabic translation that keeps tone and terminology</li>
                   <li>Switch languages mid-conversation without losing the thread</li>
-                  <li>Privacy-first — your data stays yours, with cited answers</li>
+                  <li>Privacy-first, so your data stays yours, with cited answers</li>
                 </ul>
               </div>
               <div className="mkt-row-media">
-                Right-to-left chat — English and Arabic side by side, in context
+                Right-to-left chat with English and Arabic side by side, in context
               </div>
             </div>
 
@@ -315,7 +315,7 @@ export default function UseCasesPage() {
           <div className="mkt-cta-band">
             <h2 className="mkt-h2">Put Pervagans to work today</h2>
             <p className="mkt-sub" style={{ marginInline: "auto" }}>
-              Start free with 500 monthly credits — bring your models, skills, files, and
+              Start free with 500 monthly credits, and bring your models, skills, files, and
               connectors into one bilingual workspace.
             </p>
             <div className="mkt-cta-row">

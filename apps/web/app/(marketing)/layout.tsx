@@ -37,7 +37,7 @@ export default function MarketingLayout({ children }: { children: React.ReactNod
               Pervagans
             </Link>
             <p style={{ color: "var(--muted)", fontSize: 14, lineHeight: 1.55, margin: 0 }}>
-              A bilingual (EN/AR) AI assistant and workspace — chat with the best models, then ground every workflow in your own instructions, files, skills and connectors.
+              A bilingual (EN/AR) AI assistant and workspace. Chat with the best models, then ground every workflow in your own instructions, files, skills and connectors.
             </p>
           </div>
           <div className="mkt-foot-col">
@@ -62,7 +62,7 @@ export default function MarketingLayout({ children }: { children: React.ReactNod
             <Link href="/">Start free</Link>
           </div>
         </div>
-        <div className="mkt-foot-legal">© {2026} Pervagans · pervagans.com — AI assistant &amp; workspace</div>
+        <div className="mkt-foot-legal">© {2026} Pervagans · pervagans.com · AI assistant &amp; workspace</div>
       </footer>
     </div>
   );

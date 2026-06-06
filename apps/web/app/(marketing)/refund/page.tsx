@@ -2,12 +2,12 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 export const metadata: Metadata = {
-  title: "Refund Policy — Subscriptions, billing & cancellations",
+  title: "Refund Policy: Subscriptions, billing & cancellations",
   description:
     "Pervagans refund policy: a 14-day good-faith refund window for first-time subscriptions, billed through Paddle as Merchant of Record. How to request a refund, what is non-refundable, and how to cancel.",
   alternates: { canonical: "/refund" },
   openGraph: {
-    title: "Refund Policy — Pervagans",
+    title: "Refund Policy | Pervagans",
     description:
       "Our fair refund policy for Pervagans subscriptions: a 14-day refund window for first-time purchases, handled by Paddle on our behalf. How to request a refund and how to cancel.",
     url: "https://pervagans.com/refund",
@@ -75,10 +75,10 @@ export default function RefundPolicyPage() {
             </p>
             <ul>
               <li>
-                <strong>Pro</strong> — $20 per month.
+                <strong>Pro</strong>: $20 per month.
               </li>
               <li>
-                <strong>Max</strong> — $60 per month, including 200,000 credits.
+                <strong>Max</strong>: $60 per month, including 200,000 credits.
               </li>
             </ul>
             <p>
@@ -111,7 +111,7 @@ export default function RefundPolicyPage() {
             </p>
             <p>
               Beyond this window, we still aim to be fair. We review every request on a good-faith
-              basis and will consider refunds where there is a genuine issue — for example a
+              basis and will consider refunds where there is a genuine issue, for example a
               double charge, a clear billing error, or a service problem that prevented you from
               using what you paid for. Where required by the consumer-protection laws of your
               country, you may also have additional statutory rights that this policy does not limit.
@@ -125,8 +125,8 @@ export default function RefundPolicyPage() {
             <ul>
               <li>
                 <strong>Consumed credits and usage.</strong> Credits, generations, and other usage
-                already spent during a billing period — including AI chat, image and video
-                generation, deep research and Agent Mode runs — reflect real compute costs and are
+                already spent during a billing period (including AI chat, image and video
+                generation, deep research and Agent Mode runs) reflect real compute costs and are
                 not refundable.
               </li>
               <li>
@@ -137,7 +137,7 @@ export default function RefundPolicyPage() {
               </li>
               <li>
                 <strong>Repeat or abusive requests.</strong> We may decline refunds that appear to
-                misuse this policy — for example, repeatedly subscribing, using a large share of
+                misuse this policy, for example repeatedly subscribing, using a large share of
                 credits, and then requesting a refund.
               </li>
             </ul>
@@ -195,7 +195,7 @@ export default function RefundPolicyPage() {
             <h2 className="mkt-h2">Chargebacks</h2>
             <p>
               If you believe you have been charged in error, please contact us first at{" "}
-              <a href="mailto:support@pervagans.com">support@pervagans.com</a> — we can almost always
+              <a href="mailto:support@pervagans.com">support@pervagans.com</a>. We can almost always
               resolve billing issues faster and more easily than a bank dispute. Filing a chargeback
               or payment dispute with your bank or card provider before contacting us may result in
               your account being suspended while Paddle and your bank investigate. We reserve the
