@@ -9,7 +9,7 @@ const AUTH = /^\/(login|signup|forgot-password|reset-password|verify-email)(\/|$
 // (/s/<id>), and the marketing pages (/product, /pricing, /about). Open to
 // EVERYONE — no redirect either way — so a logged-out visitor (and search-engine
 // crawlers) reach them without an account. The rest of the app stays gated.
-const PUBLIC = /^\/(try|s|product|pricing|models|about|use-cases|terms|privacy|refund|company)(\/|$)/;
+const PUBLIC = /^\/(try|s|product|pricing|models|ar|about|use-cases|terms|privacy|refund|company)(\/|$)/;
 
 // Gate the whole app behind authentication. A visitor without the session
 // cookie is sent to /login (carrying ?next so we can bounce them back after

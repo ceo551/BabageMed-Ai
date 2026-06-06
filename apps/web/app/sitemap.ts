@@ -27,6 +27,9 @@ export default function sitemap(): MetadataRoute.Sitemap {
     page("/models", 0.9, "weekly"),     // models directory (aggregator surface)
     // One programmatic landing page per model — the long-tail SEO surface.
     ...MODELS.map((m) => page(`/models/${m.slug}`, 0.7, "weekly")),
+    // Arabic (RTL) variant of the models surface — the MENA long tail.
+    page("/ar/models", 0.9, "weekly"),
+    ...MODELS.map((m) => page(`/ar/models/${m.slug}`, 0.7, "weekly")),
     page("/use-cases", 0.8, "weekly"),  // use-case / audience landing
     page("/about", 0.7, "monthly"),     // about
     page("/company", 0.6, "monthly"),   // company hub (links the marketing pages)

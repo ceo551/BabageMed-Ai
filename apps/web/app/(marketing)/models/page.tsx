@@ -8,7 +8,10 @@ export const metadata: Metadata = {
   title: "AI Models: every top model in one workspace",
   description:
     "Pervagans gives you Claude, GPT, Gemini, DeepSeek, Qwen, GLM plus image and video models (GPT Image 2, Qwen Image, Wan, Happy Horse) in one bilingual workspace and one shared credit pool. Browse every model.",
-  alternates: { canonical: "/models" },
+  alternates: {
+    canonical: "/models",
+    languages: { en: "/models", ar: "/ar/models", "x-default": "/models" },
+  },
   openGraph: {
     title: "AI Models in Pervagans: every top model, one subscription",
     description:

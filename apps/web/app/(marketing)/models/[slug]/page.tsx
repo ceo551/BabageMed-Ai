@@ -20,7 +20,10 @@ export async function generateMetadata(
   return {
     title,
     description,
-    alternates: { canonical: `/models/${m.slug}` },
+    alternates: {
+      canonical: `/models/${m.slug}`,
+      languages: { en: `/models/${m.slug}`, ar: `/ar/models/${m.slug}`, "x-default": `/models/${m.slug}` },
+    },
     openGraph: { title, description, url: `${SITE}/models/${m.slug}`, type: "website" },
   };
 }
