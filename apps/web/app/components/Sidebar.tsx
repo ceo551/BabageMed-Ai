@@ -637,7 +637,7 @@ function AccountChip(props: {
         bottom,
         right: Math.max(8, window.innerWidth - r.right),
         width,
-        zIndex: 50,
+        zIndex: 70,
       });
     } else {
       setPopStyle({
@@ -645,7 +645,7 @@ function AccountChip(props: {
         bottom,
         left: Math.max(8, r.left),
         width,
-        zIndex: 50,
+        zIndex: 70,
       });
     }
   }
@@ -662,20 +662,20 @@ function AccountChip(props: {
       // Should never happen — popRef is set when the main popover is mounted.
       // Fall through to using the row as the anchor.
       if (dir === "rtl") {
-        setSubStyle({ position: "fixed", top, right: window.innerWidth - row.left + 8, zIndex: 51 });
+        setSubStyle({ position: "fixed", top, right: window.innerWidth - row.left + 8, zIndex: 71 });
       } else {
-        setSubStyle({ position: "fixed", top, left: row.right + 8, zIndex: 51 });
+        setSubStyle({ position: "fixed", top, left: row.right + 8, zIndex: 71 });
       }
     } else if (dir === "rtl") {
       // Place sub-popover to the LEFT of the main popover.
-      setSubStyle({ position: "fixed", top, right: Math.max(8, window.innerWidth - pop.left + 8), zIndex: 51 });
+      setSubStyle({ position: "fixed", top, right: Math.max(8, window.innerWidth - pop.left + 8), zIndex: 71 });
     } else {
       // Place sub-popover to the RIGHT of the main popover.
       // Reserve the flyout's real min-width (.acct-sub-pop is min-width:280px,
       // inheriting .tools-pop) — clamping to only 220 let the 280px-wide
       // flyout run ~60px off the inline-end edge on 320-390px phones. Use the
       // viewport-relative cap so it always lands fully on-screen.
-      setSubStyle({ position: "fixed", top, left: Math.max(8, Math.min(window.innerWidth - 280 - 8, pop.right + 8)), zIndex: 51 });
+      setSubStyle({ position: "fixed", top, left: Math.max(8, Math.min(window.innerWidth - 280 - 8, pop.right + 8)), zIndex: 71 });
     }
     setSub(name);
   }
