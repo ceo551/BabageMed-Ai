@@ -1,4 +1,5 @@
 import type { MetadataRoute } from "next";
+import { MODELS } from "./(marketing)/models/catalog";
 
 const SITE_URL = "https://pervagans.com";
 
@@ -23,6 +24,9 @@ export default function sitemap(): MetadataRoute.Sitemap {
     page("/", 1.0, "weekly"),         // home / app entry (public anon trial)
     page("/product", 0.9, "weekly"),    // flagship product/marketing page
     page("/pricing", 0.9, "weekly"),    // plans
+    page("/models", 0.9, "weekly"),     // models directory (aggregator surface)
+    // One programmatic landing page per model — the long-tail SEO surface.
+    ...MODELS.map((m) => page(`/models/${m.slug}`, 0.7, "weekly")),
     page("/use-cases", 0.8, "weekly"),  // use-case / audience landing
     page("/about", 0.7, "monthly"),     // about
     page("/company", 0.6, "monthly"),   // company hub (links the marketing pages)
