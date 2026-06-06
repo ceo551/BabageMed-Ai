@@ -471,9 +471,6 @@ export default function ProductPage() {
               <Link href="/pricing" className="mkt-btn mkt-btn-ghost">
                 Compare plans
               </Link>
-              <Link href="/login" className="mkt-btn mkt-btn-ghost">
-                Sign in
-              </Link>
             </div>
           </div>
         </div>

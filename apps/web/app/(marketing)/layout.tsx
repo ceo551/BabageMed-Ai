@@ -22,7 +22,6 @@ export default function MarketingLayout({ children }: { children: React.ReactNod
           </div>
           <span className="mkt-nav-spacer" />
           <div className="mkt-nav-cta">
-            <Link href="/login" className="mkt-btn mkt-btn-ghost mkt-btn-sm">Sign in</Link>
             <Link href="/" className="mkt-btn mkt-btn-primary mkt-btn-sm">Start free</Link>
           </div>
         </nav>
@@ -51,7 +50,6 @@ export default function MarketingLayout({ children }: { children: React.ReactNod
             <h4>Company</h4>
             <Link href="/about">About</Link>
             <Link href="/company">Company</Link>
-            <Link href="/login">Sign in</Link>
           </div>
           <div className="mkt-foot-col">
             <h4>Legal</h4>
@@ -62,7 +60,6 @@ export default function MarketingLayout({ children }: { children: React.ReactNod
           <div className="mkt-foot-col">
             <h4>Get started</h4>
             <Link href="/">Start free</Link>
-            <Link href="/login">Sign in</Link>
           </div>
         </div>
         <div className="mkt-foot-legal">© {2026} Pervagans · pervagans.com — AI assistant &amp; workspace</div>

@@ -325,9 +325,6 @@ export default function UseCasesPage() {
               <Link href="/pricing" className="mkt-btn mkt-btn-ghost">
                 See pricing
               </Link>
-              <Link href="/login" className="mkt-btn mkt-btn-ghost">
-                Sign in
-              </Link>
             </div>
           </div>
         </div>

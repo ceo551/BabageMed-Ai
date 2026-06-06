@@ -183,7 +183,7 @@ export default function PricingPage() {
               <p className="mkt-sub" style={{ marginTop: 4 }}>
                 Highest limits for power users and heavy automation.
               </p>
-              <Link href="/login" className="mkt-btn mkt-btn-ghost">
+              <Link href="/" className="mkt-btn mkt-btn-ghost">
                 Get Max
               </Link>
               <ul className="mkt-plan-features">
@@ -383,9 +383,6 @@ export default function PricingPage() {
             <div className="mkt-cta-row">
               <Link href="/" className="mkt-btn mkt-btn-primary">
                 Start free
-              </Link>
-              <Link href="/login" className="mkt-btn mkt-btn-ghost">
-                Sign in
               </Link>
             </div>
           </div>
