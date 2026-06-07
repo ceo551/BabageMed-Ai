@@ -11,12 +11,12 @@ import { useCallback, useEffect, useRef, useState } from "react";
 //                              () => toast.error(s.voiceUnsupported));
 //   <button data-on={voice.listening} onClick={voice.toggle} ... />
 //
-// `setText` writes the textarea; `getText` reads its current value. While
-// listening we rebuild the value as: <text that was there when you tapped> +
-// <finalized speech> + <live interim> so dictation appends to whatever was
-// already typed and updates in real time. Taking a plain string setter (not a
-// functional updater) keeps it compatible with both React useState and the
-// custom draft store.
+// IMPORTANT cross-browser note: we run each recognition with continuous=false
+// (ONE utterance per session) and auto-restart on `onend` while the user is
+// still listening. continuous=true is unusable on Android Chrome — it re-emits
+// the whole growing transcript as OVERLAPPING results every event, which made
+// dictation pile up ("whatwhatwhat I…" / "عايزكعايزك تروح…"). With one clean
+// utterance per session we only ever commit each finalized phrase once.
 
 type SetText = (next: string) => void;
 
@@ -41,52 +41,60 @@ export function useDictation(setText: SetText, getText: () => string, lang: stri
   const [listening, setListening] = useState(false);
   const [supported, setSupported] = useState(false);
   const recRef = useRef<SpeechRecognitionLike | null>(null);
-  const baseRef = useRef("");   // text already in the box when recognition started
+  const wantRef = useRef(false);  // does the user still want to be dictating?
+  const baseRef = useRef("");     // text already committed (typed + finalized speech) + trailing space
+  const langRef = useRef(lang);
 
-  useEffect(() => {
-    setSupported(!!getSR());
-  }, []);
+  useEffect(() => { setSupported(!!getSR()); }, []);
+  useEffect(() => { langRef.current = lang; if (recRef.current) recRef.current.lang = lang; }, [lang]);
 
-  // Keep lang fresh for an in-flight session (e.g. user flips EN/AR).
-  useEffect(() => {
-    if (recRef.current) recRef.current.lang = lang;
-  }, [lang]);
+  // Read setText/getText/onUnsupported through refs so the recognition callbacks
+  // (which outlive a render) always use the latest closures without re-binding.
+  const setTextRef = useRef(setText); setTextRef.current = setText;
+  const getTextRef = useRef(getText); getTextRef.current = getText;
+  const onUnsupportedRef = useRef(onUnsupported); onUnsupportedRef.current = onUnsupported;
 
-  const stop = useCallback(() => {
-    try { recRef.current?.stop(); } catch { /* already stopped */ }
-  }, []);
-
-  // Stop on unmount so the mic is released when leaving the page.
-  useEffect(() => () => { try { recRef.current?.abort(); } catch { /* noop */ } }, []);
-
-  const toggle = useCallback(() => {
+  const startSession = useCallback(() => {
     const SR = getSR();
-    if (!SR) { onUnsupported?.(); return; }
-    if (recRef.current) { stop(); return; }
-
+    if (!SR) return;
     const rec = new SR();
-    rec.lang = lang;
-    rec.continuous = true;
+    rec.lang = langRef.current;
+    rec.continuous = false;     // one utterance per session (see note above)
     rec.interimResults = true;
 
-    // Capture the current textarea contents as the base to append onto.
-    const p = getText() ?? "";
-    baseRef.current = p.trim() ? p.replace(/\s*$/, "") + " " : "";
+    let uttFinal = "";          // finalized transcript for THIS utterance
 
-    // `e.results` is the FULL cumulative list for the session (interim + final),
-    // so we rebuild the whole transcript from scratch every event and write
-    // base + transcript. This is idempotent — unlike a `+=` accumulator, which
-    // re-adds a result each time the event re-fires after it goes final and
-    // produced the "whatwhatwhat" / "عايزكعايزك" duplication.
     rec.onresult = (e: any) => {
-      let transcript = "";
-      for (let i = 0; i < e.results.length; i++) {
-        transcript += e.results[i][0].transcript;
-      }
-      setText(baseRef.current + transcript);
+      // Within a non-continuous session there is a single growing result; read
+      // the last one only (never concatenate the whole list — that's the
+      // mobile duplication trap).
+      const last = e.results[e.results.length - 1];
+      const txt = last[0].transcript as string;
+      if (last.isFinal) uttFinal = txt;
+      setTextRef.current(baseRef.current + txt);
     };
-    rec.onerror = () => { /* onend always follows; just let it reset */ };
-    rec.onend = () => { recRef.current = null; setListening(false); };
+
+    rec.onerror = (ev: any) => {
+      // no-speech / aborted are normal (onend will restart). Hard failures stop.
+      if (ev?.error === "not-allowed" || ev?.error === "service-not-allowed" || ev?.error === "audio-capture") {
+        wantRef.current = false;
+        onUnsupportedRef.current?.();
+      }
+    };
+
+    rec.onend = () => {
+      // Commit this utterance's finalized text into the base, then restart for
+      // the next utterance if the user hasn't tapped stop.
+      if (uttFinal.trim()) {
+        baseRef.current = (baseRef.current + uttFinal).replace(/\s+$/, "") + " ";
+      }
+      recRef.current = null;
+      if (wantRef.current) {
+        startSession();
+      } else {
+        setListening(false);
+      }
+    };
 
     recRef.current = rec;
     try {
@@ -94,9 +102,28 @@ export function useDictation(setText: SetText, getText: () => string, lang: stri
       setListening(true);
     } catch {
       recRef.current = null;
+      wantRef.current = false;
       setListening(false);
     }
-  }, [lang, setText, getText, stop, onUnsupported]);
+  }, []);
+
+  const stop = useCallback(() => {
+    wantRef.current = false;
+    try { recRef.current?.stop(); } catch { /* already stopped */ }
+  }, []);
+
+  // Release the mic on unmount.
+  useEffect(() => () => { wantRef.current = false; try { recRef.current?.abort(); } catch { /* noop */ } }, []);
+
+  const toggle = useCallback(() => {
+    if (!getSR()) { onUnsupportedRef.current?.(); return; }
+    if (recRef.current || wantRef.current) { stop(); return; }
+    // Capture whatever is already typed as the base to append onto.
+    const p = getTextRef.current() ?? "";
+    baseRef.current = p.trim() ? p.replace(/\s+$/, "") + " " : "";
+    wantRef.current = true;
+    startSession();
+  }, [startSession, stop]);
 
   return { supported, listening, toggle, stop };
 }
