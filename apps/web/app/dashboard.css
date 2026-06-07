@@ -365,11 +365,12 @@ a { color: inherit; text-decoration: none; }
  * It keeps its size (flex-shrink:0); only the model name inside ellipsizes. If
  * the row is ever too tight, the whole group wraps as one block, never split. */
 .composer-actions { display: flex; align-items: center; gap: 6px; flex-wrap: nowrap; flex: 0 0 auto; margin-inline-start: auto; min-width: 0; }
-.composer-actions .model-anchor { min-width: 0; }
+.composer-actions .model-anchor, .composer-actions .feat-model-wrap { min-width: 0; }
 .model-pill { display: inline-flex; align-items: center; gap: 6px; padding: 5px 9px; border-radius: 999px; background: var(--panel); border: 1px solid var(--border); color: var(--ink); font-size: 12px; font-weight: 500; min-width: 0; max-width: 100%; }
-/* The model SELECTOR pill is capped so it never dominates the toolbar (long
- * names like "DeepSeek V4 Pro" ellipsize past this). */
-.model-anchor .model-pill { max-width: 170px; }
+/* The model SELECTOR pill (home .model-anchor + feature/space .feat-model-wrap,
+ * both inside .composer-actions) is capped so it never dominates the toolbar —
+ * long names like "DeepSeek V4 Pro" ellipsize past this. */
+.composer-actions .model-pill { max-width: 170px; }
 /* Ellipsize a long model `short` / connector label instead of stretching the
  * bar past the viewport (no-op on desktop — only bites on real overflow). */
 .model-pill > span:not(.brand-mark) { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
@@ -1214,11 +1215,12 @@ body.modal-open .mobile-nav-btn { display: none !important; }
     margin-inline: max(16px, env(safe-area-inset-left)) max(16px, env(safe-area-inset-right));
   }
 }
-/* Allow the composer chip row to wrap before the send/model controls get
- * pushed off-edge (the off-canvas drawer frees the full width at ≤880px, but
- * the bar stayed nowrap until 560px). */
+/* The composer toolbar stays a single non-wrapping row at every width. The
+ * model+mic+send unit (.composer-actions) keeps its size and right-aligns; any
+ * chips before it shrink/ellipsize, so the controls never get pushed onto a
+ * second line (the old wrap split the send button off on long model names). */
 @media (max-width: 880px) {
-  .composer-bar { flex-wrap: wrap; }
+  .composer-bar { flex-wrap: nowrap; }
 }
 
 /* Modal full-screen on mobile (more touchable than centered 540px). */
@@ -1252,15 +1254,17 @@ body.modal-open .mobile-nav-btn { display: none !important; }
   .mcps-fdrop-label { display: none; }
 }
 
-/* ── Composer: stack the toolbar buttons on very narrow viewports ───── */
+/* ── Composer: keep the toolbar one tight row on very narrow viewports ── */
 @media (max-width: 560px) {
   .composer { padding: 10px 10px 8px; max-width: 100%; }
-  .composer-bar { flex-wrap: wrap; gap: 6px; }
-  /* Chips (space / connector / web-search) may use the full width and wrap. */
+  .composer-bar { flex-wrap: nowrap; gap: 6px; }
+  /* Chips (space / connector / web-search) shrink + ellipsize instead of
+   * wrapping, so the controls stay put. */
   .composer-bar .model-pill { max-width: 100%; }
-  /* But the model SELECTOR is capped tighter on phones so the cohesive
-   * model+mic+send unit always fits on one line (the name ellipsizes). */
-  .composer-actions .model-pill { max-width: 132px; }
+  /* The model SELECTOR is capped tighter on phones so the cohesive
+   * model+mic+send unit fits on one line next to the 44px touch-target
+   * buttons even in the narrower chat-state composer (the name ellipsizes). */
+  .composer-actions .model-pill { max-width: 104px; }
   .greet { font-size: 38px; }
   .brand-greet .b1 { font-size: 32px !important; }
   .brand-greet-icon { width: 40px; height: 40px; }

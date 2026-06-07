@@ -671,6 +671,7 @@ export function FeatureChat({
               </button>
             )}
             <span className="spacer" />
+          <div className="composer-actions">
           {/* Model picker — text features show one list of 8 chat LLMs;
               the visual feature (image & video) shows two
               grouped lists (Image · Video). */}
@@ -791,6 +792,7 @@ export function FeatureChat({
             >
               {sending ? I.stop : I.send}
             </button>
+          </div>
           </div>
         </div>
       </div>

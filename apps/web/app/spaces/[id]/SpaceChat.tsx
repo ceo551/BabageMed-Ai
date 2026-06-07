@@ -382,6 +382,7 @@ export function SpaceChat({ space, memory }: { space: Space; memory?: string[] }
           {I.globe}{s.webSearch}{webSearch ? " ×" : ""}
         </button>
         <span className="spacer" />
+        <div className="composer-actions">
         {/* Model picker — spaces are text-only, so the 8 chat LLMs. */}
         <div className="feat-model-wrap">
           <button
@@ -442,6 +443,7 @@ export function SpaceChat({ space, memory }: { space: Space; memory?: string[] }
         >
           {sending ? I.stop : I.send}
         </button>
+        </div>
       </div>
     </div>
   );
