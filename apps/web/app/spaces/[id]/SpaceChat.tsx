@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { I } from "../../icons";
 import { useUI } from "../../lib/ui-context";
 import { useAuth } from "../../lib/auth-context";
+import { useDictation } from "../../lib/useDictation";
 import { usePrefs } from "../../lib/store";
 import { chats as chatsApi, spaces as spacesApi, type Space, type Chat } from "../../lib/api";
 import { AssistantMessage, type Citation } from "../../components/AssistantMessage";
@@ -53,6 +54,8 @@ export function SpaceChat({ space, memory }: { space: Space; memory?: string[] }
   const { mode } = usePrefs();
   const [modelOpen, setModelOpen] = useState(false);
   const [webSearch, setWebSearch] = useState(false);
+  // Speech-to-text for the mic button (Web Speech API; appends to the prompt).
+  const voice = useDictation(setValue, () => value, locale === "ar" ? "ar-SA" : "en-US", () => toast.error(s.voiceUnsupported));
 
   const liveLoadRef = useRef<string>("");
   const streamAbortRef = useRef<AbortController | null>(null);
@@ -176,6 +179,7 @@ export function SpaceChat({ space, memory }: { space: Space; memory?: string[] }
   async function send() {
     const text = value.trim();
     if (!text || sending) return;
+    voice.stop(); // end any in-flight dictation before the box clears
 
     const userMsgId = `u-${newId()}`;
     const loadingId = `l-${newId()}`;
@@ -426,7 +430,7 @@ export function SpaceChat({ space, memory }: { space: Space; memory?: string[] }
           )}
         </div>
 
-        <button className="cmpr-icon" type="button" aria-label={s.voiceComingSoon} title={s.voiceComingSoon} onClick={() => toast(s.voiceComingSoon)}>{I.mic}</button>
+        <button className="cmpr-icon" type="button" data-on={voice.listening} onClick={voice.toggle} aria-label={voice.listening ? s.voiceListening : s.voiceStart} title={voice.listening ? s.voiceListening : s.voiceStart}>{I.mic}</button>
         <button
           type="button"
           className="cmpr-icon cmpr-send"

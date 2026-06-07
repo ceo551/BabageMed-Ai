@@ -6,6 +6,7 @@ import { useSearchParams } from "next/navigation";
 import React, { Suspense, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { MODELS, type Locale, type LocaleStrings } from "./i18n";
 import { modelLock } from "./lib/models";
+import { useDictation } from "./lib/useDictation";
 import { I } from "./icons";
 import { useUI } from "./lib/ui-context";
 import { useAuth } from "./lib/auth-context";
@@ -278,7 +279,7 @@ function Composer({
   const [webSearch, setWebSearch] = useState(false);
   const [deepResearch, setDeepResearch] = useState(false);
   const [agentMode, setAgentMode] = useState(false);
-  const [voiceOn, setVoiceOn] = useState(false);
+  const voice = useDictation(setValue, () => value, locale === "ar" ? "ar-SA" : "en-US", () => toast.error(s.voiceUnsupported));
   const [sending, setSending] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [userSpaces, setUserSpaces] = useState<Space[]>([]);
@@ -449,6 +450,7 @@ function Composer({
   async function send() {
     const text = value.trim();
     if (!text || sending) return;
+    voice.stop(); // end any in-flight dictation before the box clears
 
     // Optimistically push the user message + a loading placeholder so the
     // transcript animates open immediately.
@@ -996,7 +998,7 @@ function Composer({
             </div>
           )}
         </div>
-        <button className="cmpr-icon" type="button" data-on={voiceOn} onClick={() => setVoiceOn((v) => !v)} aria-label={s.micLabel}>{I.mic}</button>
+        <button className="cmpr-icon" type="button" data-on={voice.listening} onClick={voice.toggle} aria-label={voice.listening ? s.voiceListening : s.voiceStart} title={voice.listening ? s.voiceListening : s.voiceStart}>{I.mic}</button>
         <button
           className="cmpr-icon cmpr-send"
           type="button"

@@ -117,6 +117,9 @@ export type LocaleStrings = {
   collapseRail: string;
   expandRail: string;
   voiceComingSoon: string;
+  voiceStart: string;
+  voiceListening: string;
+  voiceUnsupported: string;
   toggleNavigation: string;
   featureSettings: string;
   // ── Auth pages ────────────────────────────────────────────────────────
@@ -326,6 +329,9 @@ export const STR: Record<Locale, LocaleStrings> = {
     collapseRail: "Collapse rail",
     expandRail: "Expand rail",
     voiceComingSoon: "Voice (coming soon)",
+    voiceStart: "Speak to type",
+    voiceListening: "Listening… tap to stop",
+    voiceUnsupported: "Voice input isn't supported in this browser. Try Chrome.",
     toggleNavigation: "Toggle navigation",
     featureSettings: "Feature settings",
     welcomeBack: "Welcome back",
@@ -499,6 +505,9 @@ export const STR: Record<Locale, LocaleStrings> = {
     collapseRail: "طى الشريط",
     expandRail: "توسعة الشريط",
     voiceComingSoon: "الصوت (قريبًا)",
+    voiceStart: "اتكلم عشان تكتب",
+    voiceListening: "بسمعك… دوس عشان توقف",
+    voiceUnsupported: "الإدخال الصوتي مش مدعوم في المتصفح ده. جرّب Chrome.",
     toggleNavigation: "إظهار/إخفاء التنقّل",
     featureSettings: "إعدادات الميزة",
     welcomeBack: "أهلاً بعودتك",

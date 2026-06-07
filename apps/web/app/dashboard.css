@@ -343,7 +343,14 @@ a { color: inherit; text-decoration: none; }
 .add-btn svg, .cmpr-icon svg { width: 17px; height: 17px; }
 .add-btn:hover, .cmpr-icon:hover { color: var(--ink); background: var(--panel); border-color: var(--border-strong); }
 .add-btn[data-open="true"] { color: var(--cyan); border-color: var(--cyan-line); background: var(--cyan-soft); }
-.cmpr-icon[data-on="true"] { color: var(--cyan); border-color: var(--cyan-line); background: var(--cyan-soft); }
+.cmpr-icon[data-on="true"] { color: var(--cyan); border-color: var(--cyan-line); background: var(--cyan-soft); animation: mic-pulse 1.4s ease-out infinite; }
+/* Recording indicator on the mic while dictation is listening. */
+@keyframes mic-pulse {
+  0%   { box-shadow: 0 0 0 0 color-mix(in srgb, var(--cyan) 50%, transparent); }
+  70%  { box-shadow: 0 0 0 6px transparent; }
+  100% { box-shadow: 0 0 0 0 transparent; }
+}
+@media (prefers-reduced-motion: reduce) { .cmpr-icon[data-on="true"] { animation: none; } }
 /* Send/stop button — state-driven so the 8-property inline style object no
    longer has to be duplicated across the dashboard / space / feature
    composers. "ready" uses the local accent hue (--hue-ink) on feature pages,

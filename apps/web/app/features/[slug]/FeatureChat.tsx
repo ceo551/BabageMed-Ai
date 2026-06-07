@@ -7,6 +7,7 @@ import { useSearchParams } from "next/navigation";
 import { I, featureIcon } from "../../icons";
 import { useUI } from "../../lib/ui-context";
 import { useAuth } from "../../lib/auth-context";
+import { useDictation } from "../../lib/useDictation";
 import { usePrefs } from "../../lib/store";
 import { chats as chatsApi, features as featuresApi, media as mediaApi, type Feature as FeatureRow } from "../../lib/api";
 import { AssistantMessage, type Citation } from "../../components/AssistantMessage";
@@ -94,6 +95,8 @@ export function FeatureChat({
   const fileInputRef = useRef<HTMLInputElement>(null);
   // Skill-catalog picker modal (opened from the composer "+" menu).
   const [skillsModalOpen, setSkillsModalOpen] = useState(false);
+  // Speech-to-text for the mic button (Web Speech API; appends to the prompt).
+  const voice = useDictation(setValue, () => value, locale === "ar" ? "ar-SA" : "en-US", () => toast.error(s.voiceUnsupported));
 
   // Reset model when feature changes (e.g. visual ↔ text would otherwise
   // keep a stale id that doesn't exist in the new picker).
@@ -239,6 +242,7 @@ export function FeatureChat({
   async function send() {
     const text = value.trim();
     if (!text || sending) return;
+    voice.stop(); // end any in-flight dictation before the box clears
 
     const userMsgId = `u-${newId()}`;
     const loadingId = `l-${newId()}`;
@@ -775,7 +779,7 @@ export function FeatureChat({
             )}
           </div>
 
-            <button className="cmpr-icon" type="button" aria-label={s.voiceComingSoon} title={s.voiceComingSoon}>{I.mic}</button>
+            <button className="cmpr-icon" type="button" data-on={voice.listening} onClick={voice.toggle} aria-label={voice.listening ? s.voiceListening : s.voiceStart} title={voice.listening ? s.voiceListening : s.voiceStart}>{I.mic}</button>
             <button
               type="button"
               className="cmpr-icon cmpr-send"
