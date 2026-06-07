@@ -827,7 +827,12 @@ button.msg-citation[data-open="true"] {
   grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
   gap: 8px;
 }
+/* Clickable inline [n] citation marker inside an assistant answer. */
+.cite-ref { color: var(--cyan); text-decoration: none; font-weight: 600; font-size: 0.86em; cursor: pointer; padding: 0 1px; white-space: nowrap; }
+.cite-ref:hover { text-decoration: underline; }
 .src-card {
+  /* Leave room under the composer/header when an inline [n] scrolls here. */
+  scroll-margin: 90px 0;
   display: flex; flex-direction: column; gap: 5px;
   padding: 9px 11px;
   border: 1px solid var(--border);

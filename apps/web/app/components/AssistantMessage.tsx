@@ -42,6 +42,49 @@ function AssistantMessageInner({
   const [openCitation, setOpenCitation] = useState<number | null>(null);
   const { s } = useUI();
 
+  const cards = React.useMemo(
+    () => (citations && citations.length ? normaliseCitations(citations) : []),
+    [citations],
+  );
+  const cardByN = React.useMemo(() => {
+    const m = new Map<number, SourceCardData>();
+    for (const c of cards) m.set(c.n, c);
+    return m;
+  }, [cards]);
+
+  // Turn inline [n] markers in the prose into clickable references: web sources
+  // open the page in a new tab; MCP/file sources scroll to and expand their
+  // card in the Sources footer. Applied to the text-bearing markdown elements.
+  const linkify = (children: React.ReactNode): React.ReactNode => {
+    if (cardByN.size === 0) return children;
+    return React.Children.map(children, (child) => {
+      if (typeof child !== "string" || !child.includes("[")) return child;
+      const parts = child.split(/(\[\d+\])/g);
+      if (parts.length === 1) return child;
+      return parts.map((part, i) => {
+        const mt = /^\[(\d+)\]$/.exec(part);
+        const card = mt ? cardByN.get(Number(mt[1])) : undefined;
+        if (!card) return part;
+        if (card.url) {
+          return (
+            <a key={i} href={card.url} target="_blank" rel="noopener noreferrer"
+               className="cite-ref" title={card.title || card.source}>{part}</a>
+          );
+        }
+        return (
+          <a key={i} href={`#src-${card.n}`} className="cite-ref" title={card.source}
+             onClick={(e) => {
+               e.preventDefault();
+               setOpenCitation(card.n - 1);
+               if (typeof document !== "undefined") {
+                 document.getElementById(`src-${card.n}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
+               }
+             }}>{part}</a>
+        );
+      });
+    });
+  };
+
   return (
     <div className="msg msg-assistant">
       <div className="md-body" dir="auto">
@@ -62,14 +105,20 @@ function AssistantMessageInner({
             // intercept <pre> so the button sits in the corner of the block
             // (not next to inline `code`).
             pre: ({ children }) => <CodeBlock>{children}</CodeBlock>,
+            // Linkify [n] citation markers wherever prose text lives.
+            p: ({ children }) => <p>{linkify(children)}</p>,
+            li: ({ children }) => <li>{linkify(children)}</li>,
+            strong: ({ children }) => <strong>{linkify(children)}</strong>,
+            em: ({ children }) => <em>{linkify(children)}</em>,
+            td: ({ children }) => <td>{linkify(children)}</td>,
           }}
         >
           {content || ""}
         </ReactMarkdown>
       </div>
-      {citations && citations.length > 0 && (
+      {cards.length > 0 && (
         <SourceCards
-          cards={normaliseCitations(citations)}
+          cards={cards}
           label={s.sources}
           openIdx={openCitation}
           onToggle={(i) => setOpenCitation(openCitation === i ? null : i)}
@@ -143,6 +192,7 @@ function SourceCards({
           card.kind === "web" ? (
             <a
               key={`w-${card.n}`}
+              id={`src-${card.n}`}
               className="src-card"
               href={card.url}
               target="_blank"
@@ -167,7 +217,7 @@ function SourceCards({
               {card.snippet ? <span className="src-snippet">{card.snippet}</span> : null}
             </a>
           ) : card.kind === "file" ? (
-            <div key={`f-${card.n}`} className="src-card src-card-mcp">
+            <div key={`f-${card.n}`} id={`src-${card.n}`} className="src-card src-card-mcp">
               <button
                 type="button"
                 className="src-card-head src-card-mcp-btn"
@@ -190,7 +240,7 @@ function SourceCards({
               )}
             </div>
           ) : (
-            <div key={`m-${card.n}`} className="src-card src-card-mcp">
+            <div key={`m-${card.n}`} id={`src-${card.n}`} className="src-card src-card-mcp">
               <button
                 type="button"
                 className="src-card-head src-card-mcp-btn"
