@@ -30,7 +30,7 @@ import {
 // (refresh = new chat); persistence is a follow-up when chats table ships.
 type ChatMessage =
   | { id: string; role: "user"; content: string }
-  | { id: string; role: "assistant"; content: string; citations?: Citation[] }
+  | { id: string; role: "assistant"; content: string; citations?: Citation[]; failed?: { prompt: string } }
   | { id: string; role: "loading"; hint?: string };
 
 // React-key generator for optimistic message rows. Falls back to a counter +
@@ -235,11 +235,20 @@ function Transcript({ messages }: { messages: ChatMessage[] }) {
           );
         }
         return (
-          <AssistantMessage
-            key={m.id}
-            content={m.content}
-            citations={m.citations}
-          />
+          <div key={m.id}>
+            <AssistantMessage content={m.content} citations={m.citations} />
+            {m.failed && (
+              <button
+                type="button"
+                className="retry-btn"
+                onClick={() =>
+                  window.dispatchEvent(new CustomEvent("pervagans:retry", { detail: { prompt: m.failed!.prompt } }))
+                }
+              >
+                ↻ {s.retry}
+              </button>
+            )}
+          </div>
         );
       })}
       <div ref={endRef} aria-hidden="true" />
@@ -336,6 +345,19 @@ function Composer({
     };
     window.addEventListener("pagehide", persist);
     return () => window.removeEventListener("pagehide", persist);
+  }, []);
+
+  // Retry affordance: a failed assistant turn renders a Retry button that
+  // dispatches pervagans:retry with the original prompt; re-send it (via a ref
+  // so the listener always calls the latest send closure).
+  const sendRef = useRef<(t?: string) => void>(() => {});
+  useEffect(() => {
+    const onRetry = (e: Event) => {
+      const prompt = (e as CustomEvent).detail?.prompt;
+      if (typeof prompt === "string" && prompt) sendRef.current(prompt);
+    };
+    window.addEventListener("pervagans:retry", onRetry as EventListener);
+    return () => window.removeEventListener("pervagans:retry", onRetry as EventListener);
   }, []);
 
   // Stop the in-flight chat/agent stream (the composer's send button flips to a
@@ -479,8 +501,10 @@ function Composer({
   }
 
 
-  async function send() {
-    const text = value.trim();
+  async function send(overrideText?: string) {
+    // `overrideText` is supplied by the Retry affordance — re-send that prompt
+    // without touching the (possibly half-typed) composer draft.
+    const text = (overrideText ?? value).trim();
     if (!text || sending || sendLockRef.current) return;
     sendLockRef.current = true;
     voice.stop(); // end any in-flight dictation before the box clears
@@ -501,7 +525,7 @@ function Composer({
       // happening instead of an identical silent spinner.
       { id: loadingId, role: "loading", hint: agentMode ? s.workingOnIt : (webSearch || deepResearch) ? s.searchingWeb : undefined },
     ]);
-    setValue("");
+    if (!overrideText) setValue(""); // keep the draft intact on a Retry
     setSending(true);
 
     try {
@@ -725,6 +749,12 @@ function Composer({
               : "Error: " + parsed.error;
             errored = true;
             flush();
+            // Tag the turn so the transcript can offer a one-click Retry.
+            setMessages((cur) =>
+              cur.map((m) =>
+                m.id === assistantId && m.role === "assistant" ? { ...m, failed: { prompt: text } } : m,
+              ),
+            );
           }
           // 'done' is advisory only.
         }
@@ -767,6 +797,7 @@ function Composer({
       inflightRef.current = null;
     }
   }
+  sendRef.current = send; // keep the Retry listener pointed at the latest closure
 
   // runAgent drives Agent Mode: POST the task to /api/agent/stream and render
   // the plan→act steps live, then the final answer, into one assistant turn.
@@ -1093,7 +1124,7 @@ function Composer({
         <button
           className="cmpr-icon cmpr-send"
           type="button"
-          onClick={sending ? stop : send}
+          onClick={sending ? stop : () => send()}
           aria-label={sending ? s.stop : s.send}
           title={sending ? s.stop : s.send}
           disabled={!sending && value.trim() === ""}

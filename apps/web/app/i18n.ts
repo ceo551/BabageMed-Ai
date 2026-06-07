@@ -153,6 +153,7 @@ export type LocaleStrings = {
   generating: string;
   searchingWeb: string;
   workingOnIt: string;
+  retry: string;
   sidebarLabel: string;
   settingsNavLabel: string;
   addLabel: string;
@@ -365,6 +366,7 @@ export const STR: Record<Locale, LocaleStrings> = {
     generating: "Generating",
     searchingWeb: "Searching the web…",
     workingOnIt: "Working on it…",
+    retry: "Retry",
     sidebarLabel: "Sidebar",
     settingsNavLabel: "Settings navigation",
     addLabel: "Add",
@@ -543,6 +545,7 @@ export const STR: Record<Locale, LocaleStrings> = {
     generating: "جارٍ التوليد",
     searchingWeb: "جارٍ البحث في الويب…",
     workingOnIt: "بشتغل على طلبك…",
+    retry: "إعادة المحاولة",
     sidebarLabel: "الشريط الجانبي",
     settingsNavLabel: "تنقل الإعدادات",
     addLabel: "إضافة",

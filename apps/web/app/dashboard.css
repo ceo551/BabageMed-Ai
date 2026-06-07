@@ -830,6 +830,9 @@ button.msg-citation[data-open="true"] {
 /* Clickable inline [n] citation marker inside an assistant answer. */
 .cite-ref { color: var(--cyan); text-decoration: none; font-weight: 600; font-size: 0.86em; cursor: pointer; padding: 0 1px; white-space: nowrap; }
 .cite-ref:hover { text-decoration: underline; }
+/* Retry button shown under a failed assistant turn. */
+.retry-btn { margin: 2px 0 10px; display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px; border-radius: 9px; background: var(--panel); border: 1px solid var(--border-strong); color: var(--ink-2); font-size: 13px; font-weight: 500; cursor: pointer; transition: color .15s, background .15s, border-color .15s; }
+.retry-btn:hover { color: var(--ink); border-color: var(--cyan-line); background: var(--cyan-soft); }
 .src-card {
   /* Leave room under the composer/header when an inline [n] scrolls here. */
   scroll-margin: 90px 0;
