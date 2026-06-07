@@ -1,5 +1,6 @@
 import Link from "next/link";
 import "./marketing.css";
+import { MarketingNav } from "./MarketingNav";
 
 // Shared chrome for the PUBLIC marketing pages (/product, /pricing, /about).
 // These render chrome-free of the app sidebar (AppShell skips its shell for
@@ -9,25 +10,7 @@ import "./marketing.css";
 export default function MarketingLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="mkt">
-      <header className="mkt-nav">
-        <nav className="mkt-nav-inner" aria-label="Primary">
-          <Link href="/" className="mkt-brand">
-            <img src="/pervagans-icon.png" alt="" width={26} height={26} />
-            Pervagans
-          </Link>
-          <div className="mkt-nav-links">
-            <Link href="/product">Product</Link>
-            <Link href="/models">Models</Link>
-            <Link href="/effects">Effects</Link>
-            <Link href="/pricing">Pricing</Link>
-            <Link href="/about">About</Link>
-          </div>
-          <span className="mkt-nav-spacer" />
-          <div className="mkt-nav-cta">
-            <Link href="/" className="mkt-btn mkt-btn-primary mkt-btn-sm">Start free</Link>
-          </div>
-        </nav>
-      </header>
+      <MarketingNav locale="en" />
 
       <main className="mkt-main">{children}</main>
 

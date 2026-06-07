@@ -48,6 +48,38 @@
 .mkt-nav-cta { display: flex; align-items: center; gap: 8px; }
 .mkt-nav-toggle { display: none; }
 
+/* Theme toggle / hamburger (square icon button) + language switch (text). */
+.mkt-icon-btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 40px; height: 40px; border-radius: 10px;
+  background: transparent; border: 1px solid var(--border-strong); color: var(--ink-2);
+  cursor: pointer; transition: color .15s, background .15s, border-color .15s;
+}
+.mkt-icon-btn:hover { color: var(--ink); background: var(--panel); border-color: var(--cyan-line); }
+.mkt-lang-btn {
+  min-height: 40px; padding: 8px 14px; border-radius: 10px;
+  background: transparent; border: 1px solid var(--border-strong); color: var(--ink-2);
+  font-size: 14px; font-weight: 600; cursor: pointer; white-space: nowrap;
+  transition: color .15s, background .15s, border-color .15s;
+}
+.mkt-lang-btn:hover { color: var(--ink); background: var(--panel); border-color: var(--cyan-line); }
+.mkt-nav-burger { display: none; }
+
+/* Mobile dropdown menu (shown when the hamburger is tapped ≤640px). */
+.mkt-mobile-menu {
+  display: flex; flex-direction: column; gap: 4px;
+  padding: 10px max(16px, env(safe-area-inset-left)) 16px max(16px, env(safe-area-inset-right));
+  border-bottom: 1px solid var(--border);
+  background: color-mix(in srgb, var(--bg) 92%, transparent);
+  backdrop-filter: blur(12px);
+}
+.mkt-mobile-link {
+  display: flex; align-items: center; min-height: 46px; padding: 10px 12px;
+  border-radius: 10px; font-size: 16px; color: var(--ink-2);
+  background: transparent; border: 0; text-align: start; width: 100%; cursor: pointer;
+}
+.mkt-mobile-link:hover { color: var(--ink); background: var(--panel); }
+
 /* ── Buttons ─────────────────────────────────────────────────────────────── */
 .mkt-btn {
   display: inline-flex; align-items: center; justify-content: center; gap: 8px;
@@ -183,10 +215,12 @@
   .mkt-pricing { grid-template-columns: 1fr; }
 }
 @media (max-width: 640px) {
-  .mkt-nav-links { display: none; }
-  .mkt-nav-toggle { display: inline-flex; }
+  /* Desktop-only nav bits collapse into the hamburger menu; the theme toggle
+   * stays visible in the bar. */
+  .mkt-nav-links--desktop { display: none !important; }
+  .mkt-nav-burger { display: inline-flex; }
   .mkt-section { padding: 40px 0; }
-  .mkt-btn { width: 100%; }
+  .mkt-cta-row .mkt-btn { width: 100%; }
   .mkt-cta-row { flex-direction: column; }
   .mkt-center .mkt-cta-row { align-items: stretch; }
 }

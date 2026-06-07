@@ -1,5 +1,6 @@
 import Link from "next/link";
 import "../(marketing)/marketing.css";
+import { MarketingNav } from "../(marketing)/MarketingNav";
 
 // Arabic (RTL) chrome for the public Arabic marketing surface (/ar/models …).
 // Lives OUTSIDE the (marketing) route group so it does not inherit the English
@@ -9,25 +10,7 @@ import "../(marketing)/marketing.css";
 export default function ArabicMarketingLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="mkt" dir="rtl" lang="ar">
-      <header className="mkt-nav">
-        <nav className="mkt-nav-inner" aria-label="رئيسي">
-          <Link href="/ar/models" className="mkt-brand">
-            <img src="/pervagans-icon.png" alt="" width={26} height={26} />
-            Pervagans
-          </Link>
-          <div className="mkt-nav-links">
-            <Link href="/ar/models">النماذج</Link>
-            <Link href="/ar/effects">التأثيرات</Link>
-            <Link href="/ar/use-cases">حالات الاستخدام</Link>
-            <Link href="/pricing">الأسعار</Link>
-          </div>
-          <span className="mkt-nav-spacer" />
-          <div className="mkt-nav-cta">
-            <Link href="/models" className="mkt-nav-links" style={{ marginInlineStart: 0 }}>English</Link>
-            <Link href="/" className="mkt-btn mkt-btn-primary mkt-btn-sm">ابدأ مجانًا</Link>
-          </div>
-        </nav>
-      </header>
+      <MarketingNav locale="ar" />
 
       <main className="mkt-main">{children}</main>
 
