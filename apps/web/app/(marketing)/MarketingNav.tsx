@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 
 // Interactive top nav for the public marketing pages: nav links, a light/dark
 // theme toggle, a language (EN/AR) switch, the Start-free CTA, and a working
@@ -57,7 +58,10 @@ export function MarketingNav({ locale }: { locale: Loc }) {
   const startFree = locale === "ar" ? "ابدأ مجانًا" : "Start free";
 
   const [open, setOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const [theme, setTheme] = useState<"dark" | "light">("dark");
+
+  useEffect(() => { setMounted(true); }, []);
 
   useEffect(() => {
     setTheme(document.documentElement.getAttribute("data-theme") === "light" ? "light" : "dark");
@@ -143,10 +147,10 @@ export function MarketingNav({ locale }: { locale: Loc }) {
         </div>
       </nav>
 
-      {open && (
+      {mounted && open && createPortal(
         <>
           <div className="mkt-drawer-backdrop" onClick={() => setOpen(false)} aria-hidden="true" />
-          <aside className="mkt-drawer" role="dialog" aria-modal="true" aria-label={locale === "ar" ? "القائمة" : "Menu"}>
+          <aside className="mkt-drawer" dir={locale === "ar" ? "rtl" : "ltr"} role="dialog" aria-modal="true" aria-label={locale === "ar" ? "القائمة" : "Menu"}>
             <div className="mkt-drawer-head">
               <Link href={home} className="mkt-brand" onClick={() => setOpen(false)}>
                 <img src="/pervagans-icon.png" alt="" width={24} height={24} />
@@ -170,7 +174,8 @@ export function MarketingNav({ locale }: { locale: Loc }) {
               <Link href="/" className="mkt-btn mkt-btn-primary" onClick={() => setOpen(false)}>{startFree}</Link>
             </div>
           </aside>
-        </>
+        </>,
+        document.body,
       )}
     </header>
   );
