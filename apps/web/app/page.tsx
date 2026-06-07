@@ -741,7 +741,17 @@ function Composer({
       method: "POST",
       headers: { "content-type": "application/json", "accept": "text/event-stream" },
       credentials: "include",
-      body: JSON.stringify({ task: text, useMcps: activeConnectorIds, locale }),
+      body: JSON.stringify({
+        task: text,
+        useMcps: activeConnectorIds,
+        locale,
+        // Prior turns so a follow-up agent task has conversation context. This
+        // `messages` closure is the transcript BEFORE this turn's optimistic
+        // push, so it doesn't include the current task (sent as `task`).
+        messages: messages
+          .filter((m) => m.role === "user" || m.role === "assistant")
+          .map((m) => ({ role: m.role, content: "content" in m ? m.content : "" })),
+      }),
       signal: controller.signal,
     });
     if (!r.ok || !r.body) throw new Error(r.status === 402 ? s.quotaReached : `HTTP ${r.status}`);

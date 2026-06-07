@@ -552,6 +552,13 @@ func sanitiseChatRequest(req *chatRequest) {
 	if len(msgs) > maxChatMessages {
 		msgs = msgs[len(msgs)-maxChatMessages:]
 	}
+	// After truncation the surviving window can start on an assistant turn, but
+	// Anthropic/Vertex reject a messages array whose first turn isn't "user"
+	// (400 on long chats). Drop any leading non-user turns so the slice always
+	// begins with a user turn.
+	for len(msgs) > 0 && msgs[0].Role != "user" {
+		msgs = msgs[1:]
+	}
 	req.Messages = msgs
 
 	// Mode / locale whitelist. Unknown values silently downgrade to the
@@ -724,7 +731,15 @@ func buildSystem(mode, locale string, citations []map[string]any, useMcps []stri
 	var b strings.Builder
 	b.WriteString("You are Pervagans — a helpful, knowledgeable AI assistant for ANY task: writing, coding, analysis, research, learning, planning, brainstorming, and everyday questions. You are NOT limited to any single domain. Be clear, direct, warm, and genuinely useful. Answer from your own broad knowledge by default — you do not need external databases or connected sources to help with general questions, so never apologize for lacking them. State uncertainty honestly and never invent facts, names, numbers, or citations.\n")
 	if deepResearch {
-		b.WriteString("\nDEEP RESEARCH MODE: write a thorough, well-structured report — use clear markdown section headers, synthesize across ALL the numbered sources below (compare and contrast where they disagree), put an inline [n] citation on every factual claim, and finish with a 'Sources:' list. Prefer recent, authoritative sources; state uncertainty explicitly and note gaps the sources don't cover.\n")
+		if len(citations) == 0 {
+			// Deep research was requested but the web search returned nothing
+			// usable. Telling the model to "cite every claim" with zero sources
+			// makes it invent [n] markers and fake sources — instruct the
+			// opposite explicitly.
+			b.WriteString("\nDEEP RESEARCH MODE: the web search returned no usable sources for this query. Say so plainly and answer only from your own general knowledge — do NOT emit [n] citations or attribute claims to sources that do not exist.\n")
+		} else {
+			b.WriteString("\nDEEP RESEARCH MODE: write a thorough, well-structured report — use clear markdown section headers, synthesize across ALL the numbered sources below (compare and contrast where they disagree), put an inline [n] citation on every factual claim, and finish with a 'Sources:' list. Prefer recent, authoritative sources; state uncertainty explicitly and note gaps the sources don't cover.\n")
+		}
 	}
 	// Feature workspace context. When the user is chatting from a feature
 	// page (e.g. /features/healthcare), their custom instructions for that

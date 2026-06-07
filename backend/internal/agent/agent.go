@@ -81,6 +81,13 @@ type agentReq struct {
 	Task    string   `json:"task"`
 	UseMcps []string `json:"useMcps"`
 	Locale  string   `json:"locale"`
+	// Prior conversation turns (user/assistant) so a follow-up agent task has
+	// context instead of starting cold. The current task is sent separately in
+	// Task and appended after this history.
+	Messages []struct {
+		Role    string `json:"role"`
+		Content string `json:"content"`
+	} `json:"messages"`
 }
 
 func (s *Service) handleStream(w http.ResponseWriter, r *http.Request) {
@@ -142,8 +149,35 @@ func (s *Service) handleStream(w http.ResponseWriter, r *http.Request) {
 
 	messages := []map[string]any{
 		{"role": "system", "content": agentSystemPrompt(req.Locale, len(tools))},
-		{"role": "user", "content": req.Task},
 	}
+	// Seed prior conversation turns (most recent window) so a follow-up agent
+	// task resolves "do that again" / pronouns against real context instead of
+	// starting cold.
+	{
+		const maxAgentHistory = 12
+		hist := req.Messages
+		if len(hist) > maxAgentHistory {
+			hist = hist[len(hist)-maxAgentHistory:]
+		}
+		for _, m := range hist {
+			if m.Role != "user" && m.Role != "assistant" {
+				continue
+			}
+			c := strings.TrimSpace(m.Content)
+			if c == "" {
+				continue
+			}
+			if len(c) > 12000 {
+				c = c[:12000]
+			}
+			messages = append(messages, map[string]any{"role": m.Role, "content": c})
+		}
+		// The seeded window must start on a user turn (provider 400 otherwise).
+		for len(messages) > 1 && messages[1]["role"] != "user" {
+			messages = append(messages[:1], messages[2:]...)
+		}
+	}
+	messages = append(messages, map[string]any{"role": "user", "content": req.Task})
 
 	// Accumulate the tool results as provenance so the agent answer carries
 	// numbered source cards (P3) — agent mode previously emitted ZERO citations.
