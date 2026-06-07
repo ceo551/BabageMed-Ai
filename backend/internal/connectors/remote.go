@@ -646,9 +646,41 @@ func (s *Service) CallRemoteTool(ctx context.Context, userID, connectorID, tool 
 		return nil, errors.New("not connected")
 	}
 	bearer := s.remoteAccessToken(ctx, userID, rc)
-	raw, err := callRemoteTool(ctx, rc.ServerURL, bearer, tool, args)
+	// Bound the whole call (initialize + tools/call) so a hung remote server
+	// can't stall the agent run indefinitely.
+	cctx, cancel := context.WithTimeout(ctx, 25*time.Second)
+	defer cancel()
+	raw, err := callRemoteTool(cctx, rc.ServerURL, bearer, tool, args)
 	if err != nil {
 		return nil, err
+	}
+	// MCP tools/call returns { content: [...], isError: bool }. A tool-level
+	// failure (isError:true) must surface as an ERROR so the agent records a
+	// failed step + emits no source card — otherwise the model treats the error
+	// text as a successful observation and "cites" a failed tool.
+	var shaped struct {
+		IsError bool `json:"isError"`
+		Content []struct {
+			Text string `json:"text"`
+		} `json:"content"`
+	}
+	if json.Unmarshal(raw, &shaped) == nil && shaped.IsError {
+		msg := ""
+		for _, c := range shaped.Content {
+			if c.Text != "" {
+				if msg != "" {
+					msg += " "
+				}
+				msg += c.Text
+			}
+		}
+		if msg == "" {
+			msg = "tool reported an error"
+		}
+		if len(msg) > 500 {
+			msg = msg[:500]
+		}
+		return nil, errors.New(msg)
 	}
 	var result any
 	_ = json.Unmarshal(raw, &result)
