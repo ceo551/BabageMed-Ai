@@ -9,7 +9,10 @@ import { MarketingNav } from "./MarketingNav";
 // for crawlers.
 export default function MarketingLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="mkt">
+    // Force LTR: this layout's copy is English, so it must not inherit dir="rtl"
+    // from <html> when the user's saved locale is Arabic (that flipped the page
+    // to RTL and broke the bidi — period at line-start, brand on the right).
+    <div className="mkt" dir="ltr" lang="en">
       <MarketingNav locale="en" />
 
       <main className="mkt-main">{children}</main>

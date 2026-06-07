@@ -65,20 +65,37 @@
 .mkt-lang-btn:hover { color: var(--ink); background: var(--panel); border-color: var(--cyan-line); }
 .mkt-nav-burger { display: none; }
 
-/* Mobile dropdown menu (shown when the hamburger is tapped ≤640px). */
-.mkt-mobile-menu {
-  display: flex; flex-direction: column; gap: 4px;
-  padding: 10px max(16px, env(safe-area-inset-left)) 16px max(16px, env(safe-area-inset-right));
-  border-bottom: 1px solid var(--border);
-  background: color-mix(in srgb, var(--bg) 92%, transparent);
-  backdrop-filter: blur(12px);
+/* Mobile slide-in drawer (opened by the hamburger ≤640px). */
+.mkt-drawer-backdrop {
+  position: fixed; inset: 0; z-index: 60;
+  background: rgba(0, 0, 0, 0.5);
+  animation: mkt-fade 0.15s ease;
 }
-.mkt-mobile-link {
-  display: flex; align-items: center; min-height: 46px; padding: 10px 12px;
+.mkt-drawer {
+  position: fixed; inset-block: 0; inset-inline-end: 0; z-index: 61;
+  width: min(320px, 86vw); box-sizing: border-box;
+  display: flex; flex-direction: column;
+  padding: 14px 16px calc(16px + env(safe-area-inset-bottom));
+  padding-top: max(14px, env(safe-area-inset-top));
+  background: var(--panel-solid);
+  border-inline-start: 1px solid var(--border);
+  box-shadow: -10px 0 40px rgba(0, 0, 0, 0.35);
+  animation: mkt-drawer-in 0.2s ease;
+  overflow-y: auto;
+}
+@keyframes mkt-fade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes mkt-drawer-in { from { opacity: 0; transform: translateX(10%); } to { opacity: 1; transform: translateX(0); } }
+.mkt-drawer-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
+.mkt-drawer-links { display: flex; flex-direction: column; gap: 2px; }
+.mkt-drawer-link {
+  display: flex; align-items: center; gap: 10px; min-height: 48px; padding: 10px 12px;
   border-radius: 10px; font-size: 16px; color: var(--ink-2);
   background: transparent; border: 0; text-align: start; width: 100%; cursor: pointer;
 }
-.mkt-mobile-link:hover { color: var(--ink); background: var(--panel); }
+.mkt-drawer-link:hover { color: var(--ink); background: var(--panel); }
+.mkt-drawer-theme { color: var(--ink); }
+.mkt-drawer-foot { margin-top: auto; display: flex; flex-direction: column; gap: 8px; padding-top: 16px; }
+.mkt-drawer-foot .mkt-btn { width: 100%; }
 
 /* ── Buttons ─────────────────────────────────────────────────────────────── */
 .mkt-btn {

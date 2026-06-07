@@ -66,6 +66,16 @@ export function MarketingNav({ locale }: { locale: Loc }) {
   // Close the mobile menu on route change.
   useEffect(() => { setOpen(false); }, [pathname]);
 
+  // Lock body scroll + close on Escape while the drawer is open.
+  useEffect(() => {
+    if (!open) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setOpen(false); };
+    window.addEventListener("keydown", onKey);
+    return () => { document.body.style.overflow = prev; window.removeEventListener("keydown", onKey); };
+  }, [open]);
+
   function toggleTheme() {
     const next = theme === "light" ? "dark" : "light";
     setTheme(next);
@@ -134,13 +144,33 @@ export function MarketingNav({ locale }: { locale: Loc }) {
       </nav>
 
       {open && (
-        <div className="mkt-mobile-menu">
-          {links.map((l) => (
-            <Link key={l.href} href={l.href} className="mkt-mobile-link">{l.label}</Link>
-          ))}
-          <button type="button" className="mkt-mobile-link" onClick={switchLang}>{langLabel}</button>
-          <Link href="/" className="mkt-btn mkt-btn-primary" style={{ marginTop: 6 }}>{startFree}</Link>
-        </div>
+        <>
+          <div className="mkt-drawer-backdrop" onClick={() => setOpen(false)} aria-hidden="true" />
+          <aside className="mkt-drawer" role="dialog" aria-modal="true" aria-label={locale === "ar" ? "القائمة" : "Menu"}>
+            <div className="mkt-drawer-head">
+              <Link href={home} className="mkt-brand" onClick={() => setOpen(false)}>
+                <img src="/pervagans-icon.png" alt="" width={24} height={24} />
+                Pervagans
+              </Link>
+              <button type="button" className="mkt-icon-btn" onClick={() => setOpen(false)} aria-label={locale === "ar" ? "إغلاق" : "Close"}>
+                {CloseIcon}
+              </button>
+            </div>
+            <nav className="mkt-drawer-links" aria-label={locale === "ar" ? "روابط" : "Links"}>
+              {links.map((l) => (
+                <Link key={l.href} href={l.href} className="mkt-drawer-link" onClick={() => setOpen(false)}>{l.label}</Link>
+              ))}
+              <button type="button" className="mkt-drawer-link" onClick={switchLang}>{langLabel}</button>
+            </nav>
+            <div className="mkt-drawer-foot">
+              <button type="button" className="mkt-drawer-link mkt-drawer-theme" onClick={toggleTheme}>
+                <span>{theme === "light" ? MoonIcon : SunIcon}</span>
+                {themeLabel}
+              </button>
+              <Link href="/" className="mkt-btn mkt-btn-primary" onClick={() => setOpen(false)}>{startFree}</Link>
+            </div>
+          </aside>
+        </>
       )}
     </header>
   );
