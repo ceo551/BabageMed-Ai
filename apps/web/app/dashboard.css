@@ -339,7 +339,8 @@ a { color: inherit; text-decoration: none; }
 .composer textarea { width: 100%; resize: none; background: transparent; border: 0; outline: 0; color: var(--ink); font-family: inherit; font-size: 16px; line-height: 1.5; min-height: 28px; padding: 6px 4px; }
 .composer textarea::placeholder { color: var(--muted); }
 .composer-bar { display: flex; align-items: center; gap: 8px; padding-top: 6px; }
-.add-btn, .cmpr-icon { background: transparent; border: 1px solid var(--border); border-radius: 10px; width: 32px; height: 32px; display: inline-flex; align-items: center; justify-content: center; color: var(--muted); transition: color .15s, background .15s, border-color .15s; }
+.add-btn, .cmpr-icon { background: transparent; border: 1px solid var(--border); border-radius: 9px; width: 28px; height: 28px; flex: 0 0 auto; display: inline-flex; align-items: center; justify-content: center; color: var(--muted); transition: color .15s, background .15s, border-color .15s; }
+.add-btn svg, .cmpr-icon svg { width: 17px; height: 17px; }
 .add-btn:hover, .cmpr-icon:hover { color: var(--ink); background: var(--panel); border-color: var(--border-strong); }
 .add-btn[data-open="true"] { color: var(--cyan); border-color: var(--cyan-line); background: var(--cyan-soft); }
 .cmpr-icon[data-on="true"] { color: var(--cyan); border-color: var(--cyan-line); background: var(--cyan-soft); }
@@ -352,7 +353,16 @@ a { color: inherit; text-decoration: none; }
 .cmpr-send[data-state="ready"]   { color: var(--hue-ink, var(--cyan)); background: var(--hue-bg, var(--cyan-soft)); border-color: var(--hue-line, var(--cyan-line)); }
 .cmpr-send[data-state="sending"] { color: var(--error); background: var(--error-soft); border-color: var(--error-line); }
 .spacer { flex: 1; }
-.model-pill { display: inline-flex; align-items: center; gap: 8px; padding: 6px 10px; border-radius: 999px; background: var(--panel); border: 1px solid var(--border); color: var(--ink); font-size: 12px; font-weight: 500; min-width: 0; max-width: 100%; }
+/* The model + mic + send controls stay together as one cohesive, right-aligned
+ * unit so a long model name can never push the send button onto its own line.
+ * It keeps its size (flex-shrink:0); only the model name inside ellipsizes. If
+ * the row is ever too tight, the whole group wraps as one block, never split. */
+.composer-actions { display: flex; align-items: center; gap: 6px; flex-wrap: nowrap; flex: 0 0 auto; margin-inline-start: auto; min-width: 0; }
+.composer-actions .model-anchor { min-width: 0; }
+.model-pill { display: inline-flex; align-items: center; gap: 6px; padding: 5px 9px; border-radius: 999px; background: var(--panel); border: 1px solid var(--border); color: var(--ink); font-size: 12px; font-weight: 500; min-width: 0; max-width: 100%; }
+/* The model SELECTOR pill is capped so it never dominates the toolbar (long
+ * names like "DeepSeek V4 Pro" ellipsize past this). */
+.model-anchor .model-pill { max-width: 170px; }
 /* Ellipsize a long model `short` / connector label instead of stretching the
  * bar past the viewport (no-op on desktop — only bites on real overflow). */
 .model-pill > span:not(.brand-mark) { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
@@ -366,7 +376,7 @@ a { color: inherit; text-decoration: none; }
 .ws-chip { white-space: nowrap; gap: 6px; padding: 6px 10px; font-size: 12px; font-weight: 500; line-height: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 .ws-chip svg { width: 15px; height: 15px; flex-shrink: 0; }
 .model-anchor { position: relative; }
-.model-pop { position: absolute; bottom: 56px; inset-inline-end: 14px; min-width: 320px; background: var(--panel-solid); border: 1px solid var(--border-strong); border-radius: 14px; padding: 6px; box-shadow: var(--shadow); z-index: 30; }
+.model-pop { position: absolute; bottom: 52px; inset-inline-end: 0; min-width: 260px; background: var(--panel-solid); border: 1px solid var(--border-strong); border-radius: 14px; padding: 6px; box-shadow: var(--shadow); z-index: 30; }
 .model-row { display: flex; align-items: center; gap: 12px; width: 100%; padding: 10px; border-radius: 10px; background: transparent; border: 1px solid transparent; color: var(--ink); text-align: start; }
 .model-row:hover { background: var(--panel); border-color: var(--border); }
 .model-row[data-active="true"] { background: var(--cyan-soft); border-color: var(--cyan-line); }
@@ -380,7 +390,7 @@ a { color: inherit; text-decoration: none; }
 .model-row .check { color: var(--cyan); opacity: 0; }
 .model-row[data-active="true"] .check { opacity: 1; }
 
-.popover { position: absolute; bottom: 56px; inset-inline-start: 14px; min-width: 320px; background: var(--panel-solid); border: 1px solid var(--border-strong); border-radius: 14px; padding: 6px; box-shadow: var(--shadow); z-index: 30; }
+.popover { position: absolute; bottom: 52px; inset-inline-start: 10px; min-width: 260px; max-width: 300px; background: var(--panel-solid); border: 1px solid var(--border-strong); border-radius: 14px; padding: 6px; box-shadow: var(--shadow); z-index: 30; }
 .popover-row { display: flex; align-items: center; gap: 12px; padding: 10px; border-radius: 10px; background: transparent; border: 1px solid transparent; width: 100%; text-align: start; color: var(--ink); }
 .popover-row:hover { background: var(--panel); border-color: var(--border); }
 .popover-row .ico { width: 18px; height: 18px; color: var(--muted); }
@@ -1239,7 +1249,11 @@ body.modal-open .mobile-nav-btn { display: none !important; }
 @media (max-width: 560px) {
   .composer { padding: 10px 10px 8px; max-width: 100%; }
   .composer-bar { flex-wrap: wrap; gap: 6px; }
+  /* Chips (space / connector / web-search) may use the full width and wrap. */
   .composer-bar .model-pill { max-width: 100%; }
+  /* But the model SELECTOR is capped tighter on phones so the cohesive
+   * model+mic+send unit always fits on one line (the name ellipsizes). */
+  .composer-actions .model-pill { max-width: 132px; }
   .greet { font-size: 38px; }
   .brand-greet .b1 { font-size: 32px !important; }
   .brand-greet-icon { width: 40px; height: 40px; }
@@ -1252,7 +1266,7 @@ body.modal-open .mobile-nav-btn { display: none !important; }
   .model-anchor { position: static; }
   .model-pop, .popover {
     min-width: 0;
-    width: min(320px, calc(100vw - 32px));
+    width: min(280px, calc(100vw - 32px));
     max-width: calc(100vw - 32px);
     /* The menus open UPWARD from the composer, which on the empty home screen
      * sits centered — so a tall (440px) panel reached the very top edge. Cap to

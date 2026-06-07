@@ -954,6 +954,7 @@ function Composer({
         )}
 
         <span className="spacer" />
+        <div className="composer-actions">
         <div className="model-anchor">
           <button className="model-pill" type="button" data-open={modelOpen} onClick={() => { setModelOpen((v) => !v); setAddOpen(false); }}>
             <span className="brand-mark">{brandMark(currentModel.brand)}</span>
@@ -1009,6 +1010,7 @@ function Composer({
         >
           {sending ? I.stop : I.send}
         </button>
+        </div>
       </div>
     </div>
   );
