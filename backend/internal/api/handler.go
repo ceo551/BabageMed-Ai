@@ -913,18 +913,26 @@ func buildSystem(mode, locale string, citations []map[string]any, useMcps []stri
 	// model treats the retrieval block as "optional flavor" and confidently
 	// invents content that *sounds* like it came from the connector — exactly
 	// the Cleveland Clinic hallucination the user reported.
-	if len(useMcps) > 0 {
-		fmt.Fprintf(&b, "\nThe user has connected these sources for this turn: %s.\n", strings.Join(useMcps, ", "))
-		if len(citations) == 0 {
-			// We asked the connectors and they returned nothing usable. Tell
-			// the model to say so EXPLICITLY rather than guessing.
-			b.WriteString("IMPORTANT: those connectors returned NO usable content for this query. You must NOT fabricate information attributed to them. State clearly that the source had no relevant content and answer only from general knowledge (or refuse if the question is specific to that source).\n")
-		} else {
-			b.WriteString("RULES for using the retrieved context below:\n")
-			b.WriteString("1. Any specific factual claim that came from a connector MUST be backed by content visible in that connector's retrieval block. If the block doesn't contain the fact, do NOT claim it came from the connector.\n")
-			b.WriteString("2. If the retrieval is too thin to answer, say so explicitly — do not paper over gaps with training-data guesses dressed up as 'according to the source'.\n")
-			b.WriteString("3. Cite sources inline using their [n] numbers (see the numbered sources block below); only cite a source whose block actually supports the claim.\n")
+	// Only emit the connector grounding rules when a real MCP source actually
+	// fed this turn. Chat-side gather() no longer queries connectors, so the old
+	// "connectors returned NO usable content" branch fired on EVERY turn that had
+	// a connector toggled — misleading the model into apologizing for sources it
+	// was never asked to use. Gate on an actual non-web, non-file citation.
+	hasMcpSource := false
+	for _, c := range citations {
+		src, _ := c["source"].(string)
+		kind, _ := c["kind"].(string)
+		if src != "web-search" && kind != "file" {
+			hasMcpSource = true
+			break
 		}
+	}
+	if len(useMcps) > 0 && hasMcpSource {
+		fmt.Fprintf(&b, "\nThe user has connected these sources for this turn: %s.\n", strings.Join(useMcps, ", "))
+		b.WriteString("RULES for using the retrieved context below:\n")
+		b.WriteString("1. Any specific factual claim that came from a connector MUST be backed by content visible in that connector's retrieval block. If the block doesn't contain the fact, do NOT claim it came from the connector.\n")
+		b.WriteString("2. If the retrieval is too thin to answer, say so explicitly — do not paper over gaps with training-data guesses dressed up as 'according to the source'.\n")
+		b.WriteString("3. Cite sources inline using their [n] numbers (see the numbered sources block below); only cite a source whose block actually supports the claim.\n")
 	}
 
 	// Numbered, citable sources — web, MCP, AND space files (P3.5 unified them

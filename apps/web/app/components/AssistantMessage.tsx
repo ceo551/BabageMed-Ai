@@ -333,7 +333,7 @@ function CodeBlock({ children }: { children: React.ReactNode }) {
   return (
     <pre ref={ref} className="md-code">
       <span className="md-code-actions">
-        {kind && codeText ? (
+        {kind && codeText && canvas.enabled ? (
           <button
             type="button"
             className="md-code-canvas"

@@ -16,6 +16,9 @@ type CanvasCtx = {
   artifact: Artifact | null;
   open: (a: Artifact) => void;
   close: () => void;
+  // false outside a provider (e.g. /try, /s) so callers can hide an "Open in
+  // Canvas" control that would otherwise be a dead no-op.
+  enabled: boolean;
 };
 
 const Ctx = createContext<CanvasCtx | null>(null);
@@ -23,7 +26,7 @@ const Ctx = createContext<CanvasCtx | null>(null);
 // useCanvas returns a safe no-op shape outside a provider so shared components
 // (AssistantMessage) don't crash on pages that didn't mount the provider.
 export function useCanvas(): CanvasCtx {
-  return useContext(Ctx) ?? { artifact: null, open: () => {}, close: () => {} };
+  return useContext(Ctx) ?? { artifact: null, open: () => {}, close: () => {}, enabled: false };
 }
 
 // renderableKind maps a fenced-code language to an artifact kind, or null when
@@ -39,5 +42,5 @@ export function CanvasProvider({ children }: { children: React.ReactNode }) {
   const [artifact, setArtifact] = useState<Artifact | null>(null);
   const open = useCallback((a: Artifact) => setArtifact(a), []);
   const close = useCallback(() => setArtifact(null), []);
-  return <Ctx.Provider value={{ artifact, open, close }}>{children}</Ctx.Provider>;
+  return <Ctx.Provider value={{ artifact, open, close, enabled: true }}>{children}</Ctx.Provider>;
 }
