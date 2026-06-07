@@ -117,7 +117,16 @@ export function FeatureChat({
     if (!p && !mdl && !asp) return;
     prefilledRef.current = true;
     if (p) setValue(p);
-    if (mdl) setModel(mdl);
+    // Only honor ?model= if it actually belongs to THIS feature's modality —
+    // a stale/hand-edited link must not select a model the picker can't show
+    // (which would then be sent to a backend that rejects it).
+    if (mdl) {
+      const g = modelsForFeature(meta);
+      const valid = g.kind === "text"
+        ? g.models.some((m) => m.id === mdl)
+        : [...g.image, ...g.video].some((m) => m.id === mdl);
+      if (valid) setModel(mdl);
+    }
     if (asp && ["1:1", "16:9", "9:16", "4:3", "3:4"].includes(asp)) {
       setAspect(asp as "1:1" | "16:9" | "9:16" | "4:3" | "3:4");
     }
@@ -601,7 +610,7 @@ export function FeatureChat({
               {I.plus}
             </button>
             {addOpen && (
-              <div className="popover" role="menu">
+              <div className="popover">
                 <button
                   type="button"
                   className="popover-row"
@@ -688,7 +697,7 @@ export function FeatureChat({
               {I.chev}
             </button>
             {modelOpen && (
-              <div className="model-pop feat-model-pop" role="menu">
+              <div className="model-pop feat-model-pop">
                 {group.kind === "text" ? (
                   <>
                     <div className="pop-header">{s.modelHeader}</div>

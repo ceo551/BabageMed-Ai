@@ -92,6 +92,10 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover" as const,
+  // Shrink the layout viewport when the soft keyboard opens so 100dvh contracts
+  // and the bottom-docked composer rides ABOVE the keyboard instead of being
+  // hidden behind it (the default "resizes-visual" leaves it overlaid).
+  interactiveWidget: "resizes-content",
   themeColor: "#0a0c10",
   colorScheme: "dark" as const,
 };

@@ -397,7 +397,7 @@ export function SpaceChat({ space, memory }: { space: Space; memory?: string[] }
             {I.chev}
           </button>
           {modelOpen && (
-            <div className="model-pop feat-model-pop" role="menu">
+            <div className="model-pop feat-model-pop">
               <div className="pop-header">{s.modelHeader}</div>
               {TEXT_MODELS.map((m) => {
                 const lk = lockOf(m.id);

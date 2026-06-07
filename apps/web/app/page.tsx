@@ -976,7 +976,7 @@ function Composer({
         )}
 
         {addOpen && (
-          <div className="popover" role="menu">
+          <div className="popover">
             <button
               type="button"
               className="popover-row"
@@ -1055,7 +1055,7 @@ function Composer({
             {I.chev}
           </button>
           {modelOpen && (
-            <div className="model-pop" role="menu">
+            <div className="model-pop">
               <div className="pop-header">{s.modelHeader}</div>
               {MODELS.map((m) => {
                 // Anonymous → only the trial model is open (sign-in nudge).
