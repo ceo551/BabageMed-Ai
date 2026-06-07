@@ -691,10 +691,12 @@ function Composer({
               );
             }
           } else if (event === "error" && parsed?.error) {
-            // Render the failure in-place (flush inserts the row if no text had
-            // arrived yet). Mark it so it is NOT persisted as a fake assistant
-            // turn — a reload shouldn't replay "Error: …" as chat history.
-            finalContent = "Error: " + parsed.error;
+            // Render the failure in-place. Keep any partial text already streamed
+            // (a mid-stream provider error shouldn't erase what arrived) and just
+            // append a small note. Mark it so it is NOT persisted as a fake turn.
+            finalContent = finalContent
+              ? finalContent + "\n\n_⚠ " + parsed.error + "_"
+              : "Error: " + parsed.error;
             errored = true;
             flush();
           }

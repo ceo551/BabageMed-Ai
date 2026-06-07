@@ -554,6 +554,19 @@ func (c *Client) streamAnthropic(ctx context.Context, req CompletionRequest, onD
 		if err := json.Unmarshal([]byte(data), &evt); err != nil {
 			continue
 		}
+		// A mid-stream provider error must NOT be swallowed: surface it (after
+		// the deltas already sent) so the handler flags the truncation instead
+		// of presenting a partial answer as complete.
+		if evt.Type == "error" {
+			var ee struct {
+				Error struct {
+					Type    string `json:"type"`
+					Message string `json:"message"`
+				} `json:"error"`
+			}
+			_ = json.Unmarshal([]byte(data), &ee)
+			return nil, fmt.Errorf("anthropic stream error: %s %s", ee.Error.Type, ee.Error.Message)
+		}
 		if evt.Type == "content_block_delta" && evt.Delta.Type == "text_delta" && evt.Delta.Text != "" {
 			full.WriteString(evt.Delta.Text)
 			onDelta(evt.Delta.Text)
@@ -652,6 +665,19 @@ func (c *Client) streamVertexAnthropic(ctx context.Context, req CompletionReques
 		}
 		if err := json.Unmarshal([]byte(data), &evt); err != nil {
 			continue
+		}
+		// A mid-stream provider error must NOT be swallowed: surface it (after
+		// the deltas already sent) so the handler flags the truncation instead
+		// of presenting a partial answer as complete.
+		if evt.Type == "error" {
+			var ee struct {
+				Error struct {
+					Type    string `json:"type"`
+					Message string `json:"message"`
+				} `json:"error"`
+			}
+			_ = json.Unmarshal([]byte(data), &ee)
+			return nil, fmt.Errorf("anthropic stream error: %s %s", ee.Error.Type, ee.Error.Message)
 		}
 		if evt.Type == "content_block_delta" && evt.Delta.Type == "text_delta" && evt.Delta.Text != "" {
 			full.WriteString(evt.Delta.Text)
@@ -778,6 +804,15 @@ func (c *Client) streamGoogle(ctx context.Context, req CompletionRequest, onDelt
 		if err := json.Unmarshal([]byte(data), &chunk); err != nil {
 			continue
 		}
+		// Surface a mid-stream error object instead of swallowing it.
+		var gerr struct {
+			Error struct {
+				Message string `json:"message"`
+			} `json:"error"`
+		}
+		if json.Unmarshal([]byte(data), &gerr) == nil && gerr.Error.Message != "" {
+			return nil, fmt.Errorf("google stream error: %s", gerr.Error.Message)
+		}
 		if len(chunk.Candidates) > 0 {
 			for _, p := range chunk.Candidates[0].Content.Parts {
 				if p.Text != "" {
@@ -843,6 +878,15 @@ func (c *Client) streamOpenAI(ctx context.Context, req CompletionRequest, onDelt
 		}
 		if err := json.Unmarshal([]byte(data), &chunk); err != nil {
 			continue
+		}
+		// Surface a mid-stream error object instead of swallowing it.
+		var oerr struct {
+			Error struct {
+				Message string `json:"message"`
+			} `json:"error"`
+		}
+		if json.Unmarshal([]byte(data), &oerr) == nil && oerr.Error.Message != "" {
+			return nil, fmt.Errorf("openai stream error: %s", oerr.Error.Message)
 		}
 		if len(chunk.Choices) > 0 && chunk.Choices[0].Delta.Content != "" {
 			full.WriteString(chunk.Choices[0].Delta.Content)

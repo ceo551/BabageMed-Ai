@@ -162,6 +162,15 @@ func (c *Client) streamDashScope(ctx context.Context, req CompletionRequest, onD
 		if err := json.Unmarshal([]byte(data), &chunk); err != nil {
 			continue
 		}
+		// Surface a mid-stream error object instead of swallowing it.
+		var derr struct {
+			Error struct {
+				Message string `json:"message"`
+			} `json:"error"`
+		}
+		if json.Unmarshal([]byte(data), &derr) == nil && derr.Error.Message != "" {
+			return nil, fmt.Errorf("dashscope stream error: %s", derr.Error.Message)
+		}
 		if len(chunk.Choices) > 0 && chunk.Choices[0].Delta.Content != "" {
 			full.WriteString(chunk.Choices[0].Delta.Content)
 			onDelta(chunk.Choices[0].Delta.Content)
