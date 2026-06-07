@@ -42,7 +42,6 @@ export function useDictation(setText: SetText, getText: () => string, lang: stri
   const [supported, setSupported] = useState(false);
   const recRef = useRef<SpeechRecognitionLike | null>(null);
   const baseRef = useRef("");   // text already in the box when recognition started
-  const finalRef = useRef("");  // accumulated finalized transcript this session
 
   useEffect(() => {
     setSupported(!!getSR());
@@ -71,18 +70,20 @@ export function useDictation(setText: SetText, getText: () => string, lang: stri
     rec.interimResults = true;
 
     // Capture the current textarea contents as the base to append onto.
-    finalRef.current = "";
     const p = getText() ?? "";
     baseRef.current = p.trim() ? p.replace(/\s*$/, "") + " " : "";
 
+    // `e.results` is the FULL cumulative list for the session (interim + final),
+    // so we rebuild the whole transcript from scratch every event and write
+    // base + transcript. This is idempotent — unlike a `+=` accumulator, which
+    // re-adds a result each time the event re-fires after it goes final and
+    // produced the "whatwhatwhat" / "عايزكعايزك" duplication.
     rec.onresult = (e: any) => {
-      let interim = "";
-      for (let i = e.resultIndex; i < e.results.length; i++) {
-        const seg = e.results[i];
-        if (seg.isFinal) finalRef.current += seg[0].transcript;
-        else interim += seg[0].transcript;
+      let transcript = "";
+      for (let i = 0; i < e.results.length; i++) {
+        transcript += e.results[i][0].transcript;
       }
-      setText(baseRef.current + finalRef.current + interim);
+      setText(baseRef.current + transcript);
     };
     rec.onerror = () => { /* onend always follows; just let it reset */ };
     rec.onend = () => { recRef.current = null; setListening(false); };
