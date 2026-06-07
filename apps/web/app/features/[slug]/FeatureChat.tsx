@@ -405,10 +405,14 @@ export function FeatureChat({
             }
           } else if (event === "error" && parsed?.error) {
             toast.error(parsed.error);
-            // Mark the turn inline but don't persist an error as history.
+            // Keep any partial text already streamed + append a note, but don't
+            // persist an error turn as history (finalContent="" gates it below).
+            const shown = finalContent
+              ? finalContent + "\n\n_⚠ " + parsed.error + "_"
+              : "⚠ " + parsed.error;
             finalContent = "";
             setMessages((cur) =>
-              cur.map((m) => m.id === assistantId && m.role === "assistant" ? { ...m, content: "⚠ " + parsed.error } : m),
+              cur.map((m) => m.id === assistantId && m.role === "assistant" ? { ...m, content: shown } : m),
             );
           }
         }
