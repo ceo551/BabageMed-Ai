@@ -302,6 +302,10 @@ function Composer({
   // Synchronous re-entrancy lock — `sending` state lags a render behind, so a
   // fast double Enter/click could fire send() twice before it flips.
   const sendLockRef = useRef(false);
+  // Holds the in-flight streamed answer so a page refresh / tab close mid-stream
+  // can persist it via a pagehide beacon (the async append can't finish during
+  // unload). Set as tokens flush; cleared when the turn settles.
+  const inflightRef = useRef<{ chatId: string; content: string; citations: Citation[] } | null>(null);
   // Mirror of chatId in a ref so the in-flight SSE loop can detect a
   // chat switch without taking a dependency on state and re-creating the
   // closure on every change.
@@ -315,6 +319,24 @@ function Composer({
   }, [chatId]);
   // Abort on unmount.
   useEffect(() => () => { streamAbortRef.current?.abort(); }, []);
+
+  // Persist an in-flight streamed answer if the tab is refreshed/closed mid-
+  // stream — the normal async append can't complete during unload, so beacon it.
+  useEffect(() => {
+    const persist = () => {
+      const f = inflightRef.current;
+      if (!f || !f.chatId || !f.content) return;
+      try {
+        navigator.sendBeacon(
+          `/api/backend/api/chats/${encodeURIComponent(f.chatId)}/messages`,
+          new Blob([JSON.stringify({ role: "assistant", content: f.content, citations: f.citations })], { type: "application/json" }),
+        );
+      } catch { /* best-effort */ }
+      inflightRef.current = null;
+    };
+    window.addEventListener("pagehide", persist);
+    return () => window.removeEventListener("pagehide", persist);
+  }, []);
 
   // Stop the in-flight chat/agent stream (the composer's send button flips to a
   // Stop control while sending). Aborting triggers send()'s AbortError path,
@@ -597,6 +619,10 @@ function Composer({
       const flush = () => {
         flushScheduled = false;
         if (sendingForChat !== activeChatIdRef.current) return;
+        // Snapshot the in-flight answer for the pagehide beacon (refresh-safe).
+        if (activeChatId && finalContent && !errored) {
+          inflightRef.current = { chatId: activeChatId, content: finalContent, citations: citationsForTurn ?? [] };
+        }
         setMessages((cur) => {
           if (!assistantInserted) {
             return cur
@@ -737,6 +763,8 @@ function Composer({
       setSending(false);
       streamAbortRef.current = null;
       sendLockRef.current = false;
+      // The turn settled (persisted normally or aborted) — no beacon needed.
+      inflightRef.current = null;
     }
   }
 

@@ -14,6 +14,7 @@ import (
 	"log"
 	"net/http"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/pervagans/backend/internal/auth"
@@ -127,11 +128,14 @@ func (s *Service) handleStream(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("X-Accel-Buffering", "no")
 	flush, _ := w.(http.Flusher)
 	ctx := r.Context()
+	var writeMu sync.Mutex
 	send := func(event string, data any) bool {
 		if ctx.Err() != nil {
 			return false
 		}
 		b, _ := json.Marshal(data)
+		writeMu.Lock()
+		defer writeMu.Unlock()
 		if _, err := fmt.Fprintf(w, "event: %s\ndata: %s\n\n", event, string(b)); err != nil {
 			return false
 		}
@@ -140,6 +144,44 @@ func (s *Service) handleStream(w http.ResponseWriter, r *http.Request) {
 		}
 		return true
 	}
+
+	// Heartbeat: a comment frame every 15s so the connection doesn't idle-timeout
+	// during the agent's long silent windows (tool discovery, blocking LLM
+	// rounds). The WaitGroup guarantees the goroutine stops before this handler
+	// returns, so it never writes to a finalized ResponseWriter.
+	hbStop := make(chan struct{})
+	var hbWG sync.WaitGroup
+	hbWG.Add(1)
+	go func() {
+		defer hbWG.Done()
+		t := time.NewTicker(15 * time.Second)
+		defer t.Stop()
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case <-hbStop:
+				return
+			case <-t.C:
+				writeMu.Lock()
+				live := ctx.Err() == nil
+				if live {
+					_, _ = fmt.Fprint(w, ": ping\n\n")
+					if flush != nil {
+						flush.Flush()
+					}
+				}
+				writeMu.Unlock()
+				if !live {
+					return
+				}
+			}
+		}
+	}()
+	defer func() {
+		close(hbStop)
+		hbWG.Wait()
+	}()
 
 	// Expose the user's connected MCPs (capped) as function tools — every tool
 	// each connector declares, with its real input schema, namespaced

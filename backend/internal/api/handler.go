@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"sync"
 	"time"
 	"unicode/utf8"
 
@@ -225,11 +226,16 @@ func (h *Handler) ChatStream(w http.ResponseWriter, r *http.Request) {
 	// deltas into a dead socket. The flusher's Flush() call itself doesn't
 	// surface a disconnect, but ctx.Err() does (chi's Timeout middleware
 	// cancels the request context when the client TCP connection closes).
+	// All writes to w go through writeMu so the heartbeat goroutine below can't
+	// interleave a comment frame with a real event.
+	var writeMu sync.Mutex
 	send := func(event string, data any) bool {
 		if ctx.Err() != nil {
 			return false
 		}
 		b, _ := json.Marshal(data)
+		writeMu.Lock()
+		defer writeMu.Unlock()
 		if _, err := fmt.Fprintf(w, "event: %s\ndata: %s\n\n", event, string(b)); err != nil {
 			return false
 		}
@@ -238,6 +244,45 @@ func (h *Handler) ChatStream(w http.ResponseWriter, r *http.Request) {
 		}
 		return true
 	}
+
+	// Heartbeat: an SSE comment frame every 15s so proxies (ingress-nginx) and
+	// the client don't idle-timeout the connection during long silent windows
+	// (slow first token, deep-research retrieval). The WaitGroup guarantees the
+	// goroutine has stopped before handleStream returns, so it never writes to a
+	// finalized ResponseWriter.
+	hbStop := make(chan struct{})
+	var hbWG sync.WaitGroup
+	hbWG.Add(1)
+	go func() {
+		defer hbWG.Done()
+		t := time.NewTicker(15 * time.Second)
+		defer t.Stop()
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case <-hbStop:
+				return
+			case <-t.C:
+				writeMu.Lock()
+				live := ctx.Err() == nil
+				if live {
+					_, _ = fmt.Fprint(w, ": ping\n\n")
+					if flush != nil {
+						flush.Flush()
+					}
+				}
+				writeMu.Unlock()
+				if !live {
+					return
+				}
+			}
+		}
+	}()
+	defer func() {
+		close(hbStop)
+		hbWG.Wait()
+	}()
 
 	send("status", map[string]string{"phase": "retrieval"})
 	citations, _ := h.gather(ctx, req)
