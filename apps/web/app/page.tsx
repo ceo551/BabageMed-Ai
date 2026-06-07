@@ -558,6 +558,13 @@ function Composer({
           const created = await chatsApi.create(text, model, mode || "bedside", "");
           activeChatId = created.id;
           setChatId(created.id);
+          // Sync the ref IMMEDIATELY (not via the async [chatId] effect). The
+          // streaming flush guard compares sendingForChat (=created.id) against
+          // activeChatIdRef.current; if a fast stream finishes before that
+          // effect runs, every flush would be dropped — the answer streams +
+          // persists but the transcript stays stuck on "Generating…" forever
+          // (only a refresh shows it). Setting it here closes that race.
+          activeChatIdRef.current = created.id;
           // Stamp the URL so a reload restores this conversation. Push to
           // history with replaceState so the back button doesn't ping-pong.
           // Dispatch a custom event the Sidebar listens for so the new
