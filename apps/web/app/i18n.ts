@@ -151,6 +151,8 @@ export type LocaleStrings = {
   allFeaturesFilter: string;
   disconnect: string;
   generating: string;
+  searchingWeb: string;
+  workingOnIt: string;
   sidebarLabel: string;
   settingsNavLabel: string;
   addLabel: string;
@@ -361,6 +363,8 @@ export const STR: Record<Locale, LocaleStrings> = {
     allFeaturesFilter: "All features",
     disconnect: "Disconnect",
     generating: "Generating",
+    searchingWeb: "Searching the web…",
+    workingOnIt: "Working on it…",
     sidebarLabel: "Sidebar",
     settingsNavLabel: "Settings navigation",
     addLabel: "Add",
@@ -537,6 +541,8 @@ export const STR: Record<Locale, LocaleStrings> = {
     allFeaturesFilter: "كل الميزات",
     disconnect: "قطع الاتصال",
     generating: "جارٍ التوليد",
+    searchingWeb: "جارٍ البحث في الويب…",
+    workingOnIt: "بشتغل على طلبك…",
     sidebarLabel: "الشريط الجانبي",
     settingsNavLabel: "تنقل الإعدادات",
     addLabel: "إضافة",

@@ -142,7 +142,7 @@ export function SpaceChat({ space, memory }: { space: Space; memory?: string[] }
   }, [isChatting]);
   useLayoutEffect(() => {
     if (!stickRef.current) return;
-    transcriptEndRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+    transcriptEndRef.current?.scrollIntoView({ behavior: "auto", block: "end" });
   }, [messages]);
 
   // Close model popover on outside click / Escape.

@@ -584,6 +584,10 @@ a { color: inherit; text-decoration: none; }
   overflow-x: auto;
   margin: 8px 0 14px;
 }
+/* Code is always left-to-right, even inside an Arabic (RTL) answer — otherwise
+ * the bidi algorithm right-aligns and reorders code/URLs into nonsense. */
+.md-body pre, .md-code, .md-body code { direction: ltr; unicode-bidi: isolate; }
+.md-body pre, .md-code { text-align: left; }
 .md-body pre code {
   background: transparent;
   border: 0;

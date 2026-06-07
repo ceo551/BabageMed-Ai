@@ -30,7 +30,7 @@ import {
 type ChatMessage =
   | { id: string; role: "user"; content: string }
   | { id: string; role: "assistant"; content: string; citations?: Citation[] }
-  | { id: string; role: "loading" };
+  | { id: string; role: "loading"; hint?: string };
 
 // React-key generator for optimistic message rows. Falls back to a counter +
 // Date.now() on environments without crypto.randomUUID (older Safari < 15.4,
@@ -192,11 +192,14 @@ function Transcript({ messages }: { messages: ChatMessage[] }) {
   }, []);
   useLayoutEffect(() => {
     if (!stickToBottomRef.current) return;
-    endRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+    // Instant follow while streaming. A smooth animation fired on every
+    // coalesced delta stacks up and makes the chat visibly jump/scroll on its
+    // own — "auto" keeps the latest line pinned without the jank.
+    endRef.current?.scrollIntoView({ behavior: "auto", block: "end" });
   }, [messages]);
 
   return (
-    <div className="transcript" role="log" aria-live="polite" aria-relevant="additions text">
+    <div className="transcript" role="log" aria-live="polite" aria-relevant="additions">
       {messages.map((m) => {
         if (m.role === "loading") {
           return (
@@ -212,9 +215,12 @@ function Transcript({ messages }: { messages: ChatMessage[] }) {
               {/* Three-dot wave so the user sees a heartbeat while the
                   retrieval + first-token phases run. The pulse on the mark
                   alone wasn't visible enough on light theme. */}
-              <span className="msg-loading-dots" aria-label={s.generating}>
+              <span className="msg-loading-dots" aria-label={m.hint || s.generating}>
                 <span /><span /><span />
               </span>
+              {/* Contextual hint (e.g. "Searching the web…") so the wait isn't a
+                  silent, identical spinner for every kind of work. */}
+              {m.hint && <span className="msg-loading-hint">{m.hint}</span>}
             </div>
           );
         }
@@ -292,6 +298,9 @@ function Composer({
   // (or unmounting) aborts the previous stream so tokens don't keep
   // arriving and writing into stale React state.
   const streamAbortRef = useRef<AbortController | null>(null);
+  // Synchronous re-entrancy lock — `sending` state lags a render behind, so a
+  // fast double Enter/click could fire send() twice before it flips.
+  const sendLockRef = useRef(false);
   // Mirror of chatId in a ref so the in-flight SSE loop can detect a
   // chat switch without taking a dependency on state and re-creating the
   // closure on every change.
@@ -449,7 +458,8 @@ function Composer({
 
   async function send() {
     const text = value.trim();
-    if (!text || sending) return;
+    if (!text || sending || sendLockRef.current) return;
+    sendLockRef.current = true;
     voice.stop(); // end any in-flight dictation before the box clears
 
     // Optimistically push the user message + a loading placeholder so the
@@ -463,7 +473,10 @@ function Composer({
     setMessages((cur) => [
       ...cur,
       { id: userId, role: "user", content: text },
-      { id: loadingId, role: "loading" },
+      // Seed a contextual wait hint up front: a web/deep-research turn spends
+      // its first seconds retrieving and an agent turn planning, so say what's
+      // happening instead of an identical silent spinner.
+      { id: loadingId, role: "loading", hint: agentMode ? s.workingOnIt : (webSearch || deepResearch) ? s.searchingWeb : undefined },
     ]);
     setValue("");
     setSending(true);
@@ -564,19 +577,43 @@ function Composer({
       }
 
       const assistantId = `a-${newId()}`;
-      // Swap the loading row for a real assistant row (empty content; we'll
-      // append chunks into it as they arrive).
-      setMessages((cur) =>
-        cur
-          .filter((m) => m.id !== loadingId)
-          .concat({ id: assistantId, role: "assistant", content: "" })
-      );
-
       const reader = r.body.getReader();
       const decoder = new TextDecoder();
       let buffer = "";
       let citationsForTurn: Citation[] | undefined;
-      let finalContent = ""; // accumulated text — used to persist + as a sanity copy
+      let finalContent = ""; // accumulated text — source of truth (persist + flush)
+
+      // Coalesced rendering: tokens arrive faster than React should re-render +
+      // re-parse the whole markdown answer (that was O(n²) over its length and
+      // the source of the laggy stream). Accumulate into finalContent and flush
+      // at most once per animation frame. The FIRST flush swaps the loading row
+      // for the assistant row, so the wait never shows an empty bubble — the
+      // dots stay until real text actually arrives.
+      let assistantInserted = false;
+      let flushScheduled = false;
+      const flush = () => {
+        flushScheduled = false;
+        if (sendingForChat !== activeChatIdRef.current) return;
+        setMessages((cur) => {
+          if (!assistantInserted) {
+            return cur
+              .filter((m) => m.id !== loadingId)
+              .concat({ id: assistantId, role: "assistant", content: finalContent, citations: citationsForTurn });
+          }
+          return cur.map((m) =>
+            m.id === assistantId && m.role === "assistant"
+              ? { ...m, content: finalContent, citations: citationsForTurn }
+              : m,
+          );
+        });
+        assistantInserted = true;
+      };
+      const scheduleFlush = () => {
+        if (flushScheduled) return;
+        flushScheduled = true;
+        if (typeof requestAnimationFrame !== "undefined") requestAnimationFrame(flush);
+        else setTimeout(flush, 50);
+      };
 
       while (true) {
         const { done, value } = await reader.read();
@@ -619,56 +656,51 @@ function Composer({
 
           if (event === "citations" && Array.isArray(parsed)) {
             citationsForTurn = parsed as Citation[];
-            setMessages((cur) =>
-              cur.map((m) =>
-                m.id === assistantId && m.role === "assistant"
-                  ? { ...m, citations: citationsForTurn }
-                  : m,
-              ),
-            );
+            // Carried into the message by the next flush; only force one if the
+            // assistant row already exists (citations can arrive before text).
+            if (assistantInserted) scheduleFlush();
           } else if (event === "delta" && typeof parsed?.text === "string") {
-            // Real provider-side streaming: each delta is a token (or small
-            // chunk). Append to the in-flight assistant message immediately.
+            // Real provider-side streaming: each delta is a token / small chunk.
+            // Accumulate and let the rAF-coalesced flush render it.
             finalContent += parsed.text;
-            const next = finalContent;
-            setMessages((cur) =>
-              cur.map((m) =>
-                m.id === assistantId && m.role === "assistant"
-                  ? { ...m, content: next, citations: citationsForTurn }
-                  : m,
-              ),
-            );
+            scheduleFlush();
           } else if (event === "content" && parsed?.content) {
             // Final 'content' carries the canonical full text. If we received
             // deltas we already have it; otherwise this is the only place we
             // ever set the body (legacy non-streaming providers).
             if (finalContent === "") {
               finalContent = parsed.content;
+              flush();
+            }
+          } else if (event === "status") {
+            // Advisory progress. While the loader is still up, surface a
+            // contextual hint (e.g. "Searching the web…") so the wait isn't a
+            // silent, identical spinner. Once text streams, the row is gone.
+            if (!assistantInserted) {
+              const phase = String(parsed?.phase || "");
+              const hint = /search|retriev|brave|research|source/i.test(phase)
+                ? s.searchingWeb
+                : (phase ? s.generating : undefined);
               setMessages((cur) =>
                 cur.map((m) =>
-                  m.id === assistantId && m.role === "assistant"
-                    ? { ...m, content: parsed.content, citations: citationsForTurn }
-                    : m,
+                  m.id === loadingId && m.role === "loading" ? { ...m, hint } : m,
                 ),
               );
             }
           } else if (event === "error" && parsed?.error) {
-            setMessages((cur) =>
-              cur.map((m) =>
-                m.id === assistantId && m.role === "assistant"
-                  ? { ...m, content: "Error: " + parsed.error }
-                  : m,
-              ),
-            );
-            // Persist the error so a chat reload doesn't silently
-            // drop it — the user saw "Error: …" on screen; if we
-            // skip persistence the row vanishes on the next refresh
-            // and the user is left wondering whether anything ran.
+            // Render the failure in-place (flush inserts the row if no text had
+            // arrived yet) and persist it so a reload doesn't silently drop it.
             finalContent = "Error: " + parsed.error;
+            flush();
           }
-          // 'status' + 'done' are advisory only.
+          // 'done' is advisory only.
         }
       }
+
+      // Commit any tokens buffered since the last animation frame (the rAF may
+      // not have fired before `done`), then drop the loader if nothing came.
+      if (finalContent !== "") flush();
+      else setMessages((cur) => cur.filter((m) => m.id !== loadingId));
 
       // Persist the assistant turn (best-effort, fire and forget).
       // Skip only if we have literally nothing — a streamed answer
@@ -695,6 +727,7 @@ function Composer({
     } finally {
       setSending(false);
       streamAbortRef.current = null;
+      sendLockRef.current = false;
     }
   }
 
