@@ -16,6 +16,12 @@ let on401: (() => void) | null = null;
 export function setOn401Handler(fn: (() => void) | null) {
   on401 = fn;
 }
+// Fire the global 401 watchdog from code paths that bypass call() — e.g. the
+// raw-fetch SSE chat/agent streams. Keeps an expired session from leaving the
+// user typing into a dead chat with no redirect/feedback.
+export function notifyUnauthorized() {
+  if (on401) on401();
+}
 
 async function call<T>(path: string, init: RequestInit = {}): Promise<T> {
   const res = await fetch(BASE + path, {

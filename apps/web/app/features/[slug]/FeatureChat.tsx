@@ -9,7 +9,7 @@ import { useUI } from "../../lib/ui-context";
 import { useAuth } from "../../lib/auth-context";
 import { useDictation } from "../../lib/useDictation";
 import { usePrefs } from "../../lib/store";
-import { chats as chatsApi, features as featuresApi, media as mediaApi, type Feature as FeatureRow } from "../../lib/api";
+import { chats as chatsApi, features as featuresApi, media as mediaApi, notifyUnauthorized, type Feature as FeatureRow } from "../../lib/api";
 import { AssistantMessage, type Citation } from "../../components/AssistantMessage";
 import { Modal } from "../../components/Modal";
 import { SkillPicker } from "../../components/SkillPicker";
@@ -334,6 +334,7 @@ export function FeatureChat({
         body,
         signal: controller.signal,
       });
+      if (r.status === 401) notifyUnauthorized();
       if (!r.ok || !r.body) throw new Error(r.status === 402 ? s.quotaReached : `HTTP ${r.status}`);
 
       const assistantId = `a-${newId()}`;

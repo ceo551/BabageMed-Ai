@@ -17,6 +17,7 @@ import {
   spaces as spacesApi,
   connectors as connectorsApi,
   chats as chatsApi,
+  notifyUnauthorized,
   type Space,
   type Connector,
 } from "./lib/api";
@@ -572,6 +573,7 @@ function Composer({
         body,
         signal: controller.signal,
       });
+      if (r.status === 401) notifyUnauthorized(); // expired session → redirect, don't fail silently
       if (!r.ok || !r.body) {
         throw new Error(r.status === 402 ? s.quotaReached : `HTTP ${r.status}`);
       }
@@ -582,6 +584,7 @@ function Composer({
       let buffer = "";
       let citationsForTurn: Citation[] | undefined;
       let finalContent = ""; // accumulated text — source of truth (persist + flush)
+      let errored = false;   // SSE error turn → show live, but don't persist it
 
       // Coalesced rendering: tokens arrive faster than React should re-render +
       // re-parse the whole markdown answer (that was O(n²) over its length and
@@ -689,8 +692,10 @@ function Composer({
             }
           } else if (event === "error" && parsed?.error) {
             // Render the failure in-place (flush inserts the row if no text had
-            // arrived yet) and persist it so a reload doesn't silently drop it.
+            // arrived yet). Mark it so it is NOT persisted as a fake assistant
+            // turn — a reload shouldn't replay "Error: …" as chat history.
             finalContent = "Error: " + parsed.error;
+            errored = true;
             flush();
           }
           // 'done' is advisory only.
@@ -702,10 +707,9 @@ function Composer({
       if (finalContent !== "") flush();
       else setMessages((cur) => cur.filter((m) => m.id !== loadingId));
 
-      // Persist the assistant turn (best-effort, fire and forget).
-      // Skip only if we have literally nothing — a streamed answer
-      // that produced zero bytes is the only case worth dropping.
-      if (activeChatId && finalContent !== "") {
+      // Persist the assistant turn (best-effort, fire and forget). Skip empty
+      // answers and error turns (an "Error: …" row must not become history).
+      if (activeChatId && finalContent !== "" && !errored) {
         chatsApi.append(activeChatId, {
           role: "assistant",
           content: finalContent,
@@ -723,6 +727,9 @@ function Composer({
       setMessages((cur) => cur.filter((m) => m.id !== loadingId));
       if (err?.name !== "AbortError") {
         toast.error(err?.message || (locale === "ar" ? "حدث خطأ، حاول مرة أخرى" : "Something went wrong"));
+        // Restore the typed message so a network/500 failure doesn't destroy it
+        // (only when the composer is empty — don't clobber a new draft).
+        if (!value.trim()) setValue(text);
       }
     } finally {
       setSending(false);
@@ -754,6 +761,7 @@ function Composer({
       }),
       signal: controller.signal,
     });
+    if (r.status === 401) notifyUnauthorized();
     if (!r.ok || !r.body) throw new Error(r.status === 402 ? s.quotaReached : `HTTP ${r.status}`);
     const assistantId = `a-${newId()}`;
     setMessages((cur) => cur.filter((m) => m.id !== loadingId).concat({ id: assistantId, role: "assistant", content: "" }));
@@ -770,6 +778,7 @@ function Composer({
       const content = head + tail;
       setMessages((cur) => cur.map((m) => (m.id === assistantId && m.role === "assistant" ? { ...m, content } : m)));
     };
+    try {
     while (true) {
       const { done, value } = await reader.read();
       if (done) break;
@@ -812,6 +821,15 @@ function Composer({
           answer = answer || (locale === "ar" ? "⚠ تعذّر إكمال المهمة" : "⚠ Couldn't complete the task");
           render();
         }
+      }
+    }
+    } finally {
+      // If the run ended without a final answer (aborted / network drop), don't
+      // leave the bubble spinning on "_Working_" forever — finalize it.
+      if (!answer) {
+        const head = steps.length ? `**${s.agentWorking}**\n${steps.join("\n")}\n\n---\n\n` : "";
+        const stopped = locale === "ar" ? "_تم الإيقاف_" : "_Stopped_";
+        setMessages((cur) => cur.map((m) => (m.id === assistantId && m.role === "assistant" ? { ...m, content: head + stopped } : m)));
       }
     }
     if (activeChatId && answer) {

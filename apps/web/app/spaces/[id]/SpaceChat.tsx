@@ -8,7 +8,7 @@ import { useUI } from "../../lib/ui-context";
 import { useAuth } from "../../lib/auth-context";
 import { useDictation } from "../../lib/useDictation";
 import { usePrefs } from "../../lib/store";
-import { chats as chatsApi, spaces as spacesApi, type Space, type Chat } from "../../lib/api";
+import { chats as chatsApi, spaces as spacesApi, notifyUnauthorized, type Space, type Chat } from "../../lib/api";
 import { AssistantMessage, type Citation } from "../../components/AssistantMessage";
 import { TEXT_MODELS, modelLock, type ModelBrand } from "../../lib/models";
 
@@ -247,6 +247,7 @@ export function SpaceChat({ space, memory }: { space: Space; memory?: string[] }
         body,
         signal: controller.signal,
       });
+      if (r.status === 401) notifyUnauthorized();
       if (!r.ok || !r.body) throw new Error(r.status === 402 ? s.quotaReached : `HTTP ${r.status}`);
 
       const assistantId = `a-${newId()}`;
