@@ -38,6 +38,7 @@ const maxBatch = 4
 type UsageMeter interface {
 	Check(ctx context.Context, userID, plan, op string) (bool, int)
 	Record(userID, plan, op, model string)
+	Refund(userID, op string)
 	// AllowsModel reports whether the plan unlocks the model id (plan-gating).
 	AllowsModel(plan, model string) bool
 }

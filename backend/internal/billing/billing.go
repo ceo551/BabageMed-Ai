@@ -109,6 +109,24 @@ func (s *Service) Record(userID, plan, op, model string) {
 	}
 }
 
+// Refund reverses a Record for an op that ultimately failed (e.g. the upstream
+// model errored before producing any answer) by inserting a negative-credit
+// ledger row so the month's SUM nets back out. Best-effort, detached context.
+// NOT for client mid-stream disconnects — partial tokens were delivered there.
+func (s *Service) Refund(userID, op string) {
+	if s == nil || s.db == nil || userID == "" {
+		return
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	if _, err := s.db.Pool.Exec(ctx, `
+        INSERT INTO usage_ledger (user_id, operation, credits, model)
+        VALUES ($1, $2, $3, NULL)
+    `, userID, op, -costOf(op)); err != nil {
+		log.Printf("billing: refund %v", err)
+	}
+}
+
 func (s *Service) usedThisMonth(ctx context.Context, userID string) (int, error) {
 	var sum int
 	err := s.db.Pool.QueryRow(ctx, `

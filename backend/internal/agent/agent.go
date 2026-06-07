@@ -45,6 +45,7 @@ type CredentialProvider interface {
 type UsageMeter interface {
 	Check(ctx context.Context, userID, plan, op string) (bool, int)
 	Record(userID, plan, op, model string)
+	Refund(userID, op string)
 }
 
 // Notifier sends a Web Push when an async run finishes (P6.5). nil → no push

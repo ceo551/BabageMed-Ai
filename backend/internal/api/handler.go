@@ -32,6 +32,7 @@ type CredentialProvider interface {
 type UsageMeter interface {
 	Check(ctx context.Context, userID, plan, op string) (bool, int)
 	Record(userID, plan, op, model string)
+	Refund(userID, op string)
 	// AllowsModel reports whether the plan unlocks the model id (plan-gating).
 	AllowsModel(plan, model string) bool
 }
@@ -186,14 +187,12 @@ func (h *Handler) ChatStream(w http.ResponseWriter, r *http.Request) {
 	// Quota check BEFORE the SSE headers so an over-budget user gets a normal
 	// HTTP 402 the fetch detects (not a half-open event stream). Charged on
 	// accept. No-op for anonymous traffic.
-	{
-		op := "chat"
-		if req.DeepResearch {
-			op = "deep_research"
-		}
-		if !h.checkQuota(w, r, op, req.Model) {
-			return
-		}
+	op := "chat"
+	if req.DeepResearch {
+		op = "deep_research"
+	}
+	if !h.checkQuota(w, r, op, req.Model) {
+		return
 	}
 	// SSE response headers are set up-front — BEFORE the visual-model
 	// rejection below — so even that early-exit error is a well-formed
@@ -322,6 +321,12 @@ func (h *Handler) ChatStream(w http.ResponseWriter, r *http.Request) {
 		// detail server-side and send a generic message the UI can
 		// render as a toast.
 		log.Printf("api: chat stream upstream error: %v", err)
+		// The op was charged on accept; refund it since the model produced no
+		// usable answer. (A client disconnect already returned above via
+		// ctx.Err(), so this is a genuine upstream failure, not a paid partial.)
+		if u := auth.FromContext(ctx); u != nil && h.meter != nil {
+			h.meter.Refund(u.ID, op)
+		}
 		send("error", map[string]string{"error": "model request failed"})
 		return
 	}
@@ -989,6 +994,14 @@ func buildSystem(mode, locale string, citations []map[string]any, useMcps []stri
 //     log sinks and terminals.
 func stripFencesAndControlChars(s string) string {
 	s = strings.ReplaceAll(s, "```", "'`'`'")
+	// Defang our own fence MARKER lines so untrusted content (feature
+	// instructions, space memory, MCP results) can't forge an "end of user
+	// instructions / space memory" boundary and inject directives that the
+	// model then reads as authoritative.
+	s = strings.ReplaceAll(s, "---BEGIN", "- - -BEGIN")
+	s = strings.ReplaceAll(s, "---END", "- - -END")
+	s = strings.ReplaceAll(s, "---begin", "- - -begin")
+	s = strings.ReplaceAll(s, "---end", "- - -end")
 	var b strings.Builder
 	b.Grow(len(s))
 	for _, r := range s {
