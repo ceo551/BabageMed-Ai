@@ -236,6 +236,10 @@
    * stays visible in the bar. */
   .mkt-nav-links--desktop { display: none !important; }
   .mkt-nav-burger { display: inline-flex; }
+  /* Theme + language toggles stay in the bar; trim the language pill so the
+   * brand + 3 controls fit on narrow phones. */
+  .mkt-nav-cta { gap: 6px; }
+  .mkt-lang-btn { padding: 8px 9px; font-size: 13px; }
   .mkt-section { padding: 40px 0; }
   .mkt-cta-row .mkt-btn { width: 100%; }
   .mkt-cta-row { flex-direction: column; }

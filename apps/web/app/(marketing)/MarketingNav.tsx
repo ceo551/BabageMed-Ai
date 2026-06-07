@@ -131,7 +131,7 @@ export function MarketingNav({ locale }: { locale: Loc }) {
           <button type="button" className="mkt-icon-btn" onClick={toggleTheme} aria-label={themeLabel} title={themeLabel}>
             {theme === "light" ? MoonIcon : SunIcon}
           </button>
-          <button type="button" className="mkt-lang-btn mkt-nav-links--desktop" onClick={switchLang} aria-label={langLabel} title={langLabel}>
+          <button type="button" className="mkt-lang-btn" onClick={switchLang} aria-label={langLabel} title={langLabel}>
             {langLabel}
           </button>
           <Link href={home === "/ar/models" ? "/" : "/"} className="mkt-btn mkt-btn-primary mkt-btn-sm mkt-nav-links--desktop">{startFree}</Link>
@@ -164,7 +164,6 @@ export function MarketingNav({ locale }: { locale: Loc }) {
               {links.map((l) => (
                 <Link key={l.href} href={l.href} className="mkt-drawer-link" onClick={() => setOpen(false)}>{l.label}</Link>
               ))}
-              <button type="button" className="mkt-drawer-link" onClick={switchLang}>{langLabel}</button>
             </nav>
             <div className="mkt-drawer-foot">
               <button type="button" className="mkt-drawer-link mkt-drawer-theme" onClick={toggleTheme}>
