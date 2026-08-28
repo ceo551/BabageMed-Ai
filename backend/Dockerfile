@@ -1,5 +1,5 @@
 # Build context is the repo root (see docker-compose.yml).
-FROM golang:1.24-alpine AS build
+FROM golang:1.27-alpine AS build
 WORKDIR /src
 COPY backend/go.mod backend/go.sum ./
 # Download modules first so the layer caches when only source files change.
